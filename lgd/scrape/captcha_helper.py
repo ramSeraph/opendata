@@ -2,7 +2,12 @@ import io
 import copy
 import time
 import logging
+
+from pathlib import Path
+from google.cloud import storage
+
 from .captcha.lib import guess, print_buf, reset_buf
+from .gcs import download_folder
 
 logger = logging.getLogger(__name__)
 
@@ -75,3 +80,17 @@ class CaptchaHelper:
         logger.info('got captcha image')
         return copy.copy(web_data.content)
 
+    def prepare():
+        models_path = Path(__file__).parent.joinpath('captcha', 'models')
+        
+        # hardcoding list of files here so as to not hit the network everytime
+        paths = []
+        paths.append(models_path.joinpath('lstm', 'eng.traineddata'))
+        paths.append(models_path.joinpath('lstm', 'osd.traineddata'))
+        paths.append(models_path.joinpath('old', 'eng.traineddata'))
+        paths.append(models_path.joinpath('old', 'myconfig'))
+        missing_files = any([not path.exists() for path in paths])
+
+        if missing_files:
+            client = storage.Client.create_anonymous_client()
+            download_folder('lgd_captcha_tesseract_models', str(models_path), client)

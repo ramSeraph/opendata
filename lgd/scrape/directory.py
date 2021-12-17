@@ -23,7 +23,6 @@ def merge_file(old_file, mod_file, tgt_file):
 class DirectoryDownloader(BaseDownloader):
     def __init__(self, post_data_extra={}, odt_conv_args={}, **kwargs):
         kwargs['section'] = 'Download Directory'
-        super().__init__(**kwargs)
         self.post_data = {
             "DDOption": "UNSELECT",
             "downloadOption": "DFD",
@@ -43,6 +42,7 @@ class DirectoryDownloader(BaseDownloader):
         }
         self.post_data.update(post_data_extra)
         self.odt_conv_args = odt_conv_args
+        super().__init__(**kwargs)
 
     def set_context(self, ctx):
         if ctx.csrf_token is not None:

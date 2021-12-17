@@ -10,10 +10,14 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from datetime import datetime
 from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 from timeit import default_timer as timer
 from humanize import naturalsize
+from google.cloud import storage
+from google.api_core.exceptions import NotFound
 
 
 from .captcha_helper import CaptchaHelper
@@ -36,6 +40,8 @@ class Params:
         self.connect_timeout = 10
         self.read_timeout = 60
         self.http_retries = 3
+        self.gcs_bucket_name = 'lgd_data_raw'
+        self.enable_gcs = False
 
     def request_args(self):
         return {
@@ -53,6 +59,7 @@ class Context:
         self.script_session_id = ''
         self.script_batch_id = 0
         self.session = None
+        self.gcs_client = None
 
 
 def get_tqdm_position():
@@ -99,10 +106,19 @@ def get_csrf_token(params, ctx):
 def get_context(params):
     ctx = Context()
     s = requests.session()
-    s.mount('http://', HTTPAdapter(max_retries=params.http_retries))
-    s.mount('https://', HTTPAdapter(max_retries=params.http_retries))
+    retries = params.http_retries
+    retry = Retry(
+        total=retries,
+        read=retries,
+        connect=retries
+    )
+    s.mount('http://', HTTPAdapter(max_retries=retry))
+    s.mount('https://', HTTPAdapter(max_retries=retry))
     ctx.session = s
     ctx.csrf_token = get_csrf_token(params, ctx)
+    if params.enable_gcs:
+        ctx.gcs_client = storage.Client()
+        logger.debug('set gcs client: {}'.format(ctx.gcs_client))
     return ctx
  
 
@@ -145,14 +161,7 @@ class BaseDownloader:
 
     def records_from_downloader(name):
         downloader = BaseDownloader.get_downloader(name)
-        if not downloader.is_done():
-            raise NotReadyException()
-        csv_filename = downloader.get_filename()
-        #TODO: storage handler code goes here
-        with open(csv_filename) as f:
-            reader = csv.DictReader(f, delimiter=';')
-            for r in reader:
-                yield r
+        return downloader.retrieve_records()
 
     def clear_cache():
         BaseDownloader.downloader_cache.clear()
@@ -163,8 +172,9 @@ class BaseDownloader:
 
     def get_filename(self):
         if self.full_filename is not None:
-            return self.full_filename
-        path = Path(self.params.base_raw_dir).joinpath(get_date_str(), self.csv_filename)
+            path = Path(self.params.base_raw_dir).joinpath(self.full_filename)
+        else:
+            path = Path(self.params.base_raw_dir).joinpath(get_date_str(), self.csv_filename)
         return str(path)
 
     def get_child_downloaders(self):
@@ -173,15 +183,31 @@ class BaseDownloader:
     def get_records(self):
         raise NotImplementedError()
 
+    def retrieve_records(self):
+        csv_filename = self.get_filename()
+
+        if not self.is_done():
+            raise NotReadyException()
+
+        if not Path(csv_filename).exists(): 
+            bucket = self.ctx.gcs_client.get_bucket(self.params.gcs_bucket_name)
+            blob_name = csv_filename.replace(self.params.base_raw_dir, '')
+            bucket.blob(blob_name).download_to_filename(csv_filename)
+
+        with open(csv_filename) as f:
+            reader = csv.DictReader(f, delimiter=';')
+            for r in reader:
+                yield r
+
     def cleanup(self):
         pass
-        
-    def download(self, ctx=None):
-        if self.is_done():
-            return
 
+    def download(self, ctx=None):
         if ctx is not None:
             self.set_context(ctx)
+
+        if self.is_done():
+            return
 
         # TODO: use yield in get_records and iterate to reduce memory usage?
         # TODO: if doing this.. make sure no intermediate files are left in case of request failure
@@ -198,7 +224,6 @@ class BaseDownloader:
         if dirname != '':
             os.makedirs(dirname, exist_ok=True)
 
-        #TODO: storage handler code goes here
         logger.info(f'writing file {csv_filename}')
         wr = None
         with open(csv_filename, 'w') as f:
@@ -208,12 +233,49 @@ class BaseDownloader:
                     wr.writeheader()
                 wr.writerow(r)
 
+        if not self.params.enable_gcs:
+            self.cleanup()
+            return
+
+        try:
+            bucket_name = self.params.gcs_bucket_name
+            try:
+                bucket = self.ctx.gcs_client.get_bucket(bucket_name)
+            except NotFound:
+                logger.info(f'Creating bucket {bucket_name}')
+                bucket = self.ctx.gcs_client.create_bucket(bucket_name, location='ASIA-SOUTH1')
+
+            blob_name = csv_filename.replace(self.params.base_raw_dir, '')
+            blob = bucket.blob(blob_name)
+            if not blob.exists():
+                logger.info(f'uploading blob {blob_name}')
+                blob.upload_from_filename(filename=csv_filename)
+            else:
+                logger.warning(f'blob {blob_name} already exists.. not uploading')
+        except Exception:
+            logger.exception(f'unexpected exception while uploading file {csv_filename} to {blob_name}, deleting local file')
+            os.remove(csv_filename)
+            raise
+        
         self.cleanup()
 
 
     def is_done(self):
         filename = self.get_filename()
-        return os.path.exists(filename)
+        if not self.params.enable_gcs:
+            return Path(filename).exists()
+
+        if Path(filename).exists():
+            return True
+
+        try:
+            logger.debug('gcs_client: {}'.format(self.ctx.gcs_client))
+            bucket = self.ctx.gcs_client.get_bucket(self.params.gcs_bucket_name)
+        except NotFound:
+            return False
+
+        blob_name = filename.replace(self.params.base_raw_dir, '')
+        return bucket.blob(blob_name).exists()
 
 
     def post_with_progress(self, *args, **kwargs):
@@ -274,13 +336,11 @@ class MultiDownloader(BaseDownloader):
     def combine_records(self):
         all_records = []
         for ditem in self.downloader_items:
-            #TODO: storage handler code goes here
-            with open(ditem.downloader.get_filename(), 'r') as ifile:
-                reader = csv.DictReader(ifile, delimiter=';')
-                for r in reader:
-                    for nkey, okey in self.enrichers.items():
-                        r[nkey] = ditem.record[okey]
-                    all_records.append(r)
+            records = ditem.downloader.retrieve_records()
+            for r in records:
+                for nkey, okey in self.enrichers.items():
+                    r[nkey] = ditem.record[okey]
+                all_records.append(r)
         return all_records
 
 
@@ -294,10 +354,27 @@ class MultiDownloader(BaseDownloader):
     def cleanup(self):
         if not self.delete_intermediates:
             return
-        #TODO: storage handler code goes here
-        for ditem in self.downloader_items:
-            os.remove(ditem.downloader.get_filename())
 
+        for ditem in self.downloader_items:
+            filename = ditem.downloader.get_filename() 
+            if Path(filename).exists():
+                logger.info(f'deleting file {filename}')
+                os.remove(filename)
+
+            if not self.params.enable_gcs:
+                continue
+
+            try:
+                bucket = self.ctx.gcs_client.get_bucket(self.params.gcs_bucket_name)
+            except NotFound:
+                continue
+
+            blob_name = filename.replace(self.params.base_raw_dir, '')
+            blob = bucket.blob(blob_name)
+            if not blob.exists():
+                continue
+            logger.info(f'deleting blob {blob_name}')
+            blob.delete()
 
     def get_records(self):
         self.populate_downloaders()

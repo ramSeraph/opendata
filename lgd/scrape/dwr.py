@@ -8,7 +8,7 @@ from calmjs.parse.unparsers.extractor import ast_to_dict
 from calmjs.parse.asttypes import FunctionCall
 
 from .base import (DownloaderItem, BaseDownloader,
-                   MultiDownloader, Params, Context)
+                   MultiDownloader)
 
 logger = logging.getLogger(__name__)
 

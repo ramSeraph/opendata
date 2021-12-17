@@ -11,6 +11,7 @@ from concurrent.futures import (wait, FIRST_COMPLETED, ALL_COMPLETED,
                                 Future, ThreadPoolExecutor)
 
 from .base import Params, Context, get_context
+from .captcha_helper import CaptchaHelper
 from . import get_all_downloaders
 
 logger = logging.getLogger(__name__)
@@ -64,6 +65,7 @@ class Joiner:
 
  
 def set_context(params):
+    logger.debug('setting context')
     local_data.ctx = get_context(params)
     # try to get all threads to run this by delaying completion
     time.sleep(1)
@@ -107,6 +109,7 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
         return {d.name:d.deps for d in all_downloaders}
 
     if mode == Mode.RUN:
+        CaptchaHelper.prepare()
         dmap = {d.name:d for d in all_downloaders}
         graph = {d.name:d.deps for d in all_downloaders}
 
@@ -132,6 +135,7 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
 
         logger.info(f'going to run comps: {comps_to_run_expanded}')
         graph_to_run = {d.name:d.deps for d in all_downloaders if d.name in comps_to_run_expanded}
+        set_context(params)
 
         ts = TopologicalSorter(graph_to_run)
         ts.prepare()
@@ -155,6 +159,7 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
                     if comp in comps_in_transit or comp in comps_in_error:
                         continue
                     downloader = dmap[comp]
+                    downloader.set_context(local_data.ctx)
                     childs = downloader.get_child_downloaders()
                     if len(childs) != 0:
                         fut = Future()
@@ -228,11 +233,14 @@ if __name__ == '__main__':
 
     parser.add_argument('-P', '--print-captchas', help='print captchas on failure', action='store_true')
     parser.add_argument('-H', '--save-failed-html', help='save html for failed requests', action='store_true')
-    parser.add_argument('-A', '--save-all-captchas', help='save all captchas encountered',action='store_true')
+    parser.add_argument('-A', '--save-all-captchas', help='save all captchas encountered', action='store_true')
     parser.add_argument('-F', '--save-failed-captchas', help='save all captchas which we failed for', action='store_true')
 
     parser.add_argument('-p', '--parallel', help='number of parallel downloads', type=int)
     parser.add_argument('-D', '--base-raw-dir', help='directory to write data to, will be created if it doesn\'t exist', type=str)
+    parser.add_argument('-g', '--enable-gcs', help='R|enable writing to gcs, base-raw-dir is used as staging area for the data,\n' +
+                                                   ' credentials need to be made available through the GOOGLE_APPLICATION_CREDENTIALS env variable', action='store_true')
+    parser.add_argument('-B', '--gcs-bucket-name', help='which bucket to write to in gcs', type=str)
     parser.add_argument('-l', '--log-level', help='Set the logging level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], type=str)
     parser.set_defaults(**default_params_dict)
 

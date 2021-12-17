@@ -39,12 +39,12 @@ class ReportDownloader(BaseDownloader):
                  allow_empty=False,
                  **kwargs):
         kwargs['section'] = 'Reports'
-        super().__init__(**kwargs)
         self.sub_url = sub_url
         self.post_data = post_data
         self.query_data = query_data
         self.allow_empty = allow_empty
         self.oprand_data_extra = oprand_data_extra
+        super().__init__(**kwargs)
 
     def set_context(self, ctx):
         if ctx.csrf_token is not None:
@@ -331,7 +331,7 @@ class DateWiseReportDownloader(MultiDownloader, ReportDownloader):
             csv_path = Path(self.csv_filename)
             csv_filename_s = str(csv_path.with_stem('{}'.format(old_date_str)))
             #TODO: too specific to changes and convoluted
-            full_path = Path(self.params.base_raw_dir).joinpath('changes', f'{old_date_str}.csv')
+            full_path = Path('changes').joinpath(f'{old_date_str}.csv')
             downloader = ReportDownloader(name='{}_{}'.format(self.name, old_date_str),
                                           desc='{} for date {}'.format(self.desc, old_date_str),
                                           sub_url=self.sub_url,

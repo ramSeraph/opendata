@@ -2,15 +2,17 @@ import os
 import os.path
 import io
 import time
+import copy
 import logging
 
 from datetime import datetime, timedelta
 from pathlib import Path
 from .base import (INCORRECT_CAPTCHA_MESSAGE,
                    DownloaderItem, BaseDownloader,
-                   MultiDownloader)
+                   MultiDownloader, add_defaults_to_args)
 from .conversion_helper import (records_from_excel, records_from_xslx,
-                                unzip_single, records_from_odt)
+                                unzip_single, records_from_odt,
+                                records_from_htm)
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,10 @@ def merge_file(old_file, mod_file, tgt_file):
 
 
 class DirectoryDownloader(BaseDownloader):
-    def __init__(self, post_data_extra={}, odt_conv_args={}, **kwargs):
+    def __init__(self, **kwargs):
+        kwargs = add_defaults_to_args({'post_data_extra':{},
+                                       'odt_conv_args':{},
+                                       'excel_conv_args':{}}, kwargs)
         kwargs['section'] = 'Download Directory'
         self.post_data = {
             "DDOption": "UNSELECT",
@@ -40,14 +45,10 @@ class DirectoryDownloader(BaseDownloader):
             "lbl": None,
             "downloadType": "xls",
         }
-        self.post_data.update(post_data_extra)
-        self.odt_conv_args = odt_conv_args
+        self.post_data.update(kwargs['post_data_extra'])
+        self.odt_conv_args = kwargs['odt_conv_args']
+        self.excel_conv_args = kwargs['excel_conv_args']
         super().__init__(**kwargs)
-
-    def set_context(self, ctx):
-        if ctx.csrf_token is not None:
-            self.post_data['OWASP_CSRFTOKEN'] = ctx.csrf_token
-        super().set_context(ctx)
 
 
     def get_records(self):
@@ -60,15 +61,17 @@ class DirectoryDownloader(BaseDownloader):
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'referer': download_dir_url
             }
+            post_data = copy.copy(self.post_data)
+            post_data['OWASP_CSRFTOKEN'] = self.ctx.csrf_token
             web_data = self.post_with_progress(download_dir_url,
                                                data=self.post_data,
                                                headers=post_headers)
             if not web_data.ok:
                 raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
-                
-            if web_data.headers['Content-Type'] == 'text/html;charset=UTF-8':
+
+            if 'Content-Disposition' not in web_data.headers or 'attachment;' not in web_data.headers['Content-Disposition']:
                 if INCORRECT_CAPTCHA_MESSAGE  not in web_data.text:
-                    if self.params.save_failed_html:
+                    if self.ctx.params.save_failed_html:
                         with open('failed.html', 'w') as f:
                             f.write(web_data.text)
                     raise Exception('Non-captcha failure in request')
@@ -84,6 +87,7 @@ class DirectoryDownloader(BaseDownloader):
             data_file = None
             is_xlsx = False
             is_odt = False
+            is_htm = False
             if web_data.headers['Content-Type'] == 'application/zip;charset=UTF-8':
                 logger.debug('unzipping data')
                 filename, content = unzip_single(web_data.content)
@@ -98,12 +102,17 @@ class DirectoryDownloader(BaseDownloader):
                 data_file = io.BytesIO(web_data.content)
                 is_odt = True
 
-            if web_data.headers['Content-Type'] == 'xls;charset=UTF-8':
-                data_file = io.BytesIO(web_data.content)
-    
             if web_data.headers['Content-Type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8':
                 data_file = io.BytesIO(web_data.content)
                 is_xlsx = True
+
+            if web_data.headers['Content-Type'] == 'text/html;charset=UTF-8':
+                data_file = io.BytesIO(web_data.content)
+                is_htm = True
+
+            if web_data.headers['Content-Type'] == 'xls;charset=UTF-8':
+                data_file = io.BytesIO(web_data.content)
+    
             
             #print(web_data.headers['Content-Type'])
     
@@ -117,8 +126,12 @@ class DirectoryDownloader(BaseDownloader):
                 #with open('temp_{}.odt'.format(self.name), 'wb') as f:
                 #    f.write(data_file.getvalue())
                 records = records_from_odt(data_file, **self.odt_conv_args)
+            elif is_htm:
+                records = records_from_htm(data_file)
             else:
-                records = records_from_excel(data_file)
+                #with open('temp_{}.xls'.format(self.name), 'wb') as f:
+                #    f.write(data_file.getvalue())
+                records = records_from_excel(data_file, **self.excel_conv_args)
 
             #logger.debug('got {} records'.format(len(records)))
             #logger.debug('{}'.format(records[0]))
@@ -128,7 +141,7 @@ class DirectoryDownloader(BaseDownloader):
     #TODO: this is incomplete
     def get_file_mod(self):
     
-        if not self.params.using_mods:
+        if not self.ctx.params.using_mods:
             self.get_file()
             return
     
@@ -163,7 +176,7 @@ class StateWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
     def __init__(self, **kwargs):
         if 'enrichers' not in kwargs:
             kwargs['enrichers'] = { 'State Code': 'State Code',
-                                    'State Name': 'State Name(In English)' }
+                                    'State Name': 'State Name (In English)' }
         if 'deps' not in kwargs:
             kwargs['deps'] = []
         if 'STATES' not in kwargs['deps']:
@@ -177,30 +190,32 @@ class StateWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
         downloader_items = []
         for r in BaseDownloader.records_from_downloader('STATES'):
             state_code = r['State Code']
-            state_name = r['State Name(In English)']
+            state_name = r['State Name (In English)']
 
             csv_path = Path(self.csv_filename)
-            csv_filename_s = str(csv_path.with_stem('{}_{}'.format(csv_path.stem, state_code)))
+            csv_filename_s = '{}_{}{}'.format(csv_path.stem, state_code, csv_path.suffix)
+            post_data_extra = copy.copy(self.post_data_extra)
+            post_data_extra.update({ 'stateName': state_name,
+                                     'entityCodes': state_code })
             downloader = DirectoryDownloader(name='{}_{}'.format(self.name, state_code),
                                              desc='{} for state {}({})'.format(self.desc, state_name, state_code),
                                              csv_filename=csv_filename_s,
-                                             params=self.params,
                                              ctx=self.ctx,
                                              transform=self.transform,
                                              odt_conv_args=self.odt_conv_args,
-                                             post_data_extra=self.post_data_extra | {
-                                                 'stateName': state_name,
-                                                 'entityCodes': state_code
-                                             })
+                                             excel_conv_args=self.excel_conv_args,
+                                             post_data_extra=post_data_extra)
             downloader_items.append(DownloaderItem(downloader=downloader, record=r))
         self.downloader_items = downloader_items
 
 
 class OrgWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
-    def __init__(self, depends_on='', **kwargs):
+    def __init__(self, **kwargs):
+        kwargs = add_defaults_to_args({'depends_on': ''}, kwargs)
         if 'deps' not in kwargs:
             kwargs['deps'] = []
 
+        depends_on = kwargs['depends_on']
         if depends_on != '' and depends_on not in kwargs['deps']:
             kwargs['deps'].append(depends_on)
         super().__init__(**kwargs)
@@ -219,25 +234,27 @@ class OrgWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
             state_name = r.get('State Name', 'India')
 
             csv_path = Path(self.csv_filename)
-            csv_filename_s = str(csv_path.with_stem('{}_{}'.format(csv_path.stem, org_code)))
+            csv_filename_s = '{}_{}{}'.format(csv_path.stem, org_code, csv_path.suffix)
+            post_data_extra = copy.copy(self.post_data_extra)
+            post_data_extra.update({ 'entityCodes': ['35', state_code, org_code] })
             downloader = DirectoryDownloader(name='{}_{}'.format(self.name, org_code),
                                              desc='{} for organization {}({}) of {}({})'\
                                                   .format(self.desc, org_name, org_code, state_name, state_code),
                                              csv_filename=csv_filename_s,
-                                             params=self.params,
                                              ctx=self.ctx,
-                                             post_data_extra=self.post_data_extra | {
-                                                 'entityCodes': ['35', state_code, org_code]
-                                             })
+                                             excel_conv_args=self.excel_conv_args,
+                                             post_data_extra=post_data_extra)
             downloader_items.append(DownloaderItem(downloader=downloader, record=r))
         self.downloader_items = downloader_items
 
 
 class AdminDeptWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
-    def __init__(self, depends_on='', **kwargs):
+    def __init__(self, **kwargs):
+        kwargs = add_defaults_to_args({'depends_on': ''}, kwargs)
         if 'deps' not in kwargs:
             kwargs['deps'] = []
 
+        depends_on = kwargs['depends_on']
         if depends_on != '' and depends_on not in kwargs['deps']:
             kwargs['deps'].append(depends_on)
         super().__init__(**kwargs)
@@ -263,21 +280,20 @@ class AdminDeptWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
             to_str = to_date.strftime('%d-%m-%Y')
 
             csv_path = Path(self.csv_filename)
-            csv_filename_s = str(csv_path.with_stem('{}_{}'.format(csv_path.stem, admin_dept_code)))
+            csv_filename_s = '{}_{}{}'.format(csv_path.stem, admin_dept_code, csv_path.suffix)
+            post_data_extra = copy.copy(self.post_data_extra)
+            post_data_extra.update({'entityCodes': ['35', state_code, '', admin_dept_code],
+                                    'lbl': 'FOOBAR',
+                                    'fromDate2': from_str,
+                                    'toDate2': to_str})
             downloader = DirectoryDownloader(name='{}_{}'.format(self.name, admin_dept_code),
                                              desc='{} for admin dept {}({}) of {}({})'\
                                                   .format(self.desc, admin_dept_name, admin_dept_code,
                                                           state_name, state_code),
                                              csv_filename=csv_filename_s,
-                                             params=self.params,
                                              ctx=self.ctx,
                                              transform=self.transform,
-                                             post_data_extra=self.post_data_extra | {
-                                                 'entityCodes': ['35', state_code, '', admin_dept_code],
-                                                 'lbl': 'FOOBAR',
-                                                 'fromDate2': from_str,
-                                                 'toDate2': to_str,
-                                             })
+                                             post_data_extra=post_data_extra)
             downloader_items.append(DownloaderItem(downloader=downloader, record=r))
         self.downloader_items = downloader_items
 
@@ -307,47 +323,47 @@ class ConstituencyWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
 
 
             csv_path = Path(self.csv_filename)
-            csv_filename_s = str(csv_path.with_stem('{}_{}_{}'.format(csv_path.stem, state_code, const_code)))
+            csv_filename_s = '{}_{}{}'.format(csv_path.stem, const_code, csv_path.suffix)
+            post_data_extra = copy.copy(self.post_data_extra)
+            post_data_extra.update({'stateName': state_name,
+                                    'entityCodes': [state_code, const_code]})
             downloader = DirectoryDownloader(name='{}_{}_{}'.format(self.name, state_code, const_code),
                                              desc='{} for constituency {}({}) of state {}({})'.format(self.desc, const_name, const_code, state_name, state_code),
                                              csv_filename=csv_filename_s,
-                                             params=self.params,
                                              ctx=self.ctx,
-                                             post_data_extra=self.post_data_extra | {
-                                                 'stateName': state_name,
-                                                 'entityCodes': [state_code, const_code],
-                                             })
+                                             post_data_extra=post_data_extra)
             downloader_items.append(DownloaderItem(downloader=downloader, record=r))
         self.downloader_items = downloader_items
  
 
-def get_all_directory_downloaders(params, ctx):
+def get_all_directory_downloaders(ctx):
     downloaders = []
     downloaders.append(DirectoryDownloader(name='STATES',
                                            desc='list of all states',
                                            dropdown='STATE --> All States of India',
                                            csv_filename='states.csv',
-                                           params=params,
                                            ctx=ctx,
+                                           excel_conv_args={
+                                               'header_row_span': 2,
+                                           },
                                            post_data_extra={
                                                'rptFileName': 'allStateofIndia',
-                                               'downloadType': 'odt' # because the header came out unbroken in odt
                                            }))
     downloaders.append(DirectoryDownloader(name='DISTRICTS',
                                            desc='list of all districts',
                                            dropdown='DISTRICT --> All Districts of India',
                                            csv_filename='districts.csv',
-                                           params=params,
                                            ctx=ctx,
+                                           excel_conv_args={
+                                               'header_row_span': 2,
+                                           },
                                            post_data_extra={
                                                'rptFileName': 'allDistrictofIndia',
-                                               'downloadType': 'odt', # because the header came out unbroken in odt
                                            }))
     downloaders.append(DirectoryDownloader(name='SUB_DISTRICTS', 
                                            desc='list of all subdistricts',
                                            dropdown='SUB-DISTRICT --> All Sub-Districts of India',
                                            csv_filename='subdistricts.csv',
-                                           params=params,
                                            ctx=ctx,
                                            post_data_extra={
                                                'rptFileName': 'allSubDistrictofIndia',
@@ -356,18 +372,18 @@ def get_all_directory_downloaders(params, ctx):
                                            desc='list of all blocks',
                                            dropdown='Block --> All Blocks of India',
                                            csv_filename='blocks.csv',
-                                           params=params,
                                            ctx=ctx,
+                                           excel_conv_args={
+                                               'header_row_span': 2,
+                                           },
                                            post_data_extra={
                                                'rptFileName': 'allBlockofIndia',
-                                               'downloadType': 'odt' # because the header came out unbroken in odt as opposed xls
                                            }))
     # Too big.. had to break to statewise downloads
     #downloaders.append(DirectoryDownloader(name='VILLAGES',
     #                                       desc='list of all villages',
     #                                       dropdown='VILLAGE --> All Villages of India',
     #                                       csv_filename='villages.csv',
-    #                                       params=params,
     #                                       ctx=ctx,
     #                                       post_data_extra={
     #                                           'rptFileName': 'allVillagesofIndia',
@@ -376,7 +392,6 @@ def get_all_directory_downloaders(params, ctx):
     #                                       desc='list of all village to block mappings',
     #                                       dropdown='Block --> Subdistrict, Block,Village and Gps Mapping',
     #                                       csv_filename='villages_by_blocks.csv',
-    #                                       params=params,
     #                                       ctx=ctx,
     #                                       post_data_extra={
     #                                           'rptFileName': 'subdistrictVillageBlockGpsMapping',
@@ -385,7 +400,6 @@ def get_all_directory_downloaders(params, ctx):
     #                                       desc='list of all PRI(Panchayati Raj India) local bodies',
     #                                       dropdown='Local body --> All PRI Local Bodies of India',
     #                                       csv_filename='pri_local_bodies.csv',
-    #                                       params=params,
     #                                       ctx=ctx,
     #                                       post_data_extra={
     #                                           'rptFileName': 'priLocalBodyIndia',
@@ -395,37 +409,39 @@ def get_all_directory_downloaders(params, ctx):
                                            desc='list of all Traditional local bodies',
                                            dropdown='Local body --> All Traditional Local Bodies of India',
                                            csv_filename='traditional_local_bodies.csv',
-                                           params=params,
                                            ctx=ctx,
+                                           excel_conv_args={
+                                               'header_row_span': 2,
+                                           },
                                            post_data_extra={
                                                'rptFileName': 'allTraditionalLBofInida',
-                                               'downloadType': 'odt' # because the header came out unbroken in odt as opposed xls
                                            }))
     downloaders.append(DirectoryDownloader(name='URBAN_LOCAL_BODIES',
                                            desc='list of all urban local bodies',
                                            dropdown='Local body --> All Urban Local Bodies of India',
                                            csv_filename='urban_local_bodies.csv',
-                                           params=params,
                                            ctx=ctx,
+                                           excel_conv_args={
+                                               'header_row_span': 2,
+                                           },
                                            post_data_extra={
                                                'rptFileName': 'urbanLocalBodyIndia',
-                                               'downloadType': 'odt' # because the header came out unbroken in odt as opposed xls
                                            }))
     downloaders.append(DirectoryDownloader(name='URBAN_LOCAL_BODIES_COVERAGE',
                                            desc='list of all urban local bodies with coverage',
                                            dropdown='Local body --> Urban Localbodies with Coverage',
                                            csv_filename='statewise_ulbs_coverage.csv',
-                                           params=params,
                                            ctx=ctx,
+                                           excel_conv_args={
+                                               'header_row_span': 2,
+                                           },
                                            post_data_extra={
                                                'rptFileName': 'statewise_ulbs_coverage',
-                                               'downloadType': 'odt' # because the header came out unbroken in odt as opposed xls
                                            }))
     downloaders.append(DirectoryDownloader(name='CONSTITUENCIES_PARLIAMENT',
                                            desc='list of all parliament constituencies',
                                            dropdown='Parliament/Assembly Constituency --> Parliament Constituency or Assembly Constituency of a State/India --> All State --> Parliament Constituency',
                                            csv_filename='parliament_constituencies.csv',
-                                           params=params,
                                            ctx=ctx,
                                            post_data_extra={
                                                'rptFileName': 'assembly_parliament_constituency',
@@ -437,7 +453,6 @@ def get_all_directory_downloaders(params, ctx):
                                            desc='list of all assembly constituencies',
                                            dropdown='Parliament/Assembly Constituency --> Parliament Constituency or Assembly Constituency of a State/India --> All State --> Assembly Constituency',
                                            csv_filename='assembly_constituencies.csv',
-                                           params=params,
                                            ctx=ctx,
                                            post_data_extra={
                                                'rptFileName': 'assembly_parliament_constituency',
@@ -449,9 +464,8 @@ def get_all_directory_downloaders(params, ctx):
                                            desc='list of all central organization details',
                                            dropdown='Department/Organization --> Departments/Organization Details --> Central',
                                            csv_filename='central_orgs.csv',
-                                           params=params,
                                            ctx=ctx,
-                                           transform=lambda x: False if x['Organization Code'] == '' else x,
+                                           transform=['ignore_if_empty_field', 'Organization Code'],
                                            post_data_extra={
                                                'rptFileName': 'parentWiseOrganizationDepartmentDetails',
                                                'state': '0',
@@ -462,21 +476,21 @@ def get_all_directory_downloaders(params, ctx):
                                                     desc='list of all villages',
                                                     dropdown='VILLAGE --> All Villages of a State',
                                                     csv_filename='villages.csv',
-                                                    params=params,
                                                     ctx=ctx,
+                                                    excel_conv_args={
+                                                        'header_row_span': 2,
+                                                    },
                                                     post_data_extra={
                                                         'rptFileName': 'villageofSpecificState@state',
-                                                        'downloadType': 'odt' # because the header came out unbroken in odt as opposed xls
                                                     },
                                                     enrichers={
                                                         'State Code': 'State Code',
-                                                        'State Name (In English)': 'State Name(In English)'
+                                                        'State Name (In English)': 'State Name (In English)'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='BLOCK_VILLAGES',
                                                     desc='list of all village to block mappings',
                                                     dropdown='Block --> Subdistrict, Block,Village and Gps Mapping',
                                                     csv_filename='villages_by_blocks.csv',
-                                                    params=params,
                                                     ctx=ctx,
                                                     post_data_extra={
                                                         'rptFileName': 'subdistrictVillageBlockGpsMapping',
@@ -486,18 +500,18 @@ def get_all_directory_downloaders(params, ctx):
                                                     desc='list of all PRI(Panchayati Raj India) local bodies',
                                                     dropdown='Local body --> PRI Local Body of a State',
                                                     csv_filename='pri_local_bodies.csv',
-                                                    params=params,
                                                     ctx=ctx,
+                                                    excel_conv_args={
+                                                        'header_row_span': 2,
+                                                    },
                                                     post_data_extra={
                                                         'rptFileName': 'priLbSpecificState@state',
                                                         'state': 'on',
-                                                        'downloadType': 'odt' # because the header came out unbroken in odt as opposed xls
                                                     }))
     # missing in lgd drop downs and data lacking compared to CONSTITUENCIES_MAPPINGS_PRI and CONSTITUENCIES_MAPPINGS_URBAN
     #downloaders.append(StateWiseDirectoryDownloader(name='CONSTITUENCIES_MAPPINGS',
     #                                                desc='list of all constituencies with local body coverage',
     #                                                csv_filename='constituencies_mapping.csv',
-    #                                                params=params,
     #                                                ctx=ctx,
     #                                                post_data_extra={
     #                                                    'rptFileName': 'parlimentConstituencyAndAssemblyConstituency@state'
@@ -509,7 +523,6 @@ def get_all_directory_downloaders(params, ctx):
                                                     desc='list of all constituencies with PRI local body coverage',
                                                     dropdown='Parliament/Assembly Constituency --> State Wise Parliament Constituency and Assembly Constituency along with coverage details PRI',
                                                     csv_filename='constituencies_mapping_pri.csv',
-                                                    params=params,
                                                     ctx=ctx,
                                                     post_data_extra={
                                                         'rptFileName': 'parlimentConstituencyAndAssemblyConstituencyPRI@state'
@@ -521,7 +534,6 @@ def get_all_directory_downloaders(params, ctx):
                                                     desc='list of all constituencies with Urban local body coverage',
                                                     dropdown='Parliament/Assembly Constituency --> State Wise Parliament Constituency and Assembly Constituency along with coverage details Urban',
                                                     csv_filename='constituencies_mapping_urban.csv',
-                                                    params=params,
                                                     ctx=ctx,
                                                     post_data_extra={
                                                         'rptFileName': 'parlimentConstituencyAndAssemblyConstituencyUrban@state'
@@ -533,17 +545,18 @@ def get_all_directory_downloaders(params, ctx):
                                                     desc='list of all panchayat mappings',
                                                     dropdown='Gram Panchayat Mapping to village --> Gram Panchayat Mapping to village',
                                                     csv_filename='gp_mapping.csv',
-                                                    params=params,
                                                     ctx=ctx,
+                                                    excel_conv_args={
+                                                        'header_row_span': 2,
+                                                    },
                                                     post_data_extra={
                                                         'rptFileName': 'LocalbodyMappingtoCensusLandregionCode@state',
-                                                        'downloadType': 'odt'
+                                                        'downloadType': 'htm'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='PRI_LOCAL_BODY_WARDS',
                                                     desc='list of all PRI Local body wards',
                                                     dropdown='Local body --> Wards of PRI Local Bodies',
                                                     csv_filename='pri_local_body_wards.csv',
-                                                    params=params,
                                                     ctx=ctx,
                                                     post_data_extra={
                                                         'rptFileName': 'priWards@state'
@@ -552,7 +565,6 @@ def get_all_directory_downloaders(params, ctx):
                                                     desc='list of all Urban Local body wards',
                                                     dropdown='Local body --> Wards of Urban Local Bodies',
                                                     csv_filename='urban_local_body_wards.csv',
-                                                    params=params,
                                                     ctx=ctx,
                                                     post_data_extra={
                                                         'rptFileName': 'uLBWardforState@state'
@@ -561,9 +573,8 @@ def get_all_directory_downloaders(params, ctx):
                                                     desc='list of all assembly/parliament constituencies and their coverage',
                                                     dropdown='Parliament/Assembly Constituency --> Constituency Coverage Details',
                                                     csv_filename='constituency_coverage.csv',
-                                                    params=params,
                                                     ctx=ctx,
-                                                    transform=lambda x: False if x['Parliament Constituency Code'] == '' else x,
+                                                    transform=['ignore_if_empty_field', 'Parliament Constituency Code'],
                                                     post_data_extra={
                                                         'rptFileName': 'constituencyReport@state'
                                                     }))
@@ -572,9 +583,8 @@ def get_all_directory_downloaders(params, ctx):
                                                     desc='list of all state level organizations',
                                                     dropdown='Department/Organization --> Departments/Organization Details --> State',
                                                     csv_filename='state_orgs.csv',
-                                                    params=params,
                                                     ctx=ctx,
-                                                    transform=lambda x: False if x['Organization Code'] == '' else x,
+                                                    transform=['ignore_if_empty_field', 'Organization Code'],
                                                     post_data_extra={
                                                         'rptFileName': 'parentWiseOrganizationDepartmentDetails',
                                                         'state': 'on'
@@ -586,7 +596,6 @@ def get_all_directory_downloaders(params, ctx):
                                                            desc='list of all parliament constituencies with local body coverage',
                                                            dropdown='Parliament/Assembly Constituency --> Parliament Wise Local Body Mapping',
                                                            csv_filename='parliament_constituencies_lb_mapping.csv',
-                                                           params=params,
                                                            ctx=ctx,
                                                            post_data_extra={
                                                                'rptFileName': 'parliamentConstituency@state#parliament'
@@ -599,11 +608,12 @@ def get_all_directory_downloaders(params, ctx):
                                                   dropdown='Department/Organization --> Organization Units of a Department/Organization --> State',
                                                   csv_filename='state_org_units.csv',
                                                   depends_on='STATE_ORG_DETAILS',
-                                                  params=params,
                                                   ctx=ctx,
+                                                  excel_conv_args={
+                                                      'header_row_span': 2,
+                                                  },
                                                   post_data_extra={
                                                         'rptFileName': 'orgUnitBasedOnOrgCode',
-                                                        'downloadType': 'odt',
                                                         'state': 'on'
                                                   },
                                                   enrichers={
@@ -617,11 +627,12 @@ def get_all_directory_downloaders(params, ctx):
                                                   dropdown='Department/Organization --> Organization Units of a Department/Organization --> Central',
                                                   csv_filename='central_org_units.csv',
                                                   depends_on='CENTRAL_ORG_DETAILS',
-                                                  params=params,
                                                   ctx=ctx,
+                                                  excel_conv_args={
+                                                      'header_row_span': 2,
+                                                  },
                                                   post_data_extra={
                                                         'rptFileName': 'orgUnitBasedOnOrgCode',
-                                                        'downloadType': 'odt',
                                                         'state': '0'
                                                   },
                                                   enrichers={
@@ -633,7 +644,6 @@ def get_all_directory_downloaders(params, ctx):
                                                   dropdown='Department/Organization --> Designations of a Department/Organization --> State',
                                                   csv_filename='state_org_designations.csv',
                                                   depends_on='STATE_ORG_DETAILS',
-                                                  params=params,
                                                   ctx=ctx,
                                                   post_data_extra={
                                                         'rptFileName': 'designationBasedOnOrgCode',
@@ -650,7 +660,6 @@ def get_all_directory_downloaders(params, ctx):
                                                   dropdown='Department/Organization --> Designations of a Department/Organization --> Central',
                                                   csv_filename='central_org_designations.csv',
                                                   depends_on='CENTRAL_ORG_DETAILS',
-                                                  params=params,
                                                   ctx=ctx,
                                                   post_data_extra={
                                                         'rptFileName': 'designationBasedOnOrgCode',
@@ -667,9 +676,8 @@ def get_all_directory_downloaders(params, ctx):
                                                         dropdown='Department/Organization --> Administrative Unit Level Wise Administrative Unit Entity --> Central',
                                                         csv_filename='central_admin_dept_units.csv',
                                                         depends_on='CENTRAL_ADMIN_DEPTS',
-                                                        params=params,
                                                         ctx=ctx,
-                                                        transform=lambda x: False if x['Admin Unit Entity Code'] == '' else x,
+                                                        transform=['ignore_if_empty_field', 'Admin Unit Entity Code'],
                                                         post_data_extra={
                                                               'rptFileName': 'adminUnitLevelAdminUnitEntity',
                                                               'state': '0',
@@ -683,9 +691,8 @@ def get_all_directory_downloaders(params, ctx):
                                                         dropdown='Department/Organization --> Administrative Unit Level Wise Administrative Unit Entity --> State',
                                                         csv_filename='state_admin_dept_units.csv',
                                                         depends_on='STATE_ADMIN_DEPTS',
-                                                        params=params,
                                                         ctx=ctx,
-                                                        transform=lambda x: False if x['Admin Unit Entity Code'] == '' else x,
+                                                        transform=['ignore_if_empty_field', 'Admin Unit Entity Code'],
                                                         post_data_extra={
                                                               'rptFileName': 'adminUnitLevelAdminUnitEntity',
                                                               'state': 'on'

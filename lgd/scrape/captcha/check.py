@@ -1,3 +1,4 @@
+from pathlib import Path
 import glob
 import json
 from lib import guess, print_buf, reset_buf
@@ -25,7 +26,9 @@ for full_filename in files:
     filename = full_filename.replace('data/','')
     if filename not in truth:
         continue
-    prediction = guess(full_filename)
+
+    models_path = str(Path(__file__).parent.joinpath('models'))
+    prediction = guess(full_filename, models_path)
     #matched = False
     #if truth[filename] == captcha_code:
     #    matched = True

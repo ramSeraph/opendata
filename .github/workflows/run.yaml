@@ -1,0 +1,162 @@
+name: Daily Run
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on: 
+  schedule:
+    - cron: '0 20 * * *'
+
+jobs:
+  Setup-Pip-Cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9.4'
+
+      - name: Restore pip data from cache
+        uses: actions/cache@v2
+        id: cache-venv  # name for referring later
+        with:
+          path: ./.venv/  # what we cache: the virtualenv
+          # The cache key depends on requirements.txt
+          key: $venv-${{ hashFiles('lgd/requirements.txt') }}
+
+      - name: Setup python requirements
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m venv ./.venv 
+          . ./.venv/bin/activate
+          pip install -r lgd/requirements.txt
+
+  Setup-Models-Cache:
+    runs-on: ubuntu-latest
+    depends: [ 'Setup-Pip-Cache' ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9.4'
+
+      - name: Restore pip data from cache
+        uses: actions/cache@v2
+        id: cache-venv  # name for referring later
+        with:
+          path: ./.venv/  # what we cache: the virtualenv
+          # The cache key depends on requirements.txt
+          key: $venv-${{ hashFiles('lgd/requirements.txt') }}
+
+      - name: Check pip setup
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: |
+          echo "::error pip cache not found"
+          exit 1
+
+      - name: Restore tesseract models from cache
+        uses: actions/cache@v2
+        with:
+          path: 'models/' 
+          key:  'lgd-tesseract-models'
+        id: models_cache
+
+      - name: Download tesseract models from gcs
+        if: ${{ steps.changes_cache.outputs.cache_hit != 'true' }}
+        run: .venv/bin/python -c "from lgd.scrape.captcha_helper import CaptchaHelper; CaptchaHelper.prepare('models/')"
+
+
+  Run-LGD-Extraction:
+    #continue-on-error: true
+    timeout-minutes: 600
+    runs-on: ubuntu-latest
+    depends: [ 'Setup-Models-Cache' ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9.4'
+
+      - name: Restore pip data from cache
+        uses: actions/cache@v2
+        id: cache-venv  # name for referring later
+        with:
+          path: ./.venv/  # what we cache: the virtualenv
+          # The cache key depends on requirements.txt
+          key: $venv-${{ hashFiles('lgd/requirements.txt') }}
+
+      - name: Check pip setup
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: |
+          echo "::error pip cache not found"
+          exit 1
+
+      - name: Restore tesseract models from cache
+        uses: actions/cache@v2
+        with:
+          path: 'models/' 
+          key:  'lgd-models'
+        id: models_cache
+
+      - name: Download tesseract models from gcs
+        if: ${{ steps.changes_cache.outputs.cache_hit != 'true' }}
+        run: |
+          echo "::error models cache not found"
+          exit 1
+
+      - name: Set current date as env variable
+        run: echo "DATE::$(date +'%d%b%Y')" >> $GITHUB_ENV
+
+      - name: Restore daily run data from cache
+        uses: TerrenceHo/cache-always@v0.0.1
+        with:
+          path: 'data/raw/${{ env.DATE }}' 
+          key:  'data-raw-${{ env.DATE }}'
+
+      - name: Restore changes data from cache
+        uses: TerrenceHo/cache-always@v0.0.1
+        with:
+          path: 'data/raw/changes' 
+          key:  'data-raw-changes-${{ env.DATE }}'
+        id: changes_cache
+
+      - name: Download changes file from gcs
+        if: ${{ steps.changes_cache.outputs.cache_hit != 'true' }}
+        uses: 'convictional/gcp-storage-action@v0.1.1'
+        with:
+          source_file: 'gs:///lgd_data_raw/changes/*'
+          destination_file: 'data/raw/changes/'
+          application_credentials: ${{ secrets.GCP_AUTH }}
+          project_id: lgd-data
+
+      - name: Download LGD data
+        run: python -m lgd.scrape -m RUN -l DEBUG -R 300 --use-procs -p 10 --archive-data
+        timeout-minutes: 360
+
+      - name: Upload archive file to gcs
+        uses: 'convictional/gcp-storage-action@v0.1.1'
+        with:
+          source_file: 'data/raw/${{ env.DATE }}.zip'
+          destination_file: 'gs:///lgd_data_archive/'
+          application_credentials: ${{ secrets.GCP_AUTH }}
+          project_id: lgd-data
+
+      - name: Upload changes file to gcs
+        uses: 'convictional/gcp-storage-action@v0.1.1'
+        with:
+          source_file: 'data/raw/changes/*'
+          destination_file: 'gs:///lgd_data_raw/changes/'
+          application_credentials: ${{ secrets.GCP_AUTH }}
+          project_id: lgd-data
+
+

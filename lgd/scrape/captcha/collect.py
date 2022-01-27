@@ -8,7 +8,7 @@ from lib import print_image_c
 include_dir = str(Path(__file__).resolve().parents[1])
 sys.path.append(include_dir)
 from captcha_helper import CaptchaHelper
-from base import Params, get_context, BASE_URL
+from base import get_context, BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,5 @@ if __name__ == '__main__':
         num = 10
 
     ctx = get_context()
-    params = Params()
-    captcha_helper = CaptchaHelper(params, ctx, BASE_URL)
+    captcha_helper = CaptchaHelper(ctx, BASE_URL)
     collect_test_captchas(num, captcha_helper)

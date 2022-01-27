@@ -1,16 +1,29 @@
-import time
 import copy
+import glob
 import logging
+import subprocess
 
 
+from datetime import datetime
+from pathlib import Path
+from humanize import naturalsize
 from enum import Enum
 from pprint import pprint
-from graphlib import TopologicalSorter
-from threading import local
-from concurrent.futures import (wait, FIRST_COMPLETED, ALL_COMPLETED,
-                                Future, ThreadPoolExecutor)
+from zipfile import ZipFile, ZIP_LZMA
+from concurrent.futures import (wait, FIRST_COMPLETED,
+                                Future, ProcessPoolExecutor,
+                                ThreadPoolExecutor)
+from google.api_core.exceptions import NotFound
+try:
+    from graphlib import TopologicalSorter
+except ImportError:
+    from graphlib_backport import TopologicalSorter
 
-from .base import Params, Context, get_context
+from .base import (Params, Context, expand_comps_to_run,
+                   get_date_str, get_gcs_upload_args,
+                   get_blobname_from_filename,
+                   NotReadyException, initialize_process,
+                   download_task, setup_logging)
 from .captcha_helper import CaptchaHelper
 from . import get_all_downloaders
 
@@ -23,15 +36,10 @@ logger = logging.getLogger(__name__)
 class Mode(Enum):
     COMPS = 'Get list of all components'
     DEPS = 'Get dependencies between components'
+    STATUS = 'Status of individual comps'
+    CLEANUP = 'Cleanup leftover files'
     RUN = 'Download all things'
-
-local_data = local()
-
-def download(downloader):
-    logger.info('getting {}'.format(downloader.desc))
-    if getattr(local_data, 'ctx', None) is None:
-        local_data.ctx = get_context(downloader.params)
-    downloader.download(local_data.ctx)
+    BEAM_RUN = 'Download all things using Apache Beam'
 
 
 #TODO: handle cancellation?
@@ -57,62 +65,216 @@ class Joiner:
                     self.fut.set_exception(Exception('Task has errors'))
                     return
                 try:
-                    download(self.downloader)
+                    download_task(self.downloader)
                 except Exception as ex:
                     self.fut.set_result(ex)
                 self.fut.set_result(None)
         return done_cb
 
  
-def set_context(params):
-    logger.debug('setting context')
-    local_data.ctx = get_context(params)
-    # try to get all threads to run this by delaying completion
-    time.sleep(1)
-
    
-def prime_thread_contexts(params, executor):
-    ctx_futs = []
-    for i in range(num_parallel):
-        fut = executor.submit(set_context, params)
-        ctx_futs.append(fut)
-    done, not_done = wait(ctx_futs, return_when=ALL_COMPLETED)
-    for fut in done:
-        if fut.exception() is not None:
-            logger.error('encountered exception while setting context')
-            raise fut.exception()
+def run_on_threads(graph, dmap, num_parallel, use_procs, params):
+    ts = TopologicalSorter(graph)
+    ts.prepare()
+    fut_to_comp = {}
+    comps_in_error = set()
+    comps_done = set()
+    has_changes = True
+    if use_procs:
+        executor = ProcessPoolExecutor(max_workers=num_parallel,
+                                       initializer=initialize_process,
+                                       initargs=(params, logger.getEffectiveLevel())) 
+    else:
+        executor = ThreadPoolExecutor(max_workers=num_parallel)
+
+    with executor:
+        # evaluate downloaders in topological sort order
+        while ts.is_active():
+            if not has_changes:
+                #TODO: check this logic
+                logger.error('No progress made. stopping')
+                break
+            has_changes = False
+            for comp in ts.get_ready():
+                downloader = dmap[comp]
+                if downloader.is_done():
+                    childs = []
+                else:
+                    childs = downloader.get_child_downloaders()
+                    childs = [x for x in childs if not x.is_done()]
+                if len(childs) != 0:
+                    fut = Future()
+                    fut.set_running_or_notify_cancel()
+                    joiner = Joiner(fut, set([x.name for x in childs]), downloader)
+                    for child in childs:
+                        child_fut = executor.submit(download_task, child)
+                        done_cb = joiner.get_checker(child.name)
+                        child_fut.add_done_callback(done_cb)
+                else:
+                    fut = executor.submit(download_task, downloader)
+                fut_to_comp[fut] = comp
 
 
-def expand_comps_to_run(comps_to_run, graph):
-    comps_to_run_expanded = copy.copy(comps_to_run)
-    while True:
-        temp_set = set()
-        for comp in comps_to_run_expanded:
-            temp_set.add(comp)
-            deps = graph[comp]
-            for dep in deps:
-                temp_set.add(dep)
+            done, not_done = wait(fut_to_comp, return_when=FIRST_COMPLETED)
+            for fut in done:
+                has_changes = True
+                has_errors = False
+                comp = fut_to_comp[fut]
+                try:
+                    fut.result()
+                except Exception:
+                    logger.exception('comp {} failed'.format(comp))
+                    has_errors = True
 
-        if len(temp_set) == len(comps_to_run_expanded):
-            break
-        comps_to_run_expanded = temp_set
-    return comps_to_run_expanded
+                del fut_to_comp[fut]
+                if not has_errors:
+                    ts.done(comp)
+                    comps_done.add(comp)
+                else:
+                    comps_in_error.add(comp)
+
+    return comps_done, comps_in_error
+
+def delete_raw_data(ctx):
+    logger.info('Cleaning up raw data')
+    params = ctx.params
+    dir_to_delete = Path(params.base_raw_dir).joinpath(get_date_str())
+    if dir_to_delete.exists():
+        files_to_delete = glob.glob('{}/*'.format(str(dir_to_delete)))
+        logger.info('deleting files: {}'.format(files_to_delete))
+        for filename in files_to_delete:
+            Path(filename).unlink()
+
+        Path(dir_to_delete).rmdir()
+
+    if params.enable_gcs:
+        try:
+            bucket = ctx.gcs_client.get_bucket(params.gcs_bucket_name)
+        except NotFound:
+            return
+
+        prefix_b = get_blobname_from_filename(str(dir_to_delete) + '/', params)
+        blobs_to_delete = bucket.list_blobs(prefix=prefix_b)
+        if len(blobs_to_delete):
+            blob_names_to_delete = set([ b.name for b in blobs_to_delete ])
+            logger.info('deleting blobs: {}'.format(blob_names_to_delete))
+            with ctx.gcs_client.batch():
+                for blob in blobs_to_delete:
+                    blob.delete()
 
 
-def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1):
-    all_downloaders = get_all_downloaders(params, Context())
-    if mode == Mode.COMPS:
-        return {d.name:{'desc': d.desc,
-                        'filename': d.csv_filename,
-                        'lgd_location': '{} --> {}'.format(d.section, d.dropdown)} for d in all_downloaders}
-    if mode == Mode.DEPS:
-        return {d.name:d.deps for d in all_downloaders}
+def get_version_text():
+    cmd = 'git describe --tags --dirty --always'
+    (status, output) = subprocess.getstatusoutput(cmd)
+    if status != 0:
+        return 'unknown'
+    return output
 
-    if mode == Mode.RUN:
-        CaptchaHelper.prepare()
-        dmap = {d.name:d for d in all_downloaders}
-        graph = {d.name:d.deps for d in all_downloaders}
 
+def get_license_txt():
+    date = datetime.today()
+    date_year = date.strftime("%Y")
+    date_ddmm = date.strftime("%d%m")
+    license_txt = f"""
+    Government Open Data License – India
+    
+    Copyright (c) Ministry of Panchayati Raj, {date_year}, Local Government Directory, {date_ddmm}, https://lgdirectory.gov.in/
+    
+    Terms and Conditions of Use of Data
+    
+    a . Attribution: The user must acknowledge the provider, source, and license of data by explicitly publishing the attribution statement11, including the DOI (Digital Object Identifier), or the URL (Uniform Resource Locator), or the URI (Uniform Resource Identifier) of the data concerned.
+    
+    b . Attribution of Multiple Data: If the user is using multiple data together and/or listing of sources of multiple data is not possible, the user
+    may provide a link to a separate page/list that includes the attribution statements and specific URL/URI of all data used.
+    
+    c . Non-endorsement: The user must not indicate or suggest in any manner that the data provider(s) endorses their use and/or the user.
+    
+    d . No Warranty: The data provider(s) are not liable for any errors or omissions, and will not under any circumstances be liable for any direct, indirect, special, incidental, consequential, or other loss, injury or damage caused by its use or otherwise arising in connection with this license or the data, even if specifically advised of the possibility of such loss, injury or damage. Under any circumstances, the user may not hold the data provider(s) responsible for: i) any error, omission or loss of data, and/or ii) any undesirable consequences due to the use of the data as part of an application/product/service (including violation of any prevalent law).
+    
+    e . Continuity of Provision: The data provider(s) will strive for continuously updating the data concerned, as new data regarding the same becomes available. However, the data provider(s) do not guarantee the continued supply of updated or up-to-date versions of the data, and will not be held liable in case the continued supply of updated data is not provided.
+    
+    https://data.gov.in/government-open-data-license-india
+    """
+    return license_txt
+
+def archive_all_data(downloaders):
+    logger.info('archiving all data')
+    if len(downloaders) == 0:
+        logger.error('downloader list provided for archiving is empty')
+        return False
+
+    ctx = downloaders[0].ctx
+    params = ctx.params
+    filenames = [ x.get_filename() for x in downloaders ]
+    base_raw_dir = params.base_raw_dir
+
+    date_str = get_date_str()
+    zip_filename = f'{base_raw_dir}/{date_str}.zip'
+
+    if params.enable_gcs:
+        blob_name = get_blobname_from_filename(zip_filename, params)
+        bucket_name = params.gcs_archive_bucket_name
+        try:
+            bucket = ctx.gcs_client.get_bucket(bucket_name)
+        except NotFound:
+            logger.info(f'Creating bucket {bucket_name}')
+            bucket = ctx.gcs_client.create_bucket(bucket_name, location='ASIA-SOUTH1')
+            bucket.make_public(future=True)
+
+        blob = bucket.blob(blob_name)
+        if blob.exists():
+            logger.info(f'blob {blob_name} already exists, shortcircuiting..')
+            return True
+
+    if Path(zip_filename).exists():
+        if not params.enable_gcs:
+            logger.info(f'{zip_filename} already exists, shortcircuiting..')
+            return True
+    else:
+        missing = []
+        for filename in filenames:
+            path = Path(filename)
+            if not path.exists():
+                missing.append(filename)
+        if len(missing):
+            logger.error(f'missing files for archiving: {missing}')
+            return False
+
+        data_license_file = str(Path(params.base_raw_dir).joinpath(get_date_str(), 'DATA_LICENSE'))
+        with open(data_license_file, 'w') as f:
+            f.write(get_license_txt())
+        code_version_file = str(Path(params.base_raw_dir).joinpath(get_date_str(), 'CODE_VERSION'))
+        with open(code_version_file, 'w') as f:
+            f.write(get_version_text())
+
+
+        filenames.append(data_license_file)
+
+        logger.info(f'Creating zipfile {zip_filename} for archiving')
+        with ZipFile(zip_filename, 'w', ZIP_LZMA) as zip_obj:
+            for filename in filenames:
+                path = Path(filename)
+                arcname = '/{}/{}'.format(date_str, path.name)
+                zip_obj.write(filename, arcname)
+        logger.info('Done creating zipfile for archiving')
+
+
+    if not params.enable_gcs:
+        return True
+
+    zip_filesize = naturalsize(Path(zip_filename).stat().st_size)
+    logger.info(f'uploading blob {blob_name}, size: {zip_filesize}')
+    blob.upload_from_filename(filename=zip_filename, **get_gcs_upload_args(params))
+    return True
+
+
+def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1, use_procs=False):
+    ctx = Context(params)
+    all_downloaders = get_all_downloaders(ctx)
+    dmap = {d.name:d for d in all_downloaders}
+    graph = {d.name:d.deps for d in all_downloaders}
+
+    if mode != Mode.COMPS or mode != Mode.DEPS:
         all_comp_names = set([d.name for d in all_downloaders])
         if len(comps_to_not_run) == 0:
             if len(comps_to_run) == 0:
@@ -131,75 +293,80 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
             overriden = comps_to_run_expanded.intersection(comps_to_not_run)
             if len(overriden):
                 logger.warning(f'comps {overriden} going to run despite exclusion')
-        
+ 
+
+    if mode == Mode.COMPS:
+        return {d.name:{'desc': d.desc,
+                        'filename': d.csv_filename,
+                        'lgd_location': '{} --> {}'.format(d.section, d.dropdown)} for d in all_downloaders}
+    if mode == Mode.DEPS:
+        return graph
+
+    if mode == Mode.STATUS:
+        status = {}
+        for d in all_downloaders:
+            if d.name not in comps_to_run_expanded:
+                continue
+            logger.debug('getting status for {}'.format(d.name))
+            if d.is_done():
+                status[d.name] = 'COMPLETE'
+            else:
+                try:
+                    childs = d.get_child_downloaders()
+                    status[d.name] = {}
+                    for c in childs:
+                        status[d.name][c.name] = 'COMPLETE' if c.is_done() else 'INCOMPLETE'
+                except NotReadyException:
+                    childs = []
+
+                if len(childs) == 0:
+                    status[d.name] = 'INCOMPLETE'
+        return status
+
+
+    if mode == Mode.CLEANUP:
+        for downloader in all_downloaders:
+            if downloader.name not in comps_to_run_expanded:
+                continue
+            try:
+                childs = downloader.get_child_downloaders()
+            except NotReadyException:
+                childs = []
+
+            if len(childs) and downloader.is_done():
+                downloader.cleanup()
+
+        return { 'cleanup': True } 
+
+
+    if mode == Mode.RUN or mode == Mode.BEAM_RUN:
+        # pull all the captcha related model files
+        CaptchaHelper.prepare(params.captcha_model_dir)
 
         logger.info(f'going to run comps: {comps_to_run_expanded}')
         graph_to_run = {d.name:d.deps for d in all_downloaders if d.name in comps_to_run_expanded}
-        set_context(params)
 
-        ts = TopologicalSorter(graph_to_run)
-        ts.prepare()
-        fut_to_comp = {}
-        comps_in_transit = set()
-        comps_in_error = set()
-        comps_done = set()
-        has_changes = True
-        with ThreadPoolExecutor(max_workers=num_parallel) as executor:
-            # prime the threads with seperate contexts
-            prime_thread_contexts(params, executor)
-  
-            # evaluate downloaders in topological sort order
-            while ts.is_active():
-                if not has_changes:
-                    #TODO: check this logic
-                    logger.error('No progress made. stopping')
-                    break
-                has_changes = False
-                for comp in ts.get_ready():
-                    if comp in comps_in_transit or comp in comps_in_error:
-                        continue
-                    downloader = dmap[comp]
-                    downloader.set_context(local_data.ctx)
-                    childs = downloader.get_child_downloaders()
-                    if len(childs) != 0:
-                        fut = Future()
-                        fut.set_running_or_notify_cancel()
-                        joiner = Joiner(fut, set([x.name for x in childs]), downloader)
-                        for child in childs:
-                            child_fut = executor.submit(download, child)
-                            done_cb = joiner.get_checker(child.name)
-                            child_fut.add_done_callback(done_cb)
-                    else:
-                        fut = executor.submit(download, downloader)
-                    fut_to_comp[fut] = comp
-                    comps_in_transit.add(comp)
+        if mode == Mode.RUN:
+            comps_done, comps_in_error = run_on_threads(graph_to_run, dmap, num_parallel, use_procs, params)
+        else:
+            from .beam_helper import run_on_beam
+            comps_done, comps_in_error = run_on_beam(comps_to_run_expanded, params, num_parallel)
 
-
-                done, not_done = wait(fut_to_comp, return_when=FIRST_COMPLETED)
-                for fut in done:
-                    has_changes = True
-                    has_errors = False
-                    comp = fut_to_comp[fut]
-                    try:
-                        fut.result()
-                    except Exception:
-                        logger.exception('comp {} failed'.format(comp))
-                        has_errors = True
-
-                    del fut_to_comp[fut]
-                    comps_in_transit.remove(comp)
-                    if not has_errors:
-                        ts.done(comp)
-                        comps_done.add(comp)
-                    else:
-                        comps_in_error.add(comp)
+        
+        if params.archive_data:
+            success = archive_all_data(all_downloaders)
+            log_level = logging.INFO if success else logging.ERROR
+            log_msg = 'archiving {}'.format('successful' if success else 'failed')
+            logger.log(log_level, log_msg)
+            if success:
+                delete_raw_data(ctx)
 
         return { 'done': comps_done, 'error': comps_in_error, 'left': comps_to_run_expanded - (comps_done | comps_in_error) }
 
 
+
 if __name__ == '__main__':
     import argparse
-    from colorlog import ColoredFormatter
 
     class SmartFormatter(argparse.ArgumentDefaultsHelpFormatter):
         def _split_lines(self, text, width):
@@ -237,49 +404,55 @@ if __name__ == '__main__':
     parser.add_argument('-F', '--save-failed-captchas', help='save all captchas which we failed for', action='store_true')
 
     parser.add_argument('-p', '--parallel', help='number of parallel downloads', type=int)
+    parser.add_argument('--use-procs', help='use multiple processes for parllel downloads', action='store_true')
     parser.add_argument('-D', '--base-raw-dir', help='directory to write data to, will be created if it doesn\'t exist', type=str)
+    parser.add_argument('--captcha-model-dir', help='location of the directory with tesseract models', type=str)
+    parser.add_argument('--archive-data', help='archive data into a zip file and delete the staging files', action='store_true')
+
     parser.add_argument('-g', '--enable-gcs', help='R|enable writing to gcs, base-raw-dir is used as staging area for the data,\n' +
                                                    ' credentials need to be made available through the GOOGLE_APPLICATION_CREDENTIALS env variable', action='store_true')
-    parser.add_argument('-B', '--gcs-bucket-name', help='which bucket to write to in gcs', type=str)
+    parser.add_argument('-B', '--gcs-bucket-name', help='which bucket to write raw data to in gcs', type=str)
+    parser.add_argument('--gcs-archive-bucket-name', help='which bucket to write archived data to in gcs', type=str)
+    parser.add_argument('--gcs-upload-timeout', help='timeout in secs for upload to gcs', type=float)
+    parser.add_argument('--gcs-upload-retry-deadline', help='max deadline in secs for upload to gcs', type=float)
+    parser.add_argument('--gcs-upload-retry-initial', help='initial delay in secs for retrying upload to gcs', type=float)
+    parser.add_argument('--gcs-upload-retry-maximum', help='maximum delay in secs for retrying upload to gcs', type=float)
+    parser.add_argument('--gcs-upload-retry-multiplier', help='multiplier to increase delay between various retries to upload to gcs', type=float)
+
     parser.add_argument('-l', '--log-level', help='Set the logging level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], type=str)
     parser.set_defaults(**default_params_dict)
 
-    args = parser.parse_args()
+    args, leftover = parser.parse_known_args()
     log_level = args.log_level
     comps_to_run = args.comp
     comps_to_not_run = args.no_comp
-    mode = Mode[args.mode]
     num_parallel = args.parallel
+    use_procs = args.use_procs
 
     if len(comps_to_run) and len(comps_to_not_run):
         raise Exception("Can't specify bot comps to tun and not run")
 
-    formatter = ColoredFormatter("%(log_color)s%(asctime)s [%(levelname)+8s][%(threadName)s] %(message)s",
-                                 datefmt='%Y-%m-%d %H:%M:%S',
-	                             reset=True,
-	                             log_colors={
-	                             	'DEBUG':    'cyan',
-	                             	'INFO':     'green',
-	                             	'WARNING':  'yellow',
-	                             	'ERROR':    'red',
-	                             	'CRITICAL': 'red',
-	                             },
-	                             secondary_log_colors={},
-	                             style='%')
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-    logging.basicConfig(level=log_level, handlers=[handler])
+    setup_logging(log_level)
+
+    mode = Mode[args.mode]
+    if leftover:
+        msg = 'unrecognized arguments: {}'.format(' '.join(leftover))
+        if mode == Mode.BEAM_RUN:
+            logger.warning(msg)
+        else:
+            parser.error(msg)
 
     args_dict = vars(args)
-    logger.info(f'Running with args: {args_dict}')
+    logger.debug(f'Running with args: {args_dict}')
 
     del args_dict['log_level']
     del args_dict['comp']
     del args_dict['mode']
     del args_dict['parallel']
+    del args_dict['use_procs']
 
     params = Params()
     params.__dict__ = args_dict
 
-    ret = run(params, mode, set(comps_to_run), set(comps_to_not_run), num_parallel)
+    ret = run(params, mode, set(comps_to_run), set(comps_to_not_run), num_parallel, use_procs)
     pprint(ret)

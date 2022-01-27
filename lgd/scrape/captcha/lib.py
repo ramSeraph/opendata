@@ -357,15 +357,11 @@ def add_base_data(char_images):
             char_entry['below'] = False
 
 
-tessdir_base = os.path.dirname(__file__)
-if tessdir_base == '':
-    tessdir_base = '.'
+def guess(filename, models_dir):
+    tessdir_base = models_dir
 
-tessdir_old = tessdir_base + '/models/old'
-tessdir_new = tessdir_base + '/models/lstm'
-
-def guess(filename):
-    print_l('tessdir: {}'.format(tessdir_base))
+    tessdir_old = tessdir_base + '/old'
+    tessdir_new = tessdir_base + '/lstm'
 
     image = Image.open(filename)
     #print_image(image)

@@ -1,7 +1,10 @@
 import re
 import io
+import os
+import csv
 import copy
 import time
+import shutil
 import logging
 
 from pathlib import Path
@@ -11,7 +14,9 @@ from datetime import datetime, timedelta
 
 from .base import (INCORRECT_CAPTCHA_MESSAGE,
                    BaseDownloader, MultiDownloader, 
-                   DownloaderItem, get_date_str)
+                   DownloaderItem, add_defaults_to_args,
+                   RUN_FOR_PREV_DAY,
+                   get_blobname_from_filename)
 from .conversion_helper import records_from_excel
 
 logger = logging.getLogger(__name__)
@@ -31,30 +36,25 @@ def merge_url_query_params(url, additional_params):
 
 
 class ReportDownloader(BaseDownloader):
-    def __init__(self,
-                 sub_url='',
-                 post_data={},
-                 query_data={},
-                 oprand_data_extra={},
-                 allow_empty=False,
-                 **kwargs):
+    def __init__(self, **kwargs):
+        kwargs = add_defaults_to_args({ 'sub_url': '',
+                                        'post_data': {},
+                                        'query_data': {},
+                                        'oprand_data_extra': {},
+                                        'allow_empty': False }, kwargs)
         kwargs['section'] = 'Reports'
-        self.sub_url = sub_url
-        self.post_data = post_data
-        self.query_data = query_data
-        self.allow_empty = allow_empty
-        self.oprand_data_extra = oprand_data_extra
+        self.sub_url = kwargs['sub_url']
+        self.post_data = kwargs['post_data']
+        self.query_data = kwargs['query_data']
+        self.allow_empty = kwargs['allow_empty']
+        self.oprand_data_extra = kwargs['oprand_data_extra']
         super().__init__(**kwargs)
-
-    def set_context(self, ctx):
-        if ctx.csrf_token is not None:
-            self.post_data['OWASP_CSRFTOKEN'] = ctx.csrf_token
-            self.query_data['OWASP_CSRFTOKEN'] = ctx.csrf_token
-        super().set_context(ctx)
 
     def get_records(self):
         report_base_url = '{}/{}'.format(self.base_url, self.sub_url)
-        q_str = urlencode(self.query_data)
+        query_data = copy.copy(self.query_data)
+        query_data['OWASP_CSRFTOKEN'] = self.ctx.csrf_token
+        q_str = urlencode(query_data)
         referer_url = '{}?{}'.format(report_base_url, q_str)
         post_headers = {
             'referer': referer_url,
@@ -67,13 +67,14 @@ class ReportDownloader(BaseDownloader):
     
             post_form_data = copy.copy(self.post_data)
             post_form_data.update({
+                'OWASP_CSRFTOKEN': self.ctx.csrf_token,
                 'captchaAnswer': captcha_code
             })
             logger.debug('posting with captcha to {}'.format(report_base_url))
             web_data = self.ctx.session.post(report_base_url,
                                              data=post_form_data,
                                              headers=post_headers,
-                                             **self.params.request_args())
+                                             **self.ctx.params.request_args())
             if not web_data.ok:
                 raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
     
@@ -141,7 +142,7 @@ class ReportDownloader(BaseDownloader):
         web_data = self.ctx.session.post(birt_url,
                                          data=birt_form_data,
                                          headers=birt_headers,
-                                         **self.params.request_args())
+                                         **self.ctx.params.request_args())
         if not web_data.ok:
             if web_data.status_code == 404:
                 return None, None, None
@@ -157,9 +158,6 @@ class ReportDownloader(BaseDownloader):
     
         session_id = match.group(1)
         logger.debug('got session id: {}'.format(session_id))
-        #cookies = web_data.headers['Set-Cookie']
-        #cookie = cookies.split(';')[0]
-        #cookie = cookie.replace(',', ';')
     
         oprand_data = {}
         soup = BeautifulSoup(web_data.text, 'html.parser')
@@ -216,7 +214,6 @@ class ReportDownloader(BaseDownloader):
         </soap:Envelope>
         """.format(session_id)
     
-        #headers['Cookie'] = '{}; {}'.format(cookie, headers['Cookie'])
         headers = {
             'referer': birt_url,
             'Content-Type': 'text/xml; charset=UTF-8; charset=UTF-8',
@@ -232,7 +229,7 @@ class ReportDownloader(BaseDownloader):
         web_data = self.ctx.session.post(soap_url_full,
                                          data=soap_body,
                                          headers=headers,
-                                         **self.params.request_args())
+                                         **self.ctx.params.request_args())
         if not web_data.ok:
             raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
 
@@ -266,7 +263,7 @@ class StateWiseReportDownloader(MultiDownloader, ReportDownloader):
     def __init__(self, **kwargs):
         if 'enrichers' not in kwargs:
             kwargs['enrichers'] = { 'State Code': 'State Code',
-                                    'State Name': 'State Name(In English)' }
+                                    'State Name': 'State Name (In English)' }
 
         if 'deps' not in kwargs:
             kwargs['deps'] = []
@@ -282,16 +279,15 @@ class StateWiseReportDownloader(MultiDownloader, ReportDownloader):
         downloader_items = []
         for r in BaseDownloader.records_from_downloader('STATES'):
             state_code = r['State Code']
-            state_name = r['State Name(In English)']
+            state_name = r['State Name (In English)']
 
             csv_path = Path(self.csv_filename)
-            csv_filename_s = str(csv_path.with_stem('{}_{}'.format(csv_path.stem, state_code)))
+            csv_filename_s = '{}_{}{}'.format(csv_path.stem, state_code, csv_path.suffix)
             downloader = ReportDownloader(name='{}_{}'.format(self.name, state_code),
                                           desc='{} for state {}({})'.format(self.desc, state_name, state_code),
                                           csv_filename=csv_filename_s,
                                           sub_url=self.sub_url,
                                           allow_empty=self.allow_empty,
-                                          params=self.params,
                                           ctx=self.ctx,
                                           post_data={
                                               'entityname': state_code,
@@ -304,63 +300,115 @@ class StateWiseReportDownloader(MultiDownloader, ReportDownloader):
         self.downloader_items = downloader_items
 
 
-class DateWiseReportDownloader(MultiDownloader, ReportDownloader):
-    def __init__(self,
-                 num_dates=0,
-                 **kwargs):
+class ChangesReportDownloader(MultiDownloader, ReportDownloader):
+    def __init__(self, **kwargs):
+        kwargs = add_defaults_to_args({'num_dates': 0 }, kwargs)
         if 'enrichers' not in kwargs:
             kwargs['enrichers'] = { 'date': 'date' }
-        if 'delete_intermediates' not in kwargs:
-            kwargs['delete_intermediates'] = False
         super().__init__(**kwargs)
-        self.max_delta = num_dates
+        self.max_delta = kwargs['num_dates']
+        self.prev_changes_filename = str(Path(self.ctx.params.base_raw_dir).joinpath('changes', 'combined.csv'))
+        self.date_list_filename = str(Path(self.ctx.params.base_raw_dir).joinpath('changes', 'dates_covered.txt'))
+        self.covered_dates = set()
 
     def populate_downloaders(self):
         if self.downloader_items is not None:
             return
+
+        if self.ctx.params.enable_gcs:
+            if not Path(self.date_list_filename).exists():
+                self.download_from_gcs(self.date_list_filename,
+                                       get_blobname_from_filename(self.date_list_filename, self.ctx.params),
+                                       ignore_not_found=True)
+ 
+        if Path(self.date_list_filename).exists():
+            with open(self.date_list_filename, 'r') as f:
+                dates = f.readlines()
+                dates = [ d.strip() for d in dates ]
+            for d in dates:
+                self.covered_dates.add(d)
+
         today = datetime.today()
+        if RUN_FOR_PREV_DAY:
+            today = today - timedelta(days=RUN_FOR_PREV_DAY)
         delta = 0
 
         downloader_items = []
         while delta < self.max_delta:
             old_date = today - timedelta(days=delta)
             old_date_str = old_date.strftime("%d-%m-%Y")
+            delta += 1
+            if old_date_str in self.covered_dates:
+                continue
             prev_date = old_date - timedelta(days=1)
             prev_date_str = prev_date.strftime("%d-%m-%Y")
 
             csv_path = Path(self.csv_filename)
-            csv_filename_s = str(csv_path.with_stem('{}'.format(old_date_str)))
-            #TODO: too specific to changes and convoluted
-            full_path = Path('changes').joinpath(f'{old_date_str}.csv')
+            csv_filename_s = '{}_{}{}'.format(csv_path.stem, old_date_str, csv_path.suffix)
             downloader = ReportDownloader(name='{}_{}'.format(self.name, old_date_str),
                                           desc='{} for date {}'.format(self.desc, old_date_str),
                                           sub_url=self.sub_url,
                                           csv_filename=csv_filename_s,
-                                          full_filename=str(full_path),
-                                          params=self.params,
                                           ctx=self.ctx,
                                           post_data={
                                               'fromDate': prev_date_str,
                                               'toDate': old_date_str,
                                               'fromDates': prev_date_str,
                                               'toDates': old_date_str
-                                          },
-                                          enrichers={
-                                              'date': get_date_str(prev_date)
                                           })
             downloader_items.append(DownloaderItem(downloader=downloader, record={'date': old_date_str}))
-            delta += 1
         self.downloader_items = downloader_items
 
+    def combine_records(self):
+        all_records = super().combine_records()
 
-def get_all_report_downloaders(params, ctx):
+        if self.ctx.params.enable_gcs and not Path(self.prev_changes_filename).exists():
+            self.download_from_gcs(self.prev_changes_filename,
+                                   get_blobname_from_filename(self.prev_changes_filename, self.ctx.params),
+                                   ignore_not_found=True)
+        if Path(self.prev_changes_filename).exists():
+            with open(self.prev_changes_filename) as f:
+                reader = csv.DictReader(f, delimiter=';')
+                for r in reader:
+                    all_records.append(r)
+        return all_records
+
+    def cleanup(self):
+        covered_dates = copy.copy(self.covered_dates)
+        for ditem in self.downloader_items:
+            date = ditem.record['date']
+            covered_dates.add(date)
+
+        logger.info(f'writing file {self.prev_changes_filename}')
+        dirname = os.path.dirname(self.prev_changes_filename)
+        if dirname != '':
+            os.makedirs(dirname, exist_ok=True)
+        shutil.copy2(self.get_filename(), self.prev_changes_filename)
+
+        logger.info(f'writing file {self.date_list_filename}')
+        dirname = os.path.dirname(self.date_list_filename)
+        if dirname != '':
+            os.makedirs(dirname, exist_ok=True)
+        with open(self.date_list_filename, 'w') as f:
+            for date in covered_dates:
+                f.write(date + '\n')
+
+        if self.ctx.params.enable_gcs:
+            bucket = self.ctx.gcs_client.get_bucket(self.ctx.params.gcs_bucket_name)
+            bucket.copy_blob(bucket.blob(self.get_blobname()),
+                             bucket,
+                             get_blobname_from_filename(self.prev_changes_filename, self.ctx.params))
+            self.upload_to_gcs(self.date_list_filename, get_blobname_from_filename(self.date_list_filename, self.ctx.params), force=True)
+
+
+
+def get_all_report_downloaders(ctx):
     downloaders = []
     downloaders.append(ReportDownloader(name='INVALIDATED_VILLAGES',
                                         desc='list of all invalidated census villages',
                                         dropdown='Exceptional Reports --> Invalidated Census villages',
                                         csv_filename='invalidated_census_villages.csv',
                                         sub_url='exceptionalReports.do',
-                                        params=params,
                                         ctx=ctx,
                                         post_data={
                                             'reportName': 'Invalidated Census villages',
@@ -376,15 +424,13 @@ def get_all_report_downloaders(params, ctx):
                                                  dropdown='NOFN Panchayat List',
                                                  csv_filename='nofn_panchayats.csv',
                                                  sub_url='nofnStates.do',
-                                                 params=params,
                                                  ctx=ctx))
-    downloaders.append(DateWiseReportDownloader(name='CHANGES',
-                                                desc='all changes to entities in LGD',
-                                                dropdown='List of Modification done in LGD',
-                                                csv_filename='changes.csv',
-                                                sub_url='changedEntity.do',
-                                                params=params,
-                                                ctx=ctx,
-                                                num_dates=4000))
+    downloaders.append(ChangesReportDownloader(name='CHANGES',
+                                               desc='all changes to entities in LGD',
+                                               dropdown='List of Modification done in LGD',
+                                               csv_filename='changes.csv',
+                                               sub_url='changedEntity.do',
+                                               ctx=ctx,
+                                               num_dates=4000))
 
     return downloaders

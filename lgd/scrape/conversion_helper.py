@@ -4,6 +4,8 @@ import logging
 import xml.etree.ElementTree as ET
 import odf.opendocument
 
+from lxml import etree
+from bs4 import BeautifulSoup
 from zipfile import ZipFile
 from xlsx2csv import Xlsx2csv
 from odf.table import Table, TableRow, TableCell
@@ -15,13 +17,21 @@ def normalize(k):
     return ' '.join(k.split())
 
 
-def convert_to_dicts(rows):
-    if len(rows) < 2:
+def convert_to_dicts(rows, header_row_span=1):
+    if len(rows) < header_row_span + 1:
         return []
-    keys_row = [normalize(k) for k in rows[0]]
+
+    def str_joiner(*args):
+        return '\n'.join(args)
+
+    key_rows = rows[:header_row_span]
+    logger.debug(rows[:4])
+    keys_row = map(str_joiner, *key_rows)
+    keys_row = [normalize(k) for k in keys_row]
+    logger.debug(keys_row)
 
     dicts = []
-    for row in rows[1:]:
+    for row in rows[header_row_span:]:
         extra_len = len(keys_row) - len(row)
         row += [''] * extra_len
         d = dict(zip(keys_row, row))
@@ -46,7 +56,10 @@ def cell_tag(ns_map):
 def data_tag(ns_map):
     return fix_tag('ss', 'Data', ns_map)
 
-def records_from_excel(excel_file):
+def index_tag(ns_map):
+    return fix_tag('ss', 'Index', ns_map)
+
+def records_from_excel(excel_file, header_row_span=1):
     logger.debug('parsing excel file')
     records = []
     ns_map = {}
@@ -103,6 +116,10 @@ def records_from_excel(excel_file):
             in_cell = True
             continue
         if event == 'end' and elem.tag == cell_tag(ns_map):
+            cell_index = int(elem.attrib[index_tag(ns_map)]) - 1
+            len_to_fill = cell_index - len(values)
+            if len_to_fill:
+                values.extend([''] * len_to_fill)
             values.append(data)
             data = ''
             elem.clear()
@@ -118,7 +135,7 @@ def records_from_excel(excel_file):
             continue
         if event == 'end':
             elem.clear()
-    return convert_to_dicts(records)
+    return convert_to_dicts(records, header_row_span)
 
 
 
@@ -165,7 +182,7 @@ class ODTTableReader:
                     continue
                 # repeated value?
                 repeat = cell.getAttribute("numbercolumnsrepeated")
-                if(not repeat):
+                if not repeat:
                     repeat = 1
                     spanned = int(cell.getAttribute('numbercolumnsspanned') or 0)
                     # clone spanned cells
@@ -254,3 +271,117 @@ def records_from_odt(input_file, drop_tables_front=2, drop_tables_back=0):
             records.append(row)
 
     return convert_to_dicts(records)
+
+
+def records_from_htm_heavy(input_file):
+    out_rows = []
+    soup = BeautifulSoup(input_file.read())
+    data_table = soup.find('table', { 'id': '__bookmark_2' })
+    rows = data_table.find_all('tr')
+    for i, row in enumerate(rows):
+        tag_name = 'th' if i == 0 else 'td'
+        out_cells = []
+        cols = row.find_all(tag_name, recursive=False)
+        for col in cols:
+            data_strs = []
+            divs = col.find_all('div', recursive=False)
+            for div in divs:
+                data_strs.append(str(div.contents[0]))
+            out_cells.append('\n'.join(data_strs))
+        #pprint(out_cells)
+        out_rows.append(out_cells)
+        row.decompose()
+    return convert_to_dicts(out_rows)
+
+
+def records_from_htm(html_file):
+    records = []
+    in_table = False
+    in_row = False
+    in_cell = False
+    in_div = False
+    cell_tag = 'th'
+    values = []
+    data_strs = []
+    for event, elem in etree.iterparse(html_file, events=('start', 'end'), html=True):
+        #print(event, elem.tag)
+
+        if event == 'start' and elem.tag == 'table':
+            if 'id' not in elem.attrib or elem.attrib['id'] != '__bookmark_2':
+                continue
+            #print('starting table')
+            in_table = True
+            continue
+        if event == 'end' and elem.tag == 'table':
+            in_table = False
+            cell_tag = 'th'
+            elem.clear()
+            continue
+        if not in_table:
+            if event == 'end':
+                elem.clear()
+            continue
+
+        if event == 'start' and elem.tag == 'tr':
+            in_row = True
+            #print('starting row')
+            continue
+        if event == 'end' and elem.tag == 'tr':
+            in_row = False
+            elem.clear()
+            #print("got row: {}".format(values))
+            empty = True
+            for value in values:
+                if value != '':
+                    empty = False
+                    break
+            # process row
+            if len(values) > 1 and not empty:
+                records.append(values)
+            values = []
+            if cell_tag == 'th':
+                cell_tag = 'td'
+            continue
+        if not in_row:
+            if event == 'end':
+                elem.clear()
+            continue
+
+        if event == 'start' and elem.tag == cell_tag:
+            #print('starting tag: {}'.format(elem.tag))
+            in_cell = True
+            continue
+        if event == 'end' and elem.tag == cell_tag:
+            values.append('\n'.join(data_strs))
+            data_strs = []
+            elem.clear()
+            in_cell = False
+            continue
+        if not in_cell:
+            if event == 'end':
+                elem.clear()
+            continue
+
+        if event == 'start' and elem.tag == 'div':
+            in_div = True
+            continue
+        if event == 'end' and elem.tag == 'div':
+            #print('div data', elem.attrib, 'text', elem.text, 'iter', list(elem.itertext()))
+            if elem.get('style', None) != 'visibility:hidden':
+                data_strs.extend([ x.strip() for x in elem.itertext() ])
+            in_div = False
+            elem.clear()
+            continue
+        if not in_div:
+            if event == 'end':
+                elem.clear()
+            continue
+
+        if elem.tag == 'br':
+            continue
+
+        if event == 'end':
+            elem.clear()
+    return convert_to_dicts(records)
+
+

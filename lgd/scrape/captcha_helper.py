@@ -13,8 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class CaptchaHelper:
-    def __init__(self, params, ctx, base_url):
-        self.params = params
+    def __init__(self, ctx, base_url):
         self.ctx = ctx
         self.last_captcha = None
         self.base_url = base_url
@@ -41,15 +40,16 @@ class CaptchaHelper:
 
     def mark_failure(self):
         logger.warning('captcha guess failed')
-        if self.params.save_all_captchas or self.params.save_failed_captchas:
+        params = self.ctx.params
+        if params.save_all_captchas or params.save_failed_captchas:
             self.save_last_captcha()
 
-        if self.params.print_captchas and logger.isEnabledFor(logging.DEBUG):
+        if params.print_captchas and logger.isEnabledFor(logging.DEBUG):
             print_buf()
         
     
     def mark_success(self):
-        if self.params.save_all_captchas:
+        if self.ctx.params.save_all_captchas:
             self.save_last_captcha()
         reset_buf()
     
@@ -60,7 +60,8 @@ class CaptchaHelper:
     
         logger.debug('parsing captcha')
         temp_file = io.BytesIO(captcha_content)
-        captcha_code = guess(temp_file)
+        params = self.ctx.params
+        captcha_code = guess(temp_file, params.captcha_model_dir)
         logger.info('captcha code is: {}'.format(captcha_code))
         return captcha_code
 
@@ -74,15 +75,15 @@ class CaptchaHelper:
                                         headers={
                                             'referer': referer,
                                         },
-                                        **self.params.request_args())
+                                        **self.ctx.params.request_args())
         if not web_data.ok:
             raise ValueError('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
         logger.info('got captcha image')
         return copy.copy(web_data.content)
 
-    def prepare():
-        models_path = Path(__file__).parent.joinpath('captcha', 'models')
-        
+    def prepare(models_pathname):
+
+        models_path = Path(models_pathname)
         # hardcoding list of files here so as to not hit the network everytime
         paths = []
         paths.append(models_path.joinpath('lstm', 'eng.traineddata'))

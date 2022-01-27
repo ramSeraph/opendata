@@ -8,7 +8,7 @@ from calmjs.parse.unparsers.extractor import ast_to_dict
 from calmjs.parse.asttypes import FunctionCall
 
 from .base import (DownloaderItem, BaseDownloader,
-                   MultiDownloader)
+                   MultiDownloader, add_defaults_to_args)
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,6 @@ def get_fn_call_args(name, ast_dict):
 class DwrCaller:
     def __init__(self,
                  ctx=None,
-                 params=None,
                  base_url=None,
                  script_name='',
                  method_name='',
@@ -32,7 +31,6 @@ class DwrCaller:
                  fields_to_keep=[],
                  fields_to_drop=[]):
         self.ctx=ctx
-        self.params=params
         self.base_url=base_url
         self.script_name = script_name
         self.method_name = method_name
@@ -72,7 +70,7 @@ class DwrCaller:
                                          headers={
                                              'Content-Type': 'text/plain'
                                          },
-                                         **self.params.request_args())
+                                         **self.ctx.params.request_args())
         self.ctx.script_batch_id += 1
         if not web_data.ok:
             raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
@@ -151,28 +149,26 @@ class DwrCaller:
 
 
 class DwrDownloader(BaseDownloader):
-    def __init__(self,
-                 script_name='',
-                 method_name='',
-                 call_args={},
-                 fields_to_keep=[],
-                 fields_to_drop=[],
-                 **kwargs):
+    def __init__(self, **kwargs):
+        kwargs = add_defaults_to_args({ 'script_name': '',
+                                        'method_name':'',
+                                        'call_args': {},
+                                        'fields_to_keep': [],
+                                        'fields_to_drop': []}, kwargs)
         self.dwr_caller = None
         super().__init__(**kwargs)
-        self.script_name = script_name
-        self.method_name = method_name
-        self.call_args = call_args
-        self.fields_to_keep = fields_to_keep
-        self.fields_to_drop = fields_to_drop
-        self.dwr_caller = DwrCaller(params=self.params,
-                                    ctx=self.ctx,
+        self.script_name = kwargs['script_name']
+        self.method_name = kwargs['method_name']
+        self.call_args = kwargs['call_args']
+        self.fields_to_keep = kwargs['fields_to_keep']
+        self.fields_to_drop = kwargs['fields_to_drop']
+        self.dwr_caller = DwrCaller(ctx=self.ctx,
                                     base_url=self.base_url,
-                                    script_name=script_name,
-                                    method_name=method_name,
-                                    call_args=call_args,
-                                    fields_to_keep=fields_to_keep,
-                                    fields_to_drop=fields_to_drop)
+                                    script_name=self.script_name,
+                                    method_name=self.method_name,
+                                    call_args=self.call_args,
+                                    fields_to_keep=self.fields_to_keep,
+                                    fields_to_drop=self.fields_to_drop)
 
 
     def set_context(self, ctx):
@@ -190,7 +186,7 @@ class StateWiseDwrDownloader(MultiDownloader, DwrDownloader):
     def __init__(self, **kwargs):
         if 'enrichers' not in kwargs:
             kwargs['enrichers'] = { 'State Code': 'State Code',
-                                    'State Name': 'State Name(In English)' }
+                                    'State Name': 'State Name (In English)' }
         if 'deps' not in kwargs:
             kwargs['deps'] = []
         if 'STATES' not in kwargs['deps']:
@@ -205,14 +201,13 @@ class StateWiseDwrDownloader(MultiDownloader, DwrDownloader):
         downloader_items = []
         for r in BaseDownloader.records_from_downloader('STATES'):
             state_code = r['State Code']
-            state_name = r['State Name(In English)']
+            state_name = r['State Name (In English)']
 
             csv_path = Path(self.csv_filename)
-            csv_filename_s = str(csv_path.with_stem('{}_{}'.format(csv_path.stem, state_code)))
+            csv_filename_s = '{}_{}{}'.format(csv_path.stem, state_code, csv_path.suffix)
             downloader = DwrDownloader(name='{}_{}'.format(self.name, state_code),
                                        desc='{} for state {}({})'.format(self.desc, state_name, state_code),
                                        csv_filename=csv_filename_s,
-                                       params=self.params,
                                        ctx=self.ctx,
                                        script_name=self.script_name,
                                        method_name=self.method_name,
@@ -225,7 +220,7 @@ class StateWiseDwrDownloader(MultiDownloader, DwrDownloader):
         self.downloader_items = downloader_items
 
 
-def get_all_dwr_downloaders(params, ctx):
+def get_all_dwr_downloaders(ctx):
     downloaders = []
     downloaders.append(DwrDownloader(name='CENTRAL_ADMIN_DEPTS',
                                      desc='list of all central administrative departments',
@@ -241,7 +236,6 @@ def get_all_dwr_downloaders(params, ctx):
                                          'seqLevel',
                                          'slc'
                                      ],
-                                     params=params,
                                      ctx=ctx,
                                      call_args={
                                          'c0-param0': 'number:0'
@@ -261,7 +255,6 @@ def get_all_dwr_downloaders(params, ctx):
                                                   'seqLevel',
                                                   'slc'
                                               ],
-                                              params=params,
                                               ctx=ctx))
 
     return downloaders

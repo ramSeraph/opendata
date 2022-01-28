@@ -200,11 +200,11 @@ class MemoryTracker():
         size, peak = tracemalloc.get_traced_memory()
         size, peak = naturalsize(size), naturalsize(peak)
         logger.debug(f"[ memory size: {size}, peak: {peak} for {self.desc} ]")
-        final_snapshot = tracemalloc.take_snapshot()
-        top_stats = final_snapshot.compare_to(self.initial_snapshot, 'traceback')
-        logger.debug(f"[ Top 20 differences for {self.desc} ]")
-        for stat in top_stats[:20]:
-            logger.debug(stat)
+        #final_snapshot = tracemalloc.take_snapshot()
+        #top_stats = final_snapshot.compare_to(self.initial_snapshot, 'traceback')
+        #logger.debug(f"[ Top 20 differences for {self.desc} ]")
+        #for stat in top_stats[:20]:
+        #    logger.debug(stat)
 
 def get_gcs_upload_args(params):
     timeout = params.gcs_upload_timeout

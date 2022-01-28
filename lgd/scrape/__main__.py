@@ -352,7 +352,7 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
             from .beam_helper import run_on_beam
             comps_done, comps_in_error = run_on_beam(comps_to_run_expanded, params, num_parallel)
 
-        
+        result = { 'done': comps_done, 'error': comps_in_error, 'left': comps_to_run_expanded - (comps_done | comps_in_error) }
         if params.archive_data:
             success = archive_all_data(all_downloaders)
             log_level = logging.INFO if success else logging.ERROR
@@ -361,7 +361,8 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
             if success:
                 delete_raw_data(ctx)
 
-        return { 'done': comps_done, 'error': comps_in_error, 'left': comps_to_run_expanded - (comps_done | comps_in_error) }
+            result['archival_status'] = success
+        return result
 
 
 
@@ -456,3 +457,5 @@ if __name__ == '__main__':
 
     ret = run(params, mode, set(comps_to_run), set(comps_to_not_run), num_parallel, use_procs)
     pprint(ret)
+    if mode = Mode.RUN and params.archive_data and not ret['archival_status']:
+        exit(1)

@@ -50,8 +50,8 @@ jobs:
       - name: Download tesseract models from gcs
         if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
         run: |
-          echo "$INPUT_APPLICATION_CREDENTIALS" | base64 -d > /tmp/account.json
           gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
+          mkdir -p models/
           gsutil cp -r gs://lgd_captcha_tesseract_models/ models/
 
   Run-LGD-Extraction:
@@ -81,6 +81,12 @@ jobs:
         run: |
           echo "::error pip cache not found"
           exit 1
+
+      - name: Install tesseract OCR
+        run: |
+          sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr
 
       - name: Restore tesseract models from cache
         uses: actions/cache@v2
@@ -112,39 +118,26 @@ jobs:
           key:  'data-raw-changes-${{ steps.date.outputs.date }}'
         id: changes_cache
 
-      - name: Install tesseract OCR
+      - name: Authorize with GCP
         run: |
-          sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel
-          sudo apt-get update
-          sudo apt-get install -y tesseract-ocr
+          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
 
       - name: Download changes file from gcs
         if: ${{ steps.changes_cache.outputs.cache-hit != 'true' }}
-        uses: 'convictional/gcp-storage-action@v0.1.1'
-        with:
-          source_file: 'gs://lgd_data_raw/changes/*'
-          destination_file: 'data/raw/changes/'
-          application_credentials: ${{ secrets.GCP_AUTH }}
-          project_id: lgd-data
+        run: |
+          mkdir -p data/raw/changes
+          gsutil cp -r gs://lgd_data_raw/changes/ data/raw/changes/
 
       - name: Download LGD data
         run: python -m lgd.scrape -m RUN -l DEBUG -R 300 --use-procs -p 10 --archive-data --captcha-model-dir models
         timeout-minutes: 360
 
       - name: Upload archive file to gcs
-        uses: 'convictional/gcp-storage-action@v0.1.1'
-        with:
-          source_file: 'data/raw/${{ steps.date.outputs.date }}.zip'
-          destination_file: 'gs:///lgd_data_archive/'
-          application_credentials: ${{ secrets.GCP_AUTH }}
-          project_id: lgd-data
+        run: |
+          gsutil cp -r data/raw/${{ steps.date.outputs.date }}/ gs://lgd_data_archive/
 
       - name: Upload changes file to gcs
-        uses: 'convictional/gcp-storage-action@v0.1.1'
-        with:
-          source_file: 'data/raw/changes/*'
-          destination_file: 'gs://lgd_data_raw/changes/'
-          application_credentials: ${{ secrets.GCP_AUTH }}
-          project_id: lgd-data
+        run: |
+          gsutil cp -r data/raw/changes/ gs://lgd_data_raw/changes/
 
 

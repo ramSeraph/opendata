@@ -61,7 +61,8 @@ class Joiner:
                 self.has_errors = True
                 if isinstance(ex, BrokenProcessPool):
                     self.fatal_error = True
-                logger.exception('sub_call failed for comp: {}'.format(comp))
+                else:
+                    logger.exception('sub_call failed for comp: {}'.format(comp))
 
             self.pending_comps.remove(comp)
             if len(self.pending_comps) == 0:
@@ -128,9 +129,10 @@ def run_on_threads(graph, dmap, num_parallel, use_procs, params):
                 try:
                     fut.result()
                 except (Exception, BrokenProcessPool) as ex:
-                    logger.exception('comp {} failed'.format(comp))
                     if isinstance(ex, BrokenProcessPool):
                         fatal_error = True
+                    else:
+                        logger.exception('comp {} failed'.format(comp))
                     has_errors = True
 
                 del fut_to_comp[fut]
@@ -141,7 +143,7 @@ def run_on_threads(graph, dmap, num_parallel, use_procs, params):
                     comps_in_error.add(comp)
 
             if fatal_error:
-                logger.error('fatal error encountered.. closing task pool')
+                logger.error('Broken Pool encountered.. closing task pool')
                 break
 
     return comps_done, comps_in_error
@@ -407,24 +409,25 @@ if __name__ == '__main__':
 
     parser.add_argument('-R', '--read-timeout', help='http read timeout in secs', type=int)
     parser.add_argument('-C', '--connect-timeout', help='http connect timeout in secs', type=int)
-    parser.add_argument('-s', '--no-verify-ssl', help='don\'t verify ssl for connections', action='store_true')
+    parser.add_argument('--no-verify-ssl', help='don\'t verify ssl for connections', action='store_true')
     parser.add_argument('-r', '--http-retries', help='number of times to retry on http failure', type=int)
-    parser.add_argument('-b', '--progress-bar', help='show progress bar', action='store_true')
+    parser.add_argument('--progress-bar', help='show progress bar', action='store_true')
 
-    parser.add_argument('-P', '--print-captchas', help='print captchas on failure', action='store_true')
-    parser.add_argument('-H', '--save-failed-html', help='save html for failed requests', action='store_true')
-    parser.add_argument('-A', '--save-all-captchas', help='save all captchas encountered', action='store_true')
-    parser.add_argument('-F', '--save-failed-captchas', help='save all captchas which we failed for', action='store_true')
+    parser.add_argument('--print-captchas', help='print captchas on failure', action='store_true')
+    parser.add_argument('--save-failed-html', help='save html for failed requests', action='store_true')
+    parser.add_argument('--save-all-captchas', help='save all captchas encountered', action='store_true')
+    parser.add_argument('--save-failed-captchas', help='save all captchas which we failed for', action='store_true')
 
     parser.add_argument('-p', '--parallel', help='number of parallel downloads', type=int)
     parser.add_argument('--use-procs', help='use multiple processes for parllel downloads', action='store_true')
-    parser.add_argument('-D', '--base-raw-dir', help='directory to write data to, will be created if it doesn\'t exist', type=str)
+    parser.add_argument('--base-raw-dir', help='directory to write data to, will be created if it doesn\'t exist', type=str)
+    parser.add_argument('--temp-dir', help='directory to write temp data to, will be created if it doesn\'t exist', type=str)
     parser.add_argument('--captcha-model-dir', help='location of the directory with tesseract models', type=str)
     parser.add_argument('--archive-data', help='archive data into a zip file and delete the staging files', action='store_true')
 
-    parser.add_argument('-g', '--enable-gcs', help='R|enable writing to gcs, base-raw-dir is used as staging area for the data,\n' +
-                                                   ' credentials need to be made available through the GOOGLE_APPLICATION_CREDENTIALS env variable', action='store_true')
-    parser.add_argument('-B', '--gcs-bucket-name', help='which bucket to write raw data to in gcs', type=str)
+    parser.add_argument('--enable-gcs', help='R|enable writing to gcs, base-raw-dir is used as staging area for the data,\n' +
+                                             ' credentials need to be made available through the GOOGLE_APPLICATION_CREDENTIALS env variable', action='store_true')
+    parser.add_argument('--gcs-bucket-name', help='which bucket to write raw data to in gcs', type=str)
     parser.add_argument('--gcs-archive-bucket-name', help='which bucket to write archived data to in gcs', type=str)
     parser.add_argument('--gcs-upload-timeout', help='timeout in secs for upload to gcs', type=float)
     parser.add_argument('--gcs-upload-retry-deadline', help='max deadline in secs for upload to gcs', type=float)

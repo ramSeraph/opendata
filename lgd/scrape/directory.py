@@ -1,6 +1,5 @@
 import os
 import os.path
-import io
 import time
 import copy
 import logging
@@ -51,6 +50,22 @@ class DirectoryDownloader(BaseDownloader):
         super().__init__(**kwargs)
 
 
+    def get_temp_file(self, content, ext):
+        temp_dir_p = Path(self.ctx.params.temp_dir)
+        if not temp_dir_p.exists():
+            temp_dir_p.mkdir(parents=True, exist_ok=True)
+
+        temp_file_p = temp_dir_p.joinpath(self.name + ext)
+        if temp_file_p.exists():
+            temp_file_p.unlink()
+
+        with open(temp_file_p, 'wb') as f:
+            f.write(content)
+
+        temp_file_name = str(temp_file_p)
+        return temp_file_name
+
+
     def get_records(self):
         count = 0
         download_dir_url = '{}/downloadDirectory.do?OWASP_CSRFTOKEN={}'.format(self.base_url, self.ctx.csrf_token)
@@ -84,54 +99,50 @@ class DirectoryDownloader(BaseDownloader):
                 continue
     
             self.captcha_helper.mark_success()
-            data_file = None
-            is_xlsx = False
-            is_odt = False
-            is_htm = False
-            if web_data.headers['Content-Type'] == 'application/zip;charset=UTF-8':
+            suffix = None
+            content_type = web_data.headers['Content-Type']
+            content = web_data.content
+            if content_type == 'application/zip;charset=UTF-8':
                 logger.debug('unzipping data')
-                filename, content = unzip_single(web_data.content)
+                filename, content = unzip_single(content)
                 logger.debug(f'unzipped filename: {filename}')
-                if filename.endswith('.xlsx'):
-                    is_xlsx = True
-                if filename.endswith('.odt'):
-                    is_odt = True
-                data_file = io.BytesIO(content)
+                suffix = Path(filename).suffix
     
-            if web_data.headers['Content-Type'] == 'odt;charset=UTF-8':
-                data_file = io.BytesIO(web_data.content)
-                is_odt = True
+            if content_type == 'odt;charset=UTF-8':
+                suffix ='.odt'
 
-            if web_data.headers['Content-Type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8':
-                data_file = io.BytesIO(web_data.content)
-                is_xlsx = True
+            if content_type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8':
+                suffix = '.xlsx'
 
-            if web_data.headers['Content-Type'] == 'text/html;charset=UTF-8':
-                data_file = io.BytesIO(web_data.content)
-                is_htm = True
+            if content_type == 'text/html;charset=UTF-8':
+                suffix = '.htm'
 
-            if web_data.headers['Content-Type'] == 'xls;charset=UTF-8':
-                data_file = io.BytesIO(web_data.content)
+            if content_type == 'xls;charset=UTF-8':
+                suffix = '.xls'
     
             
-            #print(web_data.headers['Content-Type'])
     
-            if data_file is None:
-                raise Exception("no data file available")
+            if suffix is None:
+                raise Exception(f"unrecongonized content type: {content_type}")
     
-            records = []
-            if is_xlsx:
-                records = records_from_xslx(data_file)
-            elif is_odt:
-                #with open('temp_{}.odt'.format(self.name), 'wb') as f:
-                #    f.write(data_file.getvalue())
-                records = records_from_odt(data_file, **self.odt_conv_args)
-            elif is_htm:
-                records = records_from_htm(data_file)
-            else:
-                #with open('temp_{}.xls'.format(self.name), 'wb') as f:
-                #    f.write(data_file.getvalue())
-                records = records_from_excel(data_file, **self.excel_conv_args)
+            try:
+                data_file_name = self.get_temp_file(content, suffix)
+                del content
+                del web_data
+                with open(data_file_name, 'rb') as data_file:
+                    records = []
+                    if suffix == '.xlsx':
+                        records = records_from_xslx(data_file)
+                    elif suffix == '.odt':
+                        records = records_from_odt(data_file, **self.odt_conv_args)
+                    elif suffix == '.htm':
+                        records = records_from_htm(data_file)
+                    elif suffix == '.xls':
+                        records = records_from_excel(data_file, **self.excel_conv_args)
+                    else:
+                        raise Exception(f"unsupprted suffix: {suffix}")
+            finally:
+                Path(data_file_name).unlink(missing_ok=True)
 
             #logger.debug('got {} records'.format(len(records)))
             #logger.debug('{}'.format(records[0]))

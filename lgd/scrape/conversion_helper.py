@@ -36,27 +36,6 @@ def convert_to_dicts(rows, header_row_span=1):
         dicts.append(d)
     return dicts
 
-
-def fix_tag(ns, tag, nsmap):
-    if ns not in nsmap:
-        return tag
-    return '{' + nsmap[ns] + '}' + tag
-
-def table_tag(ns_map):
-    return fix_tag('ss', 'Table', ns_map)
-
-def row_tag(ns_map):
-    return fix_tag('ss', 'Row', ns_map)
-
-def cell_tag(ns_map):
-    return fix_tag('ss', 'Cell', ns_map)
-
-def data_tag(ns_map):
-    return fix_tag('ss', 'Data', ns_map)
-
-def index_tag(ns_map):
-    return fix_tag('ss', 'Index', ns_map)
-
 def records_from_excel(excel_file, header_row_span=1):
     logger.debug('parsing excel file')
     records = []
@@ -66,20 +45,29 @@ def records_from_excel(excel_file, header_row_span=1):
     in_cell = False
     values = []
     data = ''
-    for event, elem in ET.iterparse(excel_file, events=('start', 'end', 'start-ns', 'end-ns')):
+    NS_NAME = 'ss'
+
+    def fix_tag(tag):
+        if NS_NAME not in ns_map:
+            return tag
+        return '{' + ns_map[NS_NAME] + '}' + tag
+
+    context = ET.iterparse(excel_file, events=('start', 'end', 'start-ns', 'end-ns'))
+    for event, elem in context:
         #print(event, elem)
         if event == 'start-ns':
             ns, url = elem
             ns_map[ns] = url
             continue
         if event == 'end-ns':
+            elem.clear()
             continue
         #print(elem, table_tag(ns_map))
-        if event == 'start' and elem.tag == table_tag(ns_map):
+        if event == 'start' and elem.tag == fix_tag('Table'):
             #print('starting table')
             in_table = True
             continue
-        if event == 'end' and elem.tag == table_tag(ns_map):
+        if event == 'end' and elem.tag == fix_tag('Table'):
             in_table = False
             elem.clear()
             continue
@@ -87,11 +75,11 @@ def records_from_excel(excel_file, header_row_span=1):
             if event == 'end':
                 elem.clear()
             continue
-        if event == 'start' and elem.tag == row_tag(ns_map):
+        if event == 'start' and elem.tag == fix_tag('Row'):
             in_row = True
             #print('starting row')
             continue
-        if event == 'end' and elem.tag == row_tag(ns_map):
+        if event == 'end' and elem.tag == fix_tag('Row'):
             in_row = False
             elem.clear()
             #print("got row: {}".format(values))
@@ -109,12 +97,12 @@ def records_from_excel(excel_file, header_row_span=1):
             if event == 'end':
                 elem.clear()
             continue
-        if event == 'start' and elem.tag == cell_tag(ns_map):
+        if event == 'start' and elem.tag == fix_tag('Cell'):
             #print('starting cell')
             in_cell = True
             continue
-        if event == 'end' and elem.tag == cell_tag(ns_map):
-            cell_index = int(elem.attrib[index_tag(ns_map)]) - 1
+        if event == 'end' and elem.tag == fix_tag('Cell'):
+            cell_index = int(elem.attrib[fix_tag('Index')]) - 1
             len_to_fill = cell_index - len(values)
             if len_to_fill:
                 values.extend([''] * len_to_fill)
@@ -127,13 +115,17 @@ def records_from_excel(excel_file, header_row_span=1):
             if event == 'end':
                 elem.clear()
             continue
-        if event == 'end' and elem.tag == data_tag(ns_map):
+        if event == 'end' and elem.tag == fix_tag('Data'):
             data = elem.text
             elem.clear()
             continue
         if event == 'end':
             elem.clear()
-    return convert_to_dicts(records, header_row_span)
+    del context
+
+    dicts = convert_to_dicts(records, header_row_span)
+    del records
+    return dicts
 
 
 
@@ -301,7 +293,15 @@ def records_from_htm(html_file):
     cell_tag = 'th'
     values = []
     data_strs = []
-    for event, elem in etree.iterparse(html_file, events=('start', 'end'), html=True):
+
+    def clear(e):
+        e.clear()
+        for ancestor in e.xpath('ancestor-or-self::*'):
+            while ancestor.getprevious() is not None:
+                del ancestor.getparent()[0]
+
+    context = etree.iterparse(html_file, events=('start', 'end'), html=True)
+    for event, elem in context:
         #print(event, elem.tag)
 
         if event == 'start' and elem.tag == 'table':
@@ -313,11 +313,11 @@ def records_from_htm(html_file):
         if event == 'end' and elem.tag == 'table':
             in_table = False
             cell_tag = 'th'
-            elem.clear()
+            clear(elem)
             continue
         if not in_table:
             if event == 'end':
-                elem.clear()
+                clear(elem)
             continue
 
         if event == 'start' and elem.tag == 'tr':
@@ -326,7 +326,7 @@ def records_from_htm(html_file):
             continue
         if event == 'end' and elem.tag == 'tr':
             in_row = False
-            elem.clear()
+            clear(elem)
             #print("got row: {}".format(values))
             empty = True
             for value in values:
@@ -342,7 +342,7 @@ def records_from_htm(html_file):
             continue
         if not in_row:
             if event == 'end':
-                elem.clear()
+                clear(elem)
             continue
 
         if event == 'start' and elem.tag == cell_tag:
@@ -352,12 +352,12 @@ def records_from_htm(html_file):
         if event == 'end' and elem.tag == cell_tag:
             values.append('\n'.join(data_strs))
             data_strs = []
-            elem.clear()
+            clear(elem)
             in_cell = False
             continue
         if not in_cell:
             if event == 'end':
-                elem.clear()
+                clear(elem)
             continue
 
         if event == 'start' and elem.tag == 'div':
@@ -366,20 +366,24 @@ def records_from_htm(html_file):
         if event == 'end' and elem.tag == 'div':
             #print('div data', elem.attrib, 'text', elem.text, 'iter', list(elem.itertext()))
             if elem.get('style', None) != 'visibility:hidden':
-                data_strs.extend([ x.strip() for x in elem.itertext() ])
+                data_strs.extend([ str(x).strip() for x in elem.itertext() ])
             in_div = False
-            elem.clear()
+            clear(elem)
             continue
         if not in_div:
             if event == 'end':
-                elem.clear()
+                clear(elem)
             continue
 
         if elem.tag == 'br':
             continue
 
         if event == 'end':
-            elem.clear()
-    return convert_to_dicts(records)
+            clear(elem)
+    del context
+
+    dicts = convert_to_dicts(records) 
+    del records
+    return dicts
 
 

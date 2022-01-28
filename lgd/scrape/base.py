@@ -7,7 +7,6 @@ import logging
 import collections
 import requests
 import functools
-import resource
 import psutil
 import time
 
@@ -37,7 +36,8 @@ logger = logging.getLogger(__name__)
 BASE_URL = 'https://lgdirectory.gov.in'
 INCORRECT_CAPTCHA_MESSAGE = 'The CAPTCHA image code was entered incorrectly.'
 RUN_FOR_PREV_DAY = 0
-TRACING = 1
+TRACING = True
+FREE_MEM_THRESHOLD_GB = 2.0
 if TRACING:
     import tracemalloc
 
@@ -51,6 +51,7 @@ class Params:
         self.captcha_model_dir = str(Path(__file__).parent.joinpath('captcha', 'models'))
         self.archive_data = False
         self.base_raw_dir = 'data/raw'
+        self.temp_dir = 'data/temp'
         self.no_verify_ssl = False
         self.progress_bar = False
         self.connect_timeout = 10
@@ -182,30 +183,28 @@ def get_local_context(params):
     return local_data.ctx
 
 class MemoryTracker():
-    def __init__(self, desc):
+    def __init__(self, desc, enabled):
         self.desc = desc
-        self.initial_mem_usage = 0
-        self.initial_snapshot = None
+        self.enabled = enabled
+        #self.initial_snapshot = None
 
     def __enter__(self):
-        self.initial_mem_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-        if TRACING:
+        if self.enabled:
             tracemalloc.reset_peak()
-            self.initial_snapshot = tracemalloc.take_snapshot()
+            #self.initial_snapshot = tracemalloc.take_snapshot()
         return self
 
     def __exit__(self, exc_type, value, traceback):
-        mem_usage_after = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-        if TRACING:
-            size, peak = tracemalloc.get_traced_memory()
-            size, peak = naturalsize(size), naturalsize(peak)
-            logger.debug(f"[ memory size: {size}, peak: {peak} for {self.desc} ]")
-            final_snapshot = tracemalloc.take_snapshot()
-            top_stats = final_snapshot.compare_to(self.initial_snapshot, 'traceback')
-            logger.debug(f"[ Top 20 differences for {self.desc} ]")
-            for stat in top_stats[:20]:
-                logger.debug(stat)
-        logger.info('mem_usage increase for {}: {} kb'.format(self.desc, mem_usage_after - self.initial_mem_usage))
+        if not self.enabled:
+            return
+        size, peak = tracemalloc.get_traced_memory()
+        size, peak = naturalsize(size), naturalsize(peak)
+        logger.debug(f"[ memory size: {size}, peak: {peak} for {self.desc} ]")
+        final_snapshot = tracemalloc.take_snapshot()
+        top_stats = final_snapshot.compare_to(self.initial_snapshot, 'traceback')
+        logger.debug(f"[ Top 20 differences for {self.desc} ]")
+        for stat in top_stats[:20]:
+            logger.debug(stat)
 
 def get_gcs_upload_args(params):
     timeout = params.gcs_upload_timeout
@@ -299,23 +298,26 @@ def get_tranform_fn(name, *args):
     transform_fn = functools.partial(transform_fn_map[name], *args)
     return transform_fn
 
-
-def download_task(downloader):
-    logger.info('getting {}'.format(downloader.desc))
+def get_mem_info():
     pid = os.getpid()
     smem = psutil.virtual_memory()
     pmem = psutil.Process(pid).memory_info()
     logger.info('system full memory: {}, system used memory: {}, process used memory: {}'.format(naturalsize(smem.total), naturalsize(smem.used), naturalsize(pmem.rss))) 
+    return smem, pmem
+
+def download_task(downloader):
+    logger.info('getting {}'.format(downloader.desc))
     while True:
+        smem, pmem = get_mem_info()
         free_mem = smem.total - smem.used
-        if free_mem > 1500000000:
+        if free_mem > FREE_MEM_THRESHOLD_GB * (10**9):
             break
         logger.warning('not enough system memory.. sleeping for a min')
         time.sleep(60)
-        smem = psutil.virtual_memory()
 
-    downloader.download(get_local_context(downloader.ctx.params))
-    gc.collect()
+    with MemoryTracker(downloader.name, TRACING):
+        downloader.download(get_local_context(downloader.ctx.params))
+        gc.collect()
 
 
 

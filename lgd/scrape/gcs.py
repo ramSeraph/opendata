@@ -22,7 +22,7 @@ def create_bucket(bucket_name, client=None, make_public=True):
 
 
 def upload_file(bucket_name, dir_prefix, filename, client=None):
-    blob_name = filename.replace(dir_prefix, '')
+    blob_name = filename.replace(dir_prefix + '/', '')
     logger.info(f'uploading {filename} into {bucket_name} as {blob_name}')
     if client is None:
         client = storage.Client()
@@ -32,11 +32,13 @@ def upload_file(bucket_name, dir_prefix, filename, client=None):
     if blob.exists():
         return blob
     
-    blob.upload_from_filename(filename=filename)
+    blob.upload_from_filename(filename=filename, timeout=600)
     return blob
 
 
 def upload_folder(bucket_name, folder, client=None):
+    # remove trailing '/'
+    folder = str(Path(folder))
     logger.info(f'uploading files from {folder} into {bucket_name}')
     if client is None:
         client = storage.Client()
@@ -53,6 +55,8 @@ def upload_folder(bucket_name, folder, client=None):
 
 
 def download_folder(bucket_name, dirname, client=None):
+    # remove trailing '/'
+    dirname = str(Path(dirname))
     logger.info(f'downloading files from  {bucket_name} into {dirname}')
     if client is None:
         client = storage.Client.create_anonymous_client()
@@ -60,7 +64,7 @@ def download_folder(bucket_name, dirname, client=None):
     blobs = list(client.list_blobs(bucket))
     for blob in blobs:
         filename = blob.name
-        path = Path(f'{dirname}{filename}')
+        path = Path(f'{dirname}/{filename}')
         if path.exists():
             continue
         directory = path.parent

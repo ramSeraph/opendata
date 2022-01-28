@@ -235,7 +235,7 @@ def get_date_str(date=None):
 
 
 def get_blobname_from_filename(filename, params):
-    blob_name = filename.replace(str(Path(params.base_raw_dir)), '')
+    blob_name = filename.replace(str(Path(params.base_raw_dir)) + '/', '')
     return blob_name
 
 

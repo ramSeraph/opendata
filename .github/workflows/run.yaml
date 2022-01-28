@@ -116,19 +116,20 @@ jobs:
           exit 1
 
       - name: Set current date as env variable
-        run: echo "DATE::$(date +'%d%b%Y')" >> $GITHUB_ENV
+        run: echo "::set-output name=date::$(date +'%d%b%Y')"
+        id: date
 
       - name: Restore daily run data from cache
         uses: TerrenceHo/cache-always@v0.0.1
         with:
-          path: 'data/raw/${{ env.DATE }}' 
-          key:  'data-raw-${{ env.DATE }}'
+          path: 'data/raw/${{ steps.date.outputs.date }}' 
+          key:  'data-raw-${{ steps.date.outputs.date }}'
 
       - name: Restore changes data from cache
         uses: TerrenceHo/cache-always@v0.0.1
         with:
           path: 'data/raw/changes' 
-          key:  'data-raw-changes-${{ env.DATE }}'
+          key:  'data-raw-changes-${{ steps.date.outputs.date }}'
         id: changes_cache
 
       - name: Download changes file from gcs
@@ -147,7 +148,7 @@ jobs:
       - name: Upload archive file to gcs
         uses: 'convictional/gcp-storage-action@v0.1.1'
         with:
-          source_file: 'data/raw/${{ env.DATE }}.zip'
+          source_file: 'data/raw/${{ steps.date.outputs.date }}.zip'
           destination_file: 'gs:///lgd_data_archive/'
           application_credentials: ${{ secrets.GCP_AUTH }}
           project_id: lgd-data

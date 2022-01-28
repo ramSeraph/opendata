@@ -49,14 +49,10 @@ jobs:
 
       - name: Download tesseract models from gcs
         if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
-        uses: 'convictional/gcp-storage-action@v0.1.1'
-        with:
-          source_file: 'gs://lgd_captcha_tesseract_models/*'
-          destination_file: 'models/'
-          application_credentials: ${{ secrets.GCP_AUTH }}
-          project_id: lgd-data
-          flags: '-r'
-
+        run: |
+          echo "$INPUT_APPLICATION_CREDENTIALS" | base64 -d > /tmp/account.json
+          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
+          gsutil cp -r gs://lgd_captcha_tesseract_models/ models/
 
   Run-LGD-Extraction:
     #continue-on-error: true

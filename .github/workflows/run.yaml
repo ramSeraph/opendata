@@ -109,7 +109,7 @@ jobs:
         uses: TerrenceHo/cache-always@v0.0.1
         with:
           path: 'data/raw/${{ steps.date.outputs.date }}' 
-          key:  'data-raw-v2-${{ steps.date.outputs.date }}'
+          key:  'data-raw-v3-${{ steps.date.outputs.date }}'
 
       - name: Authorize with GCP
         run: |
@@ -119,7 +119,7 @@ jobs:
         uses: TerrenceHo/cache-always@v0.0.1
         with:
           path: 'data/raw/changes' 
-          key:  'data-raw-changes-v2-${{ steps.date.outputs.date }}'
+          key:  'data-raw-changes-v3-${{ steps.date.outputs.date }}'
         id: changes_cache
 
       - name: Download changes file from gcs

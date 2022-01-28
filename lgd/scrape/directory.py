@@ -483,6 +483,18 @@ def get_all_directory_downloaders(ctx):
                                                'entityCodes': ['35', '0', '0'],
                                            }))
 
+    downloaders.append(StateWiseDirectoryDownloader(name='PANCHAYAT_MAPPINGS',
+                                                    desc='list of all panchayat mappings',
+                                                    dropdown='Gram Panchayat Mapping to village --> Gram Panchayat Mapping to village',
+                                                    csv_filename='gp_mapping.csv',
+                                                    ctx=ctx,
+                                                    excel_conv_args={
+                                                        'header_row_span': 2,
+                                                    },
+                                                    post_data_extra={
+                                                        'rptFileName': 'LocalbodyMappingtoCensusLandregionCode@state',
+                                                        'downloadType': 'htm'
+                                                    }))
     downloaders.append(StateWiseDirectoryDownloader(name='VILLAGES',
                                                     desc='list of all villages',
                                                     dropdown='VILLAGE --> All Villages of a State',
@@ -551,18 +563,6 @@ def get_all_directory_downloaders(ctx):
                                                     },
                                                     enrichers={
                                                         'State Code': 'State Code'
-                                                    }))
-    downloaders.append(StateWiseDirectoryDownloader(name='PANCHAYAT_MAPPINGS',
-                                                    desc='list of all panchayat mappings',
-                                                    dropdown='Gram Panchayat Mapping to village --> Gram Panchayat Mapping to village',
-                                                    csv_filename='gp_mapping.csv',
-                                                    ctx=ctx,
-                                                    excel_conv_args={
-                                                        'header_row_span': 2,
-                                                    },
-                                                    post_data_extra={
-                                                        'rptFileName': 'LocalbodyMappingtoCensusLandregionCode@state',
-                                                        'downloadType': 'htm'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='PRI_LOCAL_BODY_WARDS',
                                                     desc='list of all PRI Local body wards',

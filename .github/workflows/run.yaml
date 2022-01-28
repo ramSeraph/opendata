@@ -101,6 +101,10 @@ jobs:
           echo "::error models cache not found"
           exit 1
 
+      - name: Debug models
+        run: |
+          ls -la models/
+
       - name: Set current date as env variable
         run: echo "::set-output name=date::$(date +'%d%b%Y')"
         id: date
@@ -109,18 +113,18 @@ jobs:
         uses: TerrenceHo/cache-always@v0.0.1
         with:
           path: 'data/raw/${{ steps.date.outputs.date }}' 
-          key:  'data-raw-${{ steps.date.outputs.date }}'
+          key:  'data-raw-v1-${{ steps.date.outputs.date }}'
+
+      - name: Authorize with GCP
+        run: |
+          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
 
       - name: Restore changes data from cache
         uses: TerrenceHo/cache-always@v0.0.1
         with:
           path: 'data/raw/changes' 
-          key:  'data-raw-changes-${{ steps.date.outputs.date }}'
+          key:  'data-raw-changes-v1-${{ steps.date.outputs.date }}'
         id: changes_cache
-
-      - name: Authorize with GCP
-        run: |
-          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
 
       - name: Download changes file from gcs
         if: ${{ steps.changes_cache.outputs.cache-hit != 'true' }}

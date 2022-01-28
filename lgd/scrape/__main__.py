@@ -457,5 +457,5 @@ if __name__ == '__main__':
 
     ret = run(params, mode, set(comps_to_run), set(comps_to_not_run), num_parallel, use_procs)
     pprint(ret)
-    if mode = Mode.RUN and params.archive_data and not ret['archival_status']:
+    if mode == Mode.RUN and params.archive_data and not ret['archival_status']:
         exit(1)

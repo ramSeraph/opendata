@@ -106,11 +106,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: 'models/' 
-          key:  'lgd-models'
+          key:  'lgd-tesseract-models'
         id: models_cache
 
-      - name: Download tesseract models from gcs
-        if: ${{ steps.changes_cache.outputs.cache_hit != 'true' }}
+      - name: Check tesseract models
+        if: ${{ steps.models_cache.outputs.cache_hit != 'true' }}
         run: |
           echo "::error models cache not found"
           exit 1

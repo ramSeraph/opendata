@@ -25,10 +25,8 @@ def convert_to_dicts(rows, header_row_span=1):
         return '\n'.join(args)
 
     key_rows = rows[:header_row_span]
-    logger.debug(rows[:4])
     keys_row = map(str_joiner, *key_rows)
     keys_row = [normalize(k) for k in keys_row]
-    logger.debug(keys_row)
 
     dicts = []
     for row in rows[header_row_span:]:

@@ -308,7 +308,7 @@ def download_task(downloader):
     logger.info('system full memory: {}, system used memory: {}, process used memory: {}'.format(naturalsize(smem.total), naturalsize(smem.used), naturalsize(pmem.rss))) 
     while True:
         free_mem = smem.total - smem.used
-        if free_mem > 1000000000:
+        if free_mem > 1500000000:
             break
         logger.warning('not enough system memory.. sleeping for a min')
         time.sleep(60)

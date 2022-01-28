@@ -1,5 +1,6 @@
 import os
 import os.path
+import gc
 import csv
 import copy
 import logging
@@ -7,6 +8,7 @@ import collections
 import requests
 import functools
 import resource
+import psutil
 
 from threading import local, currentThread
 from pathlib import Path
@@ -299,7 +301,12 @@ def get_tranform_fn(name, *args):
 
 def download_task(downloader):
     logger.info('getting {}'.format(downloader.desc))
+    pid = os.getpid()
+    smem = psutil.virtual_memory()
+    pmem = psutil.Process(pid).memory_info()
+    logger.info('system full memory: {}, system used memory: {}, process used memory: {}'.format(naturalsize(smem.total), naturalsize(smem.used), pmem(pmem.rss))) 
     downloader.download(get_local_context(downloader.ctx.params))
+    gc.collect()
 
 
 

@@ -12,7 +12,7 @@ from pprint import pprint
 from zipfile import ZipFile, ZIP_LZMA
 from concurrent.futures import (wait, FIRST_COMPLETED,
                                 Future, ProcessPoolExecutor,
-                                ThreadPoolExecutor)
+                                ThreadPoolExecutor, BrokenExecutor)
 from google.api_core.exceptions import NotFound
 try:
     from graphlib import TopologicalSorter
@@ -55,7 +55,7 @@ class Joiner:
         def done_cb(fut):
             try:
                 fut.result()
-            except Exception:
+            except (Exception, BrokenExecutor):
                 self.has_errors = True
                 logger.exception('sub_call failed for comp: {}'.format(comp))
 
@@ -122,7 +122,7 @@ def run_on_threads(graph, dmap, num_parallel, use_procs, params):
                 comp = fut_to_comp[fut]
                 try:
                     fut.result()
-                except Exception:
+                except (Exception, BrokenExecutor):
                     logger.exception('comp {} failed'.format(comp))
                     has_errors = True
 

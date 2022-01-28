@@ -60,7 +60,6 @@ def records_from_excel(excel_file, header_row_span=1):
             ns_map[ns] = url
             continue
         if event == 'end-ns':
-            elem.clear()
             continue
         #print(elem, table_tag(ns_map))
         if event == 'start' and elem.tag == fix_tag('Table'):

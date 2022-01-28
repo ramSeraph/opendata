@@ -67,10 +67,10 @@ jobs:
         with:
           path: 'models/' 
           key:  'lgd-tesseract-models'
-        id: models_cache
+        id: models-cache
 
       - name: Download tesseract models from gcs
-        if: ${{ steps.changes_cache.outputs.cache_hit != 'true' }}
+        if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
         run: .venv/bin/python -c "from lgd.scrape.captcha_helper import CaptchaHelper; CaptchaHelper.prepare('models/')"
 
 
@@ -107,10 +107,10 @@ jobs:
         with:
           path: 'models/' 
           key:  'lgd-tesseract-models'
-        id: models_cache
+        id: models-cache
 
       - name: Check tesseract models
-        if: ${{ steps.models_cache.outputs.cache_hit != 'true' }}
+        if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
         run: |
           echo "::error models cache not found"
           exit 1
@@ -132,7 +132,7 @@ jobs:
         id: changes_cache
 
       - name: Download changes file from gcs
-        if: ${{ steps.changes_cache.outputs.cache_hit != 'true' }}
+        if: ${{ steps.changes_cache.outputs.cache-hit != 'true' }}
         uses: 'convictional/gcp-storage-action@v0.1.1'
         with:
           source_file: 'gs:///lgd_data_raw/changes/*'

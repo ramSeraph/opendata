@@ -304,7 +304,7 @@ def download_task(downloader):
     pid = os.getpid()
     smem = psutil.virtual_memory()
     pmem = psutil.Process(pid).memory_info()
-    logger.info('system full memory: {}, system used memory: {}, process used memory: {}'.format(naturalsize(smem.total), naturalsize(smem.used), pmem(pmem.rss))) 
+    logger.info('system full memory: {}, system used memory: {}, process used memory: {}'.format(naturalsize(smem.total), naturalsize(smem.used), naturalsize(pmem.rss))) 
     downloader.download(get_local_context(downloader.ctx.params))
     gc.collect()
 

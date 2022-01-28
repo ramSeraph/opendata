@@ -132,6 +132,12 @@ jobs:
           key:  'data-raw-changes-${{ steps.date.outputs.date }}'
         id: changes_cache
 
+      - name: Install tesseract OCR
+        run: |
+          sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr
+
       - name: Download changes file from gcs
         if: ${{ steps.changes_cache.outputs.cache-hit != 'true' }}
         uses: 'convictional/gcp-storage-action@v0.1.1'

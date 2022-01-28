@@ -39,46 +39,30 @@ jobs:
 
   Setup-Models-Cache:
     runs-on: ubuntu-latest
-    needs: [ 'Setup-Pip-Cache' ]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Setup python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.9.4'
-
-      - name: Restore pip data from cache
-        uses: actions/cache@v2
-        id: cache-venv
-        with:
-          path: ./.venv/
-          key: $venv-${{ hashFiles('lgd/requirements.txt') }}
-
-      - name: Check pip setup
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        run: |
-          echo "::error pip cache not found"
-          exit 1
-
       - name: Restore tesseract models from cache
         uses: actions/cache@v2
         with:
           path: 'models/' 
-          key:  'lgd-tesseract-models'
+          key:  'lgd-tesseract-models-gcs'
         id: models-cache
 
       - name: Download tesseract models from gcs
         if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
-        run: .venv/bin/python -c "from lgd.scrape.captcha_helper import CaptchaHelper; CaptchaHelper.prepare('models/')"
+        uses: 'convictional/gcp-storage-action@v0.1.1'
+        with:
+          source_file: 'gs://lgd_captcha_tesseract_models/*'
+          destination_file: 'models/'
+          application_credentials: ${{ secrets.GCP_AUTH }}
+          project_id: lgd-data
+          flags: '-r'
 
 
   Run-LGD-Extraction:
     #continue-on-error: true
     timeout-minutes: 600
     runs-on: ubuntu-latest
-    needs: [ 'Setup-Models-Cache' ]
+    needs: [ 'Setup-Pip-Cache', 'Setup-Models-Cache' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -106,7 +90,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: 'models/' 
-          key:  'lgd-tesseract-models'
+          key:  'lgd-tesseract-models-gcs'
         id: models-cache
 
       - name: Check tesseract models
@@ -142,13 +126,13 @@ jobs:
         if: ${{ steps.changes_cache.outputs.cache-hit != 'true' }}
         uses: 'convictional/gcp-storage-action@v0.1.1'
         with:
-          source_file: 'gs:///lgd_data_raw/changes/*'
+          source_file: 'gs://lgd_data_raw/changes/*'
           destination_file: 'data/raw/changes/'
           application_credentials: ${{ secrets.GCP_AUTH }}
           project_id: lgd-data
 
       - name: Download LGD data
-        run: python -m lgd.scrape -m RUN -l DEBUG -R 300 --use-procs -p 10 --archive-data
+        run: python -m lgd.scrape -m RUN -l DEBUG -R 300 --use-procs -p 10 --archive-data --captcha-model-dir models
         timeout-minutes: 360
 
       - name: Upload archive file to gcs
@@ -163,7 +147,7 @@ jobs:
         uses: 'convictional/gcp-storage-action@v0.1.1'
         with:
           source_file: 'data/raw/changes/*'
-          destination_file: 'gs:///lgd_data_raw/changes/'
+          destination_file: 'gs://lgd_data_raw/changes/'
           application_credentials: ${{ secrets.GCP_AUTH }}
           project_id: lgd-data
 

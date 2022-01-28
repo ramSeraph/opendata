@@ -12,7 +12,8 @@ from pprint import pprint
 from zipfile import ZipFile, ZIP_LZMA
 from concurrent.futures import (wait, FIRST_COMPLETED,
                                 Future, ProcessPoolExecutor,
-                                ThreadPoolExecutor, BrokenExecutor)
+                                ThreadPoolExecutor)
+from concurrent.futures.process import BrokenProcessPool
 from google.api_core.exceptions import NotFound
 try:
     from graphlib import TopologicalSorter
@@ -50,13 +51,16 @@ class Joiner:
         self.child_map = {}
         self.downloader = downloader
         self.has_errors = False
+        self.fatal_error = False
 
     def get_checker(self, comp):
         def done_cb(fut):
             try:
                 fut.result()
-            except (Exception, BrokenExecutor):
+            except (Exception, BrokenProcessPool) as ex:
                 self.has_errors = True
+                if isinstance(ex, BrokenProcessPool):
+                    self.fatal_error = True
                 logger.exception('sub_call failed for comp: {}'.format(comp))
 
             self.pending_comps.remove(comp)
@@ -119,11 +123,14 @@ def run_on_threads(graph, dmap, num_parallel, use_procs, params):
             for fut in done:
                 has_changes = True
                 has_errors = False
+                fatal_error = False
                 comp = fut_to_comp[fut]
                 try:
                     fut.result()
-                except (Exception, BrokenExecutor):
+                except (Exception, BrokenProcessPool) as ex:
                     logger.exception('comp {} failed'.format(comp))
+                    if isinstance(ex, BrokenProcessPool):
+                        fatal_error = True
                     has_errors = True
 
                 del fut_to_comp[fut]
@@ -133,7 +140,12 @@ def run_on_threads(graph, dmap, num_parallel, use_procs, params):
                 else:
                     comps_in_error.add(comp)
 
+            if fatal_error:
+                logger.error('fatal error encountered.. closing task pool')
+                break
+
     return comps_done, comps_in_error
+
 
 def delete_raw_data(ctx):
     logger.info('Cleaning up raw data')

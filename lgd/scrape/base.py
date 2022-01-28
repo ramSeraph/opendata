@@ -9,6 +9,7 @@ import requests
 import functools
 import resource
 import psutil
+import time
 
 from threading import local, currentThread
 from pathlib import Path
@@ -305,6 +306,14 @@ def download_task(downloader):
     smem = psutil.virtual_memory()
     pmem = psutil.Process(pid).memory_info()
     logger.info('system full memory: {}, system used memory: {}, process used memory: {}'.format(naturalsize(smem.total), naturalsize(smem.used), naturalsize(pmem.rss))) 
+    while True:
+        free_mem = smem.total - smem.used
+        if free_mem > 1000000000:
+            break
+        logger.warning('not enough system memory.. sleeping for a min')
+        time.sleep(60)
+        smem = psutil.virtual_memory()
+
     downloader.download(get_local_context(downloader.ctx.params))
     gc.collect()
 

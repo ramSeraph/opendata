@@ -44,7 +44,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: 'models/' 
-          key:  'lgd-tesseract-models-gcs'
+          key:  'lgd-tesseract-models-gcs-v2'
         id: models-cache
 
       - name: Download tesseract models from gcs
@@ -52,7 +52,7 @@ jobs:
         run: |
           gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
           mkdir -p models/
-          gsutil -m cp -r gs://lgd_captcha_tesseract_models/ models/
+          gsutil -m cp -r gs://lgd_captcha_tesseract_models/* models/
 
   Run-LGD-Extraction:
     #continue-on-error: true
@@ -92,7 +92,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: 'models/' 
-          key:  'lgd-tesseract-models-gcs'
+          key:  'lgd-tesseract-models-gcs-v2'
         id: models-cache
 
       - name: Check tesseract models
@@ -100,10 +100,6 @@ jobs:
         run: |
           echo "::error models cache not found"
           exit 1
-
-      - name: Debug models
-        run: |
-          ls -la models/
 
       - name: Set current date as env variable
         run: echo "::set-output name=date::$(date +'%d%b%Y')"
@@ -113,7 +109,7 @@ jobs:
         uses: TerrenceHo/cache-always@v0.0.1
         with:
           path: 'data/raw/${{ steps.date.outputs.date }}' 
-          key:  'data-raw-v1-${{ steps.date.outputs.date }}'
+          key:  'data-raw-v2-${{ steps.date.outputs.date }}'
 
       - name: Authorize with GCP
         run: |
@@ -123,14 +119,14 @@ jobs:
         uses: TerrenceHo/cache-always@v0.0.1
         with:
           path: 'data/raw/changes' 
-          key:  'data-raw-changes-v1-${{ steps.date.outputs.date }}'
+          key:  'data-raw-changes-v2-${{ steps.date.outputs.date }}'
         id: changes_cache
 
       - name: Download changes file from gcs
         if: ${{ steps.changes_cache.outputs.cache-hit != 'true' }}
         run: |
           mkdir -p data/raw/changes
-          gsutil -m cp -r gs://lgd_data_raw/changes/ data/raw/changes/
+          gsutil -m cp -r gs://lgd_data_raw/changes/* data/raw/changes/
 
       - name: Download LGD data
         run: .venv/bin/python -m lgd.scrape -m RUN -l DEBUG -R 300 --use-procs -p 10 --archive-data --captcha-model-dir models
@@ -142,6 +138,6 @@ jobs:
 
       - name: Upload changes file to gcs
         run: |
-          gsutil -m cp -r data/raw/changes/ gs://lgd_data_raw/changes/
+          gsutil -m cp -r data/raw/changes/* gs://lgd_data_raw/changes/
 
 

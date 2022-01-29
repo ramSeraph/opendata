@@ -109,7 +109,7 @@ jobs:
         if: ${{ always() }}
         run: |
           ps -fe | grep "\.venv/bin/python" 
-          ps -fe | grep "\.venv/bin/python" | grep -v grep | tr -s " " | cut -d" " -f3 | xargs kill || true
+          ps -fe | grep "\.venv/bin/python" | grep -v grep | tr -s " " | cut -d" " -f2 | xargs kill || true
 
       - name: Upload archive file to gcs
         run: |

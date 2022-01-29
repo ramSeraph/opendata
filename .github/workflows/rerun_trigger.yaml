@@ -6,6 +6,9 @@ jobs:
   RetryTrigger:
     runs-on: ubuntu-latest
     steps:
-      - run: |
-        [ ${{ github.event.client_payload.run_attempt }} -lt 3 ] && curl -X POST -H "Authorization: token ${{ secrets.RERUN_PAT }}" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.client_payload.run_id }}/rerun
+      - name: Call Rerun API
+        run: |
+          URL=https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.client_payload.run_id }}/rerun
+          RUN_ATTEMPT=${{ github.event.client_payload.run_attempt }}
+          [ $RUN_ATTEMPT -lt 3 ] && curl -X POST -u "ramSeraph:${{secrets.RERUN_PAT}}" $URL
 

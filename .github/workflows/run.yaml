@@ -108,11 +108,11 @@ jobs:
       - name: Restore daily run data from cache
         uses: TerrenceHo/cache-always@v0.0.1
         with:
-          path: 'data/raw/${{ steps.date.outputs.date }}' 
-          key:  'data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}'
+          path: data/raw/${{ steps.date.outputs.date }}
+          key:  data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys:
-            - 'data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-'
-            - 'data-raw-v4-${{ steps.date.outputs.date }}-'
+            data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            data-raw-v4-${{ steps.date.outputs.date }}-
 
       - name: Authenticate with GCP
         run: |
@@ -121,11 +121,11 @@ jobs:
       - name: Restore changes data from cache
         uses: TerrenceHo/cache-always@v0.0.1
         with:
-          path: 'data/raw/changes' 
-          key:  'data-raw-changes-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}'
-          restore-keys:
-            - 'data-raw-changes-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-'
-            - 'data-raw-changes-v4-${{ steps.date.outputs.date }}-'
+          path: data/raw/changes 
+          key:  data-raw-changes-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          restore-keys: |
+            data-raw-changes-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            data-raw-changes-v4-${{ steps.date.outputs.date }}-
         id: changes_cache
 
       - name: Download changes file from gcs

@@ -119,4 +119,12 @@ jobs:
         run: |
           gsutil -m cp -r data/raw/changes/* gs://lgd_data_raw/changes/
 
+      - name: Trigger retry
+        if: ${{ failure() }}
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.RERUN_PAT }}
+          event-type: 'retry-trigger'
+          client-payload: '{"run_id": "${{ github.run_id }}", "run_attempt": "${{ github.run_attempt }}"}'
+
 

@@ -15,6 +15,10 @@ from .conversion_helper import (records_from_excel, records_from_xslx,
 
 logger = logging.getLogger(__name__)
 
+
+class CaptchaFailureException(Exception):
+    pass
+
 def merge_file(old_file, mod_file, tgt_file):
     #TODO: write this
     pass
@@ -25,7 +29,8 @@ class DirectoryDownloader(BaseDownloader):
     def __init__(self, **kwargs):
         kwargs = add_defaults_to_args({'post_data_extra':{},
                                        'odt_conv_args':{},
-                                       'excel_conv_args':{}}, kwargs)
+                                       'excel_conv_args':{},
+                                       'download_types': ['xls']}, kwargs)
         kwargs['section'] = 'Download Directory'
         self.post_data = {
             "DDOption": "UNSELECT",
@@ -42,11 +47,11 @@ class DirectoryDownloader(BaseDownloader):
             "districtName": [ None ] * 3,
             "blockName": [ None ] * 3,
             "lbl": None,
-            "downloadType": "xls",
         }
         self.post_data.update(kwargs['post_data_extra'])
         self.odt_conv_args = kwargs['odt_conv_args']
         self.excel_conv_args = kwargs['excel_conv_args']
+        self.download_types = kwargs['download_types']
         super().__init__(**kwargs)
 
 
@@ -66,87 +71,103 @@ class DirectoryDownloader(BaseDownloader):
         return temp_file_name
 
 
-    def get_records(self):
-        count = 0
+    def make_request(self, download_type):
         download_dir_url = '{}/downloadDirectory.do?OWASP_CSRFTOKEN={}'.format(self.base_url, self.ctx.csrf_token)
+        post_data = copy.copy(self.post_data)
+        captcha_code = self.captcha_helper.get_code(download_dir_url)
+        post_data['captchaAnswer'] = captcha_code
+        post_data['OWASP_CSRFTOKEN'] = self.ctx.csrf_token
+        post_data['downloadType'] = download_type
+        post_headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'referer': download_dir_url
+        }
+        web_data = self.post_with_progress(download_dir_url,
+                                           data=post_data,
+                                           headers=post_headers)
+        if not web_data.ok:
+            raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
+
+        if 'Content-Disposition' not in web_data.headers or 'attachment;' not in web_data.headers['Content-Disposition']:
+            if INCORRECT_CAPTCHA_MESSAGE  not in web_data.text:
+                if self.ctx.params.save_failed_html:
+                    with open('failed.html', 'w') as f:
+                        f.write(web_data.text)
+                raise Exception('Non-captcha failure in request')
+    
+            self.captcha_helper.mark_failure()
+            raise CaptchaFailureException()
+   
+        self.captcha_helper.mark_success()
+        suffix = None
+        content_type = web_data.headers['Content-Type']
+        content = web_data.content
+        if content_type == 'application/zip;charset=UTF-8':
+            logger.debug('unzipping data')
+            filename, content = unzip_single(content)
+            logger.debug(f'unzipped filename: {filename}')
+            suffix = Path(filename).suffix
+    
+        if content_type == 'odt;charset=UTF-8':
+            suffix ='.odt'
+
+        if content_type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8':
+            suffix = '.xlsx'
+
+        if content_type == 'text/html;charset=UTF-8':
+            suffix = '.htm'
+
+        if content_type == 'xls;charset=UTF-8':
+            suffix = '.xls'
+    
+        
+    
+        if suffix is None:
+            raise Exception(f"unrecongonized content type: {content_type}")
+    
+        try:
+            data_file_name = self.get_temp_file(content, suffix)
+            del content
+            del web_data
+            with open(data_file_name, 'rb') as data_file:
+                records = []
+                if suffix == '.xlsx':
+                    records = records_from_xslx(data_file)
+                elif suffix == '.odt':
+                    records = records_from_odt(data_file, **self.odt_conv_args)
+                elif suffix == '.htm':
+                    records = records_from_htm(data_file)
+                elif suffix == '.xls':
+                    records = records_from_excel(data_file, **self.excel_conv_args)
+                else:
+                    raise Exception(f"unsupprted suffix: {suffix}")
+        finally:
+            Path(data_file_name).unlink(missing_ok=True)
+
+        #logger.debug('got {} records'.format(len(records)))
+        #logger.debug('{}'.format(records[0]))
+        return records
+
+
+    def get_records(self):
+        download_types = copy.copy(self.download_types)
         while True:
-            captcha_code = self.captcha_helper.get_code(download_dir_url)
-            self.post_data['captchaAnswer'] = captcha_code
-            post_headers = {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'referer': download_dir_url
-            }
-            post_data = copy.copy(self.post_data)
-            post_data['OWASP_CSRFTOKEN'] = self.ctx.csrf_token
-            web_data = self.post_with_progress(download_dir_url,
-                                               data=self.post_data,
-                                               headers=post_headers)
-            if not web_data.ok:
-                raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
-
-            if 'Content-Disposition' not in web_data.headers or 'attachment;' not in web_data.headers['Content-Disposition']:
-                if INCORRECT_CAPTCHA_MESSAGE  not in web_data.text:
-                    if self.ctx.params.save_failed_html:
-                        with open('failed.html', 'w') as f:
-                            f.write(web_data.text)
-                    raise Exception('Non-captcha failure in request')
-    
-                self.captcha_helper.mark_failure()
-                if count > 5:
-                    raise Exception('failed after trying for 5 times')
-                time.sleep(1)
-                count += 1
-                continue
-    
-            self.captcha_helper.mark_success()
-            suffix = None
-            content_type = web_data.headers['Content-Type']
-            content = web_data.content
-            if content_type == 'application/zip;charset=UTF-8':
-                logger.debug('unzipping data')
-                filename, content = unzip_single(content)
-                logger.debug(f'unzipped filename: {filename}')
-                suffix = Path(filename).suffix
-    
-            if content_type == 'odt;charset=UTF-8':
-                suffix ='.odt'
-
-            if content_type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8':
-                suffix = '.xlsx'
-
-            if content_type == 'text/html;charset=UTF-8':
-                suffix = '.htm'
-
-            if content_type == 'xls;charset=UTF-8':
-                suffix = '.xls'
-    
-            
-    
-            if suffix is None:
-                raise Exception(f"unrecongonized content type: {content_type}")
-    
+            download_type = download_types.pop(0)
             try:
-                data_file_name = self.get_temp_file(content, suffix)
-                del content
-                del web_data
-                with open(data_file_name, 'rb') as data_file:
-                    records = []
-                    if suffix == '.xlsx':
-                        records = records_from_xslx(data_file)
-                    elif suffix == '.odt':
-                        records = records_from_odt(data_file, **self.odt_conv_args)
-                    elif suffix == '.htm':
-                        records = records_from_htm(data_file)
-                    elif suffix == '.xls':
-                        records = records_from_excel(data_file, **self.excel_conv_args)
-                    else:
-                        raise Exception(f"unsupprted suffix: {suffix}")
-            finally:
-                Path(data_file_name).unlink(missing_ok=True)
-
-            #logger.debug('got {} records'.format(len(records)))
-            #logger.debug('{}'.format(records[0]))
-            return records
+                count = 0
+                while True:
+                    count += 1
+                    try:
+                        return self.make_request(download_type)
+                    except CaptchaFailureException:
+                        if count > 5:
+                            raise Exception('captcha failed for 5 tries')
+                        time.sleep(1)
+            except Exception as ex:
+                if len(download_types) == 0:
+                    raise ex
+                else:
+                    logger.warning(f'Caught exception while running with download_type: {download_type}.. checking with other downloadtypes', exc_info=True)
 
 
     #TODO: this is incomplete
@@ -213,6 +234,7 @@ class StateWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
                                              csv_filename=csv_filename_s,
                                              ctx=self.ctx,
                                              transform=self.transform,
+                                             download_types=self.download_types,
                                              odt_conv_args=self.odt_conv_args,
                                              excel_conv_args=self.excel_conv_args,
                                              post_data_extra=post_data_extra)
@@ -488,12 +510,12 @@ def get_all_directory_downloaders(ctx):
                                                     dropdown='Gram Panchayat Mapping to village --> Gram Panchayat Mapping to village',
                                                     csv_filename='gp_mapping.csv',
                                                     ctx=ctx,
+                                                    download_types=['xls', 'htm'],
                                                     excel_conv_args={
                                                         'header_row_span': 2,
                                                     },
                                                     post_data_extra={
                                                         'rptFileName': 'LocalbodyMappingtoCensusLandregionCode@state',
-                                                        'downloadType': 'htm'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='VILLAGES',
                                                     desc='list of all villages',

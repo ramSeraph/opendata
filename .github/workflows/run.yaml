@@ -94,7 +94,7 @@ jobs:
           gsutil -m cp -r gs://lgd_data_raw/changes/* data/raw/changes/
 
       - name: Download LGD data
-        run: .venv/bin/python -m lgd.scrape -m RUN -l DEBUG -R 300 --use-procs -p 5 --archive-data --captcha-model-dir models
+        run: .venv/bin/python -m lgd.scrape -m RUN -l DEBUG -R 300 --use-procs -p 10 --archive-data --captcha-model-dir models
         timeout-minutes: 360
 
       - name: Upload archive file to gcs

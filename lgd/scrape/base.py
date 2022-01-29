@@ -307,13 +307,14 @@ def get_mem_info():
 
 def download_task(downloader):
     logger.info('getting {}'.format(downloader.desc))
-    while True:
-        smem, pmem = get_mem_info()
-        free_mem = smem.total - smem.used
-        if free_mem > FREE_MEM_THRESHOLD_GB * (10**9):
-            break
-        logger.warning('not enough system memory.. sleeping for a min')
-        time.sleep(60)
+    get_mem_info()
+    #while True:
+    #    smem, pmem = get_mem_info()
+    #    free_mem = smem.total - smem.used
+    #    if free_mem > FREE_MEM_THRESHOLD_GB * (10**9):
+    #        break
+    #    logger.warning('not enough system memory.. sleeping for a min')
+    #    time.sleep(60)
 
     with MemoryTracker(downloader.name, TRACING):
         downloader.download(get_local_context(downloader.ctx.params))

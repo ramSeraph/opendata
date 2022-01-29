@@ -12,7 +12,9 @@ on:
       - master
 
 jobs:
-  Setup-Pip-Cache:
+  Run-LGD-Extraction:
+    #continue-on-error: true
+    timeout-minutes: 600
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -25,10 +27,10 @@ jobs:
 
       - name: Restore pip data from cache
         uses: actions/cache@v2
-        id: cache-venv
         with:
           path: ./.venv/
           key: $venv-${{ hashFiles('lgd/requirements.txt') }}
+        id: cache-venv
 
       - name: Setup python requirements
         if: steps.cache-venv.outputs.cache-hit != 'true'
@@ -36,51 +38,6 @@ jobs:
           python -m venv ./.venv 
           . ./.venv/bin/activate
           pip install -r lgd/requirements.txt
-
-  Setup-Models-Cache:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Restore tesseract models from cache
-        uses: actions/cache@v2
-        with:
-          path: 'models/' 
-          key:  'lgd-tesseract-models-gcs-v2'
-        id: models-cache
-
-      - name: Download tesseract models from gcs
-        if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
-        run: |
-          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
-          mkdir -p models/
-          gsutil -m cp -r gs://lgd_captcha_tesseract_models/* models/
-
-  Run-LGD-Extraction:
-    #continue-on-error: true
-    timeout-minutes: 600
-    runs-on: ubuntu-latest
-    needs: [ 'Setup-Pip-Cache', 'Setup-Models-Cache' ]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Setup python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.9.4'
-
-      - name: Restore pip data from cache
-        uses: actions/cache@v2
-        id: cache-venv  # name for referring later
-        with:
-          path: ./.venv/  # what we cache: the virtualenv
-          # The cache key depends on requirements.txt
-          key: $venv-${{ hashFiles('lgd/requirements.txt') }}
-
-      - name: Check pip setup
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        run: |
-          echo "::error pip cache not found"
-          exit 1
 
       - name: Install tesseract OCR
         run: |
@@ -95,13 +52,14 @@ jobs:
           key:  'lgd-tesseract-models-gcs-v2'
         id: models-cache
 
-      - name: Check tesseract models
+      - name: Download tesseract models from gcs
         if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
         run: |
-          echo "::error models cache not found"
-          exit 1
+          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
+          mkdir -p models/
+          gsutil -m cp -r gs://lgd_captcha_tesseract_models/* models/
 
-      - name: Set current date as env variable
+      - name: Get current date
         run: echo "::set-output name=date::$(date +'%d%b%Y')"
         id: date
 
@@ -110,7 +68,7 @@ jobs:
         with:
           path: data/raw/${{ steps.date.outputs.date }}
           key:  data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
-          restore-keys:
+          restore-keys: |
             data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
             data-raw-v4-${{ steps.date.outputs.date }}-
 
@@ -131,7 +89,7 @@ jobs:
       - name: Download changes file from gcs
         if: ${{ steps.changes_cache.outputs.cache-hit != 'true' && steps.changes_cache.outputs.cache-hit != 'false' }}
         run: |
-          echo cachehit is a{{ steps.changes_cache.outputs.cache-hit }}a
+          echo cachehit is a${{ steps.changes_cache.outputs.cache-hit }}a
           mkdir -p data/raw/changes
           gsutil -m cp -r gs://lgd_data_raw/changes/* data/raw/changes/
 

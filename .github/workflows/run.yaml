@@ -109,9 +109,12 @@ jobs:
         uses: TerrenceHo/cache-always@v0.0.1
         with:
           path: 'data/raw/${{ steps.date.outputs.date }}' 
-          key:  'data-raw-v3-${{ steps.date.outputs.date }}'
+          key:  'data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}'
+          restore-keys:
+            - 'data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-'
+            - 'data-raw-v4-${{ steps.date.outputs.date }}-'
 
-      - name: Authorize with GCP
+      - name: Authenticate with GCP
         run: |
           gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
 
@@ -119,12 +122,16 @@ jobs:
         uses: TerrenceHo/cache-always@v0.0.1
         with:
           path: 'data/raw/changes' 
-          key:  'data-raw-changes-v3-${{ steps.date.outputs.date }}'
+          key:  'data-raw-changes-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}'
+          restore-keys:
+            - 'data-raw-changes-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-'
+            - 'data-raw-changes-v4-${{ steps.date.outputs.date }}-'
         id: changes_cache
 
       - name: Download changes file from gcs
-        if: ${{ steps.changes_cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.changes_cache.outputs.cache-hit != 'true' && steps.changes_cache.outputs.cache-hit != 'false' }}
         run: |
+          echo cachehit is a{{ steps.changes_cache.outputs.cache-hit }}a
           mkdir -p data/raw/changes
           gsutil -m cp -r gs://lgd_data_raw/changes/* data/raw/changes/
 

@@ -33,18 +33,18 @@ jobs:
             fi
           fi
 
+      - name: Log outputs  
+        run: |
+          echo "RERUN=${{ steps.check.outputs.RERUN }}, SEND_ALERT=${{ steps.check.outputs.SEND_ALERT }}"
+
       - name: Call Rerun API
         if: ${{ steps.check.outputs.RERUN }} == 'true'
         run: |
-          curl -X POST -u "ramSeraph:${{secrets.RERUN_PAT}}" "${{ github.event.workflow_run.rerun_url }}"
+          curl -X POST -u "ramSeraph:${{secrets.RERUN_PAT}}" ${{ github.event.workflow_run.rerun_url }}
 
       - name: Send PushBullet notification
         if: ${{ steps.check.outputs.SEND_ALERT }} == 'true'
-        uses: yassinebridi/pushbullet-action@v1.0.2
-        env:
-          PB_TOKEN: ${{ secrets.PB_TOKEN }}
-          PB_TYPE: link
-          PB_TITLE: LGD Daily Run Failed
-          PB_BODY: LGD Daily Run Failed 
-          PB_URL: ${{ github.event.workflow_run.html_url }}
-
+        run: |
+          export PB_TOKEN="${{ secrets.PB_TOKEN }}"
+          export REQUEST_BODY="{\"title\":\"LGD Daily run failed\",\"body\":\"LGD Daily Run failed\",\"type\":\"link\", \"url\":\"${{ github.event.workflow_run.html_url}}\"}" 
+          curl --header "Access-Token: ${PB_TOKEN}" --header "Content-Type: application/json" --data-binary " --request POST  https://api.pushbullet.com/v2/pushes

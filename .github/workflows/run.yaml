@@ -7,13 +7,11 @@ concurrency:
 on: 
   schedule:
     - cron: '15 6 * * *'
-  push:
-    branches:
-      - master
+  workflow_dispatch:
+
 
 jobs:
   Run-LGD-Extraction:
-    #continue-on-error: true
     timeout-minutes: 600
     runs-on: ubuntu-latest
     steps:
@@ -118,13 +116,3 @@ jobs:
       - name: Upload changes file to gcs
         run: |
           gsutil -m cp -r data/raw/changes/* gs://lgd_data_raw/changes/
-
-      - name: Trigger retry
-        if: ${{ failure() }}
-        uses: peter-evans/repository-dispatch@v1
-        with:
-          token: ${{ secrets.RERUN_PAT }}
-          event-type: 'retry-trigger'
-          client-payload: '{"run_id": "${{ github.run_id }}", "run_attempt": "${{ github.run_attempt }}"}'
-
-

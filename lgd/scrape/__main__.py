@@ -263,6 +263,7 @@ def archive_all_data(downloaders):
 
 
         filenames.append(data_license_file)
+        filenames.append(code_version_file)
 
         logger.info(f'Creating zipfile {zip_filename} for archiving')
         with ZipFile(zip_filename, 'w', ZIP_LZMA) as zip_obj:

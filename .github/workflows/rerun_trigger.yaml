@@ -1,14 +1,37 @@
 name: Repository Dispatch for rerun
 on:
-  repository_dispatch:
-    types: [retry-trigger]
+  workflow_run:
+    workflows:
+      - Daily Run
+    types: [completed]
+
 jobs:
   RetryTrigger:
     runs-on: ubuntu-latest
     steps:
-      - name: Call Rerun API
+      - name: Check to give up
+        id: check
         run: |
-          URL=https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.client_payload.run_id }}/rerun
-          RUN_ATTEMPT=${{ github.event.client_payload.run_attempt }}
-          [ $RUN_ATTEMPT -lt 3 ] && curl -X POST -u "ramSeraph:${{secrets.RERUN_PAT}}" $URL
+          RUN_ID=${{ github.event.workflow_run.id }}
+          RUN_NO=${{ github.event.workflow_run.run_number }}
+          RUN_ATTEMPT=${{ github.event.workflow_run.run_attempt }}
+          CONCLUSION=$[[ github.event.workflow_run.conclusion }}
+          echo 'got workflow run event for $RUN_NUMBER( attempt - $RUN_ATTEMPT ), conclusion - $CONCLUSION'
+          echo '::set-output name=GIVE_UP::true'
+          [ $CONCLUSION != 'failure' || $RUN_ATTEMPT -lt 3 ] && echo '::set-output name=GIVE_UP::false' || true
+
+      - name: Call Rerun API
+        if: ${{ steps.check.outputs.GIVE_UP }} == 'false':
+        run: |
+          curl -X POST -u "ramSeraph:${{secrets.RERUN_PAT}}" ${{ github.event.worflow_run.rerun_url }}
+
+      - name: Send PushBullet notification
+        if: ${{ steps.check.outputs.GIVE_UP }} == 'true':
+        uses: yassinebridi/pushbullet-action@v1.0.2
+        env:
+          PB_TOKEN: ${{ secrets.PB_TOKEN }}
+          PB_TYPE: link
+          PB_TITLE: LGD Daily Run Failed
+          PB_BODY: LGD Daily Run Failed 
+          PB_URL: ${{ github.event.workflow_run.html_url }}
 

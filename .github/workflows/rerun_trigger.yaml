@@ -12,13 +12,13 @@ jobs:
       - name: Check to give up
         id: check
         run: |
-          RUN_ID=${{ github.event.workflow_run.id }}
-          RUN_NO=${{ github.event.workflow_run.run_number }}
-          RUN_ATTEMPT=${{ github.event.workflow_run.run_attempt }}
-          CONCLUSION=${{ github.event.workflow_run.conclusion }}
-          echo 'got workflow run event for $RUN_NUMBER( attempt - $RUN_ATTEMPT ), conclusion - $CONCLUSION'
-          echo '::set-output name=GIVE_UP::true'
-          [ $CONCLUSION != 'failure' || $RUN_ATTEMPT -lt 3 ] && echo '::set-output name=GIVE_UP::false' || true
+          export RUN_ID=${{ github.event.workflow_run.id }}
+          export RUN_NO=${{ github.event.workflow_run.run_number }}
+          export RUN_ATTEMPT=${{ github.event.workflow_run.run_attempt }}
+          export CONCLUSION=${{ github.event.workflow_run.conclusion }}
+          echo "got workflow run event for $RUN_NUMBER( attempt - $RUN_ATTEMPT ), conclusion - $CONCLUSION"
+          echo "::set-output name=GIVE_UP::true"
+          [ "$CONCLUSION" != "failure" -o "$RUN_ATTEMPT" -lt 3 ] && echo "::set-output name=GIVE_UP::false" || true
 
       - name: Call Rerun API
         if: ${{ steps.check.outputs.GIVE_UP }} == 'false'

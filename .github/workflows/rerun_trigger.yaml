@@ -21,12 +21,12 @@ jobs:
           [ $CONCLUSION != 'failure' || $RUN_ATTEMPT -lt 3 ] && echo '::set-output name=GIVE_UP::false' || true
 
       - name: Call Rerun API
-        if: ${{ steps.check.outputs.GIVE_UP }} == 'false':
+        if: ${{ steps.check.outputs.GIVE_UP }} == 'false'
         run: |
           curl -X POST -u "ramSeraph:${{secrets.RERUN_PAT}}" ${{ github.event.worflow_run.rerun_url }}
 
       - name: Send PushBullet notification
-        if: ${{ steps.check.outputs.GIVE_UP }} == 'true':
+        if: ${{ steps.check.outputs.GIVE_UP }} == 'true'
         uses: yassinebridi/pushbullet-action@v1.0.2
         env:
           PB_TOKEN: ${{ secrets.PB_TOKEN }}

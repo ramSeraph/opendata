@@ -38,13 +38,16 @@ jobs:
           echo "RERUN=${{ steps.check.outputs.RERUN }}, SEND_ALERT=${{ steps.check.outputs.SEND_ALERT }}"
 
       - name: Call Rerun API
-        if: ${{ steps.check.outputs.RERUN }} == 'true'
+        if: ${{ steps.check.outputs.RERUN }}
         run: |
           curl -X POST -u "ramSeraph:${{secrets.RERUN_PAT}}" ${{ github.event.workflow_run.rerun_url }}
 
       - name: Send PushBullet notification
-        if: ${{ steps.check.outputs.SEND_ALERT }} == 'true'
+        if: ${{ steps.check.outputs.SEND_ALERT }}
         run: |
-          export PB_TOKEN="${{ secrets.PB_TOKEN }}"
-          export REQUEST_BODY="{\"title\":\"LGD Daily run failed\",\"body\":\"LGD Daily Run failed\",\"type\":\"link\", \"url\":\"${{ github.event.workflow_run.html_url}}\"}" 
-          curl --header "Access-Token: ${PB_TOKEN}" --header "Content-Type: application/json" --data-binary " --request POST  https://api.pushbullet.com/v2/pushes
+          export PB_API_URL="https://api.pushbullet.com/v2/pushes"
+          export PB_URL="${{ github.event.workflow_run.html_url }}"
+          export PB_TITLE="LGD Daily run failed"
+          export PB_BODY="LGD Daily run failed"
+          export REQUEST_BODY="{\"title\":\"$PB_TITLE\",\"body\":\"$PB_BODY\",\"type\":\"link\",\"url\":\"$PB_URL\"}" 
+          curl -H "Access-Token: ${{ secrets.PB_TOKEN }}" -H "Content-Type: application/json" --data-binary "$REQUEST_BODY" -X POST "$PB_API_URL" 

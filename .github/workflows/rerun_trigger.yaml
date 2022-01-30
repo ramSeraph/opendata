@@ -16,9 +16,9 @@ jobs:
           export RUN_NO=${{ github.event.workflow_run.run_number }}
           export RUN_ATTEMPT=${{ github.event.workflow_run.run_attempt }}
           export CONCLUSION=${{ github.event.workflow_run.conclusion }}
-          echo "got workflow run event for $RUN_NUMBER( attempt - $RUN_ATTEMPT ), conclusion - $CONCLUSION, ${{ toJSON(github.event) }}"
+          echo "got workflow run event for $RUN_NUMBER( attempt - $RUN_ATTEMPT ), conclusion - $CONCLUSION"
           echo "::set-output name=RERUN::true"
-          [ "$CONCLUSION" != "failure" -o "$RUN_ATTEMPT" -lt 3 ] && echo "::set-output name=RERUN::false" || true
+          [ "$CONCLUSION" != "failure" -o "$RUN_ATTEMPT" -lt 3 ] || echo "::set-output name=RERUN::false" || true
 
       - name: Call Rerun API
         if: ${{ steps.check.outputs.RERUN }} == 'true'

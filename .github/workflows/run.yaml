@@ -72,10 +72,10 @@ jobs:
           path: |
             data/raw/${{ steps.date.outputs.date }}
             data/raw/${{ steps.date.outputs.date }}.zip
-          key:  data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  data-raw-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            data-raw-v4-${{ steps.date.outputs.date }}-
+            data-raw-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            data-raw-v5-${{ steps.date.outputs.date }}-
 
       - name: Authenticate with GCP
         run: |

@@ -35,7 +35,7 @@ jobs:
 
       - name: Log outputs  
         run: |
-          echo "RERUN=${{ steps.check.outputs.RERUN }}, SEND_ALERT=${{ steps.check.outputs.SEND_ALERT }}"
+          echo "${{ toJSON(steps.check.outputs) }}"
 
       - name: Call Rerun API
         if: ${{ steps.check.outputs.RERUN }}

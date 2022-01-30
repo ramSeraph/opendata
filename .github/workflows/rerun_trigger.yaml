@@ -33,17 +33,13 @@ jobs:
             fi
           fi
 
-      - name: Log outputs  
-        run: |
-          echo "${{ toJSON(steps.check.outputs) }}"
-
       - name: Call Rerun API
-        if: ${{ steps.check.outputs.RERUN }}
+        if: ${{ steps.check.outputs.RERUN == 'true' }}
         run: |
           curl -X POST -u "ramSeraph:${{secrets.RERUN_PAT}}" ${{ github.event.workflow_run.rerun_url }}
 
       - name: Send PushBullet notification
-        if: ${{ steps.check.outputs.SEND_ALERT }}
+        if: ${{ steps.check.outputs.SEND_ALERT == 'true' }}
         run: |
           export PB_API_URL="https://api.pushbullet.com/v2/pushes"
           export PB_URL="${{ github.event.workflow_run.html_url }}"

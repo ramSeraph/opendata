@@ -16,6 +16,8 @@ from .conversion_helper import (records_from_excel, records_from_xslx,
 logger = logging.getLogger(__name__)
 
 
+SAVE_INTERMEDIATE_FILES = False
+
 class CaptchaFailureException(Exception):
     pass
 
@@ -142,7 +144,8 @@ class DirectoryDownloader(BaseDownloader):
                 else:
                     raise Exception(f"unsupprted suffix: {suffix}")
         finally:
-            Path(data_file_name).unlink(missing_ok=True)
+            if not SAVE_INTERMEDIATE_FILES:
+                Path(data_file_name).unlink(missing_ok=True)
 
         #logger.debug('got {} records'.format(len(records)))
         #logger.debug('{}'.format(records[0]))

@@ -18,13 +18,18 @@ def normalize(k):
 
 
 def convert_to_dicts(rows, header_row_span=1):
+    if header_row_span < 1:
+        raise Exception(f'header_row_span {header_row_span} must not be less than 1')
+
     if len(rows) < header_row_span + 1:
         return []
 
     def str_joiner(*args):
         return '\n'.join(args)
 
+    header_len = len(rows[0])
     key_rows = rows[:header_row_span]
+    key_rows = [ row + max(0, (header_len - len(row))) * [''] for row in key_rows ]
     keys_row = map(str_joiner, *key_rows)
     keys_row = [normalize(k) for k in keys_row]
 

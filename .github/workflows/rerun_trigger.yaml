@@ -1,4 +1,4 @@
-name: Repository Dispatch for rerun
+name: Monitor Daily Run
 on:
   workflow_run:
     workflows:

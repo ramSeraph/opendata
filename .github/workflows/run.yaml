@@ -100,7 +100,9 @@ jobs:
 
       - name: Download LGD data
         run: |
-          [ ! -e data/raw/${{ steps.date.outputs.date }}.zip ] && .venv/bin/python -m lgd.scrape -m RUN -l INFO -R 300 --use-procs -p 10 --archive-data --captcha-model-dir models
+          if [ ! -e data/raw/${{ steps.date.outputs.date }}.zip ]; then
+            .venv/bin/python -m lgd.scrape -m RUN -l INFO -R 300 --use-procs -p 10 --archive-data --captcha-model-dir models
+          fi
         timeout-minutes: 300
 
       - name: Cleanup Processes

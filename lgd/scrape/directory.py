@@ -583,6 +583,7 @@ def get_all_directory_downloaders(ctx):
                                                     dropdown='Parliament/Assembly Constituency --> State Wise Parliament Constituency and Assembly Constituency along with coverage details Urban',
                                                     csv_filename='constituencies_mapping_urban.csv',
                                                     ctx=ctx,
+                                                    transform=['ignore_if_empty_field', 'Parliament Constituency code'],
                                                     post_data_extra={
                                                         'rptFileName': 'parlimentConstituencyAndAssemblyConstituencyUrban@state'
                                                     },

@@ -17,16 +17,24 @@ jobs:
           export RUN_ATTEMPT=${{ github.event.workflow_run.run_attempt }}
           export CONCLUSION=${{ github.event.workflow_run.conclusion }}
           echo "got workflow run event for $RUN_NUMBER( attempt - $RUN_ATTEMPT ), conclusion - $CONCLUSION"
-          echo "::set-output name=RERUN::true"
-          [ "$CONCLUSION" != "failure" -o "$RUN_ATTEMPT" -lt 3 ] || echo "::set-output name=RERUN::false" || true
+          if [ "$CONCLUSION" != "failure" ] then
+            echo "::set-output name=RERUN::false"
+            echo "::set-output name=SEND_ALERT::false"
+          elif [ "$RUN_ATTEMPT" -lt 3 ]
+            echo "::set-output name=RERUN::true"
+            echo "::set-output name=SEND_ALERT::false"
+          else
+            echo "::set-output name=RERUN::false"
+            echo "::set-output name=SEND_ALERT::true"
+          fi
 
       - name: Call Rerun API
         if: ${{ steps.check.outputs.RERUN }} == 'true'
         run: |
-          curl -X POST -u "ramSeraph:${{secrets.RERUN_PAT}}" ${{ github.event.worflow_run.rerun_url }}
+          curl -X POST -u "ramSeraph:${{secrets.RERUN_PAT}}" "${{ github.event.workflow_run.rerun_url }}"
 
       - name: Send PushBullet notification
-        if: ${{ steps.check.outputs.RERUN }} == 'false'
+        if: ${{ steps.check.outputs.SEND_ALERT }} == 'true'
         uses: yassinebridi/pushbullet-action@v1.0.2
         env:
           PB_TOKEN: ${{ secrets.PB_TOKEN }}

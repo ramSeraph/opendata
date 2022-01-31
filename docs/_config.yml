@@ -1,12 +1,3 @@
-title: Opendata
-email: kandimalla.sreeram@gmail.com
-description: |
-  Opendata India, Local Government Directory
-baseurl: "/opendata" # the subpath of your site, e.g. /blog
-url: "https://ramseraph.github.io" # the base hostname & protocol for your site, e.g. http://example.com
-twitter_username: ramSeraph
-github_username:  ramSeraph
-github: [metadata]
 remote-theme: b2a3e8/jekyll-theme-console
 header_pages:
   - index.md

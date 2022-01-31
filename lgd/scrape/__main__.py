@@ -379,6 +379,24 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
             result['archival_status'] = success
         return result
 
+def get_markdown_from_comps(comps_info):
+    full_str = "# Archive data details\n\n"
+    for comp_name, comp_info in comps_info.items():
+        filename = comp_info['filename']
+        desc = comp_info['desc']
+        location = comp_info['lgd_location']
+        location_steps = location.split(' --> ')
+        step_strs = []
+        for i, step in enumerate(location_steps):
+            step_strs.append('\n' + '  ' * i + f'- {step}')
+        location_str = '\n'.join(step_strs)
+        full_str += "---\n\n"
+        full_str += f"## {filename}\n\n"
+        full_str += f"{desc}\n\n"
+        full_str += "### Location in LGD site\n"
+        full_str += f"{location_str}\n\n"
+    return full_str
+
 
 
 if __name__ == '__main__':
@@ -403,6 +421,8 @@ if __name__ == '__main__':
     mode_help_strs = [ '{}: {}'.format(k, Mode[k].value) for k in Mode.__members__.keys() ]
     parser = argparse.ArgumentParser(formatter_class=SmartFormatter)
     parser.add_argument('-m', '--mode', help='R|mode to run script in,\n\t' + '\n\t'.join(mode_help_strs), choices=mode_choices, type=str)
+
+    parser.add_argument('--to-markdown', help='print COMPS mode output as markdown', action='store_true')
 
     parser.add_argument('-c', '--comp', help='R|component to select, no choice implies all\nget list of components by running this script with COMPS mode argument', action='extend', nargs='+', type=str)
     parser.add_argument('-N', '--no-comp', help='R|component to deselect\nget list of components by running this script with COMPS mode argument', action='extend', nargs='+', type=str)
@@ -445,6 +465,7 @@ if __name__ == '__main__':
     comps_to_not_run = args.no_comp
     num_parallel = args.parallel
     use_procs = args.use_procs
+    to_markdown = args.to_markdown
 
     if len(comps_to_run) and len(comps_to_not_run):
         raise Exception("Can't specify bot comps to tun and not run")
@@ -467,6 +488,7 @@ if __name__ == '__main__':
     del args_dict['mode']
     del args_dict['parallel']
     del args_dict['use_procs']
+    del args_dict['to_markdown']
 
     params = Params()
     params.__dict__ = args_dict
@@ -475,3 +497,8 @@ if __name__ == '__main__':
     pprint(ret)
     if mode == Mode.RUN and params.archive_data and not ret['archival_status']:
         exit(1)
+
+    if mode == Mode.COMPS and to_markdown:
+        markdown_str = get_markdown_from_comps(ret)
+        print('\n\nMarkdown:\n\n')
+        print(markdown_str)

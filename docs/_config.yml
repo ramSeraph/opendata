@@ -1,6 +1,4 @@
-plugins: 
-  - jekyll-remote-theme
-remote-theme: b2a3e8/jekyll-theme-console
+theme: jekyll-theme-console
 header_pages:
   - index.md
   - about.md

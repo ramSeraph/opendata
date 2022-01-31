@@ -7,8 +7,8 @@ style: hacker # dark (default), light or hacker
 listen_for_clients_preferred_style: true # false (default) or true
 footer: 'Source Code at: <a href="https://github.com/ramSeraph/opendata">Github</a>'
 
-remote_theme: b2a3e8/jekyll-theme-console
-#remote_theme: syaning/slim
+#remote_theme: b2a3e8/jekyll-theme-console
+remote_theme: syaning/slim
 #remote_theme: minicomp/ed
 
 #google_analytics: UA-NNNNNNNN-N

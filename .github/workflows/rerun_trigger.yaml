@@ -5,6 +5,8 @@ on:
       - Daily Run
     types: [completed]
 
+# conclusion values: action_required, cancelled, failure, neutral, success, skipped, stale, or timed_out
+# TODO: deal with failure conclusions apart from 'failure'
 jobs:
   RetryTrigger:
     runs-on: ubuntu-latest

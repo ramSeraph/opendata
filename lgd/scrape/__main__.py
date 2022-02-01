@@ -177,6 +177,25 @@ def delete_raw_data(ctx):
                     blob.delete()
 
 
+def get_markdown_from_comps(comps_info):
+    full_str = "# Archive data details\n\n"
+    for comp_name, comp_info in comps_info.items():
+        filename = comp_info['filename']
+        desc = comp_info['desc']
+        location = comp_info['lgd_location']
+        location_steps = location.split(' --> ')
+        step_strs = []
+        for i, step in enumerate(location_steps):
+            step_strs.append('\n' + '  ' * i + f'- {step}')
+        location_str = ''.join(step_strs)
+        full_str += "---\n\n"
+        full_str += f"## {filename}\n\n"
+        full_str += f"description\n: {desc}\n\n"
+        full_str += "Location in LGD\n"
+        full_str += f": {location_str}\n\n"
+    return full_str
+
+
 def get_version_text():
     cmd = 'git describe --tags --dirty --always'
     (status, output) = subprocess.getstatusoutput(cmd)
@@ -254,16 +273,24 @@ def archive_all_data(downloaders):
             logger.error(f'missing files for archiving: {missing}')
             return False
 
+        comps_info = {d.name:{'desc': d.desc,
+                              'filename': d.csv_filename,
+                              'lgd_location': '{} --> {}'.format(d.section, d.dropdown)} for d in downloaders}
+
         data_license_file = str(Path(params.base_raw_dir).joinpath(get_date_str(), 'DATA_LICENSE'))
         with open(data_license_file, 'w') as f:
             f.write(get_license_txt())
+        filenames.append(data_license_file)
+
         code_version_file = str(Path(params.base_raw_dir).joinpath(get_date_str(), 'CODE_VERSION'))
         with open(code_version_file, 'w') as f:
             f.write(get_version_text())
-
-
-        filenames.append(data_license_file)
         filenames.append(code_version_file)
+
+        data_source_file = str(Path(params.base_raw_dir).joinpath(get_date_str(), 'DATA_SOURCES.MD'))
+        with open(data_source_file, 'w') as f:
+            f.write(get_markdown_from_comps(comps_info))
+        filenames.append(data_source_file)
 
         logger.info(f'Creating zipfile {zip_filename} for archiving')
         with ZipFile(zip_filename, 'w', ZIP_LZMA) as zip_obj:
@@ -378,25 +405,6 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
 
             result['archival_status'] = success
         return result
-
-def get_markdown_from_comps(comps_info):
-    full_str = "# Archive data details\n\n"
-    for comp_name, comp_info in comps_info.items():
-        filename = comp_info['filename']
-        desc = comp_info['desc']
-        location = comp_info['lgd_location']
-        location_steps = location.split(' --> ')
-        step_strs = []
-        for i, step in enumerate(location_steps):
-            step_strs.append('\n' + '  ' * i + f'* {step}')
-        location_str = '\n'.join(step_strs)
-        full_str += "---\n\n"
-        full_str += f"## {filename}\n\n"
-        full_str += f"{desc}\n\n"
-        full_str += "LGD\n"
-        full_str += f"{location_str}\n\n"
-    return full_str
-
 
 
 if __name__ == '__main__':

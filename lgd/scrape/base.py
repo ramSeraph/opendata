@@ -8,7 +8,6 @@ import collections
 import requests
 import functools
 import psutil
-import time
 
 from threading import local, currentThread
 from pathlib import Path

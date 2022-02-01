@@ -6,7 +6,7 @@ permalink: /lgd/
 
 Collection of Data from [Local Government Directory](https://lgdirectorey.gov.in)
 
-[Daily Archives](/lgd/archives)
+[Daily Archives](archives)
 
-[Archive Data Description](/lgd//anatomy)
+[Archive Data Description](anatomy)
 

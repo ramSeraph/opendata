@@ -3,13 +3,20 @@ header_pages:
   - lgd.md
   - about.md
 
-style: hacker # dark (default), light or hacker
-listen_for_clients_preferred_style: true # false (default) or true
+#listen_for_clients_preferred_style: true
+
+style: hacker
+
 footer: 'Source Code at: <a href="https://github.com/ramSeraph/opendata">Github</a>'
 
-#remote_theme: b2a3e8/jekyll-theme-console
-remote_theme: syaning/slim
+markdown: kramdown
+remote_theme: b2a3e8/jekyll-theme-console
+#remote_theme: syaning/slim
 #remote_theme: minicomp/ed
+#remote_theme: pedr0silva/site-theme
+#remote_theme: 'MyNameIsCosmo/jekyll-theme-markdown-console'
+
+
 
 #google_analytics: UA-NNNNNNNN-N
 

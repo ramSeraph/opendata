@@ -2,7 +2,7 @@
 
 PLATFORM=${PLATFORM:-"linux/amd64"}
 
-if [ $BUILD == "1" ]; then
+if [ "$BUILD" == "1" ]; then
 	docker build --platform linux/amd64 -f Dockerfile -t bbnl .
 fi
 

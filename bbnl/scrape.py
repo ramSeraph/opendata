@@ -16,6 +16,7 @@ import logging
 from pathlib import Path
 from concurrent.futures import (wait, ALL_COMPLETED,
                                 ProcessPoolExecutor)
+from datetime import datetime
 
 import camelot
 from bs4 import BeautifulSoup
@@ -83,6 +84,24 @@ class ConversionBackend(object):
         #with open(png_path) as f:
         #    imgcat(f)
         null.close()
+
+
+def get_links_from_map_page(url):
+    web_data = requests.get(url)
+    if not web_data.ok:
+        raise Exception(f"unable to retrieve page {url}")
+    soup = BeautifulSoup(web_data.text, 'html.parser')
+    map_s = soup.find('map')
+    states = map_s.find_all('area')
+    infos = []
+    for state in states:
+        info = {
+            'suburl': state.attrs.get('href', None),
+            'title': state.attrs.get('title', None)
+        }
+        infos.append(info)
+    return infos
+
 
 def get_active_gps(executor):
     state_url_base = 'http://www.bbnl.nic.in/ActiveGps.aspx?state={}'
@@ -1175,6 +1194,24 @@ def run(action, comp, executor):
     func = comp_map[comp][action]
     func(executor)
 
+def get_last_updated_date(soup):
+    bottom_div = soup.find('div', { 'id': "bottom" })
+    visitor_panel = bottom_div.find('div', { 'class': 'visitor_panel' })
+    updated_span = visitor_panel.find('span', { 'id': 'bottom_last' })
+    last_updated_date_str = updated_span.text
+    last_updated_date_str = last_updated_date_str.replace('Last Updated On:', '').strip()
+    last_updated_date = datetime.strptime(last_updated_date_str, "%d/%m/%Y").date()
+    return last_updated_date
+
+def parse_main_page():
+    url = 'http://www.bbnl.nic.in'
+    web_data = requests.get(url)
+    if not web_data.ok:
+        raise Exception("unable to retrieve main page")
+    soup = BeautifulSoup(web_data.text, 'html.parser')
+    return soup
+
+
 if __name__ == '__main__':
     import argparse
 
@@ -1217,6 +1254,13 @@ if __name__ == '__main__':
     if len(unknown_actions):
         raise Exception(f'unknown actions {unknown_actions} specified')
 
+    if 'scrape' in actions_to_run:
+        soup = parse_main_page()
+        last_updated_date = get_last_updated_date(soup)
+        logger.info(f'last updated date on the site is {last_updated_date}')
+        menus = soup.find_all('a', {'class': 'menuanchor'})
+
+    exit()
 
     with ProcessPoolExecutor(max_workers=args.num_parallel) as executor:
         for action in all_actions:

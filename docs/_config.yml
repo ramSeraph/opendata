@@ -1,21 +1,22 @@
 header_pages:
   - index.md
-  - lgd.md
-  - bbnl.md
+  - lgd/index.md
+  - bbnl/index.md
   - about.md
 
 #listen_for_clients_preferred_style: true
 
-style: hacker
+style: dark
 
 footer: 'Source Code at: <a href="https://github.com/ramSeraph/opendata">Github</a>'
 
 markdown: kramdown
-remote_theme: b2a3e8/jekyll-theme-console
+#remote_theme: b2a3e8/jekyll-theme-console
 #remote_theme: syaning/slim
 #remote_theme: minicomp/ed
 #remote_theme: pedr0silva/site-theme
 #remote_theme: 'MyNameIsCosmo/jekyll-theme-markdown-console'
 
+repository: ramSeraph/opendata
 
-#google_analytics: UA-NNNNNNNN-N
+google_analytics: G-TZEXHP69XX

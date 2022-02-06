@@ -1,12 +1,6 @@
-name: Daily Run
-
-concurrency: 
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+name: Daily Run Temp Fix for Feb5
 
 on: 
-  schedule:
-    - cron: '15 6 * * *'
   workflow_dispatch:
 
 
@@ -63,7 +57,7 @@ jobs:
           gsutil -m cp -r gs://lgd_captcha_tesseract_models/* models/
 
       - name: Get current date
-        run: echo "::set-output name=date::$(date +'%d%b%Y')"
+        run: echo "::set-output name=date::05Feb2022"
         id: date
 
       - name: Restore daily run data from cache
@@ -72,10 +66,7 @@ jobs:
           path: |
             data/raw/${{ steps.date.outputs.date }}
             data/raw/${{ steps.date.outputs.date }}.zip
-          key:  data-raw-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
-          restore-keys: |
-            data-raw-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            data-raw-v5-${{ steps.date.outputs.date }}-
+          key:  data-raw-v5-${{ steps.date.outputs.date }}-53-1
 
       - name: Authenticate with GCP
         run: |
@@ -85,22 +76,21 @@ jobs:
         uses: TerrenceHo/cache-always@v0.0.1
         with:
           path: data/raw/changes 
-          key:  data-raw-changes-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
-          restore-keys: |
-            data-raw-changes-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            data-raw-changes-v4-${{ steps.date.outputs.date }}-
+          key:  data-raw-changes-v4-${{ steps.date.outputs.date }}-53-1
         id: changes_cache
 
-      - name: Download changes file from gcs
-        if: ${{ steps.changes_cache.outputs.cache-hit != 'true' && steps.changes_cache.outputs.cache-hit != 'false' }}
-        run: |
-          echo cachehit is a${{ steps.changes_cache.outputs.cache-hit }}a
-          mkdir -p data/raw/changes
-          gsutil -m cp -r gs://lgd_data_raw/changes/* data/raw/changes/
+          #- name: Download changes file from gcs
+          #  if: ${{ steps.changes_cache.outputs.cache-hit != 'true' && steps.changes_cache.outputs.cache-hit != 'false' }}
+          #  run: |
+          #    echo cachehit is a${{ steps.changes_cache.outputs.cache-hit }}a
+          #    mkdir -p data/raw/changes
+          #    gsutil -m cp -r gs://lgd_data_raw/changes/* data/raw/changes/
 
       - name: Download LGD data
         run: |
-          .venv/bin/python -m lgd.scrape -m RUN -l INFO -R 300 --use-procs -p 10 --archive-data --captcha-model-dir models
+          ls -h data/raw/${{ steps.date.outputs.date }}.zip
+          exit 1
+          #.venv/bin/python -m lgd.scrape -m RUN -l INFO -R 300 --use-procs -p 10 --archive-data --captcha-model-dir models
         timeout-minutes: 300
 
       - name: Cleanup Processes

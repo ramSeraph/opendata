@@ -88,9 +88,10 @@ jobs:
 
       - name: Download LGD data
         run: |
-          ls -h data/raw/${{ steps.date.outputs.date }}.zip
-          exit 1
-          #.venv/bin/python -m lgd.scrape -m RUN -l INFO -R 300 --use-procs -p 10 --archive-data --captcha-model-dir models
+          ls -lh data/raw/${{ steps.date.outputs.date }}.zip
+          rm data/raw/${{ steps.date.outputs.date }}.zip
+          export RUN_FOR_PREV_DAY=1
+          .venv/bin/python -m lgd.scrape -m RUN -l INFO -R 300 --use-procs -p 10 --archive-data --captcha-model-dir models
         timeout-minutes: 300
 
       - name: Cleanup Processes
@@ -103,6 +104,6 @@ jobs:
         run: |
           gsutil -m cp data/raw/${{ steps.date.outputs.date }}.zip gs://lgd_data_archive/
 
-      - name: Upload changes file to gcs
-        run: |
-          gsutil -m cp -r data/raw/changes/* gs://lgd_data_raw/changes/
+          #- name: Upload changes file to gcs
+          #  run: |
+          #    gsutil -m cp -r data/raw/changes/* gs://lgd_data_raw/changes/

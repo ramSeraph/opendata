@@ -478,13 +478,18 @@ class BaseDownloader:
                 os.makedirs(dirname, exist_ok=True)
 
             logger.info(f'writing file {csv_filename}')
-            wr = None
-            with open(csv_filename, 'w') as f:
-                for r in records_transformed:
-                    if wr is None:
-                        wr = csv.DictWriter(f, fieldnames=r.keys(), delimiter=';')
-                        wr.writeheader()
-                    wr.writerow(r)
+            try:
+                wr = None
+                with open(csv_filename, 'w') as f:
+                    for r in records_transformed:
+                        if wr is None:
+                            wr = csv.DictWriter(f, fieldnames=r.keys(), delimiter=';')
+                            wr.writeheader()
+                        wr.writerow(r)
+            except KeyboardInterrupt:
+                logger.warning(f'Interrupted while writing {csv_filename}, deleting incomplete file')
+                Path(csv_filename).unlink(missing_ok=True)
+                raise
 
         if self.ctx.params.enable_gcs:
             self.upload_to_gcs(self.get_filename(), self.get_blobname())

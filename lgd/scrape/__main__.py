@@ -293,11 +293,16 @@ def archive_all_data(downloaders):
         filenames.append(data_source_file)
 
         logger.info(f'Creating zipfile {zip_filename} for archiving')
-        with ZipFile(zip_filename, 'w', ZIP_LZMA) as zip_obj:
-            for filename in filenames:
-                path = Path(filename)
-                arcname = '/{}/{}'.format(date_str, path.name)
-                zip_obj.write(filename, arcname)
+        try:
+            with ZipFile(zip_filename, 'w', ZIP_LZMA) as zip_obj:
+                for filename in filenames:
+                    path = Path(filename)
+                    arcname = '/{}/{}'.format(date_str, path.name)
+                    zip_obj.write(filename, arcname)
+        except KeyboardInterrupt:
+            logger.warning(f'Interrupted while writing {zip_filename}, deleting incomplete file')
+            Path(zip_filename).unlink(missing_ok=True)
+            raise
         logger.info('Done creating zipfile for archiving')
 
 

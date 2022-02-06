@@ -3,7 +3,7 @@ title: Home
 layout: home
 ---
 
-Some selected open data related to governance in India
+Some selected Open Data related to Governance in India
 
 # Sections
 

@@ -1,14 +1,11 @@
 ---
 layout: page
-title: LGD Archive Anatomy
+title: LGD Archive Listing
 permalink: /lgd/archives
 ---
 
-<script src="{{ "/assets/js/lgd/bucket_helper.js" | relative_url }}" ></script>
-<form name='archive_search_form'>
-  <input type="date" id="archive_date" name="date" text="Get LGD archive link for date: " autocomplete="off" />
-</form>
+<script src="{{ "/assets/js/lgd/archive_listing.js" | relative_url }}" ></script>
 
-<span id='form_status'></span>
-<span id='archive_list'></span>
+<span id='call_status'></span>
+<div id='archive_list'></div>
 

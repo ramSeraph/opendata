@@ -1,4 +1,9 @@
 
+function fileSize(size) {
+    var i = Math.floor(Math.log(size) / Math.log(1024));
+    return (size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
+}
+
 getDateStr = (d, forArchive) => {
     var ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(d);
     var mo = new Intl.DateTimeFormat('en', { month: 'short' }).format(d);
@@ -16,6 +21,7 @@ window.onload = (event) => {
     var hasError = false
     var statusSpan = document.getElementById('form_status')
     setStatus = (msg, error) => {
+        // TODO: add colors based on error flag
         statusSpan.innerHTML = msg
         hasError = error
     }
@@ -23,7 +29,7 @@ window.onload = (event) => {
 
     getArchiveForDate = (forDate) => {
         dateStr = getDateStr(forDate, false)
-        setStatus(`Getting link for archive as of date ${dateStr}.. `)
+        setStatus(`Getting link for archive as of date ${dateStr}.. `, false)
         console.log('getting archive for date', dateStr)
         var httpRequest = new XMLHttpRequest()
     
@@ -33,7 +39,8 @@ window.onload = (event) => {
                     var jsonResponse = JSON.parse(httpRequest.responseText)
                     var bucket = jsonResponse['bucket']
                     var object = jsonResponse['name']
-                    setStatus(`<a href=https://storage.googleapis.com/${bucket}/${object}>${object}</a>`, false)
+                    var size = fileSize(jsonResponse['size'])
+                    setStatus(`<a href=https://storage.googleapis.com/${bucket}/${object}>${object}</a> ${size}`, false)
                 } else {
                     if (httpRequest.status === 404) {
                         setStatus(`Archive not available for ${dateStr}`, true)
@@ -61,6 +68,7 @@ window.onload = (event) => {
     }
 
     var dateInput = document.getElementById('archive_date')
+    // TODO: make this show local date
     var dateValue = new Date()
     dateInput.valueAsDate = dateValue
     httpRequest = getArchiveForDate(dateValue)

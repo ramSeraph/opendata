@@ -74,26 +74,36 @@ displayResults = (resp) => {
     years.sort((y1, y2) => {
         return parseInt(y1) - parseInt(y2)
     })
+    allHtml += '<ul>'
     for (year of years) {
-        allHtml += `<h3>${year}</h3>\n`
+        allHtml += '<li>'
+        allHtml += `${year}\n`
         var monthWiseMap = objInfoMap[year]
         var months = Object.keys(monthWiseMap)
         months.sort((m1, m2) => {
             return monthNames.indexOf(m1) - monthNames.indexOf(m2)
         })
+        allHtml += '<ul>'
         for (month of months) {
-            allHtml += `<h2>${month}</h2>\n`
+            allHtml += '<li>'
+            allHtml += `${month}\n`
             var dayWiseMap = monthWiseMap[month]
             var days = Object.keys(dayWiseMap)
             days.sort((d1, d2) => {
                 return parseInt(d1) - parseInt(d2)
             })
+            allHtml += '<ul>'
             for (day of days) {
                 var info = dayWiseMap[day]
-                allHtml += `<h1><a href="${info['url']}">${info['name']}</a> ${info['size']}</h1>`
+                allHtml += `<li><a href="${info['url']}">${info['name']}</a> ${info['size']}</li>`
             }
+            allHtml += '</ul>'
+            allHtml += '</li>'
         }
+        allHtml += '</ul>'
+        allHtml += '</li>'
     }
+    allHtml += '</ul>'
     archivesDiv.innerHTML = allHtml
 }
 

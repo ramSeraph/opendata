@@ -6,7 +6,7 @@ header_pages:
 
 #listen_for_clients_preferred_style: true
 
-style: dark
+style: hacker
 
 footer: 'Source Code at: <a href="https://github.com/ramSeraph/opendata">Github</a>'
 

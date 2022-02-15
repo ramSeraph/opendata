@@ -5,6 +5,8 @@
   <title>{{ page.title }}</title>
   {%- seo title=false -%}
 
+  <link rel="shortcut icon" type="image/png" href="{{ "/assets/images/favicon.png" | relative_url }}"/>
+
   {% if page.robots %}
     <meta name="robots" content="{{page.robots}}" />
   {% endif %}

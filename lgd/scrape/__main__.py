@@ -186,8 +186,11 @@ def get_markdown_from_comps(comps_info):
         location_steps = location.split(' --> ')
         step_strs = []
         for i, step in enumerate(location_steps):
-            step_strs.append('\n' + '  ' * i + f'- {step}')
-        location_str = ''.join(step_strs)
+            padding = '  ' * (i + 1)
+            if i == 0:
+                padding = ''
+            step_strs.append(padding + f'- {step}')
+        location_str = '\n'.join(step_strs)
         full_str += "---\n\n"
         full_str += f"## {filename}\n\n"
         full_str += f"description\n: {desc}\n\n"

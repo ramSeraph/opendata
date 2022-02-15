@@ -4,16 +4,19 @@ title: LGD Archive Anatomy
 permalink: /lgd/anatomy
 ---
 
+# Anatomy of an LGD archive
+
+---
+
 ## states.csv
 
 description
 : list of all states
 
 Location in LGD
-: 
-- Download Directory
-  - STATE
-    - All States of India
+: - Download Directory
+    - STATE
+      - All States of India
 
 ---
 
@@ -23,10 +26,9 @@ description
 : list of all districts
 
 Location in LGD
-: 
-- Download Directory
-  - DISTRICT
-    - All Districts of India
+: - Download Directory
+    - DISTRICT
+      - All Districts of India
 
 ---
 
@@ -36,10 +38,9 @@ description
 : list of all subdistricts
 
 Location in LGD
-: 
-- Download Directory
-  - SUB-DISTRICT
-    - All Sub-Districts of India
+: - Download Directory
+    - SUB-DISTRICT
+      - All Sub-Districts of India
 
 ---
 
@@ -49,10 +50,9 @@ description
 : list of all blocks
 
 Location in LGD
-: 
-- Download Directory
-  - Block
-    - All Blocks of India
+: - Download Directory
+    - Block
+      - All Blocks of India
 
 ---
 
@@ -62,10 +62,9 @@ description
 : list of all Traditional local bodies
 
 Location in LGD
-: 
-- Download Directory
-  - Local body
-    - All Traditional Local Bodies of India
+: - Download Directory
+    - Local body
+      - All Traditional Local Bodies of India
 
 ---
 
@@ -75,10 +74,9 @@ description
 : list of all urban local bodies
 
 Location in LGD
-: 
-- Download Directory
-  - Local body
-    - All Urban Local Bodies of India
+: - Download Directory
+    - Local body
+      - All Urban Local Bodies of India
 
 ---
 
@@ -88,10 +86,9 @@ description
 : list of all urban local bodies with coverage
 
 Location in LGD
-: 
-- Download Directory
-  - Local body
-    - Urban Localbodies with Coverage
+: - Download Directory
+    - Local body
+      - Urban Localbodies with Coverage
 
 ---
 
@@ -101,12 +98,11 @@ description
 : list of all parliament constituencies
 
 Location in LGD
-: 
-- Download Directory
-  - Parliament/Assembly Constituency
-    - Parliament Constituency or Assembly Constituency of a State/India
-      - All State
-        - Parliament Constituency
+: - Download Directory
+    - Parliament/Assembly Constituency
+      - Parliament Constituency or Assembly Constituency of a State/India
+        - All State
+          - Parliament Constituency
 
 ---
 
@@ -116,12 +112,11 @@ description
 : list of all assembly constituencies
 
 Location in LGD
-: 
-- Download Directory
-  - Parliament/Assembly Constituency
-    - Parliament Constituency or Assembly Constituency of a State/India
-      - All State
-        - Assembly Constituency
+: - Download Directory
+    - Parliament/Assembly Constituency
+      - Parliament Constituency or Assembly Constituency of a State/India
+        - All State
+          - Assembly Constituency
 
 ---
 
@@ -131,11 +126,10 @@ description
 : list of all central organization details
 
 Location in LGD
-: 
-- Download Directory
-  - Department/Organization
-    - Departments/Organization Details
-      - Central
+: - Download Directory
+    - Department/Organization
+      - Departments/Organization Details
+        - Central
 
 ---
 
@@ -145,10 +139,9 @@ description
 : list of all panchayat mappings
 
 Location in LGD
-: 
-- Download Directory
-  - Gram Panchayat Mapping to village
+: - Download Directory
     - Gram Panchayat Mapping to village
+      - Gram Panchayat Mapping to village
 
 ---
 
@@ -158,10 +151,9 @@ description
 : list of all villages
 
 Location in LGD
-: 
-- Download Directory
-  - VILLAGE
-    - All Villages of a State
+: - Download Directory
+    - VILLAGE
+      - All Villages of a State
 
 ---
 
@@ -171,10 +163,9 @@ description
 : list of all village to block mappings
 
 Location in LGD
-: 
-- Download Directory
-  - Block
-    - Subdistrict, Block,Village and Gps Mapping
+: - Download Directory
+    - Block
+      - Subdistrict, Block,Village and Gps Mapping
 
 ---
 
@@ -184,10 +175,9 @@ description
 : list of all PRI(Panchayati Raj India) local bodies
 
 Location in LGD
-: 
-- Download Directory
-  - Local body
-    - PRI Local Body of a State
+: - Download Directory
+    - Local body
+      - PRI Local Body of a State
 
 ---
 
@@ -197,10 +187,9 @@ description
 : list of all constituencies with PRI local body coverage
 
 Location in LGD
-: 
-- Download Directory
-  - Parliament/Assembly Constituency
-    - State Wise Parliament Constituency and Assembly Constituency along with coverage details PRI
+: - Download Directory
+    - Parliament/Assembly Constituency
+      - State Wise Parliament Constituency and Assembly Constituency along with coverage details PRI
 
 ---
 
@@ -210,10 +199,9 @@ description
 : list of all constituencies with Urban local body coverage
 
 Location in LGD
-: 
-- Download Directory
-  - Parliament/Assembly Constituency
-    - State Wise Parliament Constituency and Assembly Constituency along with coverage details Urban
+: - Download Directory
+    - Parliament/Assembly Constituency
+      - State Wise Parliament Constituency and Assembly Constituency along with coverage details Urban
 
 ---
 
@@ -223,10 +211,9 @@ description
 : list of all PRI Local body wards
 
 Location in LGD
-: 
-- Download Directory
-  - Local body
-    - Wards of PRI Local Bodies
+: - Download Directory
+    - Local body
+      - Wards of PRI Local Bodies
 
 ---
 
@@ -236,10 +223,9 @@ description
 : list of all Urban Local body wards
 
 Location in LGD
-: 
-- Download Directory
-  - Local body
-    - Wards of Urban Local Bodies
+: - Download Directory
+    - Local body
+      - Wards of Urban Local Bodies
 
 ---
 
@@ -249,10 +235,9 @@ description
 : list of all assembly/parliament constituencies and their coverage
 
 Location in LGD
-: 
-- Download Directory
-  - Parliament/Assembly Constituency
-    - Constituency Coverage Details
+: - Download Directory
+    - Parliament/Assembly Constituency
+      - Constituency Coverage Details
 
 ---
 
@@ -262,11 +247,10 @@ description
 : list of all state level organizations
 
 Location in LGD
-: 
-- Download Directory
-  - Department/Organization
-    - Departments/Organization Details
-      - State
+: - Download Directory
+    - Department/Organization
+      - Departments/Organization Details
+        - State
 
 ---
 
@@ -276,10 +260,9 @@ description
 : list of all parliament constituencies with local body coverage
 
 Location in LGD
-: 
-- Download Directory
-  - Parliament/Assembly Constituency
-    - Parliament Wise Local Body Mapping
+: - Download Directory
+    - Parliament/Assembly Constituency
+      - Parliament Wise Local Body Mapping
 
 ---
 
@@ -289,11 +272,10 @@ description
 : list of all state level organization units
 
 Location in LGD
-: 
-- Download Directory
-  - Department/Organization
-    - Organization Units of a Department/Organization
-      - State
+: - Download Directory
+    - Department/Organization
+      - Organization Units of a Department/Organization
+        - State
 
 ---
 
@@ -303,11 +285,10 @@ description
 : list of all central organization units
 
 Location in LGD
-: 
-- Download Directory
-  - Department/Organization
-    - Organization Units of a Department/Organization
-      - Central
+: - Download Directory
+    - Department/Organization
+      - Organization Units of a Department/Organization
+        - Central
 
 ---
 
@@ -317,11 +298,10 @@ description
 : list of all state level organization designations
 
 Location in LGD
-: 
-- Download Directory
-  - Department/Organization
-    - Designations of a Department/Organization
-      - State
+: - Download Directory
+    - Department/Organization
+      - Designations of a Department/Organization
+        - State
 
 ---
 
@@ -331,11 +311,10 @@ description
 : list of all central organization designations
 
 Location in LGD
-: 
-- Download Directory
-  - Department/Organization
-    - Designations of a Department/Organization
-      - Central
+: - Download Directory
+    - Department/Organization
+      - Designations of a Department/Organization
+        - Central
 
 ---
 
@@ -345,11 +324,10 @@ description
 : list of all central adminstrative department units
 
 Location in LGD
-: 
-- Download Directory
-  - Department/Organization
-    - Administrative Unit Level Wise Administrative Unit Entity
-      - Central
+: - Download Directory
+    - Department/Organization
+      - Administrative Unit Level Wise Administrative Unit Entity
+        - Central
 
 ---
 
@@ -359,11 +337,10 @@ description
 : list of all state adminstrative department units
 
 Location in LGD
-: 
-- Download Directory
-  - Department/Organization
-    - Administrative Unit Level Wise Administrative Unit Entity
-      - State
+: - Download Directory
+    - Department/Organization
+      - Administrative Unit Level Wise Administrative Unit Entity
+        - State
 
 ---
 
@@ -373,12 +350,11 @@ description
 : list of all central administrative departments
 
 Location in LGD
-: 
-- Download Directory
-  - Department/Organization
-    - Administrative Unit Level Wise Administrative Unit Entity
-      - Central
-        - Internal Dwr Call
+: - Download Directory
+    - Department/Organization
+      - Administrative Unit Level Wise Administrative Unit Entity
+        - Central
+          - Internal Dwr Call
 
 ---
 
@@ -388,12 +364,11 @@ description
 : list of all state administrative departments
 
 Location in LGD
-: 
-- Download Directory
-  - Department/Organization
-    - Administrative Unit Level Wise Administrative Unit Entity
-      - State
-        - Internal Dwr Call
+: - Download Directory
+    - Department/Organization
+      - Administrative Unit Level Wise Administrative Unit Entity
+        - State
+          - Internal Dwr Call
 
 ---
 
@@ -403,10 +378,9 @@ description
 : list of all invalidated census villages
 
 Location in LGD
-: 
-- Reports
-  - Exceptional Reports
-    - Invalidated Census villages
+: - Reports
+    - Exceptional Reports
+      - Invalidated Census villages
 
 ---
 
@@ -416,9 +390,8 @@ description
 : list of all panchayats with NOFN
 
 Location in LGD
-: 
-- Reports
-  - NOFN Panchayat List
+: - Reports
+    - NOFN Panchayat List
 
 ---
 
@@ -428,8 +401,6 @@ description
 : all changes to entities in LGD
 
 Location in LGD
-: 
-- Reports
-  - List of Modification done in LGD
-
+: - Reports
+    - List of Modification done in LGDn
 

@@ -368,7 +368,7 @@ class ChangesReportDownloader(MultiDownloader, ReportDownloader):
                                    ignore_not_found=True)
         if Path(self.prev_changes_filename).exists():
             with open(self.prev_changes_filename) as f:
-                reader = csv.DictReader(f, delimiter=';')
+                reader = csv.DictReader(f)
                 for r in reader:
                     all_records.append(r)
         return all_records

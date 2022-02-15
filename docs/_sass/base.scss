@@ -20,6 +20,7 @@ p, ul, ol { margin: 0px;  color: var(--text-color); }
 a { text-decoration: underline;  color: var(--link-color); }
 a:hover { color: var(--background-color); background-color: var(--base-color); }
 @media only screen and (max-device-width: 500px) { * { font-size: $mobile-font-size !important; } }
+hr { height: 0; border: 0; border-bottom: 1px dashed var(--base-color); color: var(--base-color); }
 
 /**
  * Layout
@@ -42,7 +43,9 @@ footer { margin-bottom: 20px; }
  */
 :not(.menu) > ul { list-style: none;  padding-left: 0; }
 :not(.menu) > ul { list-style-type: none; }
+:not(.menu) > ul, ol { list-style-position: inside; }
 :not(.menu) > ul > li:before { content: "-";  margin-right: 9px; }
+:not(.menu) > li > ul, li > ol { padding-left: 2rem; }
 
 /**
  * Header/Navigation

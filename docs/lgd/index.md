@@ -4,7 +4,7 @@ title: LGD
 permalink: /lgd/
 ---
 
-Collection of Data from [Local Government Directory](https://lgdirectorey.gov.in)
+Collection of Data from [Local Government Directory](https://lgdirectory.gov.in)
 
 [List Of All Daily Archives](archives)
 

@@ -413,7 +413,7 @@ class BaseDownloader:
             self.download_from_gcs(csv_filename, self.get_blobname())
 
         with open(csv_filename) as f:
-            reader = csv.DictReader(f, delimiter=';')
+            reader = csv.DictReader(f)
             for r in reader:
                 yield r
 
@@ -483,7 +483,7 @@ class BaseDownloader:
                 with open(csv_filename, 'w') as f:
                     for r in records_transformed:
                         if wr is None:
-                            wr = csv.DictWriter(f, fieldnames=r.keys(), delimiter=';')
+                            wr = csv.DictWriter(f, fieldnames=r.keys())
                             wr.writeheader()
                         wr.writerow(r)
             except KeyboardInterrupt:

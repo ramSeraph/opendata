@@ -6,4 +6,4 @@ if [ "$BUILD" == "1" ]; then
 	docker build --platform linux/amd64 -f Dockerfile -t bbnl .
 fi
 
-docker run --platform $PLATFORM --rm  -v "$PWD":/code -w /code/ -it bbnl "${@}"
+docker run --platform $PLATFORM --rm  -v "$PWD":/code -w /code/ -it --name bbnl_run_2 bbnl "${@}"

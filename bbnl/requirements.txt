@@ -8,6 +8,7 @@ charset-normalizer==2.0.11
 click==8.0.3
 colorlog==6.6.0
 cryptography==36.0.1
+dictdiffer==0.9.0
 et-xmlfile==1.1.0
 ghostscript==0.7
 idna==3.3

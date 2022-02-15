@@ -1,0 +1,95 @@
+data/raw/panchayats/ANDHRA PRADESH/Krishna/CHALLAPALLI.pdf
+data/raw/panchayats/MADHYA PRADESH/Alirajpur/JOBAT.pdf
+data/raw/panchayats/MADHYA PRADESH/Bhind/BHIND.pdf
+data/raw/panchayats/MADHYA PRADESH/Dewas/KANNOD.pdf
+data/raw/panchayats/MADHYA PRADESH/Dhar/DHAR.pdf
+data/raw/panchayats/RAJASTHAN/Jalor/JASWANTPURA.pdf
+data/raw/panchayats/RAJASTHAN/Jalor/RANIWARA.pdf
+data/raw/panchayats/RAJASTHAN/Pali /BALI.pdf
+data/raw/panchayats/UTTAR PRADESH/Baghpat/KHEKRA.pdf
+data/raw/panchayats/UTTAR PRADESH/Bahraich/HUZOORPUR.pdf
+data/raw/panchayats/UTTAR PRADESH/Bahraich/KAISARGANJ.pdf
+data/raw/panchayats/RAJASTHAN/Bharatpur /BAYANA.pdf
+data/raw/panchayats/TELANGANA/Nalgonda/BHUVANAGIRI.pdf
+data/raw/panchayats/MAHARASHTRA/Parbhani/JINTUR.pdf
+data/raw/panchayats/UTTRAKHAND/Udham Singh Nagar/RUDRAPUR.pdf
+data/raw/panchayats/MAHARASHTRA/Pune/BHOR.pdf
+data/raw/panchayats/MAHARASHTRA/Pune/MAVAL.pdf
+data/raw/panchayats/UTTAR PRADESH/Bijnor/BUDHANPUR.pdf
+data/raw/panchayats/ODISHA/Bhadrak/DHAMANAGAR.pdf
+data/raw/panchayats/UTTAR PRADESH/Allahabad /HOLAGARH.pdf
+data/raw/panchayats/UTTAR PRADESH/Allahabad /JASRA.pdf
+data/raw/panchayats/MAHARASHTRA/Nagpur/HINGNA.pdf
+data/raw/panchayats/RAJASTHAN/Kota /LADPURA.pdf
+data/raw/panchayats/UTTAR PRADESH/Allahabad /MEJA.pdf
+data/raw/panchayats/MAHARASHTRA/Nagpur/KALMESHWAR.pdf
+data/raw/panchayats/SIKKIM/East/MARTAM.pdf
+data/raw/panchayats/RAJASTHAN/Bhilwara/MANDALGARH.pdf
+data/raw/panchayats/UTTRAKHAND/Champawat/LOHAGHAT.pdf
+data/raw/panchayats/UTTRAKHAND/Champawat/PATI.pdf
+data/raw/panchayats/UTTAR PRADESH/Bahraich/RISIA.pdf
+data/raw/panchayats/UTTAR PRADESH/Ballia/NAGRA.pdf
+data/raw/panchayats/MAHARASHTRA/Ratnagiri/KHED.pdf
+data/raw/panchayats/PUNJAB/Sahibzada Ajit Singh Nagar/DERA.pdf
+data/raw/panchayats/MAHARASHTRA/Ratnagiri/MANDANGAD.pdf
+data/raw/panchayats/UTTAR PRADESH/Ambedkar Nagar/BASKHARI.pdf
+data/raw/panchayats/UTTAR PRADESH/Ambedkar Nagar/BHITI.pdf
+data/raw/panchayats/RAJASTHAN/Chittaurgarh /BHADESAR.pdf
+data/raw/panchayats/RAJASTHAN/Udaipur/MAVLI.pdf
+data/raw/panchayats/RAJASTHAN/Udaipur/GIRWA.pdf
+data/raw/panchayats/MAHARASHTRA/Nanded/BILOLI.pdf
+data/raw/panchayats/RAJASTHAN/Bundi /TALERA.pdf
+data/raw/panchayats/MAHARASHTRA/Nanded/HIMAYATNAGAR.pdf
+data/raw/panchayats/RAJASTHAN/Bundi /HINDOLI.pdf
+data/raw/panchayats/UTTRAKHAND/Nainital/BETALGHAT.pdf
+data/raw/panchayats/UTTRAKHAND/Nainital/KOTABAG.pdf
+data/raw/panchayats/UTTAR PRADESH/Agra/ ETMADPUR.pdf
+data/raw/panchayats/MAHARASHTRA/Sangli/ATPADI.pdf
+data/raw/panchayats/UTTAR PRADESH/Ballia/RASRA.pdf
+data/raw/panchayats/UTTRAKHAND/Uttarkashi/MORI.pdf
+data/raw/panchayats/MAHARASHTRA/Sangli/JATH.pdf
+data/raw/panchayats/UTTAR PRADESH/Balrampur/PACHPEDWA.pdf
+data/raw/panchayats/MAHARASHTRA/Sangli/KAVATHEMAHANKAL.pdf
+data/raw/panchayats/MAHARASHTRA/Sangli/KHANAPUR-VITA.pdf
+data/raw/panchayats/MAHARASHTRA/Sindhudurg/DODAMARG.pdf
+data/raw/panchayats/UTTAR PRADESH/Azamgarh/LALGANJ.pdf
+data/raw/panchayats/ODISHA/Cuttack/NIALI.pdf
+data/raw/panchayats/MAHARASHTRA/Nanded/MOKHED.pdf
+data/raw/panchayats/MAHARASHTRA/Nashik/DEOLA 2.pdf
+data/raw/panchayats/MAHARASHTRA/Nashik/DINDORI.pdf
+data/raw/panchayats/UTTAR PRADESH/Barabanki/BANKI.pdf
+data/raw/panchayats/RAJASTHAN/Jalor/CHITALWANA.pdf
+data/raw/panchayats/UTTAR PRADESH/Barabanki/HAIDARGARH.pdf
+data/raw/panchayats/MAHARASHTRA/Gondiya */SALEKASA.pdf
+data/raw/panchayats/MAHARASHTRA/Hingoli */BASMAT.pdf
+data/raw/panchayats/MADHYA PRADESH/Dhar/UMARBAN.pdf
+data/raw/panchayats/UTTRAKHAND/Pithoragarh/DIDIHAT.pdf
+data/raw/panchayats/UTTRAKHAND/Pithoragarh/KANALICHINA.pdf
+data/raw/panchayats/RAJASTHAN/Ajmer/KEKRI.pdf
+data/raw/panchayats/UTTRAKHAND/Pithoragarh/PITHORAGARH.pdf
+data/raw/panchayats/UTTAR PRADESH/Chandauli/CHAHNIYA.pdf
+data/raw/panchayats/UTTAR PRADESH/Agra/FATEHPUR.pdf
+data/raw/panchayats/RAJASTHAN/Jaipur /VIRATNAGAR.pdf
+data/raw/panchayats/SIKKIM/East/KHAMDONG.pdf
+data/raw/panchayats/UTTAR PRADESH/Agra/PINAHAT.pdf
+data/raw/panchayats/UTTAR PRADESH/Ghazipur/BHADAURA.pdf
+data/raw/panchayats/MADHYA PRADESH/Dindori /SAMNAPUR.pdf
+data/raw/panchayats/UTTRAKHAND/Udham Singh Nagar/BAJPUR.pdf
+data/raw/panchayats/MAHARASHTRA/Nashik/SURGANA.pdf
+data/raw/panchayats/MAHARASHTRA/Osmanabad/OSMANABAD.pdf
+data/raw/panchayats/UTTRAKHAND/Udham Singh Nagar/GADARPUR.pdf
+data/raw/panchayats/UTTAR PRADESH/Azamgarh/MEHNAGAR.pdf
+data/raw/panchayats/UTTAR PRADESH/Azamgarh/THEKMA.pdf
+data/raw/panchayats/MAHARASHTRA/Solapur/BARSHI.pdf
+data/raw/panchayats/UTTAR PRADESH/Barabanki/RAMNAGAR.pdf
+data/raw/panchayats/UTTAR PRADESH/Bareilly/BAHERI.pdf
+data/raw/panchayats/MAHARASHTRA/Thane/TALASARI.pdf
+data/raw/panchayats/UTTRAKHAND/Almora /DHAULADEVI.pdf
+data/raw/panchayats/UTTAR PRADESH/Aligarh/CHANDAUS.pdf
+data/raw/panchayats/UTTAR PRADESH/Aligarh/JAWAN.pdf
+data/raw/panchayats/RAJASTHAN/Baran /BARAN.pdf
+data/raw/panchayats/UTTAR PRADESH/Agra/FATEHABAD.pdf
+data/raw/panchayats/UTTAR PRADESH/Kanshiram Nagar */Sahawer.pdf
+data/raw/panchayats/HIMACHAL PRADESH/Chamba/BHATTIYAT.pdf
+data/raw/panchayats/HIMACHAL PRADESH/Chamba/CHAMBA.pdf
+data/raw/panchayats/HIMACHAL PRADESH/Chamba/BHARMOUR.pdf

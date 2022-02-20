@@ -226,9 +226,9 @@ class ODTTableReader:
 
 def records_from_xslx(input_file):
     csv_out_file = io.StringIO()
-    Xlsx2csv(input_file, outputencoding="utf-8", delimiter=';').convert(csv_out_file)
+    Xlsx2csv(input_file, outputencoding="utf-8").convert(csv_out_file)
     csv_out_file.seek(0)
-    reader = csv.DictReader(csv_out_file, delimiter=';')
+    reader = csv.DictReader(csv_out_file)
     records = [ r for r in reader ]
     nrecs = [{normalize(k):v for k,v in r.items()} for r in records]
     return nrecs

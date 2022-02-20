@@ -45,14 +45,12 @@ for blob in blobs:
     print(f'unzipping {blob.name}')
     download_location = f'staging/download/{blob.name}'
     unzipped_location = f'{unzipped_location_base}/{blob.name}'.replace('.zip', '')
-    Path(unzipped_location).parent.mkdir(parents=True, exist_ok=True)
-    if Path(unzipped_location).exists():
-        continue
 
     zip_filename = f'staging/upload/{blob.name}'
     if Path(zip_filename).exists():
         continue
 
+    Path(unzipped_location).parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(download_location, 'r') as zip_ref:
         zip_ref.extractall(unzipped_location_base)
     filenames = glob.glob(f'{unzipped_location}/*')
@@ -101,5 +99,5 @@ changes_filename = 'staging/download/changes_combined.csv'
 blob.download_to_filename(changes_filename)
 changes_filename_out = 'staging/upload/changes_combined.csv'
 convert_csv_delims(changes_filename, changes_filename_out)
-#blob.upload_from_filename(changes_filename_out)
+blob.upload_from_filename(changes_filename_out, timeout=600)
 

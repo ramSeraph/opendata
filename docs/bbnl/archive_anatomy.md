@@ -4,7 +4,7 @@ title: BBNL Archive Details
 permalink: /bbnl/anatomy
 ---
 
-# Anatomy of an BBNL archive
+# Anatomy of a BBNL archive
 
 ---
 

@@ -10,3 +10,5 @@ Collection of Data from [Bharat Broadband Network Limited](https://bbnl.nic.in/)
 
 [Description](anatomy) of data in the archive
 
+[Code](https://github.com/ramSeraph/opendata//tree/master/bbnl) used to extract this data.
+

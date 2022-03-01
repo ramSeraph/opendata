@@ -4,7 +4,7 @@ title: LGD Archive Anatomy
 permalink: /lgd/anatomy
 ---
 
-# Anatomy of an LGD archive
+# Anatomy of a LGD archive
 
 ---
 

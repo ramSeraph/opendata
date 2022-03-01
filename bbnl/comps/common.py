@@ -7,6 +7,8 @@ import tempfile
 import logging
 import shutil
 
+from pathlib import Path
+from datetime import datetime
 from concurrent.futures import (Future, wait, ALL_COMPLETED)
 
 import requests
@@ -15,8 +17,6 @@ import camelot
 from camelot.utils import random_string
 from PyPDF2 import PdfFileReader, PdfFileWriter
 from bs4 import BeautifulSoup
-from pathlib import Path
-from datetime import datetime
 
 DEBUG = (os.environ.get('DEBUG', None) == '1')
 

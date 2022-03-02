@@ -98,8 +98,18 @@ def split_FPOI_file(filename):
                 gp_rows.append(gp_row)
 
             fpoi_row = row[7:]
+
+            # add empty name column if it doesn't exist
+            if len(fpoi_row) == 3:
+                to_add = 'Name' if len(fpoi_rows) == 0 else ''
+                fpoi_row = fpoi_row[:1] + [to_add] + fpoi_row[1:]
+
             if all([x == '' for x in fpoi_row]):
                 continue
+
+            # gather BLOCK and DISTRICT fields
+            # if first row or block name changed pick from gp_row
+            # otherwise pick from previous enhanced fpoi row
             if len(fpoi_rows) == 0 or fpoi_rows[-1][2] != fpoi_row[0]:
                 fpoi_row_ex = [gp_row[0], gp_row[1]]
             else:
@@ -228,7 +238,7 @@ def parse_FPOIs(executor):
                 if all([ x == '' for x in row ]):
                     row_id += 1
                     continue
-                row = row[:10]
+                row = row[:11]
                 rows.append(row)
                 row_id += 1
         logger.info(f'dropping rows: {rows[-3:]}')
@@ -279,8 +289,8 @@ def parse_FPOIs(executor):
     combine_files(gp_locations_files, combined_gp_locations_file)
 
     folder_name = 'data/parsed/locations'
-    logger.info(f'deleting folder {folder_name}')
-    shutil.rmtree(folder_name)
+    #logger.info(f'deleting folder {folder_name}')
+    #shutil.rmtree(folder_name)
 
 
 def validate_OLTs(row):

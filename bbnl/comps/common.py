@@ -1,22 +1,28 @@
 import os
 import re
 import csv
+import glob
 import json
 import copy
 import tempfile
 import logging
 import shutil
+import zipfile
 
 from pathlib import Path
 from datetime import datetime
 from concurrent.futures import (Future, wait, ALL_COMPLETED)
+import xml.etree.ElementTree
+import xml.etree.cElementTree as ET
 
 import requests
 import camelot
+import pdfreader
 
 from camelot.utils import random_string
 from PyPDF2 import PdfFileReader, PdfFileWriter
 from bs4 import BeautifulSoup
+from dateutil.tz import tzutc, tzoffset
 
 DEBUG = (os.environ.get('DEBUG', None) == '1')
 
@@ -557,6 +563,82 @@ def drill_down_and_download(map_info, headers, comp):
 
             with open(filename, 'wb') as f:
                 f.write(web_data.content)
+
+pdf_date_pattern = re.compile(''.join([
+    r"(D:)?",
+    r"(?P<year>\d\d\d\d)",
+    r"(?P<month>\d\d)",
+    r"(?P<day>\d\d)",
+    r"(?P<hour>\d\d)",
+    r"(?P<minute>\d\d)",
+    r"(?P<second>\d\d)",
+    r"(?P<tz_offset>[+-zZ])?",
+    r"(?P<tz_hour>\d\d)?",
+    r"'?(?P<tz_minute>\d\d)?'?"]))
+
+
+def transform_date(date_str):
+    """
+    Convert a pdf date such as "D:20120321183444+07'00'" into a usable datetime
+    http://www.verypdf.com/pdfinfoeditor/pdf-date-format.htm
+    (D:YYYYMMDDHHmmSSOHH'mm')
+    :param date_str: pdf date string
+    :return: datetime object
+    """
+    global pdf_date_pattern
+    match = re.match(pdf_date_pattern, date_str)
+    if match:
+        date_info = match.groupdict()
+
+        for k, v in date_info.items():  # transform values
+            if v is None:
+                pass
+            elif k == 'tz_offset':
+                date_info[k] = v.lower()  # so we can treat Z as z
+            else:
+                date_info[k] = int(v)
+
+        if date_info['tz_offset'] in ('z', None):  # UTC
+            date_info['tzinfo'] = tzutc()
+        else:
+            multiplier = 1 if date_info['tz_offset'] == '+' else -1
+            if date_info['tz_minute'] is None:
+                date_info['tz_minute'] = 0
+            date_info['tzinfo'] = tzoffset(None, multiplier*(3600 * date_info['tz_hour'] + 60 * date_info['tz_minute']))
+
+        for k in ('tz_offset', 'tz_hour', 'tz_minute'):  # no longer needed
+            del date_info[k]
+
+        return datetime(**date_info)
+
+
+def get_xlsx_modified_date(filename):
+    corePropNS = '{http://schemas.openxmlformats.org/package/2006/metadata/core-properties}'
+    dcTermsNS  = '{http://purl.org/dc/terms/}'
+
+    zf = zipfile.ZipFile(filename, 'r')
+    part = zf.open('docProps/core.xml', 'r')
+    tree = ET.XML(part.read())
+    #2017-07-03T05:46:15Z
+    modified_time_str = tree.find(dcTermsNS+'modified').text
+    dt = datetime.strptime(modified_time_str, '%Y-%m-%dT%H:%M:%SZ')
+    return dt.date()
+
+
+def get_pdf_modified_date(filename):
+    with open(filename, 'rb') as f:
+        d = pdfreader.PDFDocument(f)
+        if d.metadata == None:
+            return None
+        if 'ModDate' in d.metadata:
+            mod_date = d.metadata['ModDate']
+        else:
+            mod_date = d.metadata['CreationDate']
+        if type(mod_date) == str:
+            mod_date = transform_date(mod_date)
+        if isinstance(mod_date, pdfreader.types.native.HexString):
+            return None
+        return mod_date.date()
 
 
 

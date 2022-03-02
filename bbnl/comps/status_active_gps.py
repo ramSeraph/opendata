@@ -123,6 +123,7 @@ def parse_status_active_gps_page(filename, pno, num_pages, page_filename, output
     logger.info('processing page {}/{}'.format(pno, num_pages - 1))
     output_filename_page = output_filename + f'.{pno}'
     has_header_filename_page = filename + f'.has_header.{pno}'
+    has_header_filename_page = has_header_filename_page.replace('/raw/', '/parsed/')
 
     ret = [output_filename_page, has_header_filename_page]
     if Path(output_filename_page).exists(): 
@@ -145,8 +146,6 @@ def parse_status_active_gps_page(filename, pno, num_pages, page_filename, output
                                   backend='poppler',
                                   pages='1',
                                   flavor=flavor,
-                                  #layout_kwargs=laparams,
-                                  #discard_overlapping=False,
                                   strip_text='\n',
                                   split_text=True)
                                  
@@ -206,6 +205,7 @@ def parse_status_active_gps_page(filename, pno, num_pages, page_filename, output
     with open(output_filename_page, 'w') as f:
         csv_writer = csv.writer(f)
         for row in data:
+            row = [ x.replace('\n', '') for x in row ]
             csv_writer.writerow(row)
     return ret
 

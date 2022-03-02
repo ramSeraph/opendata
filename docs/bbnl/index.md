@@ -6,7 +6,7 @@ permalink: /bbnl/
 
 Collection of Data from [Bharat Broadband Network Limited](https://bbnl.nic.in/)
 
-[Parsed Data](https://storage.googleapis.com/bbnl_data/parsed.zip)
+[Parsed Data](https://storage.googleapis.com/bbnl_data/parsed.zip) (updated on 2nd March 2022)
 
 [Description](anatomy) of data in the archive
 

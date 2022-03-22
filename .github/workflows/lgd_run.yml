@@ -1,4 +1,4 @@
-name: Daily Run
+name: Daily LGD Run
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -32,7 +32,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ./.venv/
-          key: $venv-${{ hashFiles('lgd/requirements.txt') }}
+          key: lgd-venv-${{ hashFiles('lgd/requirements.txt') }}
+          restore-keys: |
+            $venv-${{ hashFiles('lgd/requirements.txt') }}
         id: cache-venv
 
       - name: Setup python requirements
@@ -72,8 +74,10 @@ jobs:
           path: |
             data/raw/${{ steps.date.outputs.date }}
             data/raw/${{ steps.date.outputs.date }}.zip
-          key:  data-raw-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  lgd-data-raw-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
+            lgd-data-raw-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            lgd-data-raw-v0-${{ steps.date.outputs.date }}-
             data-raw-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-
             data-raw-v5-${{ steps.date.outputs.date }}-
 
@@ -85,8 +89,10 @@ jobs:
         uses: TerrenceHo/cache-always@v0.0.1
         with:
           path: data/raw/changes 
-          key:  data-raw-changes-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  lgd-data-raw-changes-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
+            lgd-data-raw-changes-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            lgd-data-raw-changes-v0-${{ steps.date.outputs.date }}-
             data-raw-changes-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
             data-raw-changes-v4-${{ steps.date.outputs.date }}-
         id: changes_cache

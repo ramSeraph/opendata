@@ -10,7 +10,7 @@ For mac install tesseract using homebrew
 
 tested with python version 3.9
 
-python requirements are in the `requirements.txt` file. Run `pip -r requirements.txt` to install the requirements.
+python requirements are in the `requirements.txt` file. Run `pip install -r requirements.txt` to install the requirements.
 
 captcha/ folder has code for the captcha breaking and also some test captcha images
 

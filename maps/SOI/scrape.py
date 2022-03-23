@@ -222,8 +222,7 @@ def download_tile(sheet_no):
     if not resp.ok:
         raise Exception('unable to get FreeMapSpec page')
     soup = BeautifulSoup(resp.text, 'html.parser')
-    with open('stage1.html', 'w') as f:
-        f.write(str(soup))
+
 
     form_data = get_form_data(soup)
     form_data.update(get_download_tile_form_data(soup, sheet_no, first_pass=True))
@@ -235,10 +234,9 @@ def download_tile(sheet_no):
     logger.debug(f'status_code = {resp.status_code} headers:\n{pformat(dict(resp.headers))}')
     if not resp.ok:
         raise Exception('unable to lookup {sheet_no} in FreeMapSpec page')
-
     soup = BeautifulSoup(resp.text, 'html.parser')
-    with open('stage2.html', 'w') as f:
-        f.write(str(soup))
+
+
     form_data = get_form_data(soup)
     form_data.update(get_download_tile_form_data(soup, sheet_no, first_pass=False))
     logger.debug(f'spec page form data second pass:\n{pformat(form_data)}')

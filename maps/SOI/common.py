@@ -1,5 +1,7 @@
 import logging
 
+from pathlib import Path
+
 import requests
 
 base_url = 'https://onlinemaps.surveyofindia.gov.in/'
@@ -56,4 +58,6 @@ def get_form_data(soup):
 
     return form_data
 
+def ensure_dir(filename):
+    Path(filename).parent.mkdir(exist_ok=True, parents= True)
 

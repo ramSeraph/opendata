@@ -4,6 +4,7 @@ import json
 import pickle
 import base64
 import logging
+import shutil
 import zipfile
 
 from pprint import pformat
@@ -27,19 +28,16 @@ from login import login, get_form_data
 from common import (
     base_url,
     setup_logging,
+    ensure_dir,
     session
 )
 
 
 logger = logging.getLogger(__name__)
 
-raw_data_dir = 'data/raw/'
-
-
+data_dir = 'data/'
+raw_data_dir = data_dir + 'raw/'
 MAX_CAPTCHA_ATTEMPTS = 6
-
-def ensure_dir(filename):
-    Path(filename).parent.mkdir(exist_ok=True, parents= True)
 
 
 def get_secrets():
@@ -170,7 +168,7 @@ def convert_shp_to_geojson(unzipped_folder, out_filename):
 
 
 def get_map_index():
-    filename = 'data/index.geojson'
+    filename = data_dir + 'index.geojson'
 
     logger.info('getting map index')
     if Path(filename).exists():
@@ -180,6 +178,7 @@ def get_map_index():
     raw_filename = download_index_file()
     unzipped_folder = unzip_file(raw_filename)
     convert_shp_to_geojson(unzipped_folder, filename)
+    shutil.rmtree(unzipped_folder)
     return filename
 
 
@@ -352,7 +351,6 @@ if __name__ == '__main__':
 
     scrape_wrap()
 
-    bucket_name = 'soi_data_archive'
 
 
 

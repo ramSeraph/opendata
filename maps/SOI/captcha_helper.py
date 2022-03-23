@@ -84,4 +84,5 @@ def prepare_captcha_models(models_pathname):
         client = storage.Client.create_anonymous_client()
         download_folder('lgd_captcha_tesseract_models', str(models_path), client)
 
-
+if __name__ == '__main__':
+    prepare_captcha_models(captcha_model_dir)

@@ -41,15 +41,20 @@ MAX_CAPTCHA_ATTEMPTS = 6
 
 
 def get_secrets():
-    secrets_data = os.environ.get('SECRETS', None)
-    if secrets_data is None:
-        with open('secrets.json', 'r') as f:
-            secrets_data = f.read()
-    else:
-        secrets_data = base64.b64decode(secrets_data)
-    secrets_map = json.loads(secrets_data)
-    return secrets_map
+    with open(data_dir + 'users.json', 'r') as f:
+        users_text = f.read()
+    users_data = json.loads(users_text)
 
+    with open(data_dir + 'users_extra.json', 'r') as f:
+        users_text = f.read()
+    users_data.extend(json.loads(users_text))
+
+    secrets_map = {
+        u['phone_num']:u['password']
+        for u in users_data
+        if not u['first_login']
+    }
+    return secrets_map
 
 
 def login_wrap(phone_num, password):
@@ -305,6 +310,15 @@ def download_tile_wrap(tile_info):
         raise Exception('download tile map because of captcha errors')
 
 
+def get_done_list():
+    filename = data_dir + 'files_done.txt'
+    if not Path(filename).exists():
+        return []
+    with open(filename, 'r') as f:
+        files_done = f.read().split('\n')
+    return [ x.strip() for x in files_done ]
+
+
 def scrape(phone_num, password):
     login_wrap(phone_num, password)
     map_index_file = get_map_index()
@@ -313,12 +327,18 @@ def scrape(phone_num, password):
     logger.info(f'got {len(tile_infos)} tiles')
 
 
+    done = get_done_list()
     tile_infos_to_download = []
     for tile_info in tile_infos:
         sheet_no = tile_info['EVEREST_SH']
-        out_filename = Path(raw_data_dir).joinpath(f"{sheet_no.replace('/', '_')}.pdf")
-        out_filename_unavailable = Path(str(out_filename) + '.unavailable')
-        if out_filename.exists() or out_filename_unavailable.exists():
+        base_file = f"{sheet_no.replace('/', '_')}.pdf"
+        base_file_unavailable = base_file + '.unavailable'
+        out_filename = Path(raw_data_dir).joinpath(base_file)
+        out_filename_unavailable = Path(raw_data_dir).join_path(base_file_unavailable)
+        if out_filename.exists() or \
+           out_filename_unavailable.exists() or \
+           base_file in done or \
+           base_file_unavailable in done:
             continue
         tile_infos_to_download.append(tile_info)
 

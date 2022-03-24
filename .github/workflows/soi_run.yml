@@ -1,0 +1,93 @@
+name: SOI Pull Run
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on: 
+  workflow_dispatch:
+
+
+jobs:
+  Run-SOI-Extraction:
+    timeout-minutes: 600
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9.4'
+
+      - name: Restore pip data from cache
+        uses: actions/cache@v2
+        with:
+          path: ./.venv/
+          key: SOI-venv-${{ hashFiles('maps/SOI/requirements.txt') }}
+        id: cache-venv
+
+      - name: Setup python requirements
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m venv ./.venv 
+          . ./.venv/bin/activate
+          pip install -r maps/SOI/requirements.txt
+
+      - name: Install Extra packages
+        run: |
+          sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends tesseract-ocr libgl1-mesa-glx libgdal-dev
+
+      - name: Restore tesseract models from cache
+        uses: actions/cache@v2
+        with:
+          path: 'data/captcha/models/'
+          key:  'SOI-tesseract-models-gcs-v2'
+        id: models-cache
+
+      - name: Authenticate with GCP
+        run: |
+          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
+
+      - name: Download tesseract models from gcs
+        if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
+        run: |
+          mkdir -p data/captcha/models/
+          gsutil -m cp -r gs://lgd_captcha_tesseract_models/* data/captcha/models/
+
+      - name: Download users lists
+        run: |
+          gsutil -m cp gs://soi_data/users.json data/users.json
+          gsutil -m cp gs://soi_data/users_extra.json data/users_extra.json
+
+      - name: Prepare done list
+        run: |
+          gsutil ls gs://soi_data/raw/* | sed 's/^gs:\/\/soi_data\/raw\///g' > data/files_done.txt
+
+      - name: Restore prev workspace
+        uses: TerrenceHo/cache-always@v0.0.1
+        with:
+          path: |
+            data/raw/
+            data/index.geojson
+            data/cookies/
+          key:  SOI-data-raw-v0-${{ github.run_number }}-${{ github.run_attempt }}
+          restore-keys: |
+            SOI-data-raw-v0-${{ github.run_number }}-
+            SOI-data-raw-v0-
+
+      # scrape things
+      - name: Download SOI data
+        run: |
+          .venv/bin/python maps/SOI/scrape.py
+        timeout-minutes: 30
+
+      # TODO: dont always copy index file 
+      - name: Upload raw files to gcs
+        run: |
+          gsutil -m cp -r data/raw/* gs://soi_data/raw/
+          gsutil -m cp data/index.geojson gs://soi_data/index.geojson
+          rm data/raw/*

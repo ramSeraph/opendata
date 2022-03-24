@@ -33,8 +33,6 @@ jobs:
         with:
           path: ./.venv/
           key: lgd-venv-${{ hashFiles('lgd/requirements.txt') }}
-          restore-keys: |
-            $venv-${{ hashFiles('lgd/requirements.txt') }}
         id: cache-venv
 
       - name: Setup python requirements
@@ -81,8 +79,6 @@ jobs:
           restore-keys: |
             lgd-data-raw-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-
             lgd-data-raw-v0-${{ steps.date.outputs.date }}-
-            data-raw-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            data-raw-v5-${{ steps.date.outputs.date }}-
 
       - name: Restore changes data from cache
         uses: TerrenceHo/cache-always@v0.0.1
@@ -92,8 +88,6 @@ jobs:
           restore-keys: |
             lgd-data-raw-changes-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-
             lgd-data-raw-changes-v0-${{ steps.date.outputs.date }}-
-            data-raw-changes-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            data-raw-changes-v4-${{ steps.date.outputs.date }}-
         id: changes_cache
 
       - name: Download changes file from gcs

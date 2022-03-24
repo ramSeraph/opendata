@@ -50,6 +50,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y tesseract-ocr
 
+      - name: Authenticate with GCP
+        run: |
+          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
+
       - name: Restore tesseract models from cache
         uses: actions/cache@v2
         with:
@@ -60,7 +64,6 @@ jobs:
       - name: Download tesseract models from gcs
         if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
         run: |
-          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
           mkdir -p models/
           gsutil -m cp -r gs://lgd_captcha_tesseract_models/* models/
 
@@ -80,10 +83,6 @@ jobs:
             lgd-data-raw-v0-${{ steps.date.outputs.date }}-
             data-raw-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-
             data-raw-v5-${{ steps.date.outputs.date }}-
-
-      - name: Authenticate with GCP
-        run: |
-          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
 
       - name: Restore changes data from cache
         uses: TerrenceHo/cache-always@v0.0.1

@@ -334,7 +334,7 @@ def scrape(phone_num, password):
         base_file = f"{sheet_no.replace('/', '_')}.pdf"
         base_file_unavailable = base_file + '.unavailable'
         out_filename = Path(raw_data_dir).joinpath(base_file)
-        out_filename_unavailable = Path(raw_data_dir).join_path(base_file_unavailable)
+        out_filename_unavailable = Path(raw_data_dir).joinpath(base_file_unavailable)
         if out_filename.exists() or \
            out_filename_unavailable.exists() or \
            base_file in done or \

@@ -1,3 +1,4 @@
+import os
 import logging
 import glob
 
@@ -13,6 +14,8 @@ from imgcat import imgcat
 img_data_dir = 'data/captcha/imgs/'
 
 logger = logging.getLogger(__name__)
+
+SHOW_IMG = (os.environ.get('SHOW_IMG', None) == "1")
 
 def thresholding_cv(cv_image, inv=True):
     blocksize = 15
@@ -70,7 +73,8 @@ def guess(filename, models_dir):
     image = image.convert('RGB')
     image = image.convert('L')
     image = thresholding(image)
-    imgcat(image)
+    if SHOW_IMG:
+        imgcat(image)
     width, height = image.size
     ideal_height = 32
     scale_factor = float(ideal_height)/float(height)
@@ -87,7 +91,8 @@ def guess(filename, models_dir):
     #cv_image = thresholding_cv(cv_image, inv=False)
     image = Image.fromarray(cv_image)
 
-    imgcat(image)
+    if SHOW_IMG:
+        imgcat(image)
     guessed = pytesseract.image_to_string(image, config=config)
     guessed = ''.join([ x for x in guessed if x in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' ])
     return guessed

@@ -9,7 +9,7 @@ fi
 DOCKER_CMD="docker run --platform $PLATFORM --rm --env SHOW_IMG=1 -v $PWD:/code -w /code/ -it --name soi_run soi" 
 
 if [ "$SETUP" == "1" ]; then
-    $DOCKER_CMD python -m venv /code/.venv                                                                                                                                              master ✱ ◼
+    $DOCKER_CMD python -m venv /code/.venv
     $DOCKER_CMD pip install --upgrade pip
 fi
 

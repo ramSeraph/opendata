@@ -9,7 +9,7 @@ click-plugins==1.1.1
 cligj==0.7.2
 colorlog==6.6.0
 Fiona==1.8.21
-GDAL==2.4.0
+GDAL==3.0.4
 google-api-core==2.7.1
 google-auth==2.6.2
 google-cloud-core==2.2.3

@@ -5,6 +5,8 @@ concurrency:
   cancel-in-progress: true
 
 on: 
+  schedule:
+    - cron: '0 */3 * * *'
   workflow_dispatch:
 
 
@@ -28,7 +30,8 @@ jobs:
           python-version: '3.9.4'
 
       - name: Restore pip data from cache
-        uses: actions/cache@v2
+        uses: TerrenceHo/cache-always@v0.0.1
+        #uses: actions/cache@v2
         with:
           path: ./.venv/
           key: SOI-venv-${{ hashFiles('maps/SOI/requirements.txt') }}

@@ -364,6 +364,12 @@ def scrape_wrap():
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--max-captcha-retries', help='max number of times a captcha is retried', type=int, default=MAX_CAPTCHA_ATTEMPTS)
+    args = parser.parse_args()
+    MAX_CAPTCHA_ATTEMPTS = args.max_captcha_retries
+
     setup_logging(logging.INFO)
 
     if not CAPTCHA_MANUAL:

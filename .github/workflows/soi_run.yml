@@ -16,6 +16,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Install Extra packages
+        run: |
+          sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends tesseract-ocr libgl1-mesa-glx libgdal-dev
+
       - name: Setup python
         uses: actions/setup-python@v2
         with:
@@ -34,13 +40,6 @@ jobs:
           python -m venv ./.venv 
           . ./.venv/bin/activate
           pip install -r maps/SOI/requirements.txt
-
-      - name: Install Extra packages
-        run: |
-          sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends tesseract-ocr libgl1-mesa-glx libgdal-dev
-
       - name: Restore tesseract models from cache
         uses: actions/cache@v2
         with:

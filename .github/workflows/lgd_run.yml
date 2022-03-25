@@ -1,4 +1,4 @@
-name: Daily LGD Run
+name: LGD Daily Run
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}

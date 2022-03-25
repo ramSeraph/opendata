@@ -1,8 +1,8 @@
-name: Monitor Daily Run
+name: LGD Monitor Daily Run
 on:
   workflow_run:
     workflows:
-      - Daily LGD Run
+      - LGD Daily Run
     types: [completed]
 
 # conclusion values: action_required, cancelled, failure, neutral, success, skipped, stale, or timed_out

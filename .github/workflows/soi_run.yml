@@ -62,8 +62,8 @@ jobs:
 
       - name: Download users lists
         run: |
-          gsutil -m cp gs://soi_data/users.json data/users.json
-          gsutil -m cp gs://soi_data/users_extra.json data/users_extra.json
+          gsutil -m cp gs://soi_private/users.json data/users.json
+          gsutil -m cp gs://soi_private/users_extra.json data/users_extra.json
 
       - name: Prepare done list
         run: |
@@ -85,9 +85,9 @@ jobs:
       - name: Download SOI data
         run: |
           .venv/bin/python maps/SOI/scrape.py -r 10
-        timeout-minutes: 30
+        timeout-minutes: 60
 
       - name: Upload raw files to gcs
         run: |
           [[ "$(gsutil ls gs://soi_data/index.geojson 2>/dev/null)" == "" ]] && gsutil -m cp data/index.geojson gs://soi_data/index.geojson
-          [[ "$(find data/raw/ | wc -l)" != "0" ]] && gsutil -m cp -r data/raw/* gs://soi_data/raw/ && rm data/raw/*
+          [[ "$(find data/raw/ | wc -l)" == "0" ]] || gsutil -m cp -r data/raw/* gs://soi_data/raw/ && rm data/raw/*

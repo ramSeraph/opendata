@@ -2,7 +2,6 @@ import os
 import glob
 import json
 import pickle
-import base64
 import logging
 import shutil
 import zipfile
@@ -12,9 +11,6 @@ from pathlib import Path
 from datetime import datetime
 
 import requests
-import fiona
-import fiona.crs
-import osr
 
 from bs4 import BeautifulSoup
 
@@ -62,7 +58,7 @@ def login_wrap(phone_num, password):
     FAILED_CAPTCHA = 'Please enter valid Captcha'
     saved_cookie_file = f'data/cookies/saved_cookies.{phone_num}.pkl'
     if Path(saved_cookie_file).exists():
-        logger.info(f'found saved cookie file')
+        logger.info('found saved cookie file')
         with open(saved_cookie_file, 'rb') as f:
             saved_cookies = pickle.load(f)
         cookies_valid = True
@@ -83,7 +79,7 @@ def login_wrap(phone_num, password):
             logger.info('logged in with saved cookie')
             return
         Path(saved_cookie_file).unlink()
-        logger.warning(f'deleting old cookie file')
+        logger.warning('deleting old cookie file')
 
     count = 0
     success = False
@@ -92,7 +88,7 @@ def login_wrap(phone_num, password):
             logger.info('attempting a login')
             login(phone_num, password)
             ensure_dir(saved_cookie_file)
-            logger.info(f'saving cookies to file')
+            logger.info('saving cookies to file')
             with open(saved_cookie_file, 'wb') as f:
                 pickle.dump(session.cookies, f)
             success = True
@@ -151,25 +147,11 @@ def unzip_file(zip_filename):
     extracted_dir = zip_filename.replace('.zip', '/')
     return extracted_dir
 
-
-#TODO: needs to be fixed.. projections seem wrong
 def convert_shp_to_geojson(unzipped_folder, out_filename):
     filenames = glob.glob(str(Path(unzipped_folder).joinpath('*.shp')))
     assert len(filenames) == 1, f'{list(filenames)}'
     shp_file = filenames[0]
-    prj_file = shp_file.replace('.shp', '.prj')
-    with open(prj_file, 'r') as f:
-        prj_text = f.read()
-        srs = osr.SpatialReference()
-        if srs.ImportFromWkt(prj_text):
-            raise ValueError(f"Error importing PRJ information from: {prj_file}")
-    with fiona.open(shp_file, 'r', crs_wkt=srs.ExportToWkt()) as source:
-        with fiona.open(out_filename, 'w',
-                        driver='GeoJSON',
-                        crs=fiona.crs.from_epsg(4326),
-                        schema=source.schema) as sink:
-            for rec in source:
-                sink.write(rec)
+    os.system(f'ogr2ogr -f GeoJSON -t_srs EPSG:4326 {out_filename} {shp_file}')
 
 
 def get_map_index():
@@ -347,6 +329,7 @@ def scrape(phone_num, password):
 
 
 def scrape_wrap():
+    global session
     secrets_map = get_secrets()
     p_idx = 0
     total_count = len(secrets_map)

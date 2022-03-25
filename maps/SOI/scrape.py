@@ -342,7 +342,7 @@ def scrape_wrap():
             if str(ex) != 'Limit Crossed':
                 raise
             logger.warning('Limit crossed for this user.. changing users')
-            session = requests.session()
+            #session = requests.session()
     logger.warning('No more users')
 
 

@@ -1,0 +1,51 @@
+name: SOI Monitor Daily Pull Run
+on:
+  workflow_run:
+    workflows:
+      - SOI Daily Pull Run
+    types: [completed]
+
+# conclusion values: action_required, cancelled, failure, neutral, success, skipped, stale, or timed_out
+# TODO: deal with failure conclusions apart from 'failure'
+jobs:
+  RetryTrigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check to give up
+        id: check
+        run: |
+          export RUN_ID=${{ github.event.workflow_run.id }}
+          export RUN_NO=${{ github.event.workflow_run.run_number }}
+          export RUN_ATTEMPT=${{ github.event.workflow_run.run_attempt }}
+          export CONCLUSION=${{ github.event.workflow_run.conclusion }}
+          echo "got workflow run event for $RUN_NUMBER( attempt - $RUN_ATTEMPT ), conclusion - $CONCLUSION"
+          if [ "$CONCLUSION" != "failure" ]; then
+            echo "setting RERUN to false and SEND_ALERT to false"
+            echo "::set-output name=RERUN::false"
+            echo "::set-output name=SEND_ALERT::false"
+          else
+            if [ "$RUN_ATTEMPT" -lt 3 ]; then
+              echo "setting RERUN to true and SEND_ALERT to false"
+              echo "::set-output name=RERUN::true"
+              echo "::set-output name=SEND_ALERT::false"
+            else
+              echo "setting RERUN to false and SEND_ALERT to true"
+              echo "::set-output name=RERUN::false"
+              echo "::set-output name=SEND_ALERT::true"
+            fi
+          fi
+
+      - name: Call Rerun API
+        if: ${{ steps.check.outputs.RERUN == 'true' }}
+        run: |
+          curl -X POST -u "ramSeraph:${{secrets.RERUN_PAT}}" ${{ github.event.workflow_run.rerun_url }}
+
+      - name: Send PushBullet notification
+        if: ${{ steps.check.outputs.SEND_ALERT == 'true' }}
+        run: |
+          export PB_API_URL="https://api.pushbullet.com/v2/pushes"
+          export PB_URL="${{ github.event.workflow_run.html_url }}"
+          export PB_TITLE="SOI Daily run failed"
+          export PB_BODY="SOI Daily run failed"
+          export REQUEST_BODY="{\"title\":\"$PB_TITLE\",\"body\":\"$PB_BODY\",\"type\":\"link\",\"url\":\"$PB_URL\"}" 
+          curl -H "Access-Token: ${{ secrets.PB_TOKEN }}" -H "Content-Type: application/json" --data-binary "$REQUEST_BODY" -X POST "$PB_API_URL" 

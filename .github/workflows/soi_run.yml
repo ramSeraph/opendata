@@ -1,4 +1,4 @@
-name: SOI Pull Run
+name: SOI Daily Pull Run
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -6,7 +6,7 @@ concurrency:
 
 on: 
   schedule:
-    - cron: '0 */3 * * *'
+    - cron: '15 4 * * *'
   workflow_dispatch:
 
 

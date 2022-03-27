@@ -10,7 +10,7 @@ from pprint import pformat
 from pathlib import Path
 from datetime import datetime
 
-import requests
+#import requests
 
 from bs4 import BeautifulSoup
 
@@ -56,7 +56,7 @@ tried_users_file = data_dir + 'tried_users.txt'
 def get_tried_users():
     if not Path(tried_users_file).exists():
         return []
-    with open(tried_users_file, r) as f:
+    with open(tried_users_file, 'r') as f:
         tried_users = f.read().split('\n')
     return [ x.strip() for x in tried_users ]
 

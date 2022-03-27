@@ -52,6 +52,21 @@ def get_secrets():
     }
     return secrets_map
 
+tried_users_file = data_dir + 'tried_users.txt'
+def get_tried_users():
+    if not Path(tried_users_file).exists():
+        return []
+    with open(tried_users_file, r) as f:
+        tried_users = f.read().split('\n')
+    return [ x.strip() for x in tried_users ]
+
+
+def update_tried_users(tried_users):
+    tried_users_file_new = tried_users_file + '.new'
+    with open(tried_users_file_new, 'w') as f:
+        f.write('\n'.join(tried_users))
+    shutil.move(tried_users_file_new, tried_users_file)
+    
 
 def login_wrap(phone_num, password):
     global session
@@ -332,6 +347,8 @@ def scrape_wrap():
     global session
     secrets_map = get_secrets()
     p_idx = 0
+    tried_users = get_tried_users()
+    secrets_map = {k:v for k,v in secrets_map.items() if k not in tried_users}
     total_count = len(secrets_map)
     for phone_num, password in secrets_map.items():
         p_idx += 1
@@ -342,8 +359,12 @@ def scrape_wrap():
             if str(ex) != 'Limit Crossed':
                 raise
             logger.warning('Limit crossed for this user.. changing users')
+            tried_users.append(phone_num)
+            update_tried_users(tried_users)
             #session = requests.session()
     logger.warning('No more users')
+    if Path(tried_users_file).exists():
+        Path(tried_users_file).unlink()
 
 
 if __name__ == '__main__':

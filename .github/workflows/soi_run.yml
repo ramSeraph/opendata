@@ -76,10 +76,11 @@ jobs:
             data/raw/
             data/index.geojson
             data/cookies/
-          key:  SOI-data-raw-v1-${{ github.run_number }}-${{ github.run_attempt }}
+            data/tried_users.txt
+          key:  SOI-data-raw-v2-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            SOI-data-raw-v1-${{ github.run_number }}-
-            SOI-data-raw-v1-
+            SOI-data-raw-v2-${{ github.run_number }}-
+            SOI-data-raw-v2-
 
       # scrape things
       - name: Download SOI data

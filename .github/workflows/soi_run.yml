@@ -90,5 +90,5 @@ jobs:
 
       - name: Upload raw files to gcs
         run: |
-          [[ "$(gsutil ls gs://soi_data/index.geojson 2>/dev/null)" == "" ]] && gsutil -m cp data/index.geojson gs://soi_data/index.geojson
-          find data/raw/* && gsutil -m cp -r data/raw/* gs://soi_data/raw/ && rm data/raw/* || true
+          [[ "$(gsutil ls gs://soi_data/index.geojson 2>/dev/null)" == "" ]] && gsutil -m cp -a public-read data/index.geojson gs://soi_data/index.geojson
+          find data/raw/* && gsutil -m cp -a public-read -r data/raw/* gs://soi_data/raw/ && rm data/raw/* || true

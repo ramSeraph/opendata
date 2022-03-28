@@ -113,9 +113,12 @@ window.onload = (event) => {
     var hasError = false
     var statusSpan = document.getElementById('call_status')
     setStatus = (msg, error) => {
-        // TODO: add colors based on error flag
         statusSpan.innerHTML = msg
-        hasError = error
+        if (error) {
+            statusSpan.setAttribute("class", "error")
+        } else if (statusSpan.hasAttribute("class")) {
+            statusSpan.removeAttribute("class")
+        }
     }
     setStatus(`Getting list of all archives.. `, false)
     console.log('getting list of all archives')

@@ -8,7 +8,8 @@
     function gtag() {
         window.dataLayer.push(arguments)
     }
-    
     gtag('js', new Date())
-    gtag('config', gaId)
+    gtag('config', gaId, {
+        cookie_flags: 'max-age=7200;secure;samesite=strict'
+    })
 })();

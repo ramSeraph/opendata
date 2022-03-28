@@ -14,6 +14,8 @@ Collection of Data from [Local Government Directory](https://lgdirectory.gov.in)
 
 # Get Archive for date
 
+
+<link rel="stylesheet" property="stylesheet" type="text/css" href="{{ "/assets/css/lgd/status.css" | relative_url }}">
 <script src="{{ "/assets/js/lgd/archive_searcher.js" | relative_url }}" ></script>
 <form name='archive_search_form'>
   <input type="date" id="archive_date" name="date" text="Get LGD archive link for date: " autocomplete="off" />
@@ -21,4 +23,3 @@ Collection of Data from [Local Government Directory](https://lgdirectory.gov.in)
 
 <span id='form_status'></span>
 <span id='archive_list'></span>
-

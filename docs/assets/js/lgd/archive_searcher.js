@@ -21,9 +21,12 @@ window.onload = (event) => {
     var hasError = false
     var statusSpan = document.getElementById('form_status')
     setStatus = (msg, error) => {
-        // TODO: add colors based on error flag
         statusSpan.innerHTML = msg
-        hasError = error
+        if (error) {
+            statusSpan.setAttribute("class", "error")
+        } else if (statusSpan.hasAttribute("class")) {
+            statusSpan.removeAttribute("class")
+        }
     }
     setStatus('', false)
 

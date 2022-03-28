@@ -402,5 +402,5 @@ description
 
 Location in LGD
 : - Reports
-    - List of Modification done in LGDn
+    - List of Modification done in LGD
 

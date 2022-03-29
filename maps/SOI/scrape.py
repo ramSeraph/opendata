@@ -315,6 +315,28 @@ def get_done_list():
         files_done = f.read().split('\n')
     return [ x.strip() for x in files_done ]
 
+def get_priority_list():
+    filename = data_dir + 'priority_list.txt'
+    if not Path(filename).exists():
+        return []
+
+    with open(filename, 'r') as f:
+        files_done = f.read().split('\n')
+    return [ x.strip() for x in files_done ]
+
+
+def is_sheet_done(sheet_no, done):
+    base_file = f"{sheet_no.replace('/', '_')}.pdf"
+    base_file_unavailable = base_file + '.unavailable'
+    out_filename = Path(raw_data_dir).joinpath(base_file)
+    out_filename_unavailable = Path(raw_data_dir).joinpath(base_file_unavailable)
+    if out_filename.exists() or \
+       out_filename_unavailable.exists() or \
+       base_file in done or \
+       base_file_unavailable in done:
+           return True
+    return False
+
 
 def scrape(phone_num, password):
     login_wrap(phone_num, password)
@@ -324,20 +346,21 @@ def scrape(phone_num, password):
     logger.info(f'got {len(tile_infos)} tiles')
 
 
+    priority_list = get_priority_list()
     done = get_done_list()
     tile_infos_to_download = []
+    priority_tile_infos = []
     for tile_info in tile_infos:
         sheet_no = tile_info['EVEREST_SH']
-        base_file = f"{sheet_no.replace('/', '_')}.pdf"
-        base_file_unavailable = base_file + '.unavailable'
-        out_filename = Path(raw_data_dir).joinpath(base_file)
-        out_filename_unavailable = Path(raw_data_dir).joinpath(base_file_unavailable)
-        if out_filename.exists() or \
-           out_filename_unavailable.exists() or \
-           base_file in done or \
-           base_file_unavailable in done:
+        if is_sheet_done(sheet_no, done):
             continue
-        tile_infos_to_download.append(tile_info)
+        if sheet_no in priority_list:
+            priority_tile_infos.append(tile_info)
+        else:
+            tile_infos_to_download.append(tile_info)
+
+    for tile_info in priority_tile_infos:
+        download_tile_wrap(tile_info)
 
     for tile_info in tile_infos_to_download:
         download_tile_wrap(tile_info)

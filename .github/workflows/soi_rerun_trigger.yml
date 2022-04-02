@@ -24,7 +24,7 @@ jobs:
             echo "::set-output name=RERUN::false"
             echo "::set-output name=SEND_ALERT::false"
           else
-            if [ "$RUN_ATTEMPT" -lt 3 ]; then
+            if [ "$RUN_ATTEMPT" -lt 5 ]; then
               echo "setting RERUN to true and SEND_ALERT to false"
               echo "::set-output name=RERUN::true"
               echo "::set-output name=SEND_ALERT::false"

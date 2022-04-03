@@ -1,0 +1,24 @@
+name: BBNL Daily Run
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on: 
+  workflow_dispatch:
+
+
+jobs:
+  Archive-BBNL-Pages:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    container:
+      image: secsi/waybackpy
+    steps:
+      - name: Save main page
+        run: |
+          --url "https://bbnl.nic.in/" --save --headers
+
+      - name: Save usage page
+        run: |
+          --url "https://bbnl.nic.in/usage2.pdf" --save --headers

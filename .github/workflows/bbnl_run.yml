@@ -1,4 +1,4 @@
-name: BBNL Daily Run
+name: BBNL Weekly Run
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,8 +17,8 @@ jobs:
     steps:
       - name: Save main page
         run: |
-          --url "https://bbnl.nic.in/" --save --headers
+          waybackpy --url "https://bbnl.nic.in/" --save --headers
 
       - name: Save usage page
         run: |
-          --url "https://bbnl.nic.in/usage2.pdf" --save --headers
+          waybackpy --url "https://bbnl.nic.in/usage2.pdf" --save --headers

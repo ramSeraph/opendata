@@ -9,7 +9,7 @@ on:
 
 
 jobs:
-  Archive-BBNL-Pages:
+  Archive-BBNL-Main-Page:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     container:
@@ -19,6 +19,12 @@ jobs:
         run: |
           waybackpy --url "https://bbnl.nic.in/" --save --headers
 
+  Archive-BBNL-Usage-Page:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    container:
+      image: secsi/waybackpy
+    steps:
       - name: Save usage page
         run: |
           waybackpy --url "https://bbnl.nic.in/usage2.pdf" --save --headers

@@ -167,7 +167,7 @@ def correct_index_file(out_filename):
     with open(out_filename, 'r') as f:
         index_data = json.load(f)
 
-    corrections_file = Path(__file__).parent.join_path('index.geojson.corrections')
+    corrections_file = Path(__file__).parent.joinpath('index.geojson.corrections')
     with open(corrections_file, 'r') as f:
         index_corrections_data = json.load(f)
 

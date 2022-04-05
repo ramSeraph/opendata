@@ -162,11 +162,36 @@ def unzip_file(zip_filename):
     extracted_dir = zip_filename.replace('.zip', '/')
     return extracted_dir
 
+
+def correct_index_file(out_filename):
+    with open(out_filename, 'r') as f:
+        index_data = json.load(f)
+
+    corrections_file = Path(__file__).parent.join_path('index.geojson.corrections')
+    with open(corrections_file, 'r') as f:
+        index_corrections_data = json.load(f)
+
+    corrections_map = {f['properties']['EVEREST_SH']:f for f in index_corrections_data['features']}
+
+    for f in index_data['features']:
+        sheet_no = f['properties']['EVEREST_SH']
+        if sheet_no not in corrections_map:
+            continue
+        geom_correction = corrections_map[sheet_no]['geometry']
+        f['geometry'] = geom_correction
+
+    out_filename_new = out_filename + '.new'
+    with open(out_filename_new, 'w') as f:
+        json.dump(index_data, f, indent=4)
+    shutil.move(out_filename_new, out_filename)
+
+
 def convert_shp_to_geojson(unzipped_folder, out_filename):
     filenames = glob.glob(str(Path(unzipped_folder).joinpath('*.shp')))
     assert len(filenames) == 1, f'{list(filenames)}'
     shp_file = filenames[0]
     os.system(f'ogr2ogr -f GeoJSON -t_srs EPSG:4326 {out_filename} {shp_file}')
+    correct_index_file(out_filename)
 
 
 def get_map_index():

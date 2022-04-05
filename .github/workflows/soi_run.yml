@@ -78,10 +78,10 @@ jobs:
             data/index.geojson
             data/cookies/
             data/tried_users.txt
-          key:  SOI-data-raw-v2-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  SOI-data-raw-v3-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            SOI-data-raw-v2-${{ github.run_number }}-
-            SOI-data-raw-v2-
+            SOI-data-raw-v3-${{ github.run_number }}-
+            SOI-data-raw-v3-
 
       # scrape things
       - name: Download SOI data
@@ -91,5 +91,5 @@ jobs:
 
       - name: Upload raw files to gcs
         run: |
-          [[ "$(gsutil ls gs://soi_data/index.geojson 2>/dev/null)" == "" ]] && gsutil -m cp -a public-read data/index.geojson gs://soi_data/index.geojson
+          [[ "$(gsutil ls gs://soi_data/index.geojson 2>/dev/null)" == "" ]] && gsutil -m cp data/index.geojson gs://soi_data/index.geojson
           find data/raw/* && gsutil -m cp -a public-read -r data/raw/* gs://soi_data/raw/ && rm data/raw/* || true

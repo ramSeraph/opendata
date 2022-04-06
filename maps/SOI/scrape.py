@@ -372,19 +372,23 @@ def scrape(phone_num, password):
 
 
     priority_list = get_priority_list()
+    priority_tile_info_map = {}
     done = get_done_list()
     tile_infos_to_download = []
-    priority_tile_infos = []
     for tile_info in tile_infos:
         sheet_no = tile_info['EVEREST_SH']
         if is_sheet_done(sheet_no, done):
             continue
         if sheet_no in priority_list:
-            priority_tile_infos.append(tile_info)
+            priority_tile_info_map[sheet_no] = tile_info
         else:
             tile_infos_to_download.append(tile_info)
 
-    for tile_info in priority_tile_infos:
+    for sheet_no in priority_list:
+        if sheet_no not in priority_tile_info_map:
+            logger.warning(f'priority {sheet_no} missing')
+            continue
+        tile_info = priority_tile_info_map[sheet_no]
         download_tile_wrap(tile_info)
 
     for tile_info in tile_infos_to_download:

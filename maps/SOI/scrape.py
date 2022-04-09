@@ -346,8 +346,10 @@ def get_priority_list():
         return []
 
     with open(filename, 'r') as f:
-        files_done = f.read().split('\n')
-    return [ x.strip() for x in files_done ]
+        plist = f.read().split('\n')
+    plist = [ x.strip() for x in plist ]
+    plist = [ x for x in plist if x != '' ]
+    return plist
 
 
 def is_sheet_done(sheet_no, done):
@@ -386,7 +388,8 @@ def scrape(phone_num, password):
 
     for sheet_no in priority_list:
         if sheet_no not in priority_tile_info_map:
-            logger.warning(f'priority {sheet_no} missing')
+            if not is_sheet_done(sheet_no, done):
+                logger.warning(f'priority {sheet_no} missing')
             continue
         tile_info = priority_tile_info_map[sheet_no]
         download_tile_wrap(tile_info)

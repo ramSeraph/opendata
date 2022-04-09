@@ -1,0 +1,39 @@
+#map {
+    width:41.5vw;
+    height:41.5vw;
+}
+
+/* Marker tweaks */
+.maplibregl-popup-close-button {
+  display: none;
+}
+
+.maplibregl-popup-content {
+  text-align: center;
+  height: auto;
+  max-height: 100px;
+  overflow: auto;
+  background: #000;
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+    border-top-color: #000;
+}
+
+
+.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+    border-bottom-color: #000;
+}
+
+
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+    border-right-color: #000;
+}
+
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+    border-left-color: #000;
+}
+
+.td-top {
+    vertical-align: text-top;
+}

@@ -22,7 +22,7 @@ const map = new maplibregl.Map({
     minZoom: 1
 })
 map.addControl(new maplibregl.NavigationControl())
-map.doubleClickZoom.disable()
+//map.doubleClickZoom.disable()
 
 
 function fileSize(size) {

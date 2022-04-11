@@ -86,7 +86,7 @@ jobs:
       # scrape things
       - name: Download SOI data
         run: |
-          .venv/bin/python maps/SOI/scrape.py -r 10
+          .venv/bin/python maps/SOI/scrape.py -r 15
         timeout-minutes: 60
 
       - name: Upload raw files to gcs

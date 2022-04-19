@@ -1,0 +1,9 @@
+cffi==1.15.0
+chardet==4.0.0
+cryptography==36.0.2
+imgcat==0.5.0
+numpy==1.22.3
+opencv-python==4.5.5.64
+pdfminer.six==20220319
+Pillow==9.1.0
+pycparser==2.21

@@ -213,7 +213,7 @@ class StateWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
     def __init__(self, **kwargs):
         if 'enrichers' not in kwargs:
             kwargs['enrichers'] = { 'State Code': 'State Code',
-                                    'State Name': 'State Name (In English)' }
+                                    'State Name': 'State Name(In English)' }
         if 'deps' not in kwargs:
             kwargs['deps'] = []
         if 'STATES' not in kwargs['deps']:
@@ -481,6 +481,7 @@ def get_all_directory_downloaders(ctx):
                                            dropdown='Parliament/Assembly Constituency --> Parliament Constituency or Assembly Constituency of a State/India --> All State --> Parliament Constituency',
                                            csv_filename='parliament_constituencies.csv',
                                            ctx=ctx,
+                                           transform=['ignore_if_empty_field', 'Parliament Constituency Code'],
                                            post_data_extra={
                                                'rptFileName': 'assembly_parliament_constituency',
                                                'stateName': 'India',
@@ -517,7 +518,7 @@ def get_all_directory_downloaders(ctx):
                                                     ctx=ctx,
                                                     download_types=['xls', 'htm'],
                                                     excel_conv_args={
-                                                        'header_row_span': 2,
+                                                        'header_row_span': 1,
                                                     },
                                                     post_data_extra={
                                                         'rptFileName': 'LocalbodyMappingtoCensusLandregionCode@state',
@@ -535,7 +536,7 @@ def get_all_directory_downloaders(ctx):
                                                     },
                                                     enrichers={
                                                         'State Code': 'State Code',
-                                                        'State Name (In English)': 'State Name (In English)'
+                                                        'State Name (In English)': 'State Name(In English)'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='BLOCK_VILLAGES',
                                                     desc='list of all village to block mappings',

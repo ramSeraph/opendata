@@ -186,7 +186,7 @@ class StateWiseDwrDownloader(MultiDownloader, DwrDownloader):
     def __init__(self, **kwargs):
         if 'enrichers' not in kwargs:
             kwargs['enrichers'] = { 'State Code': 'State Code',
-                                    'State Name': 'State Name (In English)' }
+                                    'State Name': 'State Name(In English)' }
         if 'deps' not in kwargs:
             kwargs['deps'] = []
         if 'STATES' not in kwargs['deps']:

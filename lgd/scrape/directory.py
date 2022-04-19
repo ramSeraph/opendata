@@ -146,6 +146,8 @@ class DirectoryDownloader(BaseDownloader):
         finally:
             if not SAVE_INTERMEDIATE_FILES:
                 Path(data_file_name).unlink(missing_ok=True)
+            else:
+                logger.info(f'intermediate {data_file_name=}')
 
         #logger.debug('got {} records'.format(len(records)))
         #logger.debug('{}'.format(records[0]))
@@ -380,7 +382,7 @@ def get_all_directory_downloaders(ctx):
                                            csv_filename='states.csv',
                                            ctx=ctx,
                                            excel_conv_args={
-                                               'header_row_span': 2,
+                                               'header_row_span': 1,
                                            },
                                            post_data_extra={
                                                'rptFileName': 'allStateofIndia',

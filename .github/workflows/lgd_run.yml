@@ -75,10 +75,10 @@ jobs:
           path: |
             data/raw/${{ steps.date.outputs.date }}
             data/raw/${{ steps.date.outputs.date }}.zip
-          key:  lgd-data-raw-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  lgd-data-raw-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            lgd-data-raw-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            lgd-data-raw-v0-${{ steps.date.outputs.date }}-
+            lgd-data-raw-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            lgd-data-raw-v1-${{ steps.date.outputs.date }}-
 
       - name: Restore changes data from cache
         uses: TerrenceHo/cache-always@v0.0.1

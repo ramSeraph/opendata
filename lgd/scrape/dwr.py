@@ -201,7 +201,7 @@ class StateWiseDwrDownloader(MultiDownloader, DwrDownloader):
         downloader_items = []
         for r in BaseDownloader.records_from_downloader('STATES'):
             state_code = r['State Code']
-            state_name = r['State Name (In English)']
+            state_name = r['State Name(In English)']
 
             csv_path = Path(self.csv_filename)
             csv_filename_s = '{}_{}{}'.format(csv_path.stem, state_code, csv_path.suffix)

@@ -12,3 +12,6 @@ RUN python -m venv /code/.venv
 
 ENV PATH="/code/.venv/bin:${PATH}"
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends poppler-utils poppler-data mupdf && \
+    rm -rf /var/lib/apt/lists/*

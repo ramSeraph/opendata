@@ -20,6 +20,22 @@ from pdfminer.pdfinterp import PDFPageInterpreter
 from pdfminer.converter import PDFPageAggregator
 from pdfminer.layout import LTImage
 
+from PyPDF2 import PdfFileReader
+
+from shapely.geometry import LineString, Polygon, CAP_STYLE
+from shapely.wkt import loads as wkt_loads
+from shapely.wkt import dumps as wkt_dumps
+from shapely.affinity import translate
+
+import rasterio
+import rasterio.mask
+from rasterio.io import MemoryFile
+from rasterio.crs import CRS
+from rasterio.control import GroundControlPoint
+from rasterio.transform import from_gcps
+from rasterio.warp import calculate_default_transform, reproject, Resampling
+
+
 
 
 inter_dir = 'data/inter'
@@ -272,6 +288,13 @@ def translate_bbox(bbox, ox, oy):
     b = bbox
     return (b[0] + ox, b[1] + oy, b[2], b[3])
 
+def round_off(geom):
+    coords_arrays = geom['coordinates']
+    for coords in coords_arrays:
+        for coord in coords:
+            coord[0] = round(coord[0], 5)
+            coord[1] = round(coord[1], 5)
+
 
 index_map = None
 def get_full_index():
@@ -288,6 +311,20 @@ def get_full_index():
         index_map[sheet_no] = geom
     return index_map
     
+def split_line(p1, p2):
+    #TODO: might need to use projections
+    line = LineString([p1, p2])
+    pts = [line.interpolate(i/6, normalized=True).coords[0] for i in range(0, 7)]
+    pts = [ (round(x[0]), round(x[1])) for x in pts ]
+    return pts
+
+# copied from rio-alpha
+def mask_exact(img, ndv):
+    assert len(ndv) == img.shape[0], "ndv length must equal num bands"
+    alpha = np.any(np.transpose(img, [1, 2, 0]) != ndv, axis=2)
+    alpha_rescale = alpha.astype(img.dtype) * np.iinfo(img.dtype).max
+    return alpha_rescale
+
 
 class Converter:
     def __init__(self, filename):
@@ -297,9 +334,11 @@ class Converter:
         self.cur_step = None
         self.small_img = None
         self.full_img = None
+        self.map_img = None
         self.flavor = None
         self.pdf_document = None
         self.mapbox_corners = None
+        self.src_crs = None
 
 
     def get_full_img_file(self):
@@ -371,10 +410,20 @@ class Converter:
 
 
     def convert_pdf_to_image(self):
-        print('converting pdf to image using pdftocairo')
-        run_external(f'pdftocairo -singlefile -r 72 -scale-to 18000 -jpeg {self.filename}')
-        exp_out_file = Path(self.filename).name.replace('.pdf', '.jpg')
-        shutil.move(exp_out_file, str(self.get_full_img_file()))
+        inp = PdfFileReader(open(self.filename, 'rb'))
+        bbox = inp.getPage(0).mediaBox
+        w, h = bbox.getWidth(), bbox.getHeight()
+        ow = 18000
+        oh = round(float(h) * float(ow) / float(w))
+        img_filename = str(self.get_full_img_file())
+        #print('converting pdf to image using ghostscript')
+        #run_external(f'gs -g{ow}x{oh} -dBATCH -dNOPAUSE -dDOINTERPOLATE -sPageList=1 -sOutputFile={img_filename} -sDevice=jpeg {self.filename}')
+        print('converting pdf to image using mupdf')
+        run_external(f'mudraw -w {ow} -h {oh} -c rgb -o {img_filename} {self.filename}')
+        #print('converting pdf to image using pdftocairo')
+        ##run_external(f'pdftocairo -antialias best -singlefile -r 72 -scale-to 18000 -jpeg {self.filename}')
+        #exp_out_file = Path(self.filename).name.replace('.pdf', '.jpg')
+        #shutil.move(exp_out_file, img_filename)
 
 
     def convert(self):
@@ -425,6 +474,13 @@ class Converter:
         return small_img
 
 
+    def get_map_img(self):
+        if self.map_img is not None:
+            return self.map_img
+        mapbox_file = self.file_dir.joinpath('mapbox.jpg')
+        self.map_img = cv2.imread(str(mapbox_file))
+        return self.map_img
+        
 
 
     def get_maparea(self):
@@ -557,7 +613,8 @@ class Converter:
         print(f'{corners=}')
         map_img_hsv = crop_img(map_img_hsv, bbox)
         print('writing the main mapbox file')
-        cv2.imwrite(str(mapbox_file), cv2.cvtColor(map_img_hsv, cv2.COLOR_HSV2BGR))
+        self.map_img = cv2.cvtColor(map_img_hsv, cv2.COLOR_HSV2BGR)
+        cv2.imwrite(str(mapbox_file), self.map_img)
         corners_in_box = [ (c[0] - bbox[0], c[1] - bbox[1]) for c in corners ]
         print(f'{corners_in_box=}')
         self.mapbox_corners = corners_in_box
@@ -663,7 +720,15 @@ class Converter:
         sheet_no = Path(self.filename).name.replace('.pdf', '').replace('_', '/')
         full_index = get_full_index()
         geom = full_index[sheet_no]
+        round_off(geom)
         return geom
+
+    def get_source_crs(self):
+        if self.src_crs is not None:
+            return src_crs
+        esri_wkt = Path('data/raw/OSM_SHEET_INDEX/OSM_SHEET_INDEX.prj').read_text()
+        self.src_crs = CRS.from_wkt(esri_wkt, morph_from_esri_dialect=True)
+        return self.src_crs
 
     def get_corners(self):
         if self.mapbox_corners is not None:
@@ -675,39 +740,11 @@ class Converter:
         self.mapbox_corners = corners
         return corners
 
-    def georeference_mapbox(self):
-        mapbox_file = self.file_dir.joinpath('mapbox.jpg')
-        cutline_file = self.file_dir.joinpath('cutline.geojson')
-        georef_file = self.file_dir.joinpath('georef.tif')
-        final_file = self.file_dir.joinpath('final.tif')
-        if final_file.exists():
-            print(f'{final_file} exists.. skipping')
-            return
-        geom = self.get_index_geom()
+    def create_cutline(self, geom, file):
+        sub_geoms = []
         ibox = geom['coordinates'][0]
         i_lt, i_lb, i_rb, i_rt, _ = ibox
-        corners = self.get_corners()
-        c_rt, c_rb, c_lb, c_lt = corners
-        gcp_str = ''
-        gcp_str += f' -gcp {c_lt[0]} {c_lt[1]} {i_lt[0]} {i_lt[1]}'
-        gcp_str += f' -gcp {c_lb[0]} {c_lb[1]} {i_lb[0]} {i_lb[1]}'
-        gcp_str += f' -gcp {c_rb[0]} {c_rb[1]} {i_rb[0]} {i_rb[1]}'
-        gcp_str += f' -gcp {c_rt[0]} {c_rt[1]} {i_rt[0]} {i_rt[1]}'
-        translate_cmd = f'gdal_translate {gcp_str}  -of GTiff {str(mapbox_file)} {str(georef_file)}' 
-        run_external(translate_cmd)
-
-        img_quality_config = {
-            'COMPRESS': 'JPEG',
-            #'PHOTOMETRIC': 'YCBCR',
-            'JPEG_QUALITY': '50'
-        }
-
-        warp_quality_config = img_quality_config.copy()
-        warp_quality_config.update({'TILED': 'YES'})
-
-        warp_quality_options = ' '.join([ f'-co {k}={v}' for k,v in warp_quality_config.items() ])
-
-        with open(cutline_file, 'w') as f:
+        with open(file, 'w') as f:
             cutline_data = {
                     "type": "FeatureCollection",
                     "name": "CUTLINE",
@@ -720,9 +757,145 @@ class Converter:
             }
             json.dump(cutline_data, f, indent=4)
 
-        reproj_options = '-tps -tr 1 1 -r bilinear -s_srs "EPSG:4326" -t_srs "EPSG:3857"' 
-        cutline_options = f'-cutline {str(cutline_file)} -crop_to_cutline'
-        warp_cmd = f'gdalwarp -overwrite -multi -wo NUM_THREADS=ALL_CPUS -dstalpha {reproj_options} {warp_quality_options} {cutline_options} {str(georef_file)} {str(final_file)}'
+
+
+    def georeference_mapbox_new(self):
+        nogrid_file = self.file_dir.joinpath('nogrid.jpg')
+        georef_file = self.file_dir.joinpath('georef.tif')
+        cropped_file = self.file_dir.joinpath('cropped.tif')
+        reproj_file = self.file_dir.joinpath('reproj.tif')
+        final_file = self.file_dir.joinpath('final.tif')
+        if final_file.exists():
+            print(f'{final_file} exists.. skipping')
+            return
+        src_crs = self.get_source_crs()
+
+        geom = self.get_index_geom()
+        ibox = geom['coordinates'][0]
+        corners = self.get_corners()
+
+        i_lt, i_lb, i_rb, i_rt, _ = ibox
+        c_rt, c_rb, c_lb, c_lt = corners
+        gcps = [
+            GroundControlPoint(row=c_rt[1], col=c_rt[0], x=i_rt[0], y=i_rt[1]),
+            GroundControlPoint(row=c_lt[1], col=c_lt[0], x=i_lt[0], y=i_lt[1]),
+            GroundControlPoint(row=c_lb[1], col=c_lb[0], x=i_lb[0], y=i_lb[1]),
+            GroundControlPoint(row=c_rb[1], col=c_rb[0], x=i_rb[0], y=i_rb[1]),
+        ]
+        geom_s = Polygon([c_rt, c_rb, c_lb, c_lt, c_rt])
+        with rasterio.open(str(nogrid_file)) as src:
+            profile = src.profile.copy()
+            profile.update({
+                'driver': 'GTiff',
+                'tiled': True,
+                'blockxsize': 512,
+                'blockysize': 512,
+                'photometric': 'RGB',
+                'nodata': None,
+                'count': 4,
+                'compress': 'JPEG',
+                'interleave': 'pixel',
+            })
+            data = src.read()
+
+        print(f'writing file {georef_file}')
+        with rasterio.open(str(georef_file), 'w', **profile) as refed:
+            refed.crs = src_crs
+            refed.transform = from_gcps(gcps)
+            r = data[0]
+            alpha = np.ones(r.shape, dtype=r.dtype) * 255
+            rgba = np.append(data, alpha[np.newaxis, :, :], axis=0)
+            refed.write(rgba)
+
+        print(f'writing file {cropped_file}')
+        with rasterio.open(str(georef_file)) as reffed:
+            out_mask, out_transform, window = rasterio.mask.raster_geometry_mask(reffed, [geom_s])
+            out_profile = reffed.profile.copy()
+            out_profile.update({"height": out_mask.shape[0],
+                                "width": out_mask.shape[1],
+                                "transform": out_transform})
+
+            out_img = reffed.read(window=window)
+            out_img[3] = out_img[3] | out_mask
+            with rasterio.open(str(cropped_file), 'w', **out_profile) as dst:
+                print(dst.profile)
+                dst.write(out_img)
+
+        with rasterio.open(str(cropped_file)) as src:
+            dst_crs ='EPSG:3857'
+            transform, width, height = calculate_default_transform(
+                    src.crs, dst_crs, src.width, src.height, *src.bounds)
+            kwargs = src.meta.copy()
+            kwargs.update({
+                'crs': dst_crs,
+                'transform': transform,
+                'width': width,
+                'height': height
+            })
+
+            print(f'writing file {reproj_file}')
+            with rasterio.open(str(reproj_file), 'w', **kwargs) as dst:
+                for i in range(1, src.count + 1):
+                    reproject(
+                        source=rasterio.band(src, i),
+                        destination=rasterio.band(dst, i),
+                        src_transform=src.transform,
+                        src_crs=src.crs,
+                        dst_transform=transform,
+                        dst_crs=dst_crs,
+                        resampling=Resampling.nearest)
+
+
+
+    def georeference_mapbox(self):
+        #mapbox_file = self.file_dir.joinpath('mapbox.jpg')
+        nogrid_file = self.file_dir.joinpath('nogrid.jpg')
+        cutline_file = self.file_dir.joinpath('cutline.geojson')
+        crs_file = self.file_dir.joinpath('crs.wkt')
+        georef_file = self.file_dir.joinpath('georef.tif')
+        cropped_file = self.file_dir.joinpath('cropped.tif')
+        final_file = self.file_dir.joinpath('final.tif')
+        if final_file.exists():
+            print(f'{final_file} exists.. skipping')
+            return
+        geom = self.get_index_geom()
+
+        ibox = geom['coordinates'][0]
+        i_lt, i_lb, i_rb, i_rt, _ = ibox
+        corners = self.get_corners()
+        c_rt, c_rb, c_lb, c_lt = corners
+        gcp_str = ''
+        gcp_str += f' -gcp {c_lt[0]} {c_lt[1]} {i_lt[0]} {i_lt[1]}'
+        gcp_str += f' -gcp {c_lb[0]} {c_lb[1]} {i_lb[0]} {i_lb[1]}'
+        gcp_str += f' -gcp {c_rb[0]} {c_rb[1]} {i_rb[0]} {i_rb[1]}'
+        gcp_str += f' -gcp {c_rt[0]} {c_rt[1]} {i_rt[0]} {i_rt[1]}'
+        translate_cmd = f'gdal_translate {gcp_str}  -of GTiff {str(nogrid_file)} {str(georef_file)}' 
+        run_external(translate_cmd)
+
+        img_quality_config = {
+            'COMPRESS': 'JPEG',
+            #'PHOTOMETRIC': 'YCBCR',
+            'JPEG_QUALITY': '50'
+        }
+
+
+
+        self.create_cutline(geom, cutline_file)
+        line_width = 4
+        #crs = self.get_source_crs()
+        #crs_file.write_text(crs.wkt)
+        #crop_cmd = f'gdalwarp -r lanczos {cutline_options} -dstalpha -dstnodata 255 -s_srs "EPSG:4326" {str(georef_file)} {str(cropped_file)}'
+        #run_external(crop_cmd)
+        #exit(0)
+
+        cutline_options = f'-cutline {str(cutline_file)}'
+        warp_quality_config = img_quality_config.copy()
+        warp_quality_config.update({'TILED': 'YES'})
+        warp_quality_options = ' '.join([ f'-co {k}={v}' for k,v in warp_quality_config.items() ])
+        #reproj_options = f'-tps -tr 1 1 -r bilinear -s_srs "{str(crs_file)}" -t_srs "EPSG:3857"' 
+        reproj_options = f'-tps -tr 1 1 -r bilinear -s_srs "EPSG:4326" -t_srs "EPSG:3857"' 
+        warp_cmd = f'gdalwarp -overwrite -multi -wo NUM_THREADS=ALL_CPUS -dstnodata 0 {reproj_options} {warp_quality_options} {cutline_options} {str(georef_file)} {str(final_file)}'
+        #warp_cmd = f'gdalwarp -overwrite -multi -wo NUM_THREADS=ALL_CPUS -dstalpha {reproj_options} {warp_quality_options} {str(cropped_file)} {str(final_file)}'
         run_external(warp_cmd)
 
         
@@ -733,18 +906,83 @@ class Converter:
         # delete the georef file
         georef_file.unlink()
 
-        #TODO: remove lines somehow
-        # split based on coordinates and use cblend?
-        # write your own version of cblend?
+
+    def remove_lines(self):
+        nogrid_file = self.file_dir.joinpath('nogrid.jpg')
+        if nogrid_file.exists():
+            print(f'{nogrid_file} file exists.. skipping')
+            return
+        map_img = self.get_map_img()
+        corners = self.get_corners()
+        c_rt, c_rb, c_lb, c_lt = corners
+        v_points_t = split_line(c_lt, c_rt)
+        v_points_b = split_line(c_lb, c_rb)
+        h_points_l = split_line(c_lt, c_lb)
+        h_points_r = split_line(c_rt, c_rb)
+        v_lines = list(zip(v_points_t, v_points_b))
+        h_lines = list(zip(h_points_l, h_points_r))
+        h, w = map_img.shape[:2]
+
+        line_buf_ratio = 4.0 / 12980.0
+        blur_buf_ratio = 30.0 / 12980.0
+        blur_kern_ratio = 15.0 / 12980.0
+
+        line_buf = round(line_buf_ratio * w)
+        blur_buf = round(blur_buf_ratio * w)
+        blur_kern = round(blur_kern_ratio * w)
+        if blur_kern % 2 == 0:
+            blur_kern += 1
 
 
+        def round_coords(poly):
+            return wkt_loads(wkt_dumps(poly, rounding_precision=0))
+            
+            
+        #limits = Polygon([c_rt, c_rb, c_lb, c_lt, c_rt])
+        limits = Polygon([(w,0), (w,h), (0,h), (0,0), (w,0)])
+        def remove_line(l):
+            ls = LineString(l)
+            line_poly = ls.buffer(line_buf, resolution=1, cap_style=CAP_STYLE.flat).intersection(limits)
+            blur_poly = ls.buffer(blur_buf, resolution=1, cap_style=CAP_STYLE.flat).intersection(limits)
+            bb = blur_poly.bounds
+            bb = [ round(x) for x in bb ]
+            # restrict to a small img strip to make things less costly
+            img_strip = map_img[bb[1]:bb[3], bb[0]:bb[2]]
+            sh, sw = img_strip.shape[:2]
+            #cv2.imwrite('temp.jpg', img_strip)
+
+            line_poly_t = translate(line_poly, xoff=-bb[0], yoff=-bb[1])
+            mask = np.zeros(img_strip.shape[:2], dtype=np.uint8)
+            poly_coords = np.array([ [int(x[0]), int(x[1])] for x in line_poly_t.exterior.coords ])
+            cv2.fillPoly(mask, pts=[poly_coords], color=1)
+
+            #img_blurred = cv2.medianBlur(img_strip, blur_kern)
+            pad = int(blur_kern/2)
+            img_strip_padded = cv2.copyMakeBorder(img_strip, pad, pad, pad, pad, cv2.BORDER_REFLECT_101)
+
+            img_blurred_padded = cv2.medianBlur(img_strip_padded, blur_kern)
+            img_blurred = img_blurred_padded[pad:pad+sh, pad:pad+sw]
+            #cv2.imwrite('temp.jpg', img_blurred)
+
+            img_strip[mask == 1] = img_blurred[mask == 1]
 
 
+        print('dropping vertical lines')
+        for line in v_lines:
+            remove_line(line)
+        #exit(0)
+        print('dropping horizontal lines')
+        for line in h_lines:
+            remove_line(line)
+
+        cv2.imwrite(str(nogrid_file), map_img)
+        
     def run(self):
         print(f'converting {filename}')
         self.convert()
         print(f'splitting {filename}')
         self.split_image()
+        self.remove_lines()
         print('georeferencing image')
         self.georeference_mapbox()
 
@@ -754,11 +992,43 @@ class Converter:
             self.file_fp = None
 
 
+def create_vrt(list_filename):
+    file_list = Path(list_filename).read_text().split('\n')
+    file_list = [ f.strip() for f in file_list ]
+    file_list = [ f for f in file_list if f != '' ]
+    def get_dataset(fname):
+        pdf_name = Path(fname).name
+        inter_folder_name = pdf_name.replace('.pdf', '')
+        dset_folder_name = fname.replace('.pdf', '').replace('raw', 'inter')
+        dset_name = str(Path(dset_folder_name).joinpath('final.tif'))
+        return dset_name
+    dset_list = [ get_dataset(f) for f in file_list ]
+    dset_filename = list_filename.replace('.txt', '.vrt.list')
+    vrt_filename = list_filename.replace('.txt', '.vrt')
+    Path(dset_filename).write_text('\n'.join(dset_list))
+    run_external(f'gdalbuildvrt -input_file_list {dset_filename} {vrt_filename}')
 
-filenames = glob.glob('data/raw/*.pdf')
-#filenames = ['data/raw/57J_3.pdf']
+
+
+
+#cat data/goa.txt | xargs -I {} gsutil -m cp gs://soi_data/raw/{} data/raw/
+file_list_filename = 'data/goa.txt'
+file_list = Path(file_list_filename).read_text().split('\n')
+file_list = [ f.strip() for f in file_list ]
+file_list = [ f for f in file_list if f != '' ]
+
+
+#filenames = glob.glob('data/raw/*.pdf')
+#filenames = ['data/raw/58B_3.pdf']
+#filenames = [ f'data/raw/{x}' for x in file_list ]
+filenames = file_list
+#filenames = [ 'data/raw/48I_3.pdf' ]
 for filename in filenames:
     print(f'processing {filename}')
     converter = Converter(filename)
+    #crs = converter.get_source_crs()
+    #print(crs)
     converter.run()
     converter.close()
+
+create_vrt(file_list_filename)

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>The Hague Map 1944</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
+    <script src="https://cdn.rawgit.com/turban/Leaflet.Sync/master/L.Map.Sync.js">
+    </script>
+    <style type="text/css">
+        body {
+            margin:0;
+        }
+        div#map-wrapper {
+            display: flex;    
+            width:100vw;
+            height:100vh;
+        }
+        div#map-wrapper div {
+            flex-basis: 100%;
+        }
+        div#map-left {
+            border-right:1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <div id="map-wrapper">
+        <div id="map-left"></div>
+        <div id="map-right"></div>
+    </div>
+    <script type="text/javascript">
+        // Default options we'll use for both maps. Se the center of the map,
+        // default zoom levels, and other Leaflet map options here.
+        var options = {
+            center: [15.2993, 74.1240],
+            zoom: 13,
+            minZoom: 5,
+            maxZoom: 15,
+            attributionControl: false
+        }
+
+        //add ?noscrollzoom to iframe URL to disble scroll zooming in iframe
+        if(window.location.href.endsWith('noscrollzoom')) {
+            options['scrollWheelZoom'] = false;
+        }
+
+        // Create the left and the right map in their respective containers
+        var map1 = L.map('map-left', options);
+
+        options['zoomControl'] = false;
+        var map2 = L.map('map-right', options);
+
+        // Add our tiles to the left map and an openstreetmap layer to the 
+        // right map
+        L.tileLayer('tiles/{z}/{x}/{y}.jpg').addTo(map1); 
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map2)
+
+        // Add an attribution control to the right map
+        L.control.attribution({prefix:''})
+            .addAttribution('<a href="http://www.surveyofindia.gov.in/>' +
+                            'Survey Of India 1:50000 Open Series Maps</a>')
+            .addAttribution('<a href="https://www.openstreetmap.org">OpenStreet' +
+                            'Map Contributors</a>')
+            .addTo(map2);
+
+        // Use the Leaflet Sync extension to sync the right bottom corner
+        // of the left map to the left bottom corner of the right map, and
+        // vice versa.
+        map1.sync(map2, {offsetFn: L.Sync.offsetHelper([1, 1], [0, 1])});
+        map2.sync(map1, {offsetFn: L.Sync.offsetHelper([0, 1], [1, 1])});
+    </script>
+</body>
+</html>

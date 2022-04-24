@@ -300,6 +300,7 @@ def download_tile(sheet_no):
             with open('failed.html', 'w') as f:
                 f.write(resp.text)
             logger.error(f'status_code = {resp.status_code} headers:\n{pformat(dict(resp.headers))}')
+            logger.error(resp.text)
             raise Exception(f'Expected pdf got html for {sheet_no}')
 
 

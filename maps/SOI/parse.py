@@ -35,8 +35,13 @@ from rasterio.control import GroundControlPoint
 from rasterio.transform import from_gcps
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 
+from pyproj.aoi import AreaOfInterest
+from pyproj.transformer import Transformer
+from pyproj.database import query_utm_crs_info
 
 
+
+USE_4326 = True
 
 inter_dir = 'data/inter'
 
@@ -117,6 +122,9 @@ def get_color_mask(img_hsv, color):
         elif color == 'white':
             lower = np.array([0, 0, 230])
             upper = np.array([179, 6, 255])
+        elif color == 'green':
+            lower = np.array([50, 100,100])
+            upper = np.array([70, 255, 255])
         else:
             raise Exception(f'{color} not handled')
         img_mask = cv2.inRange(img_hsv, lower, upper)
@@ -325,6 +333,18 @@ def mask_exact(img, ndv):
     alpha_rescale = alpha.astype(img.dtype) * np.iinfo(img.dtype).max
     return alpha_rescale
 
+def get_utm_crs(c_long, c_lat):
+    utm_crs_list = query_utm_crs_info(
+        datum_name="WGS 84",
+        area_of_interest=AreaOfInterest(
+            west_lon_degree=c_long,
+            south_lat_degree=c_lat,
+            east_lon_degree=c_long,
+            north_lat_degree=c_lat
+        ),
+    )
+    utm_crs = CRS.from_epsg(utm_crs_list[0].code)
+    return utm_crs
 
 class Converter:
     def __init__(self, filename):
@@ -742,18 +762,15 @@ class Converter:
 
     def create_cutline(self, geom, file):
         sub_geoms = []
-        ibox = geom['coordinates'][0]
-        i_lt, i_lb, i_rb, i_rt, _ = ibox
         with open(file, 'w') as f:
             cutline_data = {
-                    "type": "FeatureCollection",
-                    "name": "CUTLINE",
-                    "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-                    "features": [{
-                        "type": "Feature",
-                        "properties": {},
-                        "geometry": geom
-                    }]
+                "type": "FeatureCollection",
+                "name": "CUTLINE",
+                "features": [{
+                    "type": "Feature",
+                    "properties": {},
+                    "geometry": geom
+                }]
             }
             json.dump(cutline_data, f, indent=4)
 
@@ -768,13 +785,20 @@ class Converter:
         if final_file.exists():
             print(f'{final_file} exists.. skipping')
             return
-        src_crs = self.get_source_crs()
 
         geom = self.get_index_geom()
         ibox = geom['coordinates'][0]
         corners = self.get_corners()
 
-        i_lt, i_lb, i_rb, i_rt, _ = ibox
+        ibox = ibox[:4]
+        i_lt, i_lb, i_rb, i_rt = ibox
+        # get source crs using the center of the box
+        src_crs = get_utm_crs((i_lt[0] + i_rt[0])/2, (i_lt[1] + i_lb[1])/2)
+        box_crs = CRS.from_epsg(4326)
+        transformer = Transformer.from_crs(box_crs, src_crs, always_xy=True)
+        ibox_conv = [ transformer.transform(*c) for c in ibox ]
+
+        i_lt, i_lb, i_rb, i_rt = ibox_conv
         c_rt, c_rb, c_lb, c_lt = corners
         gcps = [
             GroundControlPoint(row=c_rt[1], col=c_rt[0], x=i_rt[0], y=i_rt[1]),
@@ -782,6 +806,7 @@ class Converter:
             GroundControlPoint(row=c_lb[1], col=c_lb[0], x=i_lb[0], y=i_lb[1]),
             GroundControlPoint(row=c_rb[1], col=c_rb[0], x=i_rb[0], y=i_rb[1]),
         ]
+        geom_i = Polygon(ibox_conv + [ibox_conv[0]])
         geom_s = Polygon([c_rt, c_rb, c_lb, c_lt, c_rt])
         with rasterio.open(str(nogrid_file)) as src:
             profile = src.profile.copy()
@@ -791,38 +816,34 @@ class Converter:
                 'blockxsize': 512,
                 'blockysize': 512,
                 'photometric': 'RGB',
-                'nodata': None,
-                'count': 4,
+                'nodata': 0,
+                'count': 3,
                 'compress': 'JPEG',
                 'interleave': 'pixel',
+                'nodata': 0,
             })
             data = src.read()
 
         print(f'writing file {georef_file}')
-        with rasterio.open(str(georef_file), 'w', **profile) as refed:
-            refed.crs = src_crs
-            refed.transform = from_gcps(gcps)
-            r = data[0]
-            alpha = np.ones(r.shape, dtype=r.dtype) * 255
-            rgba = np.append(data, alpha[np.newaxis, :, :], axis=0)
-            refed.write(rgba)
+        with rasterio.open(str(georef_file), 'w', **profile) as reffed:
+            reffed.crs = src_crs
+            reffed.transform = from_gcps(gcps)
+            reffed.write(data)
 
         print(f'writing file {cropped_file}')
         with rasterio.open(str(georef_file)) as reffed:
-            out_mask, out_transform, window = rasterio.mask.raster_geometry_mask(reffed, [geom_s])
+            print(reffed.profile)
+            out_img, out_transform = rasterio.mask.mask(reffed, [geom_i], crop=True)
             out_profile = reffed.profile.copy()
-            out_profile.update({"height": out_mask.shape[0],
-                                "width": out_mask.shape[1],
+            out_profile.update({"height": out_img.shape[1],
+                                "width": out_img.shape[2],
                                 "transform": out_transform})
 
-            out_img = reffed.read(window=window)
-            out_img[3] = out_img[3] | out_mask
             with rasterio.open(str(cropped_file), 'w', **out_profile) as dst:
-                print(dst.profile)
                 dst.write(out_img)
 
         with rasterio.open(str(cropped_file)) as src:
-            dst_crs ='EPSG:3857'
+            dst_crs = { 'init': 'EPSG:3857' }
             transform, width, height = calculate_default_transform(
                     src.crs, dst_crs, src.width, src.height, *src.bounds)
             kwargs = src.meta.copy()
@@ -843,7 +864,7 @@ class Converter:
                         src_crs=src.crs,
                         dst_transform=transform,
                         dst_crs=dst_crs,
-                        resampling=Resampling.nearest)
+                        resampling=Resampling.bilinear)
 
 
 
@@ -861,47 +882,52 @@ class Converter:
         geom = self.get_index_geom()
 
         ibox = geom['coordinates'][0]
-        i_lt, i_lb, i_rb, i_rt, _ = ibox
         corners = self.get_corners()
+
+        ibox = ibox[:4]
+        i_lt, i_lb, i_rb, i_rt = ibox
+        src_crs = CRS.from_epsg(4326)
+        # get source crs using the center of the box
+        if not USE_4326:
+            src_crs = get_utm_crs((i_lt[0] + i_rt[0])/2, (i_lt[1] + i_lb[1])/2)
+            box_crs = CRS.from_epsg(4326)
+            transformer = Transformer.from_crs(box_crs, src_crs, always_xy=True)
+            ibox_conv = [ transformer.transform(*c) for c in ibox ]
+            i_lt, i_lb, i_rb, i_rt = ibox_conv
+
         c_rt, c_rb, c_lb, c_lt = corners
+
+
         gcp_str = ''
         gcp_str += f' -gcp {c_lt[0]} {c_lt[1]} {i_lt[0]} {i_lt[1]}'
         gcp_str += f' -gcp {c_lb[0]} {c_lb[1]} {i_lb[0]} {i_lb[1]}'
         gcp_str += f' -gcp {c_rb[0]} {c_rb[1]} {i_rb[0]} {i_rb[1]}'
         gcp_str += f' -gcp {c_rt[0]} {c_rt[1]} {i_rt[0]} {i_rt[1]}'
-        translate_cmd = f'gdal_translate {gcp_str}  -of GTiff {str(nogrid_file)} {str(georef_file)}' 
+        translate_cmd = f'gdal_translate {gcp_str} -a_srs "EPSG:{src_crs.to_epsg()}" -of GTiff {str(nogrid_file)} {str(georef_file)}' 
         run_external(translate_cmd)
 
         img_quality_config = {
             'COMPRESS': 'JPEG',
             #'PHOTOMETRIC': 'YCBCR',
-            'JPEG_QUALITY': '50'
+            'JPEG_QUALITY': '70'
         }
 
 
-
         self.create_cutline(geom, cutline_file)
-        line_width = 4
-        #crs = self.get_source_crs()
-        #crs_file.write_text(crs.wkt)
-        #crop_cmd = f'gdalwarp -r lanczos {cutline_options} -dstalpha -dstnodata 255 -s_srs "EPSG:4326" {str(georef_file)} {str(cropped_file)}'
-        #run_external(crop_cmd)
-        #exit(0)
+        cutline_options = f'-cutline {str(cutline_file)} -crop_to_cutline'
 
-        cutline_options = f'-cutline {str(cutline_file)}'
         warp_quality_config = img_quality_config.copy()
         warp_quality_config.update({'TILED': 'YES'})
         warp_quality_options = ' '.join([ f'-co {k}={v}' for k,v in warp_quality_config.items() ])
-        #reproj_options = f'-tps -tr 1 1 -r bilinear -s_srs "{str(crs_file)}" -t_srs "EPSG:3857"' 
-        reproj_options = f'-tps -tr 1 1 -r bilinear -s_srs "EPSG:4326" -t_srs "EPSG:3857"' 
+        reproj_options = f'-tps -tr 1 1 -r bilinear -t_srs "EPSG:3857"' 
         warp_cmd = f'gdalwarp -overwrite -multi -wo NUM_THREADS=ALL_CPUS -dstnodata 0 {reproj_options} {warp_quality_options} {cutline_options} {str(georef_file)} {str(final_file)}'
         #warp_cmd = f'gdalwarp -overwrite -multi -wo NUM_THREADS=ALL_CPUS -dstalpha {reproj_options} {warp_quality_options} {str(cropped_file)} {str(final_file)}'
         run_external(warp_cmd)
 
         
-        addo_quality_options = ' '.join([ f'--config {k}_OVERVIEW {v}' for k,v in img_quality_config.items() ])
-        addo_cmd = f'gdaladdo {addo_quality_options} -r average {str(final_file)} 2 4 8 16 32'
-        run_external(addo_cmd)
+        #addo_quality_options = ' '.join([ f'--config {k}_OVERVIEW {v}' for k,v in img_quality_config.items() ])
+        #addo_cmd = f'gdaladdo {addo_quality_options} -r average {str(final_file)} 2 4 8 16 32'
+        #run_external(addo_cmd)
 
         # delete the georef file
         georef_file.unlink()
@@ -976,15 +1002,28 @@ class Converter:
             remove_line(line)
 
         cv2.imwrite(str(nogrid_file), map_img)
+
+    def adjust_color(self):
+        small_img = self.get_shrunk_img()
+        small_img_hsv = cv2.cvtColor(small_img, cv2.COLOR_BGR2HSV)
+        mask = get_color_mask(small_img_hsv, 'green')
+        h, w = small_img.shape[:2]
+        sat = small_img_hsv[:,:,1] * mask
+        count = np.count_nonzero(mask)
+        sat_avg = float(np.sum(sat)) / float(count)
+        print(f'{sat_avg=}')
         
     def run(self):
         print(f'converting {filename}')
         self.convert()
         print(f'splitting {filename}')
+        #self.adjust_color()
+        #return
         self.split_image()
         self.remove_lines()
         print('georeferencing image')
         self.georeference_mapbox()
+        #self.georeference_mapbox_new()
 
     def close(self):
         if self.file_fp is not None:
@@ -1007,7 +1046,10 @@ def create_vrt(list_filename):
     vrt_filename = list_filename.replace('.txt', '.vrt')
     Path(dset_filename).write_text('\n'.join(dset_list))
     run_external(f'gdalbuildvrt -input_file_list {dset_filename} {vrt_filename}')
+    return vrt_filename
 
+def create_tiles(vrt_filename):
+    pass
 
 
 
@@ -1031,4 +1073,7 @@ for filename in filenames:
     converter.run()
     converter.close()
 
-create_vrt(file_list_filename)
+vrt_filename = create_vrt(file_list_filename)
+exit(0)
+create_tiles(vrt_filename)
+

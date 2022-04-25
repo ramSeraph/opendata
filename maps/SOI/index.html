@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.vectorgrid@latest/dist/Leaflet.VectorGrid.bundled.js"></script>
     <script src="https://cdn.rawgit.com/turban/Leaflet.Sync/master/L.Map.Sync.js">
     </script>
     <style type="text/css">
@@ -55,7 +56,12 @@
         // Add our tiles to the left map and an openstreetmap layer to the 
         // right map
         L.tileLayer('tiles/{z}/{x}/{y}.jpg').addTo(map1); 
+        //L.tileLayer('tiles_old/{z}/{x}/{y}.jpg').addTo(map2); 
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map2)
+        //L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        //            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        //        }).addTo(map2)
+        //L.vectorGrid.protobuf('https://api.mapbox.com/v4/planemad.india-rural-connectivity/{z}/{x}/{y}.vector.pbf?access_token=pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiY2l2eDhnNzNpMDAwNzJ5cGowcnpiMXJkdyJ9.NljuPglsRA3mTGf-4CLIEg').addTo(map2)
 
         // Add an attribution control to the right map
         L.control.attribution({prefix:''})

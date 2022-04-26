@@ -1,3 +1,4 @@
+import os
 import shutil
 import json
 import glob
@@ -42,6 +43,7 @@ from pyproj.database import query_utm_crs_info
 
 
 USE_4326 = True
+SHOW_IMG = os.environ.get('SHOW_IMG', '1') == '1'
 
 inter_dir = 'data/inter'
 
@@ -172,7 +174,8 @@ def get_intersection_point(img_hsv, ext_thresh):
     img_mask_g = img_mask.astype(np.uint8)
     h, w = img_mask.shape[:2]
     img_mask_g = img_mask_g*255
-    imgcat(Image.fromarray(img_mask_g))
+    if SHOW_IMG:
+        imgcat(Image.fromarray(img_mask_g))
 
     v_mask, v_lines = find_lines(img_mask_g, direction='vertical', line_scale=2)
     h_mask, h_lines = find_lines(img_mask_g, direction='horizontal', line_scale=2)
@@ -239,7 +242,8 @@ def show_contours(o_bimg, contours):
     b = o_bimg.copy()
     rgb = cv2.merge([b*255,b*255,b*255])
     cv2.drawContours(rgb, contours, -1, (0, 255, 0), 2, cv2.LINE_AA)
-    imgcat(Image.fromarray(rgb))
+    if SHOW_IMG:
+        imgcat(Image.fromarray(rgb))
     #cv2.imwrite('temp.jpg', rgb)
 
 def get_breaks(proj):
@@ -326,12 +330,6 @@ def split_line(p1, p2):
     pts = [ (round(x[0]), round(x[1])) for x in pts ]
     return pts
 
-# copied from rio-alpha
-def mask_exact(img, ndv):
-    assert len(ndv) == img.shape[0], "ndv length must equal num bands"
-    alpha = np.any(np.transpose(img, [1, 2, 0]) != ndv, axis=2)
-    alpha_rescale = alpha.astype(img.dtype) * np.iinfo(img.dtype).max
-    return alpha_rescale
 
 def get_utm_crs(c_long, c_lat):
     utm_crs_list = query_utm_crs_info(
@@ -439,7 +437,7 @@ class Converter:
         #print('converting pdf to image using ghostscript')
         #run_external(f'gs -g{ow}x{oh} -dBATCH -dNOPAUSE -dDOINTERPOLATE -sPageList=1 -sOutputFile={img_filename} -sDevice=jpeg {self.filename}')
         print('converting pdf to image using mupdf')
-        run_external(f'mudraw -w {ow} -h {oh} -c rgb -o {img_filename} {self.filename}')
+        run_external(f'mutool draw -w {ow} -h {oh} -c rgb -o {img_filename} {self.filename}')
         #print('converting pdf to image using pdftocairo')
         ##run_external(f'pdftocairo -antialias best -singlefile -r 72 -scale-to 18000 -jpeg {self.filename}')
         #exp_out_file = Path(self.filename).name.replace('.pdf', '.jpg')
@@ -618,6 +616,7 @@ class Converter:
 
     def process_map_area(self, map_bbox):
         mapbox_file = self.file_dir.joinpath('mapbox.jpg')
+        full_file = self.file_dir.join_path('full.jpg')
         corners_file = self.file_dir.joinpath('corners.json')
         if corners_file.exists():
             print('corners file exists.. shortcircuiting')
@@ -641,6 +640,8 @@ class Converter:
         with open(corners_file, 'w') as f:
             json.dump(corners_in_box, f, indent = 4)
 
+        full_file.unlink()
+
 
 
     def process_rest_area(self, rest_bbox):
@@ -657,7 +658,8 @@ class Converter:
             file = self.file_dir.joinpath(f'{suffix}.jpg')
             b_img = crop_img(img, bbox)
             print(f'{suffix} - {bbox}')
-            imgcat(Image.fromarray(cv2.cvtColor(b_img, cv2.COLOR_BGR2RGB)))
+            if SHOW_IMG:
+                imgcat(Image.fromarray(cv2.cvtColor(b_img, cv2.COLOR_BGR2RGB)))
             cv2.imwrite(str(file), b_img)
     
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -727,10 +729,24 @@ class Converter:
         save_bbox('magvar', mag_var_bbox)
 
 
+    def process_legend_area(self, lbbox):
+        file = self.file_dir.joinpath('legend.jpg')
+        if file.exists():
+            return
+        full_img = self.get_full_img()
+        img = crop_img(full_img, lbbox)
+        h, w = img.shape[:2]
+        if SHOW_IMG:
+            imgcat(Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)))
+        cv2.imwrite(str(file), img)
+
+
     def split_image(self):
         print('splitting shrunk image')
         main_splits = self.get_shrunk_splits()
 
+        print('processing legend area')
+        self.process_legend_area(main_splits['legend'])
         print('processing sidebar rest area')
         self.process_rest_area(main_splits['rest'])
         print('processing map area to locate corners')
@@ -872,7 +888,6 @@ class Converter:
         #mapbox_file = self.file_dir.joinpath('mapbox.jpg')
         nogrid_file = self.file_dir.joinpath('nogrid.jpg')
         cutline_file = self.file_dir.joinpath('cutline.geojson')
-        crs_file = self.file_dir.joinpath('crs.wkt')
         georef_file = self.file_dir.joinpath('georef.tif')
         cropped_file = self.file_dir.joinpath('cropped.tif')
         final_file = self.file_dir.joinpath('final.tif')
@@ -908,8 +923,8 @@ class Converter:
 
         img_quality_config = {
             'COMPRESS': 'JPEG',
-            #'PHOTOMETRIC': 'YCBCR',
-            'JPEG_QUALITY': '70'
+            'PHOTOMETRIC': 'YCBCR',
+            'JPEG_QUALITY': '50'
         }
 
 
@@ -926,15 +941,17 @@ class Converter:
 
         
         #addo_quality_options = ' '.join([ f'--config {k}_OVERVIEW {v}' for k,v in img_quality_config.items() ])
-        #addo_cmd = f'gdaladdo {addo_quality_options} -r average {str(final_file)} 2 4 8 16 32'
+        #addo_cmd = f'export GDAL_NUM_THREADS=ALL_CPUS; gdaladdo {addo_quality_options} -r average {str(final_file)} 2 4 8 16 32'
         #run_external(addo_cmd)
 
         # delete the georef file
         georef_file.unlink()
+        nogrid_file.unlink()
 
 
     def remove_lines(self):
         nogrid_file = self.file_dir.joinpath('nogrid.jpg')
+        mapbox_file = self.file_dir.joinpath('mapbox.jpg')
         if nogrid_file.exists():
             print(f'{nogrid_file} file exists.. skipping')
             return
@@ -1002,6 +1019,7 @@ class Converter:
             remove_line(line)
 
         cv2.imwrite(str(nogrid_file), map_img)
+        mapbox_file.unlink()
 
     def adjust_color(self):
         small_img = self.get_shrunk_img()
@@ -1014,6 +1032,11 @@ class Converter:
         print(f'{sat_avg=}')
         
     def run(self):
+        final_file = self.file_dir.joinpath('final.tif')
+        if final_file.exists():
+            print('{final_file} exists.. skipping')
+            return
+        
         print(f'converting {filename}')
         self.convert()
         print(f'splitting {filename}')
@@ -1024,6 +1047,10 @@ class Converter:
         print('georeferencing image')
         self.georeference_mapbox()
         #self.georeference_mapbox_new()
+        #self.process_legend()
+        #self.process_magvar()
+        #self.process_cbox()
+        #self.process_notes()
 
     def close(self):
         if self.file_fp is not None:

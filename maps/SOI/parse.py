@@ -5,6 +5,7 @@ import glob
 import time
 import subprocess
 from pathlib import Path
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import cv2
 import numpy as np
@@ -43,7 +44,7 @@ from pyproj.database import query_utm_crs_info
 
 
 USE_4326 = True
-SHOW_IMG = os.environ.get('SHOW_IMG', '1') == '1'
+SHOW_IMG = os.environ.get('SHOW_IMG', '0') == '1'
 
 inter_dir = 'data/inter'
 
@@ -387,6 +388,8 @@ class Converter:
             flavor = 'PDFOut'
         elif 'Adobe Photoshop' in doc_producer:
             flavor = 'Photoshop'
+        elif 'www.adultpdf.com' in doc_producer:
+            flavor = 'adultpdf'
         else:
             print(document.info)
             raise Exception('Unknown flavor')
@@ -488,8 +491,10 @@ class Converter:
         dim = (int(h*r), sw)
         small_img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
         cv2.imwrite(str(small_img_file), small_img)
-        self.small_img = small_img
-        return small_img
+
+        # for some reason this fixes some of the issues
+        self.small_img = cv2.imread(str(small_img_file))
+        return self.small_img
 
 
     def get_map_img(self):
@@ -616,7 +621,7 @@ class Converter:
 
     def process_map_area(self, map_bbox):
         mapbox_file = self.file_dir.joinpath('mapbox.jpg')
-        full_file = self.file_dir.join_path('full.jpg')
+        full_file = self.file_dir.joinpath('full.jpg')
         corners_file = self.file_dir.joinpath('corners.json')
         if corners_file.exists():
             print('corners file exists.. shortcircuiting')
@@ -1081,26 +1086,81 @@ def create_tiles(vrt_filename):
 
 
 #cat data/goa.txt | xargs -I {} gsutil -m cp gs://soi_data/raw/{} data/raw/
-file_list_filename = 'data/goa.txt'
-file_list = Path(file_list_filename).read_text().split('\n')
-file_list = [ f.strip() for f in file_list ]
-file_list = [ f for f in file_list if f != '' ]
+#file_list_filename = 'data/goa.txt'
+#file_list = Path(file_list_filename).read_text().split('\n')
+#file_list = [ f.strip() for f in file_list ]
+#file_list = [ f for f in file_list if f != '' ]
 
 
-#filenames = glob.glob('data/raw/*.pdf')
+filenames = glob.glob('data/raw/*.pdf')
 #filenames = ['data/raw/58B_3.pdf']
 #filenames = [ f'data/raw/{x}' for x in file_list ]
-filenames = file_list
-#filenames = [ 'data/raw/48I_3.pdf' ]
+#filenames = file_list
+#filenames = [ 'data/raw/73E_5.pdf' ]
+ignore_filenames = [
+    'data/raw/73E_5.pdf',
+    'data/raw/43O_3.pdf',
+    #'data/raw/53G_3.pdf',
+]
+
+errors_file = Path('data/errors.txt')
+ignore_filenames = []
+if errors_file.exists():
+    efnames = errors_file.read_text().split('\n')
+    efnames = [ f.strip() for f in efnames ]
+    ignore_filenames = [ f for f in efnames if f != '' ]
+
+
+
+def only_convert(filename):
+    print(f'processing {filename}')
+    converter = Converter(filename)
+    mapbox_file = converter.file_dir.joinpath('mapbox.jpg')
+    nogrid_file = converter.file_dir.joinpath('nogrid.jpg')
+    final_file =  converter.file_dir.joinpath('final.tif')
+    if mapbox_file.exists() or nogrid_file.exists() or final_file.exists():
+        print('downstream files exist.. not attempting conversion')
+        return
+    converter.convert()
+    converter.close()
+
+
+ONLY_CONVERT = False
+if ONLY_CONVERT:
+    fut_map = {}
+    with ProcessPoolExecutor(max_workers=8) as executor:
+        for filename in filenames:
+            fut = executor.submit(only_convert, filename)
+            fut_map[fut] = filename
+    
+        for fut in as_completed(fut_map, timeout=None):
+            filename = fut_map[fut]
+            print(f'done with file: {filename}')
+            try:
+                fut.result()
+            except Exception as ex:
+                print(f'got exception - {ex}')
+    exit(0)
+
+
 for filename in filenames:
+    if filename in ignore_filenames:
+        continue
     print(f'processing {filename}')
     converter = Converter(filename)
     #crs = converter.get_source_crs()
     #print(crs)
-    converter.run()
-    converter.close()
+    try:
+        converter.run()
+        converter.close()
+    except Exception as ex:
+        print(f'ERROR: exception {ex} while handling {filename}')
+        ignore_filenames.append(filename)
+        error_txt = '\n'.join(ignore_filenames)
+        Path(errors_file).write_text(error_txt)
+        
 
-vrt_filename = create_vrt(file_list_filename)
+#vrt_filename = create_vrt(file_list_filename)
 exit(0)
 create_tiles(vrt_filename)
 

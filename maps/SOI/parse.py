@@ -6,8 +6,10 @@ import time
 import subprocess
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import freeze_support
 
 import cv2
+import imutils
 import numpy as np
 from PIL import Image
 from imgcat import imgcat
@@ -73,8 +75,10 @@ def find_lines(
         raise ValueError("Specify direction as either 'vertical' or 'horizontal'")
 
     threshold = cv2.erode(threshold, el)
+    #imgcat(Image.fromarray(threshold))
     threshold = cv2.dilate(threshold, el)
     dmask = cv2.dilate(threshold, el, iterations=iterations)
+    #imgcat(Image.fromarray(dmask))
 
     contours, _ = cv2.findContours(
         threshold.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
@@ -116,12 +120,18 @@ def get_color_mask(img_hsv, color):
         if color == 'pink':
             lower = np.array([140,74,76])
             upper = np.array([166,255,255])
+        elif color == 'pinkish':
+            lower = np.array([130,60,76])
+            upper = np.array([166,255,255])
         elif color == 'black':
             lower = np.array([0, 0, 0])
             upper = np.array([179, 255, 80])
         elif color == 'grey':
             lower = np.array([0, 0, 50])
             upper = np.array([179, 10, 120])
+        elif color == 'greyish':
+            lower = np.array([0, 0, 50])
+            upper = np.array([179, 90, 145])
         elif color == 'white':
             lower = np.array([0, 0, 230])
             upper = np.array([179, 6, 255])
@@ -165,79 +175,11 @@ def get_ext_count(point, img_mask, ext_thresh):
     rc += np.count_nonzero(img_mask[y-1, x-10:x])
 
     counts = [ uc, dc, rc, lc ]
-    print(f'{point=}, {counts=}')
+    print(f'{point=}, {counts=}, {ext_thresh=}')
     exts = [ c > ext_thresh for c in counts ]
     return exts.count(True)
  
 
-def get_intersection_point(img_hsv, ext_thresh):
-    img_mask = get_color_mask(img_hsv, ['black', 'grey'])
-    img_mask_g = img_mask.astype(np.uint8)
-    h, w = img_mask.shape[:2]
-    img_mask_g = img_mask_g*255
-    if SHOW_IMG:
-        imgcat(Image.fromarray(img_mask_g))
-
-    v_mask, v_lines = find_lines(img_mask_g, direction='vertical', line_scale=2)
-    h_mask, h_lines = find_lines(img_mask_g, direction='horizontal', line_scale=2)
-    print(f'{v_lines=}')
-    print(f'{h_lines=}')
-
-    ips = []
-    only_lines = np.multiply(v_mask, h_mask)
-    jcs, _ = cv2.findContours(only_lines, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-    for j in jcs:
-        #if len(jc) <= 4:  # remove contours with less than 4 joints
-        #    continue
-        jx, jy, jw, jh = cv2.boundingRect(j)
-        c1, c2 = (2 * jx + jw) // 2, (2 * jy + jh) // 2
-        ips.append((c1, c2))
-
-
-    #res = np.where(only_lines == 1)
-    #ips = list(zip(res[1], res[0]))
-    print(f'{ips=}')
-    #imgcat(Image.fromarray(only_lines*255))
-
-    for ip in ips:
-        ext_count = get_ext_count(ip, img_mask, ext_thresh)
-        print(f'{ip=}, {ext_count}')
-        if ext_count == 4:
-            return ip
-
-    raise Exception('no intersection point found')
-
-
-
-def locate_corners(img_hsv):
-    corner_ratio = 400.0 / 9000.0
-    ext_thresh_ratio = 20.0 / 18000.0
-
-    w = img_hsv.shape[1]
-    h = img_hsv.shape[0]
-    cw = round(corner_ratio * w)
-    ch = round(corner_ratio * h)
-    y = h - 1 - ch
-    x = w - 1 - cw
-
-    # take the four corners
-    corner_boxes = []
-    corner_boxes.append(((0, 0), (cw, ch)))
-    corner_boxes.append(((0, y), (cw, ch)))
-    corner_boxes.append(((x, y), (cw, ch)))
-    corner_boxes.append(((x, 0), (cw, ch)))
-
-    # get intersection points
-    points = []
-    for corner_box in corner_boxes:
-        bx, by = corner_box[0]
-        bw, bh = corner_box[1]
-        c_img = img_hsv[by:by+bh, bx:bx+bw]
-        print(f'{corner_box=}')
-        ipoint = get_intersection_point(c_img, ext_thresh_ratio * w)
-        ipoint = bx + ipoint[0], by + ipoint[1]
-        points.append(ipoint)
-    return points
 
 def show_contours(o_bimg, contours):
     b = o_bimg.copy()
@@ -346,7 +288,7 @@ def get_utm_crs(c_long, c_lat):
     return utm_crs
 
 class Converter:
-    def __init__(self, filename):
+    def __init__(self, filename, extra={}):
         self.filename = filename
         self.file_fp = None
         self.file_dir = get_file_dir(filename)
@@ -358,6 +300,15 @@ class Converter:
         self.pdf_document = None
         self.mapbox_corners = None
         self.src_crs = None
+        self.find_line_iter = extra.get('find_line_iter', 0)
+        self.find_line_scale = extra.get('find_line_scale', 2)
+        self.ext_thresh_ratio = extra.get('ext_thresh_ratio', 20.0 / 18000.0)
+        self.pdf_rotate = extra.get('pdf_rotate', None)
+        self.use_bbox_area = extra.get('use_bbox_area', False)
+        self.use_greyish = extra.get('use_greyish', False)
+        self.use_pinkish = extra.get('use_pinkish', False)
+        self.auto_rotate = extra.get('auto_rotate', False)
+
 
 
     def get_full_img_file(self):
@@ -389,7 +340,9 @@ class Converter:
         elif 'Adobe Photoshop' in doc_producer:
             flavor = 'Photoshop'
         elif 'www.adultpdf.com' in doc_producer:
-            flavor = 'adultpdf'
+            flavor = 'Adultpdf'
+        elif 'GPL Ghostscript' in doc_producer:
+            flavor = 'Ghostscript'
         else:
             print(document.info)
             raise Exception('Unknown flavor')
@@ -432,15 +385,31 @@ class Converter:
 
     def convert_pdf_to_image(self):
         inp = PdfFileReader(open(self.filename, 'rb'))
-        bbox = inp.getPage(0).mediaBox
+        page = inp.getPage(0)
+        bbox = page.mediaBox
+        print(f'ROTATE: {page.get("/Rotate")}')
+        if self.pdf_rotate is None:
+            rotate = page.get('/Rotate')
+        else:
+            rotate = self.pdf_rotate
+        print(f'ROTATE: {rotate}')
         w, h = bbox.getWidth(), bbox.getHeight()
         ow = 18000
         oh = round(float(h) * float(ow) / float(w))
         img_filename = str(self.get_full_img_file())
-        #print('converting pdf to image using ghostscript')
-        #run_external(f'gs -g{ow}x{oh} -dBATCH -dNOPAUSE -dDOINTERPOLATE -sPageList=1 -sOutputFile={img_filename} -sDevice=jpeg {self.filename}')
         print('converting pdf to image using mupdf')
         run_external(f'mutool draw -w {ow} -h {oh} -c rgb -o {img_filename} {self.filename}')
+        if rotate == 90:
+            print('rotating image')
+            img = cv2.imread(img_filename)
+            img_rotate = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+            rotate_filename = img_filename.replace('.jpg', '.rotated.jpg')
+            cv2.imwrite(rotate_filename, img_rotate)
+            shutil.move(rotate_filename, img_filename)
+
+
+        #print('converting pdf to image using ghostscript')
+        #run_external(f'gs -g{ow}x{oh} -dBATCH -dNOPAUSE -dDOINTERPOLATE -sPageList=1 -sOutputFile={img_filename} -sDevice=jpeg {self.filename}')
         #print('converting pdf to image using pdftocairo')
         ##run_external(f'pdftocairo -antialias best -singlefile -r 72 -scale-to 18000 -jpeg {self.filename}')
         #exp_out_file = Path(self.filename).name.replace('.pdf', '.jpg')
@@ -510,7 +479,8 @@ class Converter:
         img = self.get_shrunk_img()
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         start = time.time()
-        img_mask = get_color_mask(img_hsv, 'pink') 
+        pink_type = 'pinkish' if self.use_pinkish else 'pink'
+        img_mask = get_color_mask(img_hsv, pink_type) 
         print('getting pink contours for whole image')
         contours, hierarchy = cv2.findContours(
             img_mask.astype(np.uint8), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
@@ -519,13 +489,24 @@ class Converter:
         end = time.time()
         print(f'pink contours took {end - start} secs')
         show_contours(img_mask, [x[0] for x in ctuples])
-        ctuples_s = sorted(ctuples, key=lambda x: cv2.contourArea(x[0]), reverse=True)
-        #print(ctuples_s[0])
-        map_inner_contour_idx = ctuples_s[0][1][2]
-        map_contour = ctuples[map_inner_contour_idx][0]
-        #map_contour = ctuples_s[0][0]
+        if self.use_bbox_area:
+
+            def get_bbox_area(ctuple):
+                bbox = cv2.boundingRect(ctuple[0])
+                return bbox[2] * bbox[3]
+
+            ctuples_s = sorted(ctuples, key=get_bbox_area, reverse=True)
+            map_contour = ctuples_s[0][0]
+        else:
+            ctuples_s = sorted(ctuples, key=lambda x: cv2.contourArea(x[0]), reverse=True)
+            #print(ctuples_s[0])
+            map_inner_contour_idx = ctuples_s[0][1][2]
+            map_contour = ctuples[map_inner_contour_idx][0]
+            #map_contour = ctuples_s[0][0]
         map_bbox = cv2.boundingRect(map_contour)
+        map_min_rect = cv2.minAreaRect(map_contour)
         print(f'{map_bbox=}')
+        print(f'{map_min_rect=}')
         map_area = map_bbox[2] * map_bbox[3]
         h, w = img.shape[:2]
         total_area = w * h
@@ -533,12 +514,13 @@ class Converter:
             show_contours(img_mask, [map_contour])
             raise Exception(f'map area less than expected, {map_area=}, {total_area=}')
     
-        return map_bbox
+        return map_bbox, map_min_rect
 
     def split_sidebar_area(self, img):
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         h, w = img_hsv.shape[:2]
-        img_mask = get_color_mask(img_hsv, 'pink') 
+        pink_type = 'pinkish' if self.use_pinkish else 'pink'
+        img_mask = get_color_mask(img_hsv, pink_type) 
         print('getting pink contours for sidebar image')
         contours, _ = cv2.findContours(
             img_mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
@@ -586,7 +568,7 @@ class Converter:
                 shrunk_splits = json.load(f)
             return shrunk_splits
 
-        map_bbox = self.get_maparea()
+        map_bbox, _ = self.get_maparea()
  
         mb = map_bbox
         sbx, sby, sbw, sbh = (0, mb[1]-1,
@@ -619,6 +601,76 @@ class Converter:
         return bbox_dict
         
 
+    def get_intersection_point(self, img_hsv, ext_thresh):
+        grey_type = 'grey' if not self.use_greyish else 'greyish'
+        img_mask = get_color_mask(img_hsv, ['black', grey_type])
+        img_mask_g = img_mask.astype(np.uint8)
+        h, w = img_mask.shape[:2]
+        img_mask_g = img_mask_g*255
+        if SHOW_IMG:
+            imgcat(Image.fromarray(img_mask_g))
+    
+        v_mask, v_lines = find_lines(img_mask_g, direction='vertical', line_scale=self.find_line_scale, iterations=self.find_line_iter)
+        h_mask, h_lines = find_lines(img_mask_g, direction='horizontal', line_scale=self.find_line_scale, iterations=self.find_line_iter)
+        print(f'{v_lines=}')
+        print(f'{h_lines=}')
+    
+        ips = []
+        only_lines = np.multiply(v_mask, h_mask)
+        jcs, _ = cv2.findContours(only_lines, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+        for j in jcs:
+            #if len(jc) <= 4:  # remove contours with less than 4 joints
+            #    continue
+            jx, jy, jw, jh = cv2.boundingRect(j)
+            c1, c2 = (2 * jx + jw) // 2, (2 * jy + jh) // 2
+            ips.append((c1, c2))
+    
+    
+        #res = np.where(only_lines == 1)
+        #ips = list(zip(res[1], res[0]))
+        print(f'{ips=}')
+        #imgcat(Image.fromarray(only_lines*255))
+    
+        for ip in ips:
+            ext_count = get_ext_count(ip, img_mask, ext_thresh)
+            print(f'{ip=}, {ext_count}')
+            if ext_count == 4:
+                return ip
+    
+        raise Exception('no intersection point found')
+
+
+    def locate_corners(self, img_hsv):
+        corner_ratio = 400.0 / 9000.0
+    
+        w = img_hsv.shape[1]
+        h = img_hsv.shape[0]
+        cw = round(corner_ratio * w)
+        ch = round(corner_ratio * h)
+        y = h - 1 - ch
+        x = w - 1 - cw
+    
+        print(f'main img dim: {w=}, {h=}')
+        # take the four corners
+        corner_boxes = []
+        corner_boxes.append(((0, 0), (cw, ch)))
+        corner_boxes.append(((0, y), (cw, ch)))
+        corner_boxes.append(((x, y), (cw, ch)))
+        corner_boxes.append(((x, 0), (cw, ch)))
+    
+        # get intersection points
+        points = []
+        for corner_box in corner_boxes:
+            bx, by = corner_box[0]
+            bw, bh = corner_box[1]
+            c_img = img_hsv[by:by+bh, bx:bx+bw]
+            print(f'{corner_box=}')
+            ipoint = self.get_intersection_point(c_img, self.ext_thresh_ratio * w)
+            ipoint = bx + ipoint[0], by + ipoint[1]
+            points.append(ipoint)
+        return points
+
+
     def process_map_area(self, map_bbox):
         mapbox_file = self.file_dir.joinpath('mapbox.jpg')
         full_file = self.file_dir.joinpath('full.jpg')
@@ -630,7 +682,7 @@ class Converter:
         full_img = self.get_full_img()
         full_img_hsv = cv2.cvtColor(full_img, cv2.COLOR_BGR2HSV)
         map_img_hsv = crop_img(full_img_hsv, map_bbox)
-        corners = locate_corners(map_img_hsv)
+        corners = self.locate_corners(map_img_hsv)
         corners_contour = np.array(corners).reshape((-1,1,2)).astype(np.int32)
         bbox = cv2.boundingRect(corners_contour)
         print(f'{bbox=}')
@@ -651,8 +703,8 @@ class Converter:
 
     def process_rest_area(self, rest_bbox):
         #imgcat(Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)))
-        if self.file_dir.joinpath('magvar.jpg').exists():
-            print('magvar file exists.. skipiing rest area processing')
+        if self.file_dir.joinpath('notes.jpg').exists():
+            print('notes file exists.. skipiing rest area processing')
             return
 
         full_img = self.get_full_img()
@@ -716,6 +768,7 @@ class Converter:
     
         if break_index == -1:
             raise Exception('unable to find the notes break')
+        print(f'{break_index=}')
     
         notes_cut_y = breaks[break_index - 1][0] - c_header_len
         notes_bbox = (0, 0, w, notes_cut_y)
@@ -724,14 +777,14 @@ class Converter:
 
         # the break after the compilation box is for the projection info
         # the one after that is the magnetic variation data
-        remaining_breaks = breaks[break_index:]
-        remaining_breaks = [ br for br in remaining_breaks if br[1] - br[0] > min_gap ] 
+        #remaining_breaks = breaks[break_index:]
+        #remaining_breaks = [ br for br in remaining_breaks if br[1] - br[0] > min_gap ] 
     
-        mag_var_cut_y1 = remaining_breaks[1][1]
-        mag_var_cut_y2 = remaining_breaks[2][0]
-        mag_var_bbox = (0, mag_var_cut_y1,
-                        w, mag_var_cut_y2 - mag_var_cut_y1)
-        save_bbox('magvar', mag_var_bbox)
+        #mag_var_cut_y1 = remaining_breaks[1][1]
+        #mag_var_cut_y2 = remaining_breaks[2][0]
+        #mag_var_bbox = (0, mag_var_cut_y1,
+        #                w, mag_var_cut_y2 - mag_var_cut_y1)
+        #save_bbox('magvar', mag_var_bbox)
 
 
     def process_legend_area(self, lbbox):
@@ -934,7 +987,7 @@ class Converter:
 
 
         self.create_cutline(geom, cutline_file)
-        cutline_options = f'-cutline {str(cutline_file)} -crop_to_cutline'
+        cutline_options = f'-cutline {str(cutline_file)} -crop_to_cutline --config GDALWARP_IGNORE_BAD_CUTLINE YES'
 
         warp_quality_config = img_quality_config.copy()
         warp_quality_config.update({'TILED': 'YES'})
@@ -1035,6 +1088,30 @@ class Converter:
         count = np.count_nonzero(mask)
         sat_avg = float(np.sum(sat)) / float(count)
         print(f'{sat_avg=}')
+
+    def rotate(self):
+        if not self.auto_rotate:
+            return
+        rotated_info_file = self.file_dir.joinpath('rotated_info.txt')
+        if rotated_info_file.exists():
+            print('already rotated.. skipping rotation')
+            return
+        map_bbox, map_min_rect = self.get_maparea()
+        print(map_min_rect)
+        _, _, angle = map_min_rect
+        if angle > 45:
+            angle = angle - 90
+        img = self.get_full_img()
+        print(f'rotating image by {angle}')
+        img_rotated = imutils.rotate_bound(img, -angle)
+        rotated_file = self.file_dir.joinpath('full.rotated.jpg')
+        cv2.imwrite(str(rotated_file), img_rotated)
+        shutil.move(str(rotated_file), str(self.get_full_img_file()))
+        rotated_info_file.write_text(f'{angle}')
+        self.file_dir.joinpath('small.jpg').unlink()
+        self.small_img = None
+        self.full_img = None
+
         
     def run(self):
         final_file = self.file_dir.joinpath('final.tif')
@@ -1044,9 +1121,9 @@ class Converter:
         
         print(f'converting {filename}')
         self.convert()
-        print(f'splitting {filename}')
+        self.rotate()
         #self.adjust_color()
-        #return
+        print(f'splitting {filename}')
         self.split_image()
         self.remove_lines()
         print('georeferencing image')
@@ -1085,36 +1162,9 @@ def create_tiles(vrt_filename):
 
 
 
-#cat data/goa.txt | xargs -I {} gsutil -m cp gs://soi_data/raw/{} data/raw/
-#file_list_filename = 'data/goa.txt'
-#file_list = Path(file_list_filename).read_text().split('\n')
-#file_list = [ f.strip() for f in file_list ]
-#file_list = [ f for f in file_list if f != '' ]
-
-
-filenames = glob.glob('data/raw/*.pdf')
-#filenames = ['data/raw/58B_3.pdf']
-#filenames = [ f'data/raw/{x}' for x in file_list ]
-#filenames = file_list
-#filenames = [ 'data/raw/73E_5.pdf' ]
-ignore_filenames = [
-    'data/raw/73E_5.pdf',
-    'data/raw/43O_3.pdf',
-    #'data/raw/53G_3.pdf',
-]
-
-errors_file = Path('data/errors.txt')
-ignore_filenames = []
-if errors_file.exists():
-    efnames = errors_file.read_text().split('\n')
-    efnames = [ f.strip() for f in efnames ]
-    ignore_filenames = [ f for f in efnames if f != '' ]
-
-
-
-def only_convert(filename):
+def only_convert(filename, extra):
     print(f'processing {filename}')
-    converter = Converter(filename)
+    converter = Converter(filename, extra)
     mapbox_file = converter.file_dir.joinpath('mapbox.jpg')
     nogrid_file = converter.file_dir.joinpath('nogrid.jpg')
     final_file =  converter.file_dir.joinpath('final.tif')
@@ -1125,42 +1175,100 @@ def only_convert(filename):
     converter.close()
 
 
-ONLY_CONVERT = False
-if ONLY_CONVERT:
-    fut_map = {}
-    with ProcessPoolExecutor(max_workers=8) as executor:
-        for filename in filenames:
-            fut = executor.submit(only_convert, filename)
-            fut_map[fut] = filename
-    
-        for fut in as_completed(fut_map, timeout=None):
-            filename = fut_map[fut]
-            print(f'done with file: {filename}')
-            try:
-                fut.result()
-            except Exception as ex:
-                print(f'got exception - {ex}')
-    exit(0)
+if __name__ == '__main__':
+    freeze_support()
+
+    ONLY_FAILED = os.environ.get('ONLY_FAILED', '0') == '1'
+
+    ignore_filenames = [
+        'data/raw/53H_2.pdf', # delhi, extra data needs to be snipped
+        'data/raw/66D_1.pdf', # chennai, combined file needs to be split
+        'data/raw/66D_5.pdf', # chennai, combined file needs to be split
+        'data/raw/48J_10.pdf', # anamoly, black strip in file
+        'data/raw/49N_14.pdf', # anamoly, black strip in file
+        'data/raw/73B_6.pdf', # missing grid line at corner
+        'data/raw/62D_8.pdf', # missing grid line at corner
+        'data/raw/74B_3.pdf', # srikakulam, combined file needs to be split
+        'data/raw/74B_4.pdf', # srikakulam, combined file needs to be split
+        'data/raw/74B_7.pdf', # srikakulam, combined file needs to be split
+        'data/raw/44J_3.pdf', # pink line almost red
+        'data/raw/44I_14.pdf', # pink line almost red
+        'data/raw/54I_13.pdf', # pink line almost red
+        'data/raw/58C_1.pdf', # Kochi, combined file needs to be split
+        'data/raw/58C_5.pdf', # Kochi, combined file needs to be split
+        'data/raw/65K_8.pdf', # east godavari, combined file needs to be split
+        'data/raw/65K_12.pdf', # east godavari, combined file needs to be split
+        'data/raw/54N_12.pdf', # bad file
+        'data/raw/58F_7.pdf', # bad file
+        'data/raw/65A_11.pdf', # no grid at all
+    ]
+    #cat data/goa.txt | xargs -I {} gsutil -m cp gs://soi_data/raw/{} data/raw/
+    if ONLY_FAILED:
+        file_list_filename = 'data/errors.txt'
+        file_list = Path(file_list_filename).read_text().split('\n')
+        file_list = [ f.strip() for f in file_list ]
+        file_list = [ f for f in file_list if f != '' ]
+        filenames = file_list
+    else:
+        filenames = glob.glob('data/raw/*.pdf')
+        errors_file = Path('data/errors.txt')
+        ignore_filenames = []
+        if errors_file.exists():
+            efnames = errors_file.read_text().split('\n')
+            efnames = [ f.strip() for f in efnames ]
+            ignore_filenames = [ f for f in efnames if f != '' ]
 
 
-for filename in filenames:
-    if filename in ignore_filenames:
-        continue
-    print(f'processing {filename}')
-    converter = Converter(filename)
-    #crs = converter.get_source_crs()
-    #print(crs)
-    try:
-        converter.run()
-        converter.close()
-    except Exception as ex:
-        print(f'ERROR: exception {ex} while handling {filename}')
-        ignore_filenames.append(filename)
-        error_txt = '\n'.join(ignore_filenames)
-        Path(errors_file).write_text(error_txt)
+    special_cases_file = Path('data/special_cases.json')
+    if special_cases_file.exists():
+        with open(special_cases_file, 'r') as f:
+            special_cases = json.load(f)
+    else:
+        special_cases = {}
+
+
+
+    ONLY_CONVERT = os.environ.get('ONLY_CONVERT', '0') == '1'
+    if ONLY_CONVERT:
+        fut_map = {}
+        with ProcessPoolExecutor(max_workers=8) as executor:
+            for filename in filenames:
+                extra = special_cases.get(filename, {})
+                fut = executor.submit(only_convert, filename, extra)
+                fut_map[fut] = filename
         
-
-#vrt_filename = create_vrt(file_list_filename)
-exit(0)
-create_tiles(vrt_filename)
+            for fut in as_completed(fut_map, timeout=None):
+                filename = fut_map[fut]
+                print(f'done with file: {filename}')
+                try:
+                    fut.result()
+                except Exception as ex:
+                    print(f'got exception - {ex}')
+        exit(0)
+    
+    
+    for i, filename in enumerate(filenames):
+        if filename in ignore_filenames:
+            continue
+        print(f'processing {filename} {i+1}/{len(filenames)}')
+        extra = special_cases.get(filename, {})
+        print(extra)
+        converter = Converter(filename, extra)
+        #crs = converter.get_source_crs()
+        #print(crs)
+        try:
+            converter.run()
+            converter.close()
+        except Exception as ex:
+            print(f'ERROR: exception {ex} while handling {filename}')
+            if ONLY_FAILED:
+                raise
+            ignore_filenames.append(filename)
+            error_txt = '\n'.join(ignore_filenames)
+            Path(errors_file).write_text(error_txt)
+            
+    
+    #vrt_filename = create_vrt(file_list_filename)
+    exit(0)
+    create_tiles(vrt_filename)
 

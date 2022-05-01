@@ -118,11 +118,11 @@ def get_color_mask(img_hsv, color):
     img_masks = []
     for color in colors:
         if color == 'pink':
-            lower = np.array([140,74,76])
-            upper = np.array([166,255,255])
+            lower = np.array([140, 74, 76])
+            upper = np.array([166, 255, 255])
         elif color == 'pinkish':
-            lower = np.array([130,60,76])
-            upper = np.array([166,255,255])
+            lower = np.array([130, 40, 76])
+            upper = np.array([170, 255, 255])
         elif color == 'black':
             lower = np.array([0, 0, 0])
             upper = np.array([179, 255, 80])
@@ -131,13 +131,21 @@ def get_color_mask(img_hsv, color):
             upper = np.array([179, 10, 120])
         elif color == 'greyish':
             lower = np.array([0, 0, 50])
-            upper = np.array([179, 90, 145])
+            #upper = np.array([179, 90, 145])
+            upper = np.array([179, 130, 145])
         elif color == 'white':
             lower = np.array([0, 0, 230])
             upper = np.array([179, 6, 255])
         elif color == 'green':
-            lower = np.array([50, 100,100])
+            lower = np.array([50, 100, 100])
             upper = np.array([70, 255, 255])
+        elif color == 'red1':
+            lower = np.array([0, 50, 50])
+            upper = np.array([10, 255, 255])
+        elif color == 'red2':
+            lower = np.array([165, 50, 50])
+            #lower = np.array([170, 50, 50])
+            upper = np.array([180, 255, 255])
         else:
             raise Exception(f'{color} not handled')
         img_mask = cv2.inRange(img_hsv, lower, upper)
@@ -189,11 +197,11 @@ def show_contours(o_bimg, contours):
         imgcat(Image.fromarray(rgb))
     #cv2.imwrite('temp.jpg', rgb)
 
-def get_breaks(proj):
+def get_breaks(proj, min_val=0):
     breaks = []
     s = None
     for i, v in enumerate(proj):
-        if v != 0:
+        if v > min_val:
             if s is not None:
                 breaks.append((s, i))
                 s = None
@@ -307,7 +315,9 @@ class Converter:
         self.use_bbox_area = extra.get('use_bbox_area', False)
         self.use_greyish = extra.get('use_greyish', False)
         self.use_pinkish = extra.get('use_pinkish', False)
+        self.use_red = extra.get('use_red', False)
         self.auto_rotate = extra.get('auto_rotate', False)
+        self.sb_break_min_val = extra.get('sb_break_min_val', 2)
 
 
 
@@ -343,6 +353,8 @@ class Converter:
             flavor = 'Adultpdf'
         elif 'GPL Ghostscript' in doc_producer:
             flavor = 'Ghostscript'
+        elif 'Adobe PDF Library' in doc_producer:
+            flavor = 'Microstation'
         else:
             print(document.info)
             raise Exception('Unknown flavor')
@@ -479,16 +491,20 @@ class Converter:
         img = self.get_shrunk_img()
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         start = time.time()
-        pink_type = 'pinkish' if self.use_pinkish else 'pink'
-        img_mask = get_color_mask(img_hsv, pink_type) 
+        color_type = 'pinkish' if self.use_pinkish else 'pink'
+        if self.use_red:
+            color_type = ['red1', 'red2']
+        img_mask = get_color_mask(img_hsv, color_type)
+        img_mask_g = img_mask.astype(np.uint8)*255
+        #imgcat(Image.fromarray(img_mask_g))
         print('getting pink contours for whole image')
         contours, hierarchy = cv2.findContours(
-            img_mask.astype(np.uint8), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
+            img_mask.astype(np.uint8)*255, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
         )
         ctuples = list(zip(list(contours), list(hierarchy[0])))
         end = time.time()
         print(f'pink contours took {end - start} secs')
-        show_contours(img_mask, [x[0] for x in ctuples])
+        show_contours(img_mask_g, [x[0] for x in ctuples])
         if self.use_bbox_area:
 
             def get_bbox_area(ctuple):
@@ -758,7 +774,7 @@ class Converter:
     
         h_proj = get_projection(img_mask, axis=1)
         #print_proj(h_proj)
-        breaks = get_breaks(h_proj)
+        breaks = get_breaks(h_proj, self.sb_break_min_val)
         print(f'{breaks=}')
         break_index = -1
         for bi, br in enumerate(breaks):
@@ -1181,26 +1197,48 @@ if __name__ == '__main__':
     ONLY_FAILED = os.environ.get('ONLY_FAILED', '0') == '1'
 
     ignore_filenames = [
+        'data/raw/86K_7.pdf', # andaman, combined file
+
         'data/raw/53H_2.pdf', # delhi, extra data needs to be snipped
-        'data/raw/66D_1.pdf', # chennai, combined file needs to be split
-        'data/raw/66D_5.pdf', # chennai, combined file needs to be split
-        'data/raw/48J_10.pdf', # anamoly, black strip in file
-        'data/raw/49N_14.pdf', # anamoly, black strip in file
-        'data/raw/73B_6.pdf', # missing grid line at corner
-        'data/raw/62D_8.pdf', # missing grid line at corner
+        'data/raw/72B_5.pdf', # Bettiah, extra data needs to be snipped
+
         'data/raw/74B_3.pdf', # srikakulam, combined file needs to be split
         'data/raw/74B_4.pdf', # srikakulam, combined file needs to be split
         'data/raw/74B_7.pdf', # srikakulam, combined file needs to be split
-        'data/raw/44J_3.pdf', # pink line almost red
-        'data/raw/44I_14.pdf', # pink line almost red
-        'data/raw/54I_13.pdf', # pink line almost red
+
         'data/raw/58C_1.pdf', # Kochi, combined file needs to be split
         'data/raw/58C_5.pdf', # Kochi, combined file needs to be split
+
         'data/raw/65K_8.pdf', # east godavari, combined file needs to be split
         'data/raw/65K_12.pdf', # east godavari, combined file needs to be split
+
+        'data/raw/74B_10.pdf', # srikakulam, combined file needs to be split
+        'data/raw/74B_6.pdf', # srikakulam, combined file needs to be split
+
+        'data/raw/65O_3.pdf', # vishakapatnam, combined file needs to be split
+        'data/raw/65O_2.pdf', # vishakapatnam, combined file needs to be split
+
+        'data/raw/66D_1.pdf', # chennai, combined file needs to be split, also cant extract image
+        'data/raw/66D_5.pdf', # chennai, combined file needs to be split, also cant extract image
+
+        'data/raw/58A_3.pdf', # cant extract image
+
+        'data/raw/48J_10.pdf', # anamoly, black strip in file
+        'data/raw/49N_14.pdf', # anamoly, black strip in file
+
+        'data/raw/73B_6.pdf', # missing grid line at corner
+        'data/raw/62D_8.pdf', # missing grid line at corner
+        'data/raw/58I_1.pdf', # missing grid line at corner
+
         'data/raw/54N_12.pdf', # bad file
         'data/raw/58F_7.pdf', # bad file
+
         'data/raw/65A_11.pdf', # no grid at all
+        'data/raw/55J_16.pdf', # file needs to be cropped
+        'data/raw/45H_11.pdf', # outer bound is blue instead of pink
+
+        'data/raw/87H_8.pdf', # side bar parsing issues
+        'data/raw/78O_2.pdf', # side bar parsing issues
     ]
     #cat data/goa.txt | xargs -I {} gsutil -m cp gs://soi_data/raw/{} data/raw/
     if ONLY_FAILED:

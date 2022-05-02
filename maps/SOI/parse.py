@@ -146,6 +146,9 @@ def get_color_mask(img_hsv, color):
             lower = np.array([165, 50, 50])
             #lower = np.array([170, 50, 50])
             upper = np.array([180, 255, 255])
+        elif color == 'blue':
+            lower = np.array([100, 50, 0])
+            upper = np.array([140, 255, 255])
         else:
             raise Exception(f'{color} not handled')
         img_mask = cv2.inRange(img_hsv, lower, upper)
@@ -311,11 +314,11 @@ class Converter:
         self.find_line_iter = extra.get('find_line_iter', 0)
         self.find_line_scale = extra.get('find_line_scale', 2)
         self.ext_thresh_ratio = extra.get('ext_thresh_ratio', 20.0 / 18000.0)
-        self.pdf_rotate = extra.get('pdf_rotate', None)
+        self.pdf_rotate = extra.get('pdf_rotate', 0)
         self.use_bbox_area = extra.get('use_bbox_area', False)
         self.use_greyish = extra.get('use_greyish', False)
-        self.use_pinkish = extra.get('use_pinkish', False)
-        self.use_red = extra.get('use_red', False)
+        self.band_color = extra.get('band_color', 'pink')
+        self.sb_color = extra.get('sb_color', self.band_color)
         self.auto_rotate = extra.get('auto_rotate', False)
         self.sb_break_min_val = extra.get('sb_break_min_val', 2)
 
@@ -399,11 +402,8 @@ class Converter:
         inp = PdfFileReader(open(self.filename, 'rb'))
         page = inp.getPage(0)
         bbox = page.mediaBox
-        print(f'ROTATE: {page.get("/Rotate")}')
-        if self.pdf_rotate is None:
-            rotate = page.get('/Rotate')
-        else:
-            rotate = self.pdf_rotate
+        print(f'Advertised ROTATE: {page.get("/Rotate")}')
+        rotate = self.pdf_rotate
         print(f'ROTATE: {rotate}')
         w, h = bbox.getWidth(), bbox.getHeight()
         ow = 18000
@@ -411,10 +411,10 @@ class Converter:
         img_filename = str(self.get_full_img_file())
         print('converting pdf to image using mupdf')
         run_external(f'mutool draw -w {ow} -h {oh} -c rgb -o {img_filename} {self.filename}')
-        if rotate == 90:
+        if rotate == 90 or rotate == 270:
             print('rotating image')
             img = cv2.imread(img_filename)
-            img_rotate = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+            img_rotate = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE if rotate == 90 else cv2.ROTATE_90_COUNTERCLOCKWISE)
             rotate_filename = img_filename.replace('.jpg', '.rotated.jpg')
             cv2.imwrite(rotate_filename, img_rotate)
             shutil.move(rotate_filename, img_filename)
@@ -491,13 +491,10 @@ class Converter:
         img = self.get_shrunk_img()
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         start = time.time()
-        color_type = 'pinkish' if self.use_pinkish else 'pink'
-        if self.use_red:
-            color_type = ['red1', 'red2']
-        img_mask = get_color_mask(img_hsv, color_type)
+        img_mask = get_color_mask(img_hsv, self.band_color)
         img_mask_g = img_mask.astype(np.uint8)*255
         #imgcat(Image.fromarray(img_mask_g))
-        print('getting pink contours for whole image')
+        print(f'getting {self.band_color} contours for whole image')
         contours, hierarchy = cv2.findContours(
             img_mask.astype(np.uint8)*255, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
         )
@@ -535,9 +532,8 @@ class Converter:
     def split_sidebar_area(self, img):
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         h, w = img_hsv.shape[:2]
-        pink_type = 'pinkish' if self.use_pinkish else 'pink'
-        img_mask = get_color_mask(img_hsv, pink_type) 
-        print('getting pink contours for sidebar image')
+        img_mask = get_color_mask(img_hsv, self.sb_color) 
+        print(f'getting {self.sb_color} contours for sidebar image')
         contours, _ = cv2.findContours(
             img_mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
@@ -1195,8 +1191,9 @@ if __name__ == '__main__':
     freeze_support()
 
     ONLY_FAILED = os.environ.get('ONLY_FAILED', '0') == '1'
+    ignore_filenames = []
 
-    ignore_filenames = [
+    known_problems = [
         'data/raw/86K_7.pdf', # andaman, combined file
 
         'data/raw/53H_2.pdf', # delhi, extra data needs to be snipped
@@ -1221,24 +1218,22 @@ if __name__ == '__main__':
         'data/raw/66D_1.pdf', # chennai, combined file needs to be split, also cant extract image
         'data/raw/66D_5.pdf', # chennai, combined file needs to be split, also cant extract image
 
-        'data/raw/58A_3.pdf', # cant extract image
 
         'data/raw/48J_10.pdf', # anamoly, black strip in file
         'data/raw/49N_14.pdf', # anamoly, black strip in file
+
+        'data/raw/54N_12.pdf', # bad file
+        'data/raw/58F_7.pdf', # bad file
+
+        'data/raw/58A_3.pdf', # cant extract image
 
         'data/raw/73B_6.pdf', # missing grid line at corner
         'data/raw/62D_8.pdf', # missing grid line at corner
         'data/raw/58I_1.pdf', # missing grid line at corner
 
-        'data/raw/54N_12.pdf', # bad file
-        'data/raw/58F_7.pdf', # bad file
-
         'data/raw/65A_11.pdf', # no grid at all
         'data/raw/55J_16.pdf', # file needs to be cropped
-        'data/raw/45H_11.pdf', # outer bound is blue instead of pink
 
-        'data/raw/87H_8.pdf', # side bar parsing issues
-        'data/raw/78O_2.pdf', # side bar parsing issues
     ]
     #cat data/goa.txt | xargs -I {} gsutil -m cp gs://soi_data/raw/{} data/raw/
     if ONLY_FAILED:
@@ -1271,6 +1266,8 @@ if __name__ == '__main__':
         fut_map = {}
         with ProcessPoolExecutor(max_workers=8) as executor:
             for filename in filenames:
+                if filename in known_problems:
+                    continue
                 extra = special_cases.get(filename, {})
                 fut = executor.submit(only_convert, filename, extra)
                 fut_map[fut] = filename
@@ -1286,6 +1283,8 @@ if __name__ == '__main__':
     
     
     for i, filename in enumerate(filenames):
+        if filename in known_problems:
+            continue
         if filename in ignore_filenames:
             continue
         print(f'processing {filename} {i+1}/{len(filenames)}')

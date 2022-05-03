@@ -11,4 +11,4 @@ Some selected Open Data related to Governance in India
 
 ## [Bharat Broadband Network Limited(BBNL)](bbnl/)
 
-## [Survey Of India(SOI)](maps/soi/)
+## [Survey Of India(SOI)](maps/SOI/)

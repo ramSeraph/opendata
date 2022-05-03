@@ -21,7 +21,7 @@ function fetchSheetList(callback) {
     httpRequest.onreadystatechange = alertContents
     bucketName = 'soi_data'
     prefix = 'raw/'
-    httpRequest.open('GET', `https://storage.googleapis.com/storage/v1/b/${bucketName}/o?prefix=${prefix}&maxResults=6000`)
+    httpRequest.open('GET', `https://storage.googleapis.com/storage/v1/b/${bucketName}/o?prefix=${prefix}&maxResults=6500`)
     httpRequest.send()
     console.log('call sent')
 }

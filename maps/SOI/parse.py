@@ -1193,6 +1193,7 @@ if __name__ == '__main__':
     ONLY_FAILED = os.environ.get('ONLY_FAILED', '0') == '1'
     ignore_filenames = []
 
+    #TODO: fix andaman index boxes
     known_problems = [
         'data/raw/86K_7.pdf', # andaman, combined file
 
@@ -1224,6 +1225,7 @@ if __name__ == '__main__':
 
         'data/raw/54N_12.pdf', # bad file
         'data/raw/58F_7.pdf', # bad file
+        'data/raw/45D_14.pdf', # bad file
 
         'data/raw/58A_3.pdf', # cant extract image
 
@@ -1233,7 +1235,6 @@ if __name__ == '__main__':
 
         'data/raw/65A_11.pdf', # no grid at all
         'data/raw/55J_16.pdf', # file needs to be cropped
-
     ]
     #cat data/goa.txt | xargs -I {} gsutil -m cp gs://soi_data/raw/{} data/raw/
     if ONLY_FAILED:

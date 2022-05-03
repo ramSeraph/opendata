@@ -125,6 +125,8 @@ map.on('load', () => {
         'data': 'https://raw.githubusercontent.com/datameet/maps/master/website/docs/data/geojson/states.geojson'
     })
     const green = 'green'
+    const red = 'red'
+    const yellow = 'yellow'
 
     // Add a new layer to visualize the polygon.
     map.addLayer({
@@ -138,8 +140,8 @@ map.on('load', () => {
                 [ '==', ['feature-state', 'status'], 'found'],
                 green,
                 [ '==', ['feature-state', 'status'], 'not_found'],
-                'red',
-                'yellow'
+                red,
+                yellow
             ],
             'fill-opacity': 0.5
         },

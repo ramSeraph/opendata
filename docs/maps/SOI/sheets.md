@@ -9,3 +9,6 @@ permalink: /maps/SOI/sheets
 <div id='sheet_list'></div>
 <script src="{{ "/assets/js/maps/SOI/sheets_common.js" | relative_url }}" ></script>
 <script src="{{ "/assets/js/maps/SOI/sheets_listing.js" | relative_url }}" ></script>
+
+<span id='call_status'></span>
+<div id='sheets_list'></div>

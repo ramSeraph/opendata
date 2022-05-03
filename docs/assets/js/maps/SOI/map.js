@@ -96,7 +96,7 @@ function fetchListCb(err, data) {
         var statusSpan = document.getElementById('call_status')
         statusSpan.innerHTML = "Error!! Couldn't get status list"
     } else {
-        updateObjList(data['items'])
+        updateObjList(data)
     }
 }
 
@@ -107,8 +107,14 @@ window.onload = (event) => {
 }
 
 
-map.on('load', () => {
+/*
+map.on('render', () => {
+    map.resize()
+})
+*/
 
+
+map.on('load', () => {
     map.addSource('tiles', {
         'type': 'geojson',
         'data': 'https://storage.googleapis.com/soi_data/index.geojson',

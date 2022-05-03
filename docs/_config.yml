@@ -2,6 +2,7 @@ header_pages:
   - index.md
   - lgd/index.md
   - bbnl/index.md
+  - maps/SOI/index.md
   - about.md
 
 #listen_for_clients_preferred_style: true

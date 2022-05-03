@@ -1,4 +1,15 @@
+/*.map_box_container {
+  position: relative;
+  height: 100% !important;
+  width: 100% !important;
+}*/
 #map {
+    /*
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    */
     width:41.5vw;
     height:41.5vw;
 }
@@ -16,23 +27,26 @@
   background: #000;
 }
 
+.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+    border-bottom-color: #000;
+    }
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+    border-top-color: #000;
+    }
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+    border-right-color: #000;
+    }
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+    border-left-color: #000;
+    }
 .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
     border-top-color: #000;
 }
 
-
-.maplibregl-popup-anchor-top .maplibregl-popup-tip {
-    border-bottom-color: #000;
-}
-
-
-.maplibregl-popup-anchor-left .maplibregl-popup-tip {
-    border-right-color: #000;
-}
-
-.maplibregl-popup-anchor-right .maplibregl-popup-tip {
-    border-left-color: #000;
-}
 
 .td-top {
     vertical-align: text-top;

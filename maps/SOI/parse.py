@@ -23,6 +23,7 @@ from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfinterp import PDFPageInterpreter
 from pdfminer.converter import PDFPageAggregator
 from pdfminer.layout import LTImage
+from pdfminer.pdftypes import resolve_all, PDFObjRef
 
 from PyPDF2 import PdfFileReader
 
@@ -390,11 +391,25 @@ class Converter:
             images = get_images(layout)
             if len(images) > 1:
                 raise Exception('Only one image expected')
-            print(images[0])
-            fname = img_writer.export_image(images[0])
+            image = images[0]
+            print(image)
+
+            # fix to pdfminer bug
+            if len(image.colorspace) == 1 and isinstance(image.colorspace[0], PDFObjRef):
+                image.colorspace = resolve_all(image.colorspace[0])
+                if not isinstance(image.colorspace, list):
+                    image.colorspace = [ image.colorspace ]
+
+            fname = img_writer.export_image(image)
+            print(f'image extracted to {fname}')
             out_filename = str(self.get_full_img_file())
             print(f'writing {out_filename}')
-            shutil.move(fname, out_filename)
+            if fname.endswith('.bmp'):
+                # give up
+                Path(fname).unlink()
+                self.convert_pdf_to_image()
+            else:
+                shutil.move(fname, out_filename)
             pno += 1
 
 
@@ -1173,6 +1188,37 @@ def create_tiles(vrt_filename):
     pass
 
 
+# file has no legend or any lines.. 
+# locate the corners manually and join in at the nogrid stage
+def handle_65A_11(filename):
+    converter = Converter(filename, {})
+    converter.convert()
+
+    # located manually
+    w, h = 18000, 18000
+    corners = [[w - 1754, 2049], [w - 1771, h - 2884], [3814, h - 2909], [3852, 2021]]
+
+    img = self.get_full_img()
+    corners_contour = np.array(corners).reshape((-1,1,2)).astype(np.int32)
+    bbox = cv2.boundingRect(corners_contour)
+    nogrid_img = crop_img(img, bbox)
+    nogrid_file = self.file_dir.joinpath('nogrid.jpg')
+    cv2.imwrite(str(nogrid_file), nogrid_img)
+    corners_in_box = [ (c[0] - bbox[0], c[1] - bbox[1]) for c in corners ]
+    print(f'{corners_in_box=}')
+    self.mapbox_corners = corners_in_box
+    with open(corners_file, 'w') as f:
+        json.dump(corners_in_box, f, indent = 4)
+    full_file.unlink()
+
+    converter.georeference_mapbox()
+    converter.close()
+
+
+super_special_handlers = {
+        #'data/raw/65A_11.pdf': handle_65A_11
+}
+
 
 def only_convert(filename, extra):
     print(f'processing {filename}')
@@ -1193,7 +1239,6 @@ if __name__ == '__main__':
     ONLY_FAILED = os.environ.get('ONLY_FAILED', '0') == '1'
     ignore_filenames = []
 
-    #TODO: fix andaman index boxes
     known_problems = [
         'data/raw/86K_7.pdf', # andaman, combined file
 
@@ -1216,9 +1261,10 @@ if __name__ == '__main__':
         'data/raw/65O_3.pdf', # vishakapatnam, combined file needs to be split
         'data/raw/65O_2.pdf', # vishakapatnam, combined file needs to be split
 
-        'data/raw/66D_1.pdf', # chennai, combined file needs to be split, also cant extract image
-        'data/raw/66D_5.pdf', # chennai, combined file needs to be split, also cant extract image
+        'data/raw/66D_1.pdf', # chennai, combined file needs to be split
+        'data/raw/66D_5.pdf', # chennai, combined file needs to be split
 
+        'data/raw/65A_11.pdf', # no grid
 
         'data/raw/48J_10.pdf', # anamoly, black strip in file
         'data/raw/49N_14.pdf', # anamoly, black strip in file
@@ -1226,14 +1272,12 @@ if __name__ == '__main__':
         'data/raw/54N_12.pdf', # bad file
         'data/raw/58F_7.pdf', # bad file
         'data/raw/45D_14.pdf', # bad file
-
-        'data/raw/58A_3.pdf', # cant extract image
+        'data/raw/40M_11.pdf', # bad file
 
         'data/raw/73B_6.pdf', # missing grid line at corner
         'data/raw/62D_8.pdf', # missing grid line at corner
         'data/raw/58I_1.pdf', # missing grid line at corner
 
-        'data/raw/65A_11.pdf', # no grid at all
         'data/raw/55J_16.pdf', # file needs to be cropped
     ]
     #cat data/goa.txt | xargs -I {} gsutil -m cp gs://soi_data/raw/{} data/raw/
@@ -1285,6 +1329,9 @@ if __name__ == '__main__':
     
     for i, filename in enumerate(filenames):
         if filename in known_problems:
+            if filename in super_special_handlers:
+                handler = super_special_handlers[filename]
+                handler(filename)
             continue
         if filename in ignore_filenames:
             continue

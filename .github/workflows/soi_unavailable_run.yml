@@ -1,10 +1,12 @@
-name: SOI Daily Pull Run
+name: SOI Weekly Unavailable Pull Run
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on: 
+  schedule:
+    - cron: '0 0 * * 0'
   workflow_dispatch:
 
 
@@ -76,18 +78,19 @@ jobs:
             data/index.geojson
             data/cookies/
             data/tried_users.txt
-          key:  SOI-data-raw-v5-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  SOI-data-ua-raw-v1-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            SOI-data-raw-v5-${{ github.run_number }}-
-            SOI-data-raw-v5-
+            SOI-data-ua-raw-v1-${{ github.run_number }}-
+            SOI-data-raw-v1-
 
       # scrape things
       - name: Download SOI data
         run: |
-          .venv/bin/python maps/SOI/scrape.py -r 15
+          .venv/bin/python maps/SOI/scrape.py -u -r 15
         timeout-minutes: 60
 
       - name: Upload raw files to gcs
         run: |
           [[ "$(gsutil ls gs://soi_data/index.geojson 2>/dev/null)" == "" ]] && gsutil -m cp data/index.geojson gs://soi_data/index.geojson
-          find data/raw/* && gsutil -m cp -a public-read -r data/raw/* gs://soi_data/raw/ && rm data/raw/* || true
+          find data/raw/* && gsutil -m cp -a public-read -r data/raw/*.pdf gs://soi_data/raw/ || true
+          find data/raw/* && sh -c "ls data/raw/*.pdf | sed 's,data,gs://soi_data,g' | sed 's/.pdf/.pdf.unavailable/g' | xargs gsutil rm " || true

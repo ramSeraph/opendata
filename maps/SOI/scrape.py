@@ -353,7 +353,7 @@ def get_priority_list():
     return plist
 
 
-def is_sheet_done(sheet_no, done):
+def is_sheet_done(sheet_no, done, only_unavailable):
     base_file = f"{sheet_no.replace('/', '_')}.pdf"
     base_file_unavailable = base_file + '.unavailable'
     out_filename = Path(raw_data_dir).joinpath(base_file)
@@ -361,12 +361,12 @@ def is_sheet_done(sheet_no, done):
     if out_filename.exists() or \
        out_filename_unavailable.exists() or \
        base_file in done or \
-       base_file_unavailable in done:
+       ( not only_unavailable and base_file_unavailable in done ):
            return True
     return False
 
 
-def scrape(phone_num, password):
+def scrape(phone_num, password, only_unavailable):
     login_wrap(phone_num, password)
     map_index_file = get_map_index()
 
@@ -380,7 +380,7 @@ def scrape(phone_num, password):
     tile_infos_to_download = []
     for tile_info in tile_infos:
         sheet_no = tile_info['EVEREST_SH']
-        if is_sheet_done(sheet_no, done):
+        if is_sheet_done(sheet_no, done, only_unavailable):
             continue
         if sheet_no in priority_list:
             priority_tile_info_map[sheet_no] = tile_info
@@ -399,7 +399,7 @@ def scrape(phone_num, password):
         download_tile_wrap(tile_info)
 
 
-def scrape_wrap():
+def scrape_wrap(only_unavailable):
     global session
     secrets_map = get_secrets()
     p_idx = 0
@@ -410,7 +410,7 @@ def scrape_wrap():
         p_idx += 1
         try:
             logger.info(f'scraping with phone number: {p_idx}/{total_count}')
-            scrape(phone_num, password)
+            scrape(phone_num, password, only_unavailable)
         except Exception as ex:
             if str(ex) != 'Limit Crossed':
                 raise
@@ -427,6 +427,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--max-captcha-retries', help='max number of times a captcha is retried', type=int, default=MAX_CAPTCHA_ATTEMPTS)
+    parser.add_argument('-u', '--unavailable', help='try getting the unavailable files', action='store_true')
     args = parser.parse_args()
     MAX_CAPTCHA_ATTEMPTS = args.max_captcha_retries
 
@@ -435,7 +436,7 @@ if __name__ == '__main__':
     if not CAPTCHA_MANUAL:
         prepare_captcha_models(captcha_model_dir)
 
-    scrape_wrap()
+    scrape_wrap(args.unavailable)
 
 
 

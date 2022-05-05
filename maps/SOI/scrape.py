@@ -389,7 +389,7 @@ def scrape(phone_num, password, only_unavailable):
 
     for sheet_no in priority_list:
         if sheet_no not in priority_tile_info_map:
-            if not is_sheet_done(sheet_no, done):
+            if not is_sheet_done(sheet_no, done, only_unavailable):
                 logger.warning(f'priority {sheet_no} missing')
             continue
         tile_info = priority_tile_info_map[sheet_no]

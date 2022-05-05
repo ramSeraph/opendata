@@ -68,7 +68,6 @@ jobs:
       - name: Prepare done list
         run: |
           gsutil ls gs://soi_data/raw/* | sed 's/^gs:\/\/soi_data\/raw\///g' > data/files_done.txt
-          gsutil -m cp gs://soi_data/priority_list.txt data/priority_list.txt
 
       - name: Restore prev workspace
         uses: TerrenceHo/cache-always@v0.0.1

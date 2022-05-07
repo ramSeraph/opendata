@@ -5,6 +5,7 @@ import glob
 import time
 import subprocess
 from pathlib import Path
+from functools import cmp_to_key
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from multiprocessing import freeze_support
 
@@ -27,7 +28,7 @@ from pdfminer.pdftypes import resolve_all, PDFObjRef
 
 from PyPDF2 import PdfFileReader
 
-from shapely.geometry import LineString, Polygon, CAP_STYLE
+from shapely.geometry import LineString, LinearRing, Polygon, CAP_STYLE, JOIN_STYLE
 from shapely.wkt import loads as wkt_loads
 from shapely.wkt import dumps as wkt_dumps
 from shapely.affinity import translate
@@ -37,7 +38,7 @@ import rasterio.mask
 from rasterio.io import MemoryFile
 from rasterio.crs import CRS
 from rasterio.control import GroundControlPoint
-from rasterio.transform import from_gcps
+from rasterio.transform import from_gcps, rowcol
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 
 from pyproj.aoi import AreaOfInterest
@@ -46,6 +47,7 @@ from pyproj.database import query_utm_crs_info
 
 
 
+DELETE_INTERMEDIATES = False
 USE_4326 = True
 SHOW_IMG = os.environ.get('SHOW_IMG', '0') == '1'
 
@@ -57,6 +59,30 @@ def get_file_dir(filename):
     dir_p = Path(inter_dir).joinpath(sheet_no)
     dir_p.mkdir(parents=True, exist_ok=True)
     return dir_p
+
+
+def adjust_coordinates(f):
+    coords = f['geometry']['coordinates'][0][:-1]
+    coords = [ [round(c[0], 2), round(c[1], 2)] for c in coords ]
+    indices = range(0,4)
+    def cmp(ci1, ci2):
+        c1 = coords[ci1]
+        c2 = coords[ci2]
+        if c1[0] == c2[0]:
+            return c1[1] - c2[1]
+        else:
+            return c1[0] - c2[0]
+
+    #print(f'{coords=}')
+    s_indices = sorted(indices, key=cmp_to_key(cmp))
+    #print(s_indices)
+    lb = s_indices[0]
+    lt = (lb + 1) % 4
+    rt = (lb + 2) % 4
+    rb = (lb + 3) % 4
+    out_coords = [ coords[lt], coords[lb], coords[rb], coords[rt], coords[lt] ]
+    #print(f'{out_coords=}')
+    f['geometry']['coordinates'] = [ out_coords ]
 
 
 
@@ -251,6 +277,9 @@ def scale_bbox(bbox, rw, rh):
     b = bbox
     return (int(b[0]*rw), int(b[1]*rh), int(b[2]*rw), int(b[3]*rh))
 
+def scale_point(point, rw, rh):
+    return [int(point[0]*rw), int(point[1]*rh)]
+
 def translate_bbox(bbox, ox, oy):
     b = bbox
     return (b[0] + ox, b[1] + oy, b[2], b[3])
@@ -274,6 +303,7 @@ def get_full_index():
     index_map = {}
     for f in index['features']:
         sheet_no = f['properties']['EVEREST_SH']
+        adjust_coordinates(f)
         geom = f['geometry']
         index_map[sheet_no] = geom
     return index_map
@@ -312,16 +342,20 @@ class Converter:
         self.pdf_document = None
         self.mapbox_corners = None
         self.src_crs = None
-        self.find_line_iter = extra.get('find_line_iter', 0)
-        self.find_line_scale = extra.get('find_line_scale', 2)
+        self.find_line_iter = extra.get('find_line_iter', 1)
+        self.find_line_scale = extra.get('find_line_scale', 3)
         self.ext_thresh_ratio = extra.get('ext_thresh_ratio', 20.0 / 18000.0)
         self.pdf_rotate = extra.get('pdf_rotate', 0)
-        self.use_bbox_area = extra.get('use_bbox_area', False)
-        self.use_greyish = extra.get('use_greyish', False)
-        self.band_color = extra.get('band_color', 'pink')
+        self.use_bbox_area = extra.get('use_bbox_area', True)
+        self.use_greyish = extra.get('use_greyish', True)
+        self.band_color = extra.get('band_color', 'pinkish')
         self.sb_color = extra.get('sb_color', self.band_color)
-        self.auto_rotate = extra.get('auto_rotate', False)
         self.sb_break_min_val = extra.get('sb_break_min_val', 2)
+        self.sb_left = extra.get('sb_left', True)
+        self.auto_rotate = extra.get('auto_rotate', False)
+        self.corner_overrides = extra.get('corner_overrides', [None, None, None, None ])
+        self.shrunk_map_area_corners = extra.get('shrunk_map_area_corners', None)
+        self.extents = extra.get('extents', None)
 
 
 
@@ -393,6 +427,7 @@ class Converter:
                 raise Exception('Only one image expected')
             image = images[0]
             print(image)
+            print(image.colorspace)
 
             # fix to pdfminer bug
             if len(image.colorspace) == 1 and isinstance(image.colorspace[0], PDFObjRef):
@@ -400,11 +435,12 @@ class Converter:
                 if not isinstance(image.colorspace, list):
                     image.colorspace = [ image.colorspace ]
 
+            print(image.colorspace)
             fname = img_writer.export_image(image)
             print(f'image extracted to {fname}')
             out_filename = str(self.get_full_img_file())
             print(f'writing {out_filename}')
-            if fname.endswith('.bmp'):
+            if fname.endswith('.bmp') or fname.endswith('.img'):
                 # give up
                 Path(fname).unlink()
                 self.convert_pdf_to_image()
@@ -413,7 +449,7 @@ class Converter:
             pno += 1
 
 
-    def convert_pdf_to_image(self):
+    def convert_pdf_to_image(self, size_hint=18000):
         inp = PdfFileReader(open(self.filename, 'rb'))
         page = inp.getPage(0)
         bbox = page.mediaBox
@@ -421,7 +457,7 @@ class Converter:
         rotate = self.pdf_rotate
         print(f'ROTATE: {rotate}')
         w, h = bbox.getWidth(), bbox.getHeight()
-        ow = 18000
+        ow = size_hint
         oh = round(float(h) * float(ow) / float(w))
         img_filename = str(self.get_full_img_file())
         print('converting pdf to image using mupdf')
@@ -443,17 +479,17 @@ class Converter:
         #shutil.move(exp_out_file, img_filename)
 
 
-    def convert(self):
+    def convert(self, size_hint=18000):
         img_file = self.get_full_img_file()
         if img_file.exists():
             print(f'file {img_file} exists.. skipping conversion')
             return
     
         flavor = self.get_flavor()
-        if flavor == 'Image PDF':
+        if flavor in ['Image PDF', 'Photoshop']:
             self.image_pdf_extract()
         else:
-            self.convert_pdf_to_image()
+            self.convert_pdf_to_image(size_hint)
 
 
     def get_full_img(self):
@@ -505,32 +541,35 @@ class Converter:
     def get_maparea(self):
         img = self.get_shrunk_img()
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        start = time.time()
         img_mask = get_color_mask(img_hsv, self.band_color)
-        img_mask_g = img_mask.astype(np.uint8)*255
-        #imgcat(Image.fromarray(img_mask_g))
-        print(f'getting {self.band_color} contours for whole image')
-        contours, hierarchy = cv2.findContours(
-            img_mask.astype(np.uint8)*255, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
-        )
-        ctuples = list(zip(list(contours), list(hierarchy[0])))
-        end = time.time()
-        print(f'pink contours took {end - start} secs')
-        show_contours(img_mask_g, [x[0] for x in ctuples])
-        if self.use_bbox_area:
-
-            def get_bbox_area(ctuple):
-                bbox = cv2.boundingRect(ctuple[0])
-                return bbox[2] * bbox[3]
-
-            ctuples_s = sorted(ctuples, key=get_bbox_area, reverse=True)
-            map_contour = ctuples_s[0][0]
+        if self.shrunk_map_area_corners is not None:
+            map_contour = np.array(self.shrunk_map_area_corners).reshape((-1,1,2)).astype(np.int32)
         else:
-            ctuples_s = sorted(ctuples, key=lambda x: cv2.contourArea(x[0]), reverse=True)
-            #print(ctuples_s[0])
-            map_inner_contour_idx = ctuples_s[0][1][2]
-            map_contour = ctuples[map_inner_contour_idx][0]
-            #map_contour = ctuples_s[0][0]
+            start = time.time()
+            img_mask_g = img_mask.astype(np.uint8)*255
+            #imgcat(Image.fromarray(img_mask_g))
+            print(f'getting {self.band_color} contours for whole image')
+            contours, hierarchy = cv2.findContours(
+                img_mask.astype(np.uint8)*255, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
+            )
+            ctuples = list(zip(list(contours), list(hierarchy[0])))
+            end = time.time()
+            print(f'pink contours took {end - start} secs')
+            show_contours(img_mask_g, [x[0] for x in ctuples])
+            if self.use_bbox_area:
+
+                def get_bbox_area(ctuple):
+                    bbox = cv2.boundingRect(ctuple[0])
+                    return bbox[2] * bbox[3]
+
+                ctuples_s = sorted(ctuples, key=get_bbox_area, reverse=True)
+                map_contour = ctuples_s[0][0]
+            else:
+                ctuples_s = sorted(ctuples, key=lambda x: cv2.contourArea(x[0]), reverse=True)
+                #print(ctuples_s[0])
+                map_inner_contour_idx = ctuples_s[0][1][2]
+                map_contour = ctuples[map_inner_contour_idx][0]
+                #map_contour = ctuples_s[0][0]
         map_bbox = cv2.boundingRect(map_contour)
         map_min_rect = cv2.minAreaRect(map_contour)
         print(f'{map_bbox=}')
@@ -542,7 +581,7 @@ class Converter:
             show_contours(img_mask, [map_contour])
             raise Exception(f'map area less than expected, {map_area=}, {total_area=}')
     
-        return map_bbox, map_min_rect
+        return map_bbox, map_min_rect, map_contour
 
     def split_sidebar_area(self, img):
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -595,30 +634,39 @@ class Converter:
                 shrunk_splits = json.load(f)
             return shrunk_splits
 
-        map_bbox, _ = self.get_maparea()
+        map_bbox, _, map_contour = self.get_maparea()
+        epsilon = 0.001 * cv2.arcLength(map_contour, True)
+        map_poly = cv2.approxPolyDP(map_contour, epsilon, True)
+        map_poly_points = [ list(p[0]) for p in map_poly ]
+        print(f'{map_poly_points=}')
  
         mb = map_bbox
-        sbx, sby, sbw, sbh = (0, mb[1]-1,
-                              mb[0], mb[3])
+        small_img = self.get_shrunk_img()
+        h, w = small_img.shape[:2]
+        if self.sb_left:
+            sbx, sby, sbw, sbh = (0, mb[1]-1,
+                                  mb[0], mb[3])
+        else:
+            sbx, sby, sbw, sbh = (mb[0] + mb[2] + 1, mb[1]-1,
+                                  w - mb[0] - mb[2], mb[3])
         sb_bbox = (sbx, sby, sbw, sbh)
         print(f'{sb_bbox=}')
     
-        img = self.get_shrunk_img()
-        sb_img = crop_img(img, sb_bbox)
+        sb_img = crop_img(small_img, sb_bbox)
         legend_bbox, rest_bbox = self.split_sidebar_area(sb_img)
         legend_bbox = translate_bbox(legend_bbox, sbx, sby)
         rest_bbox = translate_bbox(rest_bbox, sbx, sby)
 
         full_img = self.get_full_img()
-        small_img = self.get_shrunk_img()
         fh, fw = full_img.shape[:2]
-        h, w = small_img.shape[:2]
         rh, rw = float(fh)/float(h), float(fw)/float(w)
 
         bboxes = [ map_bbox, legend_bbox, rest_bbox ]
         full_bboxes = [ scale_bbox(bbox, rw, rh) for bbox in bboxes ]
+        map_poly_points_scaled = [ scale_point(p, rw, rh) for p in map_poly_points ]
         bbox_dict = {
             'map': full_bboxes[0],
+            'map_poly_points': map_poly_points_scaled,
             'legend': full_bboxes[1],
             'rest': full_bboxes[2],
         }
@@ -658,16 +706,80 @@ class Converter:
         print(f'{ips=}')
         #imgcat(Image.fromarray(only_lines*255))
     
+        four_corner_ips = []
         for ip in ips:
             ext_count = get_ext_count(ip, img_mask, ext_thresh)
             print(f'{ip=}, {ext_count}')
             if ext_count == 4:
-                return ip
+                four_corner_ips.append(ip)
     
-        raise Exception('no intersection point found')
+        if len(four_corner_ips) != 1:
+            raise Exception(f'unexpected intersection points found - {len(four_corner_ips)}')
+
+        return four_corner_ips[0]
+
+    def locate_corners_generic(self, img_hsv, map_poly_points, corner_overrides):
+        corner_ratio = 400.0 / 9000.0
+        w = img_hsv.shape[1]
+        h = img_hsv.shape[0]
+        cw = round(corner_ratio * w)
+        ch = round(corner_ratio * h)
+
+        print(f'{map_poly_points=}')
+        num_corners = len(map_poly_points)
+        # sort points in anti clockwise order
+        #box = Polygon(map_poly_points + [map_poly_points[0]])
+        #if not box.exterior.is_ccw:
+        #    map_poly_points.reverse()
+        #indices = range(0, num_corners)
+        #def cmp(ci1, ci2):
+        #    c1 = map_poly_points[ci1]
+        #    c2 = map_poly_points[ci2]
+        #    if c1[0] == c2[0]:
+        #        return c1[1] - c2[1]
+        #    else:
+        #        return c1[0] - c2[0]
+
+        #s_indices = sorted(indices, key=cmp_to_key(cmp))
+        #print(f'{s_indices=}')
+        #first = s_indices[0]
+        #poly_reordered = [ map_poly_points[first] ]
+        #for i in range(1, num_corners):
+        #    idx = (first - i) % num_corners
+        #    poly_reordered.append(map_poly_points[idx])
+        #print(f'{poly_reordered=}')
+        #map_poly_points = poly_reordered
+        box = LinearRing(map_poly_points + [map_poly_points[0]])
+        buffered_poly = box.buffer(-cw/2, single_sided=True, join_style=JOIN_STYLE.mitre)
+        inner_ring = buffered_poly.interiors[0]
+        corner_centers = list(inner_ring.coords)
+        corner_centers.reverse()
+        print(f'{corner_centers=}')
+        corner_boxes = []
+        for c in corner_centers[:-1]:
+            c = (int(c[0]), int(c[1]))
+            corner_box = ((int(c[0] - cw/2), int(c[1] - cw/2)), (cw, cw))
+            corner_boxes.append(corner_box)
+
+        print(f'{corner_boxes=}')
+
+        points = []
+        for i, corner_box in enumerate(corner_boxes):
+            corner_override = corner_overrides[i]
+            if corner_override is not None:
+                points.append(corner_override)
+                continue
+            print(f'{corner_box=}')
+            bx, by = corner_box[0]
+            bw, bh = corner_box[1]
+            c_img = img_hsv[by:by+bh, bx:bx+bw]
+            ipoint = self.get_intersection_point(c_img, self.ext_thresh_ratio * w)
+            ipoint = bx + ipoint[0], by + ipoint[1]
+            points.append(ipoint)
+        return points
 
 
-    def locate_corners(self, img_hsv):
+    def locate_corners(self, img_hsv, corner_overrides):
         corner_ratio = 400.0 / 9000.0
     
         w = img_hsv.shape[1]
@@ -687,7 +799,11 @@ class Converter:
     
         # get intersection points
         points = []
-        for corner_box in corner_boxes:
+        for i, corner_box in enumerate(corner_boxes):
+            corner_override = corner_overrides[i]
+            if corner_override is not None:
+                points.append(corner_override)
+                continue
             bx, by = corner_box[0]
             bw, bh = corner_box[1]
             c_img = img_hsv[by:by+bh, bx:bx+bw]
@@ -698,7 +814,7 @@ class Converter:
         return points
 
 
-    def process_map_area(self, map_bbox):
+    def process_map_area(self, map_bbox, map_poly_points):
         mapbox_file = self.file_dir.joinpath('mapbox.jpg')
         full_file = self.file_dir.joinpath('full.jpg')
         corners_file = self.file_dir.joinpath('corners.json')
@@ -709,7 +825,16 @@ class Converter:
         full_img = self.get_full_img()
         full_img_hsv = cv2.cvtColor(full_img, cv2.COLOR_BGR2HSV)
         map_img_hsv = crop_img(full_img_hsv, map_bbox)
-        corners = self.locate_corners(map_img_hsv)
+        
+        corner_overrides_full = self.corner_overrides
+        corner_overrides = [ (c[0] - map_bbox[0], c[1] - map_bbox[1]) if c is not None else None for c in corner_overrides_full ]
+        map_poly_points = [ (p[0] - map_bbox[0], p[1] - map_bbox[1]) for p in map_poly_points ]
+
+        if self.extents is None:
+            corners = self.locate_corners(map_img_hsv, corner_overrides)
+        else:
+            corners = self.locate_corners_generic(map_img_hsv, map_poly_points, corner_overrides)
+
         corners_contour = np.array(corners).reshape((-1,1,2)).astype(np.int32)
         bbox = cv2.boundingRect(corners_contour)
         print(f'{bbox=}')
@@ -724,7 +849,8 @@ class Converter:
         with open(corners_file, 'w') as f:
             json.dump(corners_in_box, f, indent = 4)
 
-        full_file.unlink()
+        if DELETE_INTERMEDIATES:
+            full_file.unlink()
 
 
 
@@ -835,13 +961,14 @@ class Converter:
         print('processing sidebar rest area')
         self.process_rest_area(main_splits['rest'])
         print('processing map area to locate corners')
-        self.process_map_area(main_splits['map'])
+        self.process_map_area(main_splits['map'], main_splits['map_poly_points'])
+
 
     def get_index_geom(self):
         sheet_no = Path(self.filename).name.replace('.pdf', '').replace('_', '/')
         full_index = get_full_index()
         geom = full_index[sheet_no]
-        round_off(geom)
+        #round_off(geom)
         return geom
 
     def get_source_crs(self):
@@ -861,7 +988,7 @@ class Converter:
         self.mapbox_corners = corners
         return corners
 
-    def create_cutline(self, geom, file):
+    def create_cutline(self, ibox, file):
         sub_geoms = []
         with open(file, 'w') as f:
             cutline_data = {
@@ -870,7 +997,10 @@ class Converter:
                 "features": [{
                     "type": "Feature",
                     "properties": {},
-                    "geometry": geom
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [ibox]
+                    }
                 }]
             }
             json.dump(cutline_data, f, indent=4)
@@ -900,7 +1030,7 @@ class Converter:
         ibox_conv = [ transformer.transform(*c) for c in ibox ]
 
         i_lt, i_lb, i_rb, i_rt = ibox_conv
-        c_rt, c_rb, c_lb, c_lt = corners
+        c_lt, c_lb, c_rb, c_rt = corners
         gcps = [
             GroundControlPoint(row=c_rt[1], col=c_rt[0], x=i_rt[0], y=i_rt[1]),
             GroundControlPoint(row=c_lt[1], col=c_lt[0], x=i_lt[0], y=i_lt[1]),
@@ -968,73 +1098,95 @@ class Converter:
                         resampling=Resampling.bilinear)
 
 
-
     def georeference_mapbox(self):
         #mapbox_file = self.file_dir.joinpath('mapbox.jpg')
         nogrid_file = self.file_dir.joinpath('nogrid.jpg')
         cutline_file = self.file_dir.joinpath('cutline.geojson')
         georef_file = self.file_dir.joinpath('georef.tif')
-        cropped_file = self.file_dir.joinpath('cropped.tif')
         final_file = self.file_dir.joinpath('final.tif')
         if final_file.exists():
             print(f'{final_file} exists.. skipping')
             return
         geom = self.get_index_geom()
 
-        ibox = geom['coordinates'][0]
+        sheet_ibox = geom['coordinates'][0]
+        if self.extents is None:
+            ibox = sheet_ibox
+        else:
+            ibox = self.extents['full']
+
         corners = self.get_corners()
 
-        ibox = ibox[:4]
-        i_lt, i_lb, i_rb, i_rt = ibox
         src_crs = CRS.from_epsg(4326)
         # get source crs using the center of the box
         if not USE_4326:
-            src_crs = get_utm_crs((i_lt[0] + i_rt[0])/2, (i_lt[1] + i_lb[1])/2)
+            ibox_poly = Polygon(ibox)
+            src_crs = get_utm_crs(*ibox_poly.centroid.coords)
             box_crs = CRS.from_epsg(4326)
             transformer = Transformer.from_crs(box_crs, src_crs, always_xy=True)
-            ibox_conv = [ transformer.transform(*c) for c in ibox ]
-            i_lt, i_lb, i_rb, i_rt = ibox_conv
+            ibox = [ transformer.transform(*c) for c in ibox ]
 
-        c_rt, c_rb, c_lb, c_lt = corners
-
+        if len(ibox) - 1 != len(corners):
+            raise Exception(f'{len(ibox) - 1=} != {len(corners)=}')
 
         gcp_str = ''
-        gcp_str += f' -gcp {c_lt[0]} {c_lt[1]} {i_lt[0]} {i_lt[1]}'
-        gcp_str += f' -gcp {c_lb[0]} {c_lb[1]} {i_lb[0]} {i_lb[1]}'
-        gcp_str += f' -gcp {c_rb[0]} {c_rb[1]} {i_rb[0]} {i_rb[1]}'
-        gcp_str += f' -gcp {c_rt[0]} {c_rt[1]} {i_rt[0]} {i_rt[1]}'
+        for idx, c in enumerate(corners):
+            i = ibox[idx]
+            gcp_str += f' -gcp {c[0]} {c[1]} {i[0]} {i[1]}'
         translate_cmd = f'gdal_translate {gcp_str} -a_srs "EPSG:{src_crs.to_epsg()}" -of GTiff {str(nogrid_file)} {str(georef_file)}' 
         run_external(translate_cmd)
 
-        img_quality_config = {
-            'COMPRESS': 'JPEG',
-            'PHOTOMETRIC': 'YCBCR',
-            'JPEG_QUALITY': '50'
-        }
 
+        def warp_file(box, cline_file, f_file):
+            img_quality_config = {
+                'COMPRESS': 'JPEG',
+                'PHOTOMETRIC': 'YCBCR',
+                'JPEG_QUALITY': '50'
+            }
 
-        self.create_cutline(geom, cutline_file)
-        cutline_options = f'-cutline {str(cutline_file)} -crop_to_cutline --config GDALWARP_IGNORE_BAD_CUTLINE YES'
+            if not USE_4326:
+                box = [ transformer.transform(*c) for c in box ]
 
-        warp_quality_config = img_quality_config.copy()
-        warp_quality_config.update({'TILED': 'YES'})
-        warp_quality_options = ' '.join([ f'-co {k}={v}' for k,v in warp_quality_config.items() ])
-        reproj_options = f'-tps -tr 1 1 -r bilinear -t_srs "EPSG:3857"' 
-        warp_cmd = f'gdalwarp -overwrite -multi -wo NUM_THREADS=ALL_CPUS -dstnodata 0 {reproj_options} {warp_quality_options} {cutline_options} {str(georef_file)} {str(final_file)}'
-        #warp_cmd = f'gdalwarp -overwrite -multi -wo NUM_THREADS=ALL_CPUS -dstalpha {reproj_options} {warp_quality_options} {str(cropped_file)} {str(final_file)}'
-        run_external(warp_cmd)
+            self.create_cutline(box, cline_file)
+            cutline_options = f'-cutline {str(cline_file)} -crop_to_cutline --config GDALWARP_IGNORE_BAD_CUTLINE YES -wo CUTLINE_ALL_TOUCHED=TRUE'
 
-        
-        #addo_quality_options = ' '.join([ f'--config {k}_OVERVIEW {v}' for k,v in img_quality_config.items() ])
-        #addo_cmd = f'export GDAL_NUM_THREADS=ALL_CPUS; gdaladdo {addo_quality_options} -r average {str(final_file)} 2 4 8 16 32'
-        #run_external(addo_cmd)
+            warp_quality_config = img_quality_config.copy()
+            warp_quality_config.update({'TILED': 'YES'})
+            warp_quality_options = ' '.join([ f'-co {k}={v}' for k,v in warp_quality_config.items() ])
+            reproj_options = f'-tps -tr 1 1 -r bilinear -t_srs "EPSG:3857"' 
+            warp_cmd = f'gdalwarp -overwrite -multi -wo NUM_THREADS=ALL_CPUS -dstnodata 0 {reproj_options} {warp_quality_options} {cutline_options} {str(georef_file)} {str(f_file)}'
+            #warp_cmd = f'gdalwarp -overwrite -multi -wo NUM_THREADS=ALL_CPUS -dstalpha {reproj_options} {warp_quality_options} {str(cropped_file)} {str(final_file)}'
+            run_external(warp_cmd)
+
+            
+            #addo_quality_options = ' '.join([ f'--config {k}_OVERVIEW {v}' for k,v in img_quality_config.items() ])
+            #addo_cmd = f'export GDAL_NUM_THREADS=ALL_CPUS; gdaladdo {addo_quality_options} -r average {str(final_file)} 2 4 8 16 32'
+            #run_external(addo_cmd)
+
+        if self.extents is None:
+            warp_file(sheet_ibox, cutline_file, final_file)
+        else:
+            warp_file(sheet_ibox, cutline_file, final_file)
+            for k in self.extents.keys():
+                if k == 'full':
+                    continue
+                k_dir = Path(f'data/inter/{k}/')
+                k_dir.mkdir(parents=True, exist_ok=True)
+                k_cutline_file = k_dir.joinpath('cutline.geojson')
+                k_final_file = k_dir.joinpath('final.tif') 
+                k_ibox = self.extents[k]
+                warp_file(k_ibox, k_cutline_file, k_final_file) 
+                # TODO: create a vrt with full extent for these partial files and then convert it to tiff
+                # need clarity on whether to go with dstalpha or simple nodata
 
         # delete the georef file
-        georef_file.unlink()
-        nogrid_file.unlink()
+        if DELETE_INTERMEDIATES:
+            georef_file.unlink()
+            nogrid_file.unlink()
 
 
     def remove_lines(self):
+        #TODO: should take into account extents
         nogrid_file = self.file_dir.joinpath('nogrid.jpg')
         mapbox_file = self.file_dir.joinpath('mapbox.jpg')
         if nogrid_file.exists():
@@ -1042,18 +1194,85 @@ class Converter:
             return
         map_img = self.get_map_img()
         corners = self.get_corners()
-        c_rt, c_rb, c_lb, c_lt = corners
-        v_points_t = split_line(c_lt, c_rt)
-        v_points_b = split_line(c_lb, c_rb)
-        h_points_l = split_line(c_lt, c_lb)
-        h_points_r = split_line(c_rt, c_rb)
-        v_lines = list(zip(v_points_t, v_points_b))
-        h_lines = list(zip(h_points_l, h_points_r))
+        geom = self.get_index_geom()
+
+        sheet_ibox = geom['coordinates'][0]
+        if self.extents is None:
+            ibox = sheet_ibox
+        else:
+            ibox = self.extents['full']
+
+        if len(ibox) - 1 != len(corners):
+            raise Exception(f'{len(ibox) - 1=} != {len(corners)=}')
+
+        gcps = []
+        i_hs = []
+        i_vs = []
+        for idx, c in enumerate(corners):
+            i = ibox[idx]
+            i_hs.append(i[0])
+            i_vs.append(i[1])
+            print(f'{c=}, {i=}')
+            gcp = GroundControlPoint(row=c[1], col=c[0], x=i[0], y=i[1])
+            gcps.append(gcp)
+        transformer = from_gcps(gcps)
+
+        def get_slots(p_s):
+            p_s = set(p_s)
+            p_s_min = min(list(p_s))
+            p_s_max = max(list(p_s))
+            msl_p_min = round(p_s_min) - 1
+            msl_p_max = round(p_s_max) + 1
+            grid_p_count = abs(msl_p_max - msl_p_min)*24
+            print(f'{grid_p_count=}')
+            grid_p_s = [round(msl_p_min + (1.0 / 24.0)*idx, 7) for idx in range(0, grid_p_count)]
+            grid_p_s = [ g for g in grid_p_s if g >= p_s_min and g <= p_s_max ]
+            grid_p_s = set(grid_p_s)
+            for p in p_s:
+                if p not in grid_p_s:
+                    grid_p_s.add(p)
+            return sorted(list(grid_p_s))
+            
+
+        #print(f'{i_hs=}')
+        #print(f'{i_vs=}')
+        grid_hs = get_slots(i_hs)
+        grid_vs = get_slots(i_vs)
+        print(f'{grid_hs=}')
+        print(f'{grid_vs=}')
+        grid_v_min = grid_vs[0]
+        grid_v_max = grid_vs[-1]
+        grid_h_min = grid_hs[0]
+        grid_h_max = grid_hs[-1]
+
+        v_g_lines = [ [[grid_h_min, v], [grid_h_max, v]] for v in grid_vs ] 
+        h_g_lines = [ [[h, grid_v_min], [h, grid_v_max]] for h in grid_hs ]
+        print(f'{v_g_lines=}')
+        print(f'{h_g_lines=}')
+
+        def transform_point(p):
+            rs, cs = rowcol(transformer, [p[0]], [p[1]])
+            return [cs[0], rs[0]]
+
+        v_lines = [ [transform_point(l[0]), transform_point(l[1])] for l in v_g_lines ]
+        h_lines = [ [transform_point(l[0]), transform_point(l[1])] for l in h_g_lines ]
+        print(f'{v_lines=}')
+        print(f'{h_lines=}')
+
+
+        #c_lt, c_lb, c_rb, c_rt = corners
+        #v_points_t = split_line(c_lt, c_rt)
+        #v_points_b = split_line(c_lb, c_rb)
+        #h_points_l = split_line(c_lt, c_lb)
+        #h_points_r = split_line(c_rt, c_rb)
+        #v_lines = list(zip(v_points_t, v_points_b))
+        #h_lines = list(zip(h_points_l, h_points_r))
+
         h, w = map_img.shape[:2]
 
-        line_buf_ratio = 4.0 / 12980.0
+        line_buf_ratio = 6.0 / 12980.0
         blur_buf_ratio = 30.0 / 12980.0
-        blur_kern_ratio = 15.0 / 12980.0
+        blur_kern_ratio = 19.0 / 12980.0
 
         line_buf = round(line_buf_ratio * w)
         blur_buf = round(blur_buf_ratio * w)
@@ -1062,10 +1281,6 @@ class Converter:
             blur_kern += 1
 
 
-        def round_coords(poly):
-            return wkt_loads(wkt_dumps(poly, rounding_precision=0))
-            
-            
         #limits = Polygon([c_rt, c_rb, c_lb, c_lt, c_rt])
         limits = Polygon([(w,0), (w,h), (0,h), (0,0), (w,0)])
         def remove_line(l):
@@ -1104,17 +1319,8 @@ class Converter:
             remove_line(line)
 
         cv2.imwrite(str(nogrid_file), map_img)
-        mapbox_file.unlink()
-
-    def adjust_color(self):
-        small_img = self.get_shrunk_img()
-        small_img_hsv = cv2.cvtColor(small_img, cv2.COLOR_BGR2HSV)
-        mask = get_color_mask(small_img_hsv, 'green')
-        h, w = small_img.shape[:2]
-        sat = small_img_hsv[:,:,1] * mask
-        count = np.count_nonzero(mask)
-        sat_avg = float(np.sum(sat)) / float(count)
-        print(f'{sat_avg=}')
+        if DELETE_INTERMEDIATES:
+            mapbox_file.unlink()
 
     def rotate(self):
         if not self.auto_rotate:
@@ -1123,18 +1329,23 @@ class Converter:
         if rotated_info_file.exists():
             print('already rotated.. skipping rotation')
             return
-        map_bbox, map_min_rect = self.get_maparea()
+        map_bbox, map_min_rect, _ = self.get_maparea()
         print(map_min_rect)
         _, _, angle = map_min_rect
         if angle > 45:
             angle = angle - 90
+
+        if abs(angle) < 0.90:
+            rotated_info_file.write_text(f'{angle}, not_rotated')
+            return
+
         img = self.get_full_img()
         print(f'rotating image by {angle}')
         img_rotated = imutils.rotate_bound(img, -angle)
         rotated_file = self.file_dir.joinpath('full.rotated.jpg')
         cv2.imwrite(str(rotated_file), img_rotated)
         shutil.move(str(rotated_file), str(self.get_full_img_file()))
-        rotated_info_file.write_text(f'{angle}')
+        rotated_info_file.write_text(f'{angle}, rotated')
         self.file_dir.joinpath('small.jpg').unlink()
         self.small_img = None
         self.full_img = None
@@ -1143,13 +1354,12 @@ class Converter:
     def run(self):
         final_file = self.file_dir.joinpath('final.tif')
         if final_file.exists():
-            print('{final_file} exists.. skipping')
+            print(f'{final_file} exists.. skipping')
             return
         
         print(f'converting {filename}')
         self.convert()
         self.rotate()
-        #self.adjust_color()
         print(f'splitting {filename}')
         self.split_image()
         self.remove_lines()
@@ -1193,30 +1403,60 @@ def create_tiles(vrt_filename):
 def handle_65A_11(filename):
     converter = Converter(filename, {})
     converter.convert()
+    final_file = converter.file_dir.joinpath('final.tif')
+    if final_file.exists():
+        print(f'{final_file} exists.. skipping')
+        return
 
+    img = converter.get_full_img()
+    h, w = img.shape[:2]
+    print(f'{w=}, {h=}')
     # located manually
-    w, h = 18000, 18000
-    corners = [[w - 1754, 2049], [w - 1771, h - 2884], [3814, h - 2909], [3852, 2021]]
+    c_rt = [ w - 1756, 2046 ]
+    c_rb = [ w - 1774, h - 2885 ]
+    c_lb = [ 3815, h - 2911 ]
+    c_lt = [ 3851, 2020 ]
+    corners = c_lt, c_lb, c_rb, c_rt
 
-    img = self.get_full_img()
     corners_contour = np.array(corners).reshape((-1,1,2)).astype(np.int32)
     bbox = cv2.boundingRect(corners_contour)
+    print(f'{bbox=}')
     nogrid_img = crop_img(img, bbox)
-    nogrid_file = self.file_dir.joinpath('nogrid.jpg')
+    nogrid_file = converter.file_dir.joinpath('nogrid.jpg')
+    full_file = converter.file_dir.joinpath('full.jpg')
+    corners_file = converter.file_dir.joinpath('corners.json')
     cv2.imwrite(str(nogrid_file), nogrid_img)
     corners_in_box = [ (c[0] - bbox[0], c[1] - bbox[1]) for c in corners ]
     print(f'{corners_in_box=}')
-    self.mapbox_corners = corners_in_box
+    converter.mapbox_corners = corners_in_box
     with open(corners_file, 'w') as f:
         json.dump(corners_in_box, f, indent = 4)
-    full_file.unlink()
+    #full_file.unlink()
 
     converter.georeference_mapbox()
     converter.close()
 
+def handle_55J_16(filename):
+    converter = Converter(filename, {})
+    converter.convert(20000)
+    x = int((4300.0/18000.0) * 20000)
+    y = int((1039.0/18000.0) * 20000)
+    w = int((7700.0/18000.0) * 20000)
+    bbox = [x, y, w, w]
+    full_img = converter.get_full_img()
+    cropped_img = crop_img(full_img, bbox)
+    cropped_file = converter.file_dir.joinpath('cropped.jpg')
+    cv2.imwrite(str(cropped_file), cropped_img)
+    shutil.move(str(cropped_file), str(converter.get_full_img_file()))
+    converter.full_img = None
+    converter.auto_rotate = True
+    converter.use_greyish = True
+    converter.run()
+
 
 super_special_handlers = {
-        #'data/raw/65A_11.pdf': handle_65A_11
+    'data/raw/65A_11.pdf': [ handle_65A_11 ],
+    'data/raw/55J_16.pdf': [ handle_55J_16 ],
 }
 
 
@@ -1240,45 +1480,36 @@ if __name__ == '__main__':
     ignore_filenames = []
 
     known_problems = [
-        'data/raw/86K_7.pdf', # andaman, combined file
+        #'data/raw/86K_7.pdf', # andaman, combined file
 
-        'data/raw/53H_2.pdf', # delhi, extra data needs to be snipped
-        'data/raw/72B_5.pdf', # Bettiah, extra data needs to be snipped
+        #'data/raw/53H_2.pdf', # delhi, extra data needs to be snipped
+        #'data/raw/72B_5.pdf', # Bettiah, extra data needs to be snipped
 
-        'data/raw/74B_3.pdf', # srikakulam, combined file needs to be split
-        'data/raw/74B_4.pdf', # srikakulam, combined file needs to be split
-        'data/raw/74B_7.pdf', # srikakulam, combined file needs to be split
+        'data/raw/74B_4.pdf', # srikakulam, combined file handled in 74B_3
+        'data/raw/74B_7.pdf', # srikakulam, combined file handled in 74B_3
 
-        'data/raw/58C_1.pdf', # Kochi, combined file needs to be split
-        'data/raw/58C_5.pdf', # Kochi, combined file needs to be split
+        'data/raw/58C_1.pdf', # Kochi, combined file handled in 58B_5
 
-        'data/raw/65K_8.pdf', # east godavari, combined file needs to be split
-        'data/raw/65K_12.pdf', # east godavari, combined file needs to be split
+        'data/raw/65K_12.pdf', # east godavari, combined file handled in 65K_8
 
-        'data/raw/74B_10.pdf', # srikakulam, combined file needs to be split
-        'data/raw/74B_6.pdf', # srikakulam, combined file needs to be split
+        'data/raw/74B_10.pdf', # srikakulam, combined file handled in 74B_6
 
-        'data/raw/65O_3.pdf', # vishakapatnam, combined file needs to be split
-        'data/raw/65O_2.pdf', # vishakapatnam, combined file needs to be split
+        'data/raw/65O_3.pdf', # vishakapatnam, combined file handled in 65O_2
 
-        'data/raw/66D_1.pdf', # chennai, combined file needs to be split
-        'data/raw/66D_5.pdf', # chennai, combined file needs to be split
+        'data/raw/66D_5.pdf', # chennai, combined file handled in 66D_1
 
-        'data/raw/65A_11.pdf', # no grid
+        'data/raw/41G_16.pdf', # gujarat, combined files handled in 41K_4
 
-        'data/raw/48J_10.pdf', # anamoly, black strip in file
-        'data/raw/49N_14.pdf', # anamoly, black strip in file
+        'data/raw/48E_5.pdf', # gujarat, combined files handles in 48E_9
+
+        # kept in for now
+        #'data/raw/48J_10.pdf', # anamoly, black strip in file
+        #'data/raw/49N_14.pdf', # anamoly, black strip in file
 
         'data/raw/54N_12.pdf', # bad file
         'data/raw/58F_7.pdf', # bad file
         'data/raw/45D_14.pdf', # bad file
         'data/raw/40M_11.pdf', # bad file
-
-        'data/raw/73B_6.pdf', # missing grid line at corner
-        'data/raw/62D_8.pdf', # missing grid line at corner
-        'data/raw/58I_1.pdf', # missing grid line at corner
-
-        'data/raw/55J_16.pdf', # file needs to be cropped
     ]
     #cat data/goa.txt | xargs -I {} gsutil -m cp gs://soi_data/raw/{} data/raw/
     if ONLY_FAILED:
@@ -1297,7 +1528,7 @@ if __name__ == '__main__':
             ignore_filenames = [ f for f in efnames if f != '' ]
 
 
-    special_cases_file = Path('data/special_cases.json')
+    special_cases_file = Path(__file__).parent.joinpath('special_cases.json')
     if special_cases_file.exists():
         with open(special_cases_file, 'r') as f:
             special_cases = json.load(f)
@@ -1312,6 +1543,8 @@ if __name__ == '__main__':
         with ProcessPoolExecutor(max_workers=8) as executor:
             for filename in filenames:
                 if filename in known_problems:
+                    continue
+                if filename in super_special_handlers:
                     continue
                 extra = special_cases.get(filename, {})
                 fut = executor.submit(only_convert, filename, extra)
@@ -1329,11 +1562,14 @@ if __name__ == '__main__':
     
     for i, filename in enumerate(filenames):
         if filename in known_problems:
-            if filename in super_special_handlers:
-                handler = super_special_handlers[filename]
-                handler(filename)
             continue
         if filename in ignore_filenames:
+            continue
+        if filename in super_special_handlers:
+            print(f'found super special handler for {filename}')
+            handler = super_special_handlers[filename]
+            handler, args = handler[0], handler[1:]
+            handler(filename, *args)
             continue
         print(f'processing {filename} {i+1}/{len(filenames)}')
         extra = special_cases.get(filename, {})

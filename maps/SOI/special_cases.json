@@ -1,4 +1,10 @@
 {
+    "data/raw/87H_4.pdf": {
+        "ext_thresh_ratio": 0.00090491438117778087
+    },
+    "data/raw/63A_1.pdf": {
+        "ext_thresh_ratio": 0.00055961070559610705
+    },
     "data/raw/73E_5.pdf": {
         "ext_thresh_ratio": 0.00077639751552
     },
@@ -23,6 +29,27 @@
     "data/raw/45G_5.pdf": {
         "ext_thresh_ratio": 0.000780363
     },
+    "data/raw/87H_10.pdf": {
+        "ext_thresh_ratio": 0.00055694792536897800
+    },
+    "data/raw/53P_6.pdf": {
+        "ext_thresh_ratio": 0.00055694792536897800
+    },
+    "data/raw/86H_4.pdf": {
+        "ext_thresh_ratio": 0.000906997837159003
+    },
+    "data/raw/64J_3.pdf": {
+        "ext_thresh_ratio": 0.00085271317829457364
+    },
+    "data/raw/55M_10.pdf": {
+        "ext_thresh_ratio": 0.00075435468385680976
+    },
+    "data/raw/79B_6.pdf": {
+        "sb_break_min_val": 45
+    },
+    "data/raw/47M_13.pdf": {
+        "sb_break_min_val": 5
+    },
     "data/raw/44J_3.pdf": {
         "band_color": ["red1", "red2"]
     },
@@ -35,11 +62,11 @@
     "data/raw/44G_13.pdf": {
         "band_color": ["red1", "red2"]
     },
-    "data/raw/55D_7.pdf": {
-        "band_color": ["red1", "red2"]
-    },
     "data/raw/78O_2.pdf": {
         "sb_color": ["red1", "red2"]
+    },
+    "data/raw/82L_8.pdf": {
+        "line_color": "black"
     },
     "data/raw/63N_6.pdf": {
         "pdf_rotate": 90
@@ -87,6 +114,9 @@
         "band_color": "blue",
         "sb_color": "pinkish"
     },
+    "data/raw/56P_12.pdf": {
+        "sb_color": ["red1", "red2"]
+    },
     "data/raw/48J_10.pdf": {
         "auto_rotate": false,
         "shrunk_map_area_corners": [[338, 150], [336, 1527], [1678, 1530], [1680, 153]]
@@ -114,6 +144,9 @@
     "data/raw/72B_5.pdf": {
         "auto_rotate": false,
         "corner_overrides": [null, null, [16251, 14964], [16238, 498]]
+    },
+    "data/raw/54I_13.pdf": {
+        "corner_overrides": [null, [1842, 3599], null, null]
     },
     "data/raw/41F_4.pdf": {
         "extents": {
@@ -178,6 +211,12 @@
         "extents": {
             "full": [[73.4488095, 16.0], [73.4488095, 15.75], [73.75, 15.75], [73.75, 16.0], [73.4488095, 16.0]],
             "48E_5": [[73.4488095, 16.0], [73.4488095, 15.75], [73.50, 15.75], [73.50, 16.0], [73.4488095, 16.0]]
+        }
+    },
+    "data/raw/41P_1.pdf": {
+        "extents": {
+            "full": [[71.00, 21.00], [71.00, 20.72916666], [71.25, 20.72916666], [71.25, 21.00], [71.00, 21.00]], 
+            "41P_2": [[71.00, 20.75], [71.00, 20.72916666], [71.25, 20.72916666], [71.25, 20.75], [71.00, 20.75]]
         }
     }
 }

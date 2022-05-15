@@ -24,7 +24,7 @@ from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfinterp import PDFPageInterpreter
 from pdfminer.converter import PDFPageAggregator
 from pdfminer.layout import LTImage
-from pdfminer.pdftypes import resolve_all, PDFObjRef
+from pdfminer.pdftypes import resolve_all, PDFObjRef, PDFNotImplementedError
 
 from PyPDF2 import PdfFileReader
 
@@ -48,7 +48,7 @@ from pyproj.database import query_utm_crs_info
 
 
 DELETE_INTERMEDIATES = False
-USE_4326 = True
+USE_4326 = False
 SHOW_IMG = os.environ.get('SHOW_IMG', '0') == '1'
 
 inter_dir = 'data/inter'
@@ -158,7 +158,6 @@ def get_color_mask(img_hsv, color):
             upper = np.array([179, 10, 120])
         elif color == 'greyish':
             lower = np.array([0, 0, 50])
-            #upper = np.array([179, 90, 145])
             upper = np.array([179, 130, 145])
         elif color == 'white':
             lower = np.array([0, 0, 230])
@@ -189,32 +188,38 @@ def get_color_mask(img_hsv, color):
     return final_mask
 
 
-def get_ext_count(point, img_mask, ext_thresh):
+def get_ext_count(point, img_mask, ext_thresh, factor):
     x, y = point
     h, w = img_mask.shape[:2]
     uc = 0
-    uc += np.count_nonzero(img_mask[y:y+10, x])
-    uc += np.count_nonzero(img_mask[y:y+10, x+1])
-    uc += np.count_nonzero(img_mask[y:y+10, x-1])
+    ext_length = 10*factor
+    ye = min(y+ext_length, h - 1)
+    print(ye)
+    uc += np.count_nonzero(img_mask[y:ye, x])
+    uc += np.count_nonzero(img_mask[y:ye, x+1])
+    uc += np.count_nonzero(img_mask[y:ye, x-1])
 
     dc = 0
-    dc += np.count_nonzero(img_mask[y-10:y, x])
-    dc += np.count_nonzero(img_mask[y-10:y, x+1])
-    dc += np.count_nonzero(img_mask[y-10:y, x-1])
+    ye = max(y-ext_length, 0)
+    dc += np.count_nonzero(img_mask[ye:y, x])
+    dc += np.count_nonzero(img_mask[ye:y, x+1])
+    dc += np.count_nonzero(img_mask[ye:y, x-1])
 
     lc = 0
-    lc += np.count_nonzero(img_mask[y, x:x+10])
-    lc += np.count_nonzero(img_mask[y+1, x:x+10])
-    lc += np.count_nonzero(img_mask[y-1, x:x+10])
+    xe = min(x+ext_length, w - 1)
+    lc += np.count_nonzero(img_mask[y, x:xe])
+    lc += np.count_nonzero(img_mask[y+1, x:xe])
+    lc += np.count_nonzero(img_mask[y-1, x:xe])
 
     rc = 0
-    rc += np.count_nonzero(img_mask[y, x-10:x])
-    rc += np.count_nonzero(img_mask[y+1, x-10:x])
-    rc += np.count_nonzero(img_mask[y-1, x-10:x])
+    xe = max(x-ext_length, 0)
+    rc += np.count_nonzero(img_mask[y, xe:x])
+    rc += np.count_nonzero(img_mask[y+1, xe:x])
+    rc += np.count_nonzero(img_mask[y-1, xe:x])
 
     counts = [ uc, dc, rc, lc ]
-    print(f'{point=}, {counts=}, {ext_thresh=}')
-    exts = [ c > ext_thresh for c in counts ]
+    print(f'{point=}, {counts=}, {ext_thresh=} {factor=}')
+    exts = [ c > ext_thresh*factor for c in counts ]
     return exts.count(True)
  
 
@@ -329,6 +334,23 @@ def get_utm_crs(c_long, c_lat):
     utm_crs = CRS.from_epsg(utm_crs_list[0].code)
     return utm_crs
 
+def fill_tif(k, k_dir):
+    full_index = get_full_index()
+    geom = full_index[k.replace('_', '/')]
+    kbox = geom['coordinates'][0]
+    kbox_poly = Polygon(kbox)
+    print(f'{kbox_poly.centroid.coords[0]=}')
+    src_crs = get_utm_crs(*kbox_poly.centroid.coords[0])
+    box_crs = CRS.from_epsg(4326)
+    transformer = Transformer.from_crs(box_crs, src_crs, always_xy=True)
+    kbox = [ transformer.transform(*c) for c in kbox ]
+    vrt_file = k_dir.joinpath('final.vrt')
+    new_final_file = k_dir.joinpath('new_final.tif')
+    run_external(f'gdalbuildvrt -tr 1 1 -te {kbox[0][0]} {kbox[1][1]} {kbox[2][0]} {kbox[0][1]} {str(vrt_file)} {str(final_file)}')
+    run_external(f'gdal_translate {str(vrt_file)} {str(new_final_file)}')
+
+
+
 class Converter:
     def __init__(self, filename, extra={}):
         self.filename = filename
@@ -347,13 +369,13 @@ class Converter:
         self.ext_thresh_ratio = extra.get('ext_thresh_ratio', 20.0 / 18000.0)
         self.pdf_rotate = extra.get('pdf_rotate', 0)
         self.use_bbox_area = extra.get('use_bbox_area', True)
-        self.use_greyish = extra.get('use_greyish', True)
+        self.line_color = extra.get('line_color', ['black', 'greyish'])
         self.band_color = extra.get('band_color', 'pinkish')
         self.sb_color = extra.get('sb_color', self.band_color)
         self.sb_break_min_val = extra.get('sb_break_min_val', 2)
         self.sb_left = extra.get('sb_left', True)
-        self.auto_rotate = extra.get('auto_rotate', False)
-        self.corner_overrides = extra.get('corner_overrides', [None, None, None, None ])
+        self.auto_rotate_thresh = extra.get('auto_rotate_thresh', 0.7)
+        self.corner_overrides = extra.get('corner_overrides', None)
         self.shrunk_map_area_corners = extra.get('shrunk_map_area_corners', None)
         self.extents = extra.get('extents', None)
 
@@ -436,16 +458,19 @@ class Converter:
                     image.colorspace = [ image.colorspace ]
 
             print(image.colorspace)
-            fname = img_writer.export_image(image)
-            print(f'image extracted to {fname}')
-            out_filename = str(self.get_full_img_file())
-            print(f'writing {out_filename}')
-            if fname.endswith('.bmp') or fname.endswith('.img'):
-                # give up
-                Path(fname).unlink()
+            try:
+                fname = img_writer.export_image(image)
+                print(f'image extracted to {fname}')
+                out_filename = str(self.get_full_img_file())
+                print(f'writing {out_filename}')
+                if fname.endswith('.bmp') or fname.endswith('.img'):
+                    # give up
+                    Path(fname).unlink()
+                    self.convert_pdf_to_image()
+                else:
+                    shutil.move(fname, out_filename)
+            except PDFNotImplementedError:
                 self.convert_pdf_to_image()
-            else:
-                shutil.move(fname, out_filename)
             pno += 1
 
 
@@ -677,8 +702,7 @@ class Converter:
         
 
     def get_intersection_point(self, img_hsv, ext_thresh):
-        grey_type = 'grey' if not self.use_greyish else 'greyish'
-        img_mask = get_color_mask(img_hsv, ['black', grey_type])
+        img_mask = get_color_mask(img_hsv, self.line_color)
         img_mask_g = img_mask.astype(np.uint8)
         h, w = img_mask.shape[:2]
         img_mask_g = img_mask_g*255
@@ -687,6 +711,8 @@ class Converter:
     
         v_mask, v_lines = find_lines(img_mask_g, direction='vertical', line_scale=self.find_line_scale, iterations=self.find_line_iter)
         h_mask, h_lines = find_lines(img_mask_g, direction='horizontal', line_scale=self.find_line_scale, iterations=self.find_line_iter)
+        #v_lines = [ l for l in v_lines if 0 < l[0] < w - 1 ]
+        #h_lines = [ l for l in h_lines if 0 < l[1] < h - 1 ]
         print(f'{v_lines=}')
         print(f'{h_lines=}')
     
@@ -698,7 +724,8 @@ class Converter:
             #    continue
             jx, jy, jw, jh = cv2.boundingRect(j)
             c1, c2 = (2 * jx + jw) // 2, (2 * jy + jh) // 2
-            ips.append((c1, c2))
+            if 0 < c1 < w - 1 and 0 < c2 < h - 1:
+                ips.append((c1, c2))
     
     
         #res = np.where(only_lines == 1)
@@ -706,17 +733,28 @@ class Converter:
         print(f'{ips=}')
         #imgcat(Image.fromarray(only_lines*255))
     
-        four_corner_ips = []
-        for ip in ips:
-            ext_count = get_ext_count(ip, img_mask, ext_thresh)
-            print(f'{ip=}, {ext_count}')
-            if ext_count == 4:
-                four_corner_ips.append(ip)
+        for pix_factor in [1, 2, 4, 8]:
+            four_corner_ips = []
+            for ip in ips:
+                ext_count = get_ext_count(ip, img_mask, ext_thresh, pix_factor)
+                print(f'{ip=}, {ext_count}')
+                if ext_count == 4:
+                    four_corner_ips.append(ip)
     
-        if len(four_corner_ips) != 1:
-            raise Exception(f'unexpected intersection points found - {len(four_corner_ips)}')
+            if len(four_corner_ips) == 0:
+                raise Exception(f'no intersection points found - {len(four_corner_ips)}')
+
+            if len(four_corner_ips) == 1:
+                break
+
+            if len(four_corner_ips) > 1:
+                continue
+
+        if len(four_corner_ips) > 1:
+            raise Exception(f'multiple intersection points found - {len(four_corner_ips)}')
 
         return four_corner_ips[0]
+
 
     def locate_corners_generic(self, img_hsv, map_poly_points, corner_overrides):
         corner_ratio = 400.0 / 9000.0
@@ -827,6 +865,8 @@ class Converter:
         map_img_hsv = crop_img(full_img_hsv, map_bbox)
         
         corner_overrides_full = self.corner_overrides
+        if corner_overrides_full is None:
+            corner_overrides_full = [ None ] * len(map_poly_points)
         corner_overrides = [ (c[0] - map_bbox[0], c[1] - map_bbox[1]) if c is not None else None for c in corner_overrides_full ]
         map_poly_points = [ (p[0] - map_bbox[0], p[1] - map_bbox[1]) for p in map_poly_points ]
 
@@ -910,7 +950,7 @@ class Converter:
         print(f'{c_header_len=}, {w=}')
     
         h_proj = get_projection(img_mask, axis=1)
-        #print_proj(h_proj)
+        print_proj(h_proj)
         breaks = get_breaks(h_proj, self.sb_break_min_val)
         print(f'{breaks=}')
         break_index = -1
@@ -1098,54 +1138,27 @@ class Converter:
                         resampling=Resampling.bilinear)
 
 
-    def georeference_mapbox(self):
-        #mapbox_file = self.file_dir.joinpath('mapbox.jpg')
-        nogrid_file = self.file_dir.joinpath('nogrid.jpg')
+    def warp_mapbox(self):
         cutline_file = self.file_dir.joinpath('cutline.geojson')
         georef_file = self.file_dir.joinpath('georef.tif')
         final_file = self.file_dir.joinpath('final.tif')
         if final_file.exists():
             print(f'{final_file} exists.. skipping')
             return
+
         geom = self.get_index_geom()
 
         sheet_ibox = geom['coordinates'][0]
-        if self.extents is None:
-            ibox = sheet_ibox
-        else:
-            ibox = self.extents['full']
-
-        corners = self.get_corners()
-
-        src_crs = CRS.from_epsg(4326)
-        # get source crs using the center of the box
-        if not USE_4326:
-            ibox_poly = Polygon(ibox)
-            src_crs = get_utm_crs(*ibox_poly.centroid.coords)
-            box_crs = CRS.from_epsg(4326)
-            transformer = Transformer.from_crs(box_crs, src_crs, always_xy=True)
-            ibox = [ transformer.transform(*c) for c in ibox ]
-
-        if len(ibox) - 1 != len(corners):
-            raise Exception(f'{len(ibox) - 1=} != {len(corners)=}')
-
-        gcp_str = ''
-        for idx, c in enumerate(corners):
-            i = ibox[idx]
-            gcp_str += f' -gcp {c[0]} {c[1]} {i[0]} {i[1]}'
-        translate_cmd = f'gdal_translate {gcp_str} -a_srs "EPSG:{src_crs.to_epsg()}" -of GTiff {str(nogrid_file)} {str(georef_file)}' 
-        run_external(translate_cmd)
-
 
         def warp_file(box, cline_file, f_file):
             img_quality_config = {
                 'COMPRESS': 'JPEG',
-                'PHOTOMETRIC': 'YCBCR',
-                'JPEG_QUALITY': '50'
+                #'PHOTOMETRIC': 'YCBCR',
+                'JPEG_QUALITY': '75'
             }
 
-            if not USE_4326:
-                box = [ transformer.transform(*c) for c in box ]
+            #if not USE_4326:
+            #    box = [ transformer.transform(*c) for c in box ]
 
             self.create_cutline(box, cline_file)
             cutline_options = f'-cutline {str(cline_file)} -crop_to_cutline --config GDALWARP_IGNORE_BAD_CUTLINE YES -wo CUTLINE_ALL_TOUCHED=TRUE'
@@ -1154,8 +1167,10 @@ class Converter:
             warp_quality_config.update({'TILED': 'YES'})
             warp_quality_options = ' '.join([ f'-co {k}={v}' for k,v in warp_quality_config.items() ])
             reproj_options = f'-tps -tr 1 1 -r bilinear -t_srs "EPSG:3857"' 
-            warp_cmd = f'gdalwarp -overwrite -multi -wo NUM_THREADS=ALL_CPUS -dstnodata 0 {reproj_options} {warp_quality_options} {cutline_options} {str(georef_file)} {str(f_file)}'
-            #warp_cmd = f'gdalwarp -overwrite -multi -wo NUM_THREADS=ALL_CPUS -dstalpha {reproj_options} {warp_quality_options} {str(cropped_file)} {str(final_file)}'
+            #nodata_options = '-dstnodata 0'
+            nodata_options = '-dstalpha'
+            perf_options = '-multi -wo NUM_THREADS=ALL_CPUS --config GDAL_CACHEMAX 1024 -wm 1024' 
+            warp_cmd = f'gdalwarp -overwrite {perf_options} {nodata_options} {reproj_options} {warp_quality_options} {cutline_options} {str(georef_file)} {str(f_file)}'
             run_external(warp_cmd)
 
             
@@ -1176,12 +1191,52 @@ class Converter:
                 k_final_file = k_dir.joinpath('final.tif') 
                 k_ibox = self.extents[k]
                 warp_file(k_ibox, k_cutline_file, k_final_file) 
-                # TODO: create a vrt with full extent for these partial files and then convert it to tiff
-                # need clarity on whether to go with dstalpha or simple nodata
+                # TODO: this didn't work
+                # an attempt to fill partial tiffs
+                #fill_tif(k, k_dir)
 
-        # delete the georef file
+        # delete the georef file as it can get too big
+        georef_file.unlink()
+
+    def georeference_mapbox(self):
+        #mapbox_file = self.file_dir.joinpath('mapbox.jpg')
+        nogrid_file = self.file_dir.joinpath('nogrid.jpg')
+        georef_file = self.file_dir.joinpath('georef.tif')
+        final_file = self.file_dir.joinpath('final.tif')
+        if georef_file.exists() or final_file.exists():
+            print(f'{georef_file} or {final_file} exists.. skipping')
+            return
+        geom = self.get_index_geom()
+
+        sheet_ibox = geom['coordinates'][0]
+        if self.extents is None:
+            ibox = sheet_ibox
+        else:
+            ibox = self.extents['full']
+
+        corners = self.get_corners()
+
+        src_crs = CRS.from_epsg(4326)
+        # get source crs using the center of the box
+        if not USE_4326:
+            ibox_poly = Polygon(ibox)
+            src_crs = get_utm_crs(*ibox_poly.centroid.coords[0])
+            box_crs = CRS.from_epsg(4326)
+            transformer = Transformer.from_crs(box_crs, src_crs, always_xy=True)
+            ibox = [ transformer.transform(*c) for c in ibox ]
+
+        if len(ibox) - 1 != len(corners):
+            raise Exception(f'{len(ibox) - 1=} != {len(corners)=}')
+
+        gcp_str = ''
+        for idx, c in enumerate(corners):
+            i = ibox[idx]
+            gcp_str += f' -gcp {c[0]} {c[1]} {i[0]} {i[1]}'
+        perf_options = '--config GDAL_CACHEMAX 128 --config GDAL_NUM_THREADS ALL_CPUS'
+        translate_cmd = f'gdal_translate {perf_options} {gcp_str} -a_srs "EPSG:{src_crs.to_epsg()}" -of GTiff {str(nogrid_file)} {str(georef_file)}' 
+        run_external(translate_cmd)
+
         if DELETE_INTERMEDIATES:
-            georef_file.unlink()
             nogrid_file.unlink()
 
 
@@ -1323,8 +1378,6 @@ class Converter:
             mapbox_file.unlink()
 
     def rotate(self):
-        if not self.auto_rotate:
-            return
         rotated_info_file = self.file_dir.joinpath('rotated_info.txt')
         if rotated_info_file.exists():
             print('already rotated.. skipping rotation')
@@ -1335,7 +1388,7 @@ class Converter:
         if angle > 45:
             angle = angle - 90
 
-        if abs(angle) < 0.90:
+        if abs(angle) < self.auto_rotate_thresh:
             rotated_info_file.write_text(f'{angle}, not_rotated')
             return
 
@@ -1365,6 +1418,7 @@ class Converter:
         self.remove_lines()
         print('georeferencing image')
         self.georeference_mapbox()
+        self.warp_mapbox()
         #self.georeference_mapbox_new()
         #self.process_legend()
         #self.process_magvar()
@@ -1434,10 +1488,15 @@ def handle_65A_11(filename):
     #full_file.unlink()
 
     converter.georeference_mapbox()
+    converter.warp_mapbox()
     converter.close()
 
 def handle_55J_16(filename):
     converter = Converter(filename, {})
+    final_file = converter.file_dir.joinpath('final.tif')
+    if final_file.exists():
+        print(f'{final_file} exists.. skipping')
+        return
     converter.convert(20000)
     x = int((4300.0/18000.0) * 20000)
     y = int((1039.0/18000.0) * 20000)
@@ -1449,8 +1508,6 @@ def handle_55J_16(filename):
     cv2.imwrite(str(cropped_file), cropped_img)
     shutil.move(str(cropped_file), str(converter.get_full_img_file()))
     converter.full_img = None
-    converter.auto_rotate = True
-    converter.use_greyish = True
     converter.run()
 
 
@@ -1466,10 +1523,14 @@ def only_convert(filename, extra):
     mapbox_file = converter.file_dir.joinpath('mapbox.jpg')
     nogrid_file = converter.file_dir.joinpath('nogrid.jpg')
     final_file =  converter.file_dir.joinpath('final.tif')
-    if mapbox_file.exists() or nogrid_file.exists() or final_file.exists():
-        print('downstream files exist.. not attempting conversion')
-        return
+    #if mapbox_file.exists() or nogrid_file.exists() or final_file.exists():
+    #    print('downstream files exist.. not attempting conversion')
+    #    return
     converter.convert()
+    converter.rotate()
+    converter.split_image()
+    converter.remove_lines()
+    converter.georeference_mapbox()
     converter.close()
 
 
@@ -1481,9 +1542,6 @@ if __name__ == '__main__':
 
     known_problems = [
         #'data/raw/86K_7.pdf', # andaman, combined file
-
-        #'data/raw/53H_2.pdf', # delhi, extra data needs to be snipped
-        #'data/raw/72B_5.pdf', # Bettiah, extra data needs to be snipped
 
         'data/raw/74B_4.pdf', # srikakulam, combined file handled in 74B_3
         'data/raw/74B_7.pdf', # srikakulam, combined file handled in 74B_3
@@ -1500,14 +1558,16 @@ if __name__ == '__main__':
 
         'data/raw/41G_16.pdf', # gujarat, combined files handled in 41K_4
 
-        'data/raw/48E_5.pdf', # gujarat, combined files handles in 48E_9
+        'data/raw/48E_5.pdf', # gujarat, combined files handled in 48E_9
+
+        'data/raw/41P_2.pdf', # una gujarat, combined files handled in 41P_1
 
         # kept in for now
         #'data/raw/48J_10.pdf', # anamoly, black strip in file
         #'data/raw/49N_14.pdf', # anamoly, black strip in file
 
         'data/raw/54N_12.pdf', # bad file
-        'data/raw/58F_7.pdf', # bad file
+        'data/raw/58F_7.pdf', # bad file kerala
         'data/raw/45D_14.pdf', # bad file
         'data/raw/40M_11.pdf', # bad file
     ]
@@ -1520,6 +1580,11 @@ if __name__ == '__main__':
         filenames = file_list
     else:
         filenames = glob.glob('data/raw/*.pdf')
+        #file_list_filename = 'data/goa.txt'
+        #file_list = Path(file_list_filename).read_text().split('\n')
+        #file_list = [ f.strip() for f in file_list ]
+        #file_list = [ f for f in file_list if f != '' ]
+        #filenames = file_list
         errors_file = Path('data/errors.txt')
         ignore_filenames = []
         if errors_file.exists():
@@ -1540,7 +1605,7 @@ if __name__ == '__main__':
     ONLY_CONVERT = os.environ.get('ONLY_CONVERT', '0') == '1'
     if ONLY_CONVERT:
         fut_map = {}
-        with ProcessPoolExecutor(max_workers=8) as executor:
+        with ProcessPoolExecutor(max_workers=6) as executor:
             for filename in filenames:
                 if filename in known_problems:
                     continue
@@ -1550,13 +1615,19 @@ if __name__ == '__main__':
                 fut = executor.submit(only_convert, filename, extra)
                 fut_map[fut] = filename
         
+            total_count = len(fut_map.keys())
+            done = 0
             for fut in as_completed(fut_map, timeout=None):
                 filename = fut_map[fut]
-                print(f'done with file: {filename}')
+                done += 1
+                print(f'done with file: {filename} {done}/{total_count}')
                 try:
                     fut.result()
                 except Exception as ex:
                     print(f'got exception - {ex}')
+                    ignore_filenames.append(filename)
+                    error_txt = '\n'.join(ignore_filenames)
+                    Path(errors_file).write_text(error_txt)
         exit(0)
     
     

@@ -61,30 +61,6 @@ def get_file_dir(filename):
     return dir_p
 
 
-def adjust_coordinates(f):
-    coords = f['geometry']['coordinates'][0][:-1]
-    coords = [ [round(c[0], 2), round(c[1], 2)] for c in coords ]
-    indices = range(0,4)
-    def cmp(ci1, ci2):
-        c1 = coords[ci1]
-        c2 = coords[ci2]
-        if c1[0] == c2[0]:
-            return c1[1] - c2[1]
-        else:
-            return c1[0] - c2[0]
-
-    #print(f'{coords=}')
-    s_indices = sorted(indices, key=cmp_to_key(cmp))
-    #print(s_indices)
-    lb = s_indices[0]
-    lt = (lb + 1) % 4
-    rt = (lb + 2) % 4
-    rb = (lb + 3) % 4
-    out_coords = [ coords[lt], coords[lb], coords[rb], coords[rt], coords[lt] ]
-    #print(f'{out_coords=}')
-    f['geometry']['coordinates'] = [ out_coords ]
-
-
 
 # from camelot.. too slow for a big image
 def find_lines(
@@ -308,7 +284,6 @@ def get_full_index():
     index_map = {}
     for f in index['features']:
         sheet_no = f['properties']['EVEREST_SH']
-        adjust_coordinates(f)
         geom = f['geometry']
         index_map[sheet_no] = geom
     return index_map
@@ -1567,7 +1542,6 @@ if __name__ == '__main__':
         #'data/raw/49N_14.pdf', # anamoly, black strip in file
 
         'data/raw/54N_12.pdf', # bad file
-        'data/raw/58F_7.pdf', # bad file kerala
         'data/raw/45D_14.pdf', # bad file
         'data/raw/40M_11.pdf', # bad file
     ]

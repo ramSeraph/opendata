@@ -163,6 +163,31 @@ def unzip_file(zip_filename):
     return extracted_dir
 
 
+def adjust_coordinates(f):
+    coords = f['geometry']['coordinates'][0][:-1]
+    coords = [ [round(c[0], 2), round(c[1], 2)] for c in coords ]
+    indices = range(0,4)
+    def cmp(ci1, ci2):
+        c1 = coords[ci1]
+        c2 = coords[ci2]
+        if c1[0] == c2[0]:
+            return c1[1] - c2[1]
+        else:
+            return c1[0] - c2[0]
+
+    #print(f'{coords=}')
+    s_indices = sorted(indices, key=cmp_to_key(cmp))
+    #print(s_indices)
+    lb = s_indices[0]
+    lt = (lb + 1) % 4
+    rt = (lb + 2) % 4
+    rb = (lb + 3) % 4
+    out_coords = [ coords[lt], coords[lb], coords[rb], coords[rt], coords[lt] ]
+    #print(f'{out_coords=}')
+    f['geometry']['coordinates'] = [ out_coords ]
+
+
+
 def correct_index_file(out_filename):
     with open(out_filename, 'r') as f:
         index_data = json.load(f)
@@ -179,6 +204,9 @@ def correct_index_file(out_filename):
             continue
         geom_correction = corrections_map[sheet_no]['geometry']
         f['geometry'] = geom_correction
+
+    for f in index_data['features']:
+        adjust_coordinates(f)
 
     out_filename_new = out_filename + '.new'
     with open(out_filename_new, 'w') as f:

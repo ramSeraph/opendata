@@ -325,6 +325,36 @@ def fill_tif(k, k_dir):
     run_external(f'gdal_translate {str(vrt_file)} {str(new_final_file)}')
 
 
+def reorder_poly_points(poly_points):
+    # sort points in anti clockwise order
+    num_corners = len(poly_points)
+    box = LinearRing(poly_points + [poly_points[0]])
+    if not box.is_ccw:
+        poly_points = poly_points.copy()
+        poly_points.reverse()
+
+    center = box.centroid.coords[0]
+    #print(center)
+    indices = range(0, num_corners)
+    indices = [ i for i in indices if poly_points[i][0] < center[0] and poly_points[i][1] < center[1] ]
+    def cmp(ci1, ci2):
+        c1 = poly_points[ci1]
+        c2 = poly_points[ci2]
+        if c1[1] == c2[1]:
+            return c2[0] - c1[0]
+        else:
+            return c2[1] - c1[1]
+
+    s_indices = sorted(indices, key=cmp_to_key(cmp), reverse=True)
+    #print(f'{s_indices=}')
+    first = s_indices[0]
+    poly_reordered = [ poly_points[first] ]
+    for i in range(1, num_corners):
+        idx = (first - i) % num_corners
+        poly_reordered.append(poly_points[idx])
+    #print(f'{poly_reordered=}')
+    return poly_reordered
+
 
 class Converter:
     def __init__(self, filename, extra={}):
@@ -738,30 +768,9 @@ class Converter:
         cw = round(corner_ratio * w)
         ch = round(corner_ratio * h)
 
+        map_poly_points = reorder_poly_points(map_poly_points)
         print(f'{map_poly_points=}')
         num_corners = len(map_poly_points)
-        # sort points in anti clockwise order
-        #box = Polygon(map_poly_points + [map_poly_points[0]])
-        #if not box.exterior.is_ccw:
-        #    map_poly_points.reverse()
-        #indices = range(0, num_corners)
-        #def cmp(ci1, ci2):
-        #    c1 = map_poly_points[ci1]
-        #    c2 = map_poly_points[ci2]
-        #    if c1[0] == c2[0]:
-        #        return c1[1] - c2[1]
-        #    else:
-        #        return c1[0] - c2[0]
-
-        #s_indices = sorted(indices, key=cmp_to_key(cmp))
-        #print(f'{s_indices=}')
-        #first = s_indices[0]
-        #poly_reordered = [ map_poly_points[first] ]
-        #for i in range(1, num_corners):
-        #    idx = (first - i) % num_corners
-        #    poly_reordered.append(map_poly_points[idx])
-        #print(f'{poly_reordered=}')
-        #map_poly_points = poly_reordered
         box = LinearRing(map_poly_points + [map_poly_points[0]])
         buffered_poly = box.buffer(-cw/2, single_sided=True, join_style=JOIN_STYLE.mitre)
         inner_ring = buffered_poly.interiors[0]
@@ -1531,11 +1540,16 @@ if __name__ == '__main__':
 
         'data/raw/66D_5.pdf', # chennai, combined file handled in 66D_1
 
+        'data/raw/41B_16.pdf', # gujarat, combined files handled in 41F_4
+
         'data/raw/41G_16.pdf', # gujarat, combined files handled in 41K_4
 
         'data/raw/48E_5.pdf', # gujarat, combined files handled in 48E_9
 
         'data/raw/41P_2.pdf', # una gujarat, combined files handled in 41P_1
+
+        'data/raw/41F_10.pdf', # gujarat, combined files handled in 41F_9
+        'data/raw/41F_6.pdf', # gujarat, combined files handled in 41F_7
 
         # kept in for now
         #'data/raw/48J_10.pdf', # anamoly, black strip in file

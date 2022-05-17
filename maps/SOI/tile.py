@@ -1,33 +1,18 @@
-#GDAL_LIBRARY_PATH = "/opt/homebrew/lib/libgdal.dylib"
-#import ctypes
-#ctypes.CDLL(GDAL_LIBRARY_PATH)
 import os
 import glob
 import json
-#os.environ['SPATIALINDEX_C_LIBRARY'] = '/opt/homebrew/lib/'
 
-import math
 import time
 import os.path
 import subprocess
 
 from pathlib import Path
-from multiprocessing import freeze_support
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 
-import numpy as np
-from PIL import Image, UnidentifiedImageError
 import mercantile
 from osgeo import gdal
-#from rtree import index
 #from osgeo_utils.gdal2tiles import main as gdal2tiles_main
 
 from gdal2tiles import main as gdal2tiles_main
-
-from tile_helper import (setup_lists, add_to_excluded,
-                         add_to_ondisk_tiles, get_done_dir_list)
-
-OVERWRITE=False
 
 index_map = {}
 USE_INDEX_FILE = True
@@ -39,8 +24,6 @@ if USE_INDEX_FILE:
             sheet_no = f['properties']['EVEREST_SH'].replace('/', '_')
             index_map[sheet_no] = f
 
-
-vrt_ds = None
 
 def run_external(cmd):
     print(f'running cmd - {cmd}')
@@ -112,85 +95,8 @@ def get_affected_tile_set(file_list):
         affected_tiles.update(file_to_tiles(filename))
     return affected_tiles
 
-def is_tile_transperent(filename):
-    img = Image.open(filename)
-    alpha = img.split()[-1]
-    a = np.array(alpha)
-    total = a.shape[0] * a.shape[1]
-    nodata = np.count_nonzero(a == 0)
-    if nodata == total:
-        return True
-    return False
-
-def get_vol_inode():
-    res = subprocess.run('stat "/Volumes/One Touch"', shell=True, capture_output=True, text=True)
-    vol_inode = int(res.stdout.split(' ')[0])
-    return vol_inode
-
-def populate_ondisk_details(tiles_dir, tileext):
-    vol_inode = get_vol_inode()
-    setup_lists()
-    tileext = '.' + tileext
-    print('collecting ondisk file details')
-    start = time.time()
-    all_tiles = set()
-    tile_dirs = set()
-    z_folders = [
-        (int(de.name), de.inode())
-        for de in os.scandir(tiles_dir)
-        if de.is_dir(follow_symlinks=False) and de.name.isdigit()
-    ]
-    done_folders = get_done_dir_list()
-    done_folders = set(done_folders[:-1])
-
-    done = 0
-    excluded = 0
-    for z, z_inode in z_folders:
-        print(f'scanning {z=}')
-        alt_file = f'/.vol/{vol_inode}/{z_inode}'
-        des = os.scandir(alt_file)
-        for de in des:
-            if not de.name.isdigit() or not de.is_dir(follow_symlinks=False):
-                continue
-            x = int(de.name)
-            x_inode = de.inode()
-            print(f'scanning {z=} {x=}')
-            if (z,x) in done_folders:
-                print(f'skipping done folder')
-                continue
-            alt_file_x = f'/.vol/{vol_inode}/{x_inode}'
-            deys = os.scandir(alt_file_x)
-            for dey in deys:
-                if not dey.is_file(follow_symlinks=False) or not dey.name.endswith(tileext):
-                    continue
-                y = int(dey.name.replace(tileext, ''))
-                y_inode = dey.inode()
-                alt_file_y = f'/.vol/{vol_inode}/{y_inode}'
-                try:
-                    exclude = is_tile_transperent(alt_file_y)
-                except UnidentifiedImageError as ex:
-                    print(f'got unidentified image error while dealing with {z=}, {x=}, {y=}, deleting file')
-                    os.remove(alt_file_y)
-                    done += 1
-                    continue
-                if is_tile_transperent(alt_file_y):
-                    add_to_excluded(z, x, y)
-                    os.remove(alt_file_y)
-                    excluded += 1
-                else:
-                    add_to_ondisk_tiles(z, x, y, y_inode)
-                done += 1
-
-                if (done % 1000) == 0:
-                    print(f'{done=}, {excluded=}')
-
-
-
-
 
 if __name__ == '__main__':
-    import sys
-    freeze_support()
     tiles_dir = Path('export/tiles')
 
     tiles_dir.mkdir(parents=True, exist_ok=True)
@@ -228,7 +134,7 @@ if __name__ == '__main__':
     to_delete_tiles = tiles_to_update - new_tiles
     print(f'{len(to_delete_tiles)=}')
 
-    print(f'deleting overlapping files')
+    print('deleting overlapping files')
     delete_count = 0
     for tile in to_delete_tiles:
         tile_file = tiles_dir.joinpath(f'{tile.z}/{tile.x}/{tile.y}.webp')

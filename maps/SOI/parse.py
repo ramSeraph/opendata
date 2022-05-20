@@ -383,6 +383,7 @@ class Converter:
         self.corner_overrides = extra.get('corner_overrides', None)
         self.shrunk_map_area_corners = extra.get('shrunk_map_area_corners', None)
         self.extents = extra.get('extents', None)
+        #self.grid_line_buf = extra.get('grid_line_buf', None)
 
 
 
@@ -1526,6 +1527,8 @@ if __name__ == '__main__':
 
     known_problems = [
         #'data/raw/86K_7.pdf', # andaman, combined file
+        # TODO: some of the andaman sheets might still be in everest datum, check if that is the case
+        # also, check if the index corrections messed with the georeferencing
 
         'data/raw/74B_4.pdf', # srikakulam, combined file handled in 74B_3
         'data/raw/74B_7.pdf', # srikakulam, combined file handled in 74B_3
@@ -1568,11 +1571,6 @@ if __name__ == '__main__':
         filenames = file_list
     else:
         filenames = glob.glob('data/raw/*.pdf')
-        #file_list_filename = 'data/goa.txt'
-        #file_list = Path(file_list_filename).read_text().split('\n')
-        #file_list = [ f.strip() for f in file_list ]
-        #file_list = [ f for f in file_list if f != '' ]
-        #filenames = file_list
         errors_file = Path('data/errors.txt')
         ignore_filenames = []
         if errors_file.exists():

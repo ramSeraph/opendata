@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
+<!-- some of this html/js was copied from https://kokoalberti.com/articles/georeferencing-and-digitizing-old-maps-with-gdal/ and https://server.nikhilvj.co.in/pmgsy --!>
 <head>
-    <title>The Hague Map 1944</title>
+    <title>Survey Of India Open Series Maps</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css"/>
@@ -34,42 +35,99 @@
     <script type="text/javascript">
         // Default options we'll use for both maps. Se the center of the map,
         // default zoom levels, and other Leaflet map options here.
+
+        var OSM =  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
+        }); 
+        var gStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0','mt1','mt2','mt3'],
+            attribution: 'Map data &copy; 2022 Google'
+        });
+        var gHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 20, 
+            subdomains:['mt0','mt1','mt2','mt3'], 
+            attribution: 'Map data &copy; 2022 Google, Imagery &copy; 2022 TerraMetrics'
+        });
+        var esriWorld = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            maxNativeZoom:18,
+            maxZoom: 20
+        });
+        var soi = L.tileLayer('export/tiles/{z}/{x}/{y}.webp', {
+            maxZoom: 20,
+            maxNativeZoom: 15,
+            attribution: '<a href="https://onlinemaps.surveyofindia.gov.in/FreeMapSpecification.aspx" target="_blank">1:50000 Open Series Maps</a> &copy; <a href="https://www.surveyofindia.gov.in/pages/copyright-policy" target="_blank">Survey Of India</a>'
+        });
+
+
+        var baseLayers = {
+            "OpenStreetMap.org" : OSM,
+            "ESRI Satellite": esriWorld,
+            "gStreets": gStreets,
+            "gHybrid": gHybrid,
+            "SOI": soi
+        };
+
         var options = {
-            center: [15.2993, 74.1240],
-            zoom: 13,
+            center: [21.5, 78.5],
+            zoom: 5,
             minZoom: 5,
-            maxZoom: 15,
+            maxZoom: 20,
             attributionControl: false
-        }
+        };
 
         //add ?noscrollzoom to iframe URL to disble scroll zooming in iframe
         if(window.location.href.endsWith('noscrollzoom')) {
             options['scrollWheelZoom'] = false;
-        }
+        };
 
-        // Create the left and the right map in their respective containers
-        var map1 = L.map('map-left', options);
+        var myStyle = {
+            "stroke": true,
+            "color": "#000000",
+            "weight": 0.5,
+            "opacity": 0.5,
+            "fill": true,
+            "fillOpacity": 0.0
+        };
+        var grid = L.geoJson([], {
+            onEachFeature: function(f, l) {
+                l.bindPopup(f.properties.EVEREST_SH);
+            },
+            style: myStyle
+        });
+
+        fetch("https://storage.googleapis.com/soi_data/index.geojson")
+        .then(response => {
+            return response.json();
+        })
+        .then(data => {
+            for (f of data.features) {
+                grid.addData(f)
+            }
+        })
+
 
         options['zoomControl'] = false;
+        // Create the left and the right map in their respective containers
+        var map1 = L.map('map-left', options);
+        L.control.attribution({prefix: '', position: 'bottomleft'}).addTo(map1)
+        L.control.layers({}, { grid: grid }, {collapsed: true, autoZIndex:false, position: 'topleft'}).addTo(map1);
+        L.tileLayer('export/tiles/{z}/{x}/{y}.webp', {
+            maxZoom: 20,
+            maxNativeZoom: 15,
+                    attribution: '<a href="https://onlinemaps.surveyofindia.gov.in/FreeMapSpecification.aspx" target="_blank">1:50000 Open Series Maps</a> &copy; <a href="https://www.surveyofindia.gov.in/pages/copyright-policy" target="_blank">Survey Of India</a>'
+        }).addTo(map1); 
+
+        options['layers'] = [OSM];
         var map2 = L.map('map-right', options);
+        L.control.layers(baseLayers, {}, {collapsed: true, autoZIndex:false}).addTo(map2);
+        L.control.attribution({prefix: '', position: 'bottomright'}).addTo(map2)
+        L.control.scale({metric:true, imperial:false, position: "bottomright"}).addTo(map2);
+        L.control.zoom({ position: 'bottomright' }).addTo(map2);
 
-        // Add our tiles to the left map and an openstreetmap layer to the 
-        // right map
-        L.tileLayer('tiles/{z}/{x}/{y}.jpg').addTo(map1); 
-        //L.tileLayer('tiles_old/{z}/{x}/{y}.jpg').addTo(map2); 
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map2)
-        //L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-        //            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-        //        }).addTo(map2)
-        //L.vectorGrid.protobuf('https://api.mapbox.com/v4/planemad.india-rural-connectivity/{z}/{x}/{y}.vector.pbf?access_token=pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiY2l2eDhnNzNpMDAwNzJ5cGowcnpiMXJkdyJ9.NljuPglsRA3mTGf-4CLIEg').addTo(map2)
 
-        // Add an attribution control to the right map
-        L.control.attribution({prefix:''})
-            .addAttribution('<a href="http://www.surveyofindia.gov.in/>' +
-                            'Survey Of India 1:50000 Open Series Maps</a>')
-            .addAttribution('<a href="https://www.openstreetmap.org">OpenStreet' +
-                            'Map Contributors</a>')
-            .addTo(map2);
 
         // Use the Leaflet Sync extension to sync the right bottom corner
         // of the left map to the left bottom corner of the right map, and

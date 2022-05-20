@@ -118,6 +118,7 @@ if __name__ == '__main__':
     to_add = cur_set - prev_set
     to_remove = prev_set - cur_set
     if len(to_remove) > 0:
+        print(f'{to_remove=}')
         raise Exception('currently removing for tiling list is not supported.. redo?')
 
 
@@ -125,6 +126,8 @@ if __name__ == '__main__':
     cur_info = get_file_info(file_names)
     files_to_do = get_updated_files(cur_info, prev_info)
     print(f'files to do: {len(files_to_do)}')
+    for filename in files_to_do:
+        print(filename)
     if len(files_to_do) == 0:
         exit(0)
     tiles_to_update = get_affected_tile_set(files_to_do)

@@ -1,5 +1,4 @@
 
-//mapboxgl.accessToken = 'pk.eyJ1IjoicmFtc2VyYXBoIiwiYSI6ImNsMGlhdDE1ejAwdTIzZnFqaGZkM2ZrNjMifQ.Pl7M8zaFVJpbueJH6QN-Eg'
 var bg_style = {
     version: 8,
     sources: {},
@@ -14,7 +13,6 @@ BOUNDS_INDIA = [[61.1113787, 2.5546079], [101.395561, 39.6745457]]
 
 const map = new maplibregl.Map({
     container: 'map', 
-    //style: 'mapbox://styles/mapbox/dark-v10',
     style: bg_style,
     bounds: BOUNDS_INDIA,
     zoom: 1,
@@ -25,18 +23,13 @@ map.addControl(new maplibregl.NavigationControl())
 //map.doubleClickZoom.disable()
 
 
-function fileSize(size) {
-    var i = Math.floor(Math.log(size) / Math.log(1024));
-    return (size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
-}
-
 
 var gFeatures = null
-var gObjList = null
+var gStatusInfo = null
 var lookupIndex = null
 var indexMap = {}
 function setFeatureStates() {
-    if (gObjList === null || gFeatures === null) {
+    if (gStatusInfo === null || gFeatures === null) {
         return
     }
     var featureMap = {}
@@ -52,66 +45,43 @@ function setFeatureStates() {
     }
     lookupIndex.finish()
 
-    for (obj of gObjList) {
-        var name = obj['name']
-        var bucket = obj['bucket']
-        var url = `https://storage.googleapis.com/${bucket}/${name}`
-        var status = 'found'
-        if (name.endsWith('.unavailable')) {
-            status = 'not_found'
-            name = name.split('.').slice(0, -1).join('.')
-        }
-        if (!name.endsWith('.pdf')) {
-            continue
-        }
-        var prefix = name.split('.').slice(0, -1).join('.')
-        var sheetNo = prefix.replace('_', '/').replace('raw/', '')
-        var filesize = fileSize(obj['size'])
-        if (!(sheetNo in featureMap)) {
-            console.log(`malformed file name: ${name}`)
-            continue
-        }
-        var featureId = featureMap[sheetNo].id
+    for (var s in gStatusInfo) {
+        var featureId = featureMap[s].id
         map.setFeatureState(
             { source: 'tiles', id: featureId },
-            { status: status, url: url, filesize: filesize }
+            gStatusInfo[s]            
         )
     }
 }
 
 
-function updateObjList(objList) {
-    gObjList = objList
+function updateStatusInfo(statusInfo) {
+    gStatusInfo = statusInfo
     setFeatureStates()
 }
+
 
 function updateFeatureData(feats) {
     gFeatures = feats
     setFeatureStates()
 }
 
-function fetchListCb(err, data) {
+function fetchStatusInfoCb(err, data) {
     if (err !== null) {
         console.log(err)
         var statusSpan = document.getElementById('call_status')
         statusSpan.innerHTML = "Error!! Couldn't get status list"
     } else {
-        updateObjList(data)
+        updateStatusInfo(data)
     }
 }
+
 
 window.onload = (event) => {
     var statusSpan = document.getElementById('call_status')
     statusSpan.innerHTML = ''
-    fetchSheetList(fetchListCb)
+    getStatusData(fetchStatusInfoCb)
 }
-
-
-/*
-map.on('render', () => {
-    map.resize()
-})
-*/
 
 
 map.on('load', () => {
@@ -202,10 +172,22 @@ map.on('click', 'tiles-fill', (e) => {
     var fstate = map.getFeatureState({ id: feature.id,
                                        source: 'tiles'})
     var sheetNo = feature.properties.EVEREST_SH
-    var html = `<b>${sheetNo}</b>`
-    if ('status' in fstate && fstate.status !== 'not_found') {
-        html = `<a target="_blank" href=${fstate.url}><b>${sheetNo}</b></a>`
+    var html = `<b>${sheetNo}</b><br>`
+    if ('pdfUrl' in fstate) {
+        //html += '<br>'
+        html += ' '
+        html += `<a target="_blank" href=${fstate.pdfUrl}>pdf</a>`
     }
+    if ('gtiffUrl' in fstate) {
+        if (!('pdfUrl' in fstate)) {
+            // html += '<br>'
+            html += ' '
+        } else {
+            html += ' '
+        }
+        html += `<a target="_blank" href=${fstate.gtiffUrl}>gtiff</a>`
+    }
+
     new maplibregl.Popup()
                   .setLngLat(e.lngLat)
                   .setHTML(html)

@@ -1,30 +1,23 @@
 
-function fileSize(size) {
-    var i = Math.floor(Math.log(size) / Math.log(1024));
-    return (size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
-}
-
-function displayData(items) {
+function displayData(statusInfo) {
     var sheetsDiv = document.getElementById('sheets_list')
-    var objInfos = []
-    for (obj of items) {
-        var name = obj['name']
-        var bucket = obj['bucket']
-        if (! name.endsWith('.pdf')) {
-            continue
-        }
-        var sheetName = name.replace('.pdf', '').replace('_', '/').replace('raw/', '')
-
-        var objInfo = {}
-        objInfo['name'] = sheetName
-        objInfo['size'] = fileSize(obj['size'])
-        objInfo['url'] = `https://storage.googleapis.com/${bucket}/${name}`
-        objInfos.push(objInfo)
-    }
     var allHtml = ''
     allHtml += '<ul>'
-    for (info of objInfos) {
-        allHtml += `<li><a href="${info['url']}">${info['name']}</a> ${info['size']}</li>`
+    for (sheetNo in statusInfo) {
+        var info = statusInfo[sheetNo]
+        if (info['status'] !== 'found') {
+            continue
+        }
+        allHtml += `<li>${sheetNo}`
+        allHtml += '<ul>'
+        if ('pdfUrl' in info) {
+            allHtml += `<li><a href="${info['pdfUrl']}">pdf</a> ${info['pdfFilesize']}</li>`
+        }
+        if ('gtiffUrl' in info) {
+            allHtml += `<li><a href="${info['gtiffUrl']}">gtiff</a> ${info['gtiffFilesize']}</li>`
+        }
+        allHtml += '</ul>'
+        allHtml += '</li>'
     }
     allHtml += '</ul>'
     sheetsDiv.innerHTML = allHtml
@@ -45,5 +38,5 @@ function fetchListCb(err, data) {
 window.onload = (event) => {
     var statusSpan = document.getElementById('call_status')
     statusSpan.innerHTML = 'Fetching sheet list..'
-    fetchSheetList(fetchListCb)
+    getStatusData(fetchListCb)
 }

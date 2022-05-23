@@ -383,6 +383,7 @@ class Converter:
         self.corner_overrides = extra.get('corner_overrides', None)
         self.shrunk_map_area_corners = extra.get('shrunk_map_area_corners', None)
         self.extents = extra.get('extents', None)
+        self.jpeg_export_quality = extra.get('jpeg_export_quality', 10)
         #self.grid_line_buf = extra.get('grid_line_buf', None)
 
 
@@ -1123,6 +1124,32 @@ class Converter:
                         resampling=Resampling.bilinear)
 
 
+    def export_internal(self, filename, out_filename):
+        if Path(out_filename).exists():
+            print(f'{out_filename} exists.. skipping export')
+            return
+        creation_opts = f'-co TILED=YES -co COMPRESS=JPEG -co JPEG_QUALITY={self.jpeg_export_quality} -co PHOTOMETRIC=YCBCR' 
+        mask_options = '--config GDAL_TIFF_INTERNAL_MASK YES  -b 1 -b 2 -b 3 -mask 4'
+        perf_options = '--config GDAL_CACHEMAX 512'
+        cmd = f'gdal_translate {perf_options} {mask_options} {creation_opts} {filename} {out_filename}'
+        run_external(cmd)
+
+    def export(self):
+        filename = str(self.file_dir.joinpath('final.tif'))
+        sheet_no = self.file_dir.name
+        out_filename = f'export/gtiffs/{sheet_no}.tif'
+        self.export_internal(filename, out_filename)
+        if self.extents is None:
+            return
+        for k in self.extents.keys():
+            if k == 'full':
+                continue
+            k_dir = Path(f'data/inter/{k}/')
+            k_final_file = k_dir.joinpath('final.tif') 
+            k_out_filename = f'export/gtiffs/{k}.tif'
+            self.export_internal(str(k_final_file), k_out_filename)
+
+
     def warp_mapbox(self):
         cutline_file = self.file_dir.joinpath('cutline.geojson')
         georef_file = self.file_dir.joinpath('georef.tif')
@@ -1404,6 +1431,7 @@ class Converter:
         print('georeferencing image')
         self.georeference_mapbox()
         self.warp_mapbox()
+        self.export()
         #self.georeference_mapbox_new()
         #self.process_legend()
         #self.process_magvar()
@@ -1474,6 +1502,7 @@ def handle_65A_11(filename):
 
     converter.georeference_mapbox()
     converter.warp_mapbox()
+    converter.export()
     converter.close()
 
 def handle_55J_16(filename):
@@ -1553,6 +1582,8 @@ if __name__ == '__main__':
 
         'data/raw/41F_10.pdf', # gujarat, combined files handled in 41F_9
         'data/raw/41F_6.pdf', # gujarat, combined files handled in 41F_7
+        'data/raw/49M_6.pdf', # kerala, combined files handled in 49M_10
+        'data/raw/48L_15.pdf', # kerala, combined files handled in 48P_3
 
         # kept in for now
         #'data/raw/48J_10.pdf', # anamoly, black strip in file

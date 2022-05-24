@@ -15,6 +15,10 @@ import mercantile
 from gdal2tiles import main as gdal2tiles_main
 from gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
 
+from google.cloud import storage
+from google.api_core.exceptions import NotFound
+
+FROM_GCS = os.environ.get('FROM_GCS', '0') == '1'
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -71,6 +75,23 @@ def create_tiles(inp_file, output_dir, zoom_levels):
                      '--webp-quality', '50',
                      inp_file, output_dir])
 
+bucket = None
+if FROM_GCS:
+    client = storage.Client.create_client()
+    bucket = client.get_bucket('soi_data')
+
+def pull_from_gcs(file):
+    try:
+        blob = bucket.blob(str(file))
+        file.parent.mkdir(parents=True, exist_ok=True)
+        blob.download_to_filename(str(file))
+    except NotFound:
+        pass
+
+def push_to_gcs(file):
+    blob = bucket.blob(str(file))
+    blob.upload_from_filename(filename=str(file))
+
 
 orig_tiles_dir = Path('export/tiles')
 orig_tiffs_dir = Path('export/gtiffs')
@@ -88,6 +109,8 @@ def get_tile_file_orig(tile):
 def copy_sheets_over(sheets_to_pull):
     for sheet_no in sheets_to_pull:
         fro = orig_tiffs_dir.joinpath(f'{sheet_no}.tif')
+        if FROM_GCS:
+            pull_from_gcs(fro)
         to = tiffs_dir.joinpath(f'{sheet_no}.tif')
         if not fro.exists():
             continue
@@ -96,6 +119,8 @@ def copy_sheets_over(sheets_to_pull):
 def copy_tiles_over(tiles_to_pull):
     for tile in tiles_to_pull:
         fro = Path(get_tile_file_orig(tile))
+        if FROM_GCS:
+            pull_from_gcs(fro)
         to = Path(get_tile_file(tile))
         if not fro.exists() or to.exists():
             continue
@@ -111,6 +136,8 @@ def push_tiles(tiles_to_push):
             continue
         to.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(str(fro), str(to))
+        if FROM_GCS:
+            push_to_gcs(to)
 
 def create_upper_tiles(all_affected_tiles_by_zoom):
     options = AttrDict({

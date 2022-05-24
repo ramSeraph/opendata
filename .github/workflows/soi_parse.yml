@@ -1,0 +1,69 @@
+name: SOI Weekly Parse Run
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  Run-SOI-Parsing:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Extra packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mupdf libgl1-mesa-glx libgdal-dev gdal-bin
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9.4'
+
+      - name: Restore pip data from cache
+        uses: TerrenceHo/cache-always@v0.0.1
+        #uses: actions/cache@v2
+        with:
+          path: ./.venv/
+          key: SOI-venv-${{ hashFiles('maps/SOI/requirements.parse.txt') }}
+        id: cache-venv
+
+      - name: Setup python requirements
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m venv ./.venv 
+          . ./.venv/bin/activate
+          pip install -r maps/SOI/requirements.parse.txt
+ 
+      - name: Authenticate with GCP
+        run: |
+          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
+ 
+      - name: Check for work
+        id: work
+        run: |
+          if [[ "$(gsutil ls gs://soi_data/to_parse.txt 2>/dev/null)" == "" ]]; then
+            echo "::set-output name=AVAILABLE::false"
+          else
+            echo "::set-output name=AVAILABLE::true"
+          fi
+
+      - name: Parse SOI sheets
+        if: ${{ steps.work.outputs.AVAILABLE == 'true' }} 
+        run: |
+          mkdir data
+          gsutil cp gs://soi_data/to_parse.txt data/to_parse.txt
+          FROM_LIST=data/to_parse.txt .venv/bin/python maps/SOI/parse.py
+          gsutil rm gs://soi_data/to_parse.txt
+          gsutil -m cp -r export/gtiffs/*.tif gs://soi_data/export/gtiffs/
+          ls export/gtiffs/*.tif | cut -d"/" -f3 | cut -d"." -f1 > retile.txt
+          FROM_GCS=1 .venv/bin/python maps/SOI/retile.py
+        timeout-minutes: 60
+ 
+
+

@@ -92,4 +92,5 @@ jobs:
         run: |
           [[ "$(gsutil ls gs://soi_data/index.geojson 2>/dev/null)" == "" ]] && gsutil -m cp data/index.geojson gs://soi_data/index.geojson
           find data/raw/* && gsutil -m cp -a public-read -r data/raw/*.pdf gs://soi_data/raw/ || true
+          find data/raw/* && find data/raw/*.pdf > data/to_parse.txt && gsutil -m cp -a public-read data/to_parse.txt gs://soi_data/to_parse.txt || true
           find data/raw/* && sh -c "ls data/raw/*.pdf | sed 's,data,gs://soi_data,g' | sed 's/.pdf/.pdf.unavailable/g' | xargs gsutil rm " || true

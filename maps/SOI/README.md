@@ -58,7 +58,7 @@ The final compressed, clipped, georeferenced file ends up at `export/gtiffs/<she
 
 All intermediate files are at `data/inter/<sheet_no>/`
 
-Depends on `mupdf` for pdf to jpg conversion. and the python dependencies are listed in `requirements.parse.txt`
+Depends on `mupdf` for pdf to jpg conversion, `gdal` for georeferencing and the python dependencies are listed in `requirements.parse.txt`
 
 All of this can be triggered using `python parse.py`
 

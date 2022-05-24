@@ -11,12 +11,10 @@ from multiprocessing import Pool
 from functools import partial
 
 import mercantile
-from osgeo import gdal
 
 from gdal2tiles import main as gdal2tiles_main
 from gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
 
-OVERWRITE=False
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -34,50 +32,6 @@ def run_external(cmd):
     print(f'command took {end - start} secs to run')
     if res.returncode != 0:
         raise Exception(f'command {cmd} failed')
-
-def get_file_info(file_names):
-    info = {}
-    for file_name in file_names:
-        info[file_name] = os.path.getmtime(file_name)
-    return info
-
-def get_updated_files(new_info, old_info):
-    updated = []
-    for file_name in new_info.keys():
-        if file_name not in old_info:
-            updated.append(file_name)
-        else:
-            prev_update_time = old_info[file_name]
-            cur_update_time = new_info[file_name]
-            if cur_update_time > prev_update_time:
-                updated.append(file_name)
-    return updated
-
-def file_to_tiles(file_name):
-    z_min = 2
-    z_max = 15
-    ds = gdal.Open(file_name)
-    if ds is None:
-        raise Exception("Could not open file!")
-    gt = ds.GetGeoTransform()
-
-    # Get the geographic coordinates of the file's left top and right bottom 
-    lt = mercantile.lnglat(gt[0], gt[3])
-    rb = mercantile.lnglat(gt[0] + (ds.RasterXSize * gt[1]), 
-                           gt[3] + (ds.RasterYSize * gt[5]))
-
-    # Use the coordinates and z levels we create a list of tiles to generate
-    tiles = set(mercantile.tiles(lt.lng, rb.lat, rb.lng, lt.lat, 
-                                  range(z_min, z_max + 1)))
-    #ds.close()
-    ds = None
-    return tiles
-
-def get_affected_tile_set(file_list):
-    affected_tiles = set()
-    for filename in file_list:
-        affected_tiles.update(file_to_tiles(filename))
-    return affected_tiles
 
 
 def get_sheets_to_basetile_mapping(ndex_data):
@@ -151,8 +105,8 @@ def copy_tiles_over(tiles_to_pull):
 def push_tiles(tiles_to_push):
     for tile in tiles_to_push:
         fro = Path(get_tile_file(tile))
-        #to = Path(get_tile_file_orig(tile))
-        to = Path(get_tile_file(tile).replace('staging', 'staging1'))
+        to = Path(get_tile_file_orig(tile))
+        #to = Path(get_tile_file(tile).replace('staging', 'staging1'))
         if not fro.exists():
             continue
         to.parent.mkdir(parents=True, exist_ok=True)
@@ -280,8 +234,6 @@ if __name__ == '__main__':
         # then run gdal2tiles for all the other levels with just the sheet
         print('creating tiles for all levels with just the sheet')
         create_upper_tiles(all_affected_tiles_by_zoom)
-        #if input(f"Done with {sheet_no}, Continue? (y/n)") != "y":
-        #    exit()
     print('pushing back tiles to main')
     push_tiles(full_affected_tile_list)
     #shutil.rmtree('staging')

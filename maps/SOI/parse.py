@@ -1444,26 +1444,6 @@ class Converter:
             self.file_fp = None
 
 
-def create_vrt(list_filename):
-    file_list = Path(list_filename).read_text().split('\n')
-    file_list = [ f.strip() for f in file_list ]
-    file_list = [ f for f in file_list if f != '' ]
-    def get_dataset(fname):
-        pdf_name = Path(fname).name
-        inter_folder_name = pdf_name.replace('.pdf', '')
-        dset_folder_name = fname.replace('.pdf', '').replace('raw', 'inter')
-        dset_name = str(Path(dset_folder_name).joinpath('final.tif'))
-        return dset_name
-    dset_list = [ get_dataset(f) for f in file_list ]
-    dset_filename = list_filename.replace('.txt', '.vrt.list')
-    vrt_filename = list_filename.replace('.txt', '.vrt')
-    Path(dset_filename).write_text('\n'.join(dset_list))
-    run_external(f'gdalbuildvrt -input_file_list {dset_filename} {vrt_filename}')
-    return vrt_filename
-
-def create_tiles(vrt_filename):
-    pass
-
 
 # file has no legend or any lines.. 
 # locate the corners manually and join in at the nogrid stage
@@ -1551,7 +1531,7 @@ def only_convert(filename, extra):
 if __name__ == '__main__':
     freeze_support()
 
-    ONLY_FAILED = os.environ.get('ONLY_FAILED', '0') == '1'
+    FROM_LIST = os.environ.get('FROM_LIST', '')
     ignore_filenames = []
 
     known_problems = [
@@ -1594,8 +1574,8 @@ if __name__ == '__main__':
         'data/raw/40M_11.pdf', # bad file
     ]
     #cat data/goa.txt | xargs -I {} gsutil -m cp gs://soi_data/raw/{} data/raw/
-    if ONLY_FAILED:
-        file_list_filename = 'data/errors.txt'
+    if FROM_LIST != '':
+        file_list_filename = FROM_LIST
         file_list = Path(file_list_filename).read_text().split('\n')
         file_list = [ f.strip() for f in file_list ]
         file_list = [ f for f in file_list if f != '' ]
@@ -1670,14 +1650,11 @@ if __name__ == '__main__':
             converter.close()
         except Exception as ex:
             print(f'ERROR: exception {ex} while handling {filename}')
-            if ONLY_FAILED:
+            if FROM_LIST != '':
                 raise
             ignore_filenames.append(filename)
             error_txt = '\n'.join(ignore_filenames)
             Path(errors_file).write_text(error_txt)
             
     
-    #vrt_filename = create_vrt(file_list_filename)
-    exit(0)
-    create_tiles(vrt_filename)
 

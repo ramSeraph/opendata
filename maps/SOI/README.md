@@ -71,7 +71,7 @@ Reruns ignore already processed files
 Environment variables can be used to change behavior
 * `SHOW_IMG=1` displays the image processing steps on the terminal using `imgcat`
 * `ONLY_CONVERT=1` can be used to only do the pdf to image conversion parallely for better cpu saturation
-* `ONLY_FAILED=1` can be used to only execute failed files listed in `data/errors.txt`, this also errors out on first failure
+* `FROM_LIST=<filename>` can be used to only parse files listed in `<filename>`, this also errors out on first failure
 
 
 # Tiling

@@ -54,21 +54,24 @@ This involves the following steps
     * use of alpha channel leads to big files, so now convert the alpha channel to a nodata internal mask
       and use further compression which now becomes accessible without the alpha channel
 
-The final compressed, clipped, georeferenced file ends up at 'export/gtiffs/<sheet_no>.tif`
-all intermediate files are at `data/inter/<sheet_no>/`
+The final compressed, clipped, georeferenced file ends up at `export/gtiffs/<sheet_no>.tif`
+
+All intermediate files are at `data/inter/<sheet_no>/`
 
 Depends on `mupdf` for pdf to jpg conversion. and the python dependencies are listed in `requirements.parse.txt`
 
 All of this can be triggered using `python parse.py`
 
 By default it runs through all the available files in `data/raw/` and all files which had problems get saved to `data/errors.txt`
+
 Parallelism is exploited where possible - assumes 8 available cpus - my laptop config :)
+
 Reruns ignore already processed files
 
 Environment variables can be used to change behavior
-`SHOW_IMG=1` displays the image processing steps on the terminal using `imgcat`
-`ONLY_CONVERT=1` can be used to only do the pdf to image conversion parallely for better cpu saturation
-`ONLY_FAILED=1` can be used to only execute failed files listed in `data/errors.txt`, this also errors out on first failure
+* `SHOW_IMG=1` displays the image processing steps on the terminal using `imgcat`
+* `ONLY_CONVERT=1` can be used to only do the pdf to image conversion parallely for better cpu saturation
+* `ONLY_FAILED=1` can be used to only execute failed files listed in `data/errors.txt`, this also errors out on first failure
 
 
 # Tiling
@@ -81,7 +84,7 @@ Rerunning `python tiles.py` picks up any any new/modified sheet files in `export
 
 This is still slow and requires the presence of all the previous tiling data, So a newer retiling script was created to just pull the requisite tiles from the original tiles into a staging area, retile and push back only the affected tiles into the main area.
 
-Invoke with `python retile.py` .. for now expects a `retile.txt` file containing just the sheet names to retile 
+Invoke with `python retile.py`.. for now expects a `retile.txt` file containing just the sheet names to retile
 
 # Update Jobs
 

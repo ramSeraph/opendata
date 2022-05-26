@@ -19,6 +19,7 @@ from google.cloud import storage
 from google.api_core.exceptions import NotFound
 
 FROM_GCS = os.environ.get('FROM_GCS', '0') == '1'
+INDEX_FILE = os.environ.get('INDEX_FILE', 'data/index.geojson')
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -180,8 +181,7 @@ if __name__ == '__main__':
     retile_sheets = set([ r.strip() for r in retile_sheets if r.strip() != '' ])
 
     print('reading index file')
-    #with open('data/index.geojson', 'r') as f:
-    with open('index.geojson', 'r') as f:
+    with open(INDEX_FILE, 'r') as f:
         index_data = json.load(f)
 
     print('preparing index to tiles maps')

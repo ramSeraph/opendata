@@ -416,6 +416,7 @@ def scrape(phone_num, password, only_unavailable):
         else:
             tile_infos_to_download.append(tile_info)
 
+    done = 0
     for sheet_no in priority_list:
         if sheet_no not in priority_tile_info_map:
             if not is_sheet_done(sheet_no, done, only_unavailable):
@@ -423,9 +424,13 @@ def scrape(phone_num, password, only_unavailable):
             continue
         tile_info = priority_tile_info_map[sheet_no]
         download_tile_wrap(tile_info)
+        done += 1
+        logger.info(f'Done: {done}/{len(tile_infos_to_download)}')
 
     for tile_info in tile_infos_to_download:
         download_tile_wrap(tile_info)
+        done += 1
+        logger.info(f'Done: {done}/{len(tile_infos_to_download)}')
 
 
 def scrape_wrap(only_unavailable):
@@ -440,6 +445,10 @@ def scrape_wrap(only_unavailable):
         try:
             logger.info(f'scraping with phone number: {p_idx}/{total_count}')
             scrape(phone_num, password, only_unavailable)
+            logger.warning('No more Sheets')
+            if Path(tried_users_file).exists():
+                Path(tried_users_file).unlink()
+            return
         except Exception as ex:
             if str(ex) != 'Limit Crossed':
                 raise
@@ -466,8 +475,3 @@ if __name__ == '__main__':
         prepare_captcha_models(captcha_model_dir)
 
     scrape_wrap(args.unavailable)
-
-
-
-
-    

@@ -58,6 +58,8 @@ jobs:
         run: |
           mkdir data
           gsutil cp gs://soi_data/to_parse.txt data/to_parse.txt
+          cat data/to_parse.txt | cut -d"/" -f2- | xargs -I {} gsutil cp gs://soi_data/{} data/{}
+          .venv/bin/python check_duplicates.py data/to_parse.txt
           FROM_LIST=data/to_parse.txt .venv/bin/python maps/SOI/parse.py
           gsutil rm gs://soi_data/to_parse.txt
           gsutil -m cp -r export/gtiffs/*.tif gs://soi_data/export/gtiffs/

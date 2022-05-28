@@ -8,6 +8,10 @@ Collection of Open Series Maps from [Survey Of India](https://onlinemaps.surveyo
 
 [Notes](notes) on the what was done to get the data in the present form and possible problems
 
+[Original sheet grid shapefile](https://storage.googleapis.com/soi_data/raw/OSM_SHEET_INDEX.zip)
+
+[Modified Index geojson for the sheet grid](https://storage.googleapis.com/soi_data/index.html)
+
 [List Of All Available Sheets](sheets)
 
 [Extraction Status Page](status) - updated weekly

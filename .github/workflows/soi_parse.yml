@@ -18,7 +18,7 @@ jobs:
       - name: Install Extra packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends mupdf libgl1-mesa-glx libgdal-dev gdal-bin
+          sudo apt-get install -y --no-install-recommends mupdf libgl1-mesa-glx libgdal-dev gdal-bin libwebp
 
       - name: Setup python
         uses: actions/setup-python@v2

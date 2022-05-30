@@ -58,8 +58,9 @@ jobs:
         if: ${{ steps.work.outputs.AVAILABLE == 'true' }} 
         run: |
           mkdir data
-          gsutil cp gs://soi_data/to_parse.txt data/to_parse.txt
-          cat data/to_parse.txt | cut -d"/" -f2- | xargs -I {} gsutil cp gs://soi_data/{} data/{}
+          gsutil -m cp gs://soi_data/index.geojson data/index.geojson
+          gsutil -m cp gs://soi_data/to_parse.txt data/to_parse.txt
+          cat data/to_parse.txt | cut -d"/" -f2- | xargs -I {} gsutil -m cp gs://soi_data/{} data/{}
           .venv/bin/python maps/SOI/check_duplicates.py data/to_parse.txt
           FROM_LIST=data/to_parse.txt .venv/bin/python maps/SOI/parse.py
           gsutil rm gs://soi_data/to_parse.txt

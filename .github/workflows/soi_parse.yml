@@ -62,10 +62,12 @@ jobs:
           gsutil -m cp gs://soi_data/to_parse.txt data/to_parse.txt
           cat data/to_parse.txt | cut -d"/" -f2- | xargs -I {} gsutil -m cp gs://soi_data/{} data/{}
           .venv/bin/python maps/SOI/check_duplicates.py data/to_parse.txt
+          mkdir -p export/gtiffs/
           FROM_LIST=data/to_parse.txt .venv/bin/python maps/SOI/parse.py
           gsutil rm gs://soi_data/to_parse.txt
           gsutil -m cp -r export/gtiffs/*.tif gs://soi_data/export/gtiffs/
           ls export/gtiffs/*.tif | cut -d"/" -f3 | cut -d"." -f1 > retile.txt
+          mkdir -p export/tiles/
           FROM_GCS=1 .venv/bin/python maps/SOI/retile.py
         timeout-minutes: 60
  

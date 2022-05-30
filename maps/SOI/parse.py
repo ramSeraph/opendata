@@ -47,6 +47,8 @@ from pyproj.database import query_utm_crs_info
 
 from known_problems import known_problems
 
+# remove decompression_bomb_check
+Image.MAX_IMAGE_PIXELS = None
 
 DELETE_INTERMEDIATES = False
 USE_4326 = False

@@ -67,6 +67,7 @@ def create_tiles(inp_file, output_dir, zoom_levels):
     gdal2tiles_main(['gdal2tiles.py',
                      '-r', 'antialias',
                      '--verbose',
+                     '-w', 'none',
                      '--exclude', 
                      '--resume', 
                      '--xyz', 

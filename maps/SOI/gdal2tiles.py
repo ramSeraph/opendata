@@ -49,6 +49,7 @@ import stat
 import sys
 import tempfile
 import threading
+import traceback
 from functools import partial
 from typing import List, NoReturn, Tuple, Optional, Any
 from uuid import uuid4
@@ -66,6 +67,7 @@ try:
     numpy_available = True
 except ImportError:
     # 'antialias' resampling is not available
+    traceback.print_exc()
     numpy_available = False
 
 __version__ = "$Id$"

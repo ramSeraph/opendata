@@ -32,7 +32,7 @@ The whole thing has been done in a way that is reproducible, starting from the s
                 * Text is easily extractable
                     * `Distiller` - 1090
                     * `Ghostscript` - 1
-        * SOI fonts couldn't be used with `mupdf`, so some of the characters with macrons show up as '<'(ā), '#'(ū), '\'(ī).. hoping to fix this some time
+        * SOI fonts couldn't be used with `mupdf`, so some of the characters with macrons show up as '<'(ā), '#'(ū), '\\'(ī), '@'(ū).. hoping to fix this some time
             * list of flavors of pdf for which this happens  - `Distiller`
     * The images were too big to apply wholesale image processing techniques ( tried to avoid things running into minutes where possible )
         * So a shrunk image is first used to locate the pink collar around the map and crop the big picture
@@ -42,12 +42,13 @@ The whole thing has been done in a way that is reproducible, starting from the s
         * some of the sheets were not exactly squares or covered more than on sheet index, these were handled slightly differently
             * for the list of these sheets look at [known problems](https://github.com/ramSeraph/opendata/blob/master/maps/SOI/known_problems.py)
             * above link has the list of bad files which couldn't be used
+        * additionally the grid lines are located using the expected geospatial coordinates of the line endpoints and are removed by using opencv medianFilter
 
 
 * Tiling 
     * tiles from zoom level 2-15 were created
     * a modified version of `gdal2tiles.py` from `gdal` main branch was used to tile the sheets into a TMS tile map  
-        * this version has support for parllel creation of overview tiles
+        * this version has support for parallel creation of overview tiles
         * also has `webp` support which I added on top( I do plan to give it back to `gdal` )
             * `webp` was used because of the significant space reduction it offered
     * also created a retiling script to retile without needing to do it all over again( takes almost a day )

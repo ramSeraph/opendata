@@ -38,6 +38,7 @@ jobs:
         run: |
           python -m venv ./.venv 
           . ./.venv/bin/activate
+          pip install numpy==1.22.3
           pip install GDAL==3.0.4
           pip install -r maps/SOI/requirements.parse.txt
  

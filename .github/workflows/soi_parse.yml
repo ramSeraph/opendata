@@ -43,7 +43,8 @@ jobs:
  
       - name: Authenticate with GCP
         run: |
-          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
+          echo ${{ secrets.GCP_AUTH }} | base64 -d > gauth.json
+          gcloud auth activate-service-account --key-file=gauth.json
  
       - name: Check for work
         id: work
@@ -68,7 +69,7 @@ jobs:
           gsutil -m cp -r export/gtiffs/*.tif gs://soi_data/export/gtiffs/
           ls export/gtiffs/*.tif | cut -d"/" -f3 | cut -d"." -f1 > retile.txt
           mkdir -p export/tiles/
-          FROM_GCS=1 .venv/bin/python maps/SOI/retile.py
+          GOOGLE_APPLICATION_CREDENTIALS=gauth.json FROM_GCS=1 .venv/bin/python maps/SOI/retile.py
         timeout-minutes: 60
  
 

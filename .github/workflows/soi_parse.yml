@@ -30,7 +30,7 @@ jobs:
         #uses: actions/cache@v2
         with:
           path: ./.venv/
-          key: SOI-venv-v1-${{ hashFiles('maps/SOI/requirements.parse.txt') }}
+          key: SOI-venv-v2-${{ hashFiles('maps/SOI/requirements.parse.txt') }}
         id: cache-venv
 
       - name: Setup python requirements

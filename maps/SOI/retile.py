@@ -78,13 +78,14 @@ def create_tiles(inp_file, output_dir, zoom_levels):
 
 bucket = None
 if FROM_GCS:
-    client = storage.Client.create_client()
+    client = storage.Client()
     bucket = client.get_bucket('soi_data')
 
 def pull_from_gcs(file):
     try:
         blob = bucket.blob(str(file))
         file.parent.mkdir(parents=True, exist_ok=True)
+        print(f'pulling {file} from gcs')
         blob.download_to_filename(str(file))
     except NotFound:
         pass

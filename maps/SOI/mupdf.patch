@@ -32,15 +32,15 @@ index 2af369bd8..467e88917 100644
 +	{
 +		fz_snprintf(buf, sizeof buf, "%s/%s.ttf", fontdir, name);
 +		if (!fz_file_exists(ctx, buf))
-+			fz_snprintf(buf, sizeof buf, "%s/%s%s%s.TTF", fontdir, name);
++			fz_snprintf(buf, sizeof buf, "%s/%s.TTF", fontdir, name);
 +		if (!fz_file_exists(ctx, buf))
-+			fz_snprintf(buf, sizeof buf, "%s/%s%s%s.otf", fontdir, name);
++			fz_snprintf(buf, sizeof buf, "%s/%s.otf", fontdir, name);
 +		if (!fz_file_exists(ctx, buf))
-+			fz_snprintf(buf, sizeof buf, "%s/%s%s%s.OTF", fontdir, name);
++			fz_snprintf(buf, sizeof buf, "%s/%s.OTF", fontdir, name);
 +		if (!fz_file_exists(ctx, buf))
-+			fz_snprintf(buf, sizeof buf, "%s/%s%s%s.ttc", fontdir, name);
++			fz_snprintf(buf, sizeof buf, "%s/%s.ttc", fontdir, name);
 +		if (!fz_file_exists(ctx, buf))
-+			fz_snprintf(buf, sizeof buf, "%s/%s%s%s.TTC", fontdir, name);
++			fz_snprintf(buf, sizeof buf, "%s/%s.TTC", fontdir, name);
 +		if (fz_file_exists(ctx, buf))
 +			font = fz_new_font_from_file(ctx, NULL, buf, 0, 0);
 +	}

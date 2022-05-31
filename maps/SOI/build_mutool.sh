@@ -6,7 +6,7 @@ cd mupdf
 git checkout 1.20.0-rc1
 git submodule update --init
 git apply ../mupdf.patch
-make
+make HAVE_X11=no HAVE_GLUT=no
 mkdir -p ../bin
 cp build/release/mutool ../bin/ 
 cd ..

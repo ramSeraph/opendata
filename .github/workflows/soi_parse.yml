@@ -51,7 +51,7 @@ jobs:
         uses: TerrenceHo/cache-always@v0.0.1
         with:
           path: 'bin/mutool'
-          key:  'SOI-mutool-v1'
+          key:  'SOI-mutool-v2'
         id: mutool-cache
 
       - name: Build mutool

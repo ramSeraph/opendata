@@ -46,6 +46,18 @@ jobs:
         run: |
           echo ${{ secrets.GCP_AUTH }} | base64 -d > gauth.json
           gcloud auth activate-service-account --key-file=gauth.json
+
+      - name: Restore mutool from cache
+        uses: TerrenceHo/cache-always@v0.0.1
+        with:
+          path: 'bin/mutool'
+          key:  'SOI-mutool'
+        id: mutool-cache
+
+      - name: Build mutool
+        if: ${{ steps.mutool-cache.outputs.cache-hit != 'true' }}
+        run: |
+          bash maps/SOI/build_mutool.sh
  
       - name: Check for work
         id: work

@@ -57,6 +57,7 @@ jobs:
       - name: Build mutool
         if: ${{ steps.mutool-cache.outputs.cache-hit != 'true' }}
         run: |
+          cp maps/SOI/mupdf.patch .
           bash maps/SOI/build_mutool.sh
  
       - name: Check for work

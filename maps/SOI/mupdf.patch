@@ -1,0 +1,83 @@
+diff --git a/source/tools/mudraw.c b/source/tools/mudraw.c
+index 2af369bd8..467e88917 100644
+--- a/source/tools/mudraw.c
++++ b/source/tools/mudraw.c
+@@ -368,6 +368,7 @@ static int layer_off_len;
+ static const char ocr_language_default[] = "eng";
+ static const char *ocr_language = ocr_language_default;
+ static const char *ocr_datadir = NULL;
++static const char *fontdir = NULL;
+ 
+ static struct {
+ 	int active;
+@@ -488,6 +489,7 @@ static int usage(void)
+ 		"\t-Y\tList individual layers to stderr\n"
+ 		"\t-z -\tHide individual layer\n"
+ 		"\t-Z -\tShow individual layer\n"
++		"\t-n -\tFolder to load additional fonts from\n"
+ 		"\n"
+ 		"\tpages\tcomma separated list of page numbers and ranges\n"
+ 		);
+@@ -1909,6 +1911,34 @@ static void save_accelerator(fz_context *ctx, fz_document *doc, const char *fnam
+ 	fz_save_accelerator(ctx, doc, absname);
+ }
+ 
++fz_font *load_font_from_dir(fz_context *ctx, const char *name, int bold, int italic, int needs_exact_metrics) {
++	if (fontdir == NULL) {
++		return NULL;
++	}
++	char buf[500];
++	fz_font *font = NULL;
++	fz_try(ctx)
++	{
++		fz_snprintf(buf, sizeof buf, "%s/%s.ttf", fontdir, name);
++		if (!fz_file_exists(ctx, buf))
++			fz_snprintf(buf, sizeof buf, "%s/%s%s%s.TTF", fontdir, name);
++		if (!fz_file_exists(ctx, buf))
++			fz_snprintf(buf, sizeof buf, "%s/%s%s%s.otf", fontdir, name);
++		if (!fz_file_exists(ctx, buf))
++			fz_snprintf(buf, sizeof buf, "%s/%s%s%s.OTF", fontdir, name);
++		if (!fz_file_exists(ctx, buf))
++			fz_snprintf(buf, sizeof buf, "%s/%s%s%s.ttc", fontdir, name);
++		if (!fz_file_exists(ctx, buf))
++			fz_snprintf(buf, sizeof buf, "%s/%s%s%s.TTC", fontdir, name);
++		if (fz_file_exists(ctx, buf))
++			font = fz_new_font_from_file(ctx, NULL, buf, 0, 0);
++	}
++	fz_catch(ctx)
++		return NULL;
++	return font;
++
++}
++
+ #ifdef MUDRAW_STANDALONE
+ int main(int argc, char **argv)
+ #else
+@@ -1927,7 +1957,7 @@ int mudraw_main(int argc, char **argv)
+ 
+ 	fz_var(doc);
+ 
+-	while ((c = fz_getopt(argc, argv, "qp:o:F:R:r:w:h:fB:c:e:G:Is:A:DiW:H:S:T:t:d:U:XLvPl:y:Yz:Z:NO:am:K")) != -1)
++	while ((c = fz_getopt(argc, argv, "qp:o:F:n:R:r:w:h:fB:c:e:G:Is:A:DiW:H:S:T:t:d:U:XLvPl:y:Yz:Z:NO:am:K")) != -1)
+ 	{
+ 		switch (c)
+ 		{
+@@ -1939,6 +1969,7 @@ int mudraw_main(int argc, char **argv)
+ 
+ 		case 'o': output = fz_optarg; break;
+ 		case 'F': format = fz_optarg; break;
++		case 'n': fontdir = fz_optarg; break;
+ 
+ 		case 'R': rotation = fz_atof(fz_optarg); break;
+ 		case 'r': resolution = fz_atof(fz_optarg); res_specified = 1; break;
+@@ -2082,6 +2113,10 @@ int mudraw_main(int argc, char **argv)
+ 		exit(1);
+ 	}
+ 
++	if (fontdir != NULL) {
++		fz_install_load_system_font_funcs(ctx, load_font_from_dir, NULL, NULL);
++	}
++
+ 	fz_try(ctx)
+ 	{
+ 		if (proof_filename)

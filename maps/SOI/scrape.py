@@ -25,6 +25,7 @@ from login import login, get_form_data
 from common import (
     base_url,
     setup_logging,
+    get_page_soup,
     ensure_dir,
     session
 )
@@ -461,6 +462,39 @@ def scrape_wrap(only_unavailable):
         Path(tried_users_file).unlink()
 
 
+def get_fonts():
+    out_file = Path('data/raw/SOI_FONTS.zip')
+    if out_file.exists():
+        return
+    url = base_url + '/SOIFonts.aspx'
+    soup = get_page_soup(url)
+    form_data = get_form_data(soup)
+    form_data.update({
+        'ctl00$ContentPlaceHolder1$btnSOIFonts': 'Click here to Download SOI Fonts.'
+    })
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    resp = session.post(url, data=form_data, headers=headers)
+    logger.debug(f'status_code = {resp.status_code} headers:\n{pformat(dict(resp.headers))}')
+    if not resp.ok:
+        raise Exception('unable to download fonts zip')
+
+    if resp.headers['Content-Type'] != 'text/html; charset=utf-8':
+        content = resp.content
+    else:
+        with open('failed.html', 'w') as f:
+            f.write(resp.text)
+        logger.error(f'status_code = {resp.status_code} headers:\n{pformat(dict(resp.headers))}')
+        logger.error(resp.text)
+        raise Exception(f'Expected zip got html')
+
+    logger.info('writing fonts file')
+    with open(out_file, 'wb') as f:
+        f.write(content)
+    
+
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
@@ -469,9 +503,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     MAX_CAPTCHA_ATTEMPTS = args.max_captcha_retries
 
-    setup_logging(logging.INFO)
+    setup_logging(logging.DEBUG)
 
     if not CAPTCHA_MANUAL:
         prepare_captcha_models(captcha_model_dir)
 
+    get_fonts()
     scrape_wrap(args.unavailable)

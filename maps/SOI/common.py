@@ -4,6 +4,8 @@ from pathlib import Path
 
 import requests
 
+from bs4 import BeautifulSoup
+
 base_url = 'https://onlinemaps.surveyofindia.gov.in/'
 
 session = requests.session()
@@ -59,5 +61,5 @@ def get_form_data(soup):
     return form_data
 
 def ensure_dir(filename):
-    Path(filename).parent.mkdir(exist_ok=True, parents= True)
+    Path(filename).parent.mkdir(exist_ok=True, parents=True)
 

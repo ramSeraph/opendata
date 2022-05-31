@@ -177,9 +177,11 @@ def create_upper_tiles(all_affected_tiles_by_zoom):
 
 
 if __name__ == '__main__':
+    import sys
+    retile_list_file = sys.argv[1]
     tiles_dir.mkdir(parents=True, exist_ok=True)
     tiffs_dir.mkdir(parents=True, exist_ok=True)
-    retile_sheets = Path('retile.txt').read_text().split('\n')
+    retile_sheets = Path(retile_list_file).read_text().split('\n')
     retile_sheets = set([ r.strip() for r in retile_sheets if r.strip() != '' ])
 
     print('reading index file')

@@ -3,6 +3,7 @@ import shutil
 import json
 import glob
 import time
+import zipfile
 import subprocess
 from pathlib import Path
 from functools import cmp_to_key
@@ -46,6 +47,8 @@ from pyproj.transformer import Transformer
 from pyproj.database import query_utm_crs_info
 
 from known_problems import known_problems
+
+os.environ['PATH'] = './bin:' + os.environ.get('PATH', '')
 
 # remove decompression_bomb_check
 Image.MAX_IMAGE_PIXELS = None
@@ -496,7 +499,8 @@ class Converter:
         oh = round(float(h) * float(ow) / float(w))
         img_filename = str(self.get_full_img_file())
         print('converting pdf to image using mupdf')
-        run_external(f'mutool draw -w {ow} -h {oh} -c rgb -o {img_filename} {self.filename}')
+        #run_external(f'mutool draw -w {ow} -h {oh} -c rgb -o {img_filename} {self.filename}')
+        run_external(f'mutool draw -n data/SOI_FONTS -w {ow} -h {oh} -c rgb -o {img_filename} {self.filename}')
         if rotate == 90 or rotate == 270:
             print('rotating image')
             img = cv2.imread(img_filename)
@@ -1530,9 +1534,22 @@ def only_convert(filename, extra):
     converter.georeference_mapbox()
     converter.close()
 
+def setup_fonts_folder():
+    if Path('data/SOI_FONTS').exists():
+        return
+    fonts_zip = Path('data/raw/SOI_FONTS.zip')
+    if not fonts_zip.exists():
+        raise Exception(f'{fonts_zip} missing')
+
+    print('Extracting SOI FONTS')
+    with zipfile.ZipFile(str(fonts_zip), 'r') as zip_ref:
+        zip_ref.extractall('data/')
+
 
 if __name__ == '__main__':
     freeze_support()
+
+    setup_fonts_folder()
 
     FROM_LIST = os.environ.get('FROM_LIST', '')
     ignore_filenames = []

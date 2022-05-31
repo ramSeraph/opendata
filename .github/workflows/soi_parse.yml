@@ -53,25 +53,43 @@ jobs:
           if [[ "$(gsutil ls gs://soi_data/to_parse.txt 2>/dev/null)" == "" ]]; then
             echo "::set-output name=AVAILABLE::false"
           else
+            mkdir -p data
+            gsutil -m cp gs://soi_data/to_parse.txt data/to_parse.txt
             echo "::set-output name=AVAILABLE::true"
           fi
 
       - name: Parse SOI sheets
         if: ${{ steps.work.outputs.AVAILABLE == 'true' }} 
         run: |
-          mkdir data
+          gsutil -m cp gs://soi_data/raw/SOI_FONTS.zip data/raw/SOI_FONTS.zip
           gsutil -m cp gs://soi_data/index.geojson data/index.geojson
-          gsutil -m cp gs://soi_data/to_parse.txt data/to_parse.txt
           cat data/to_parse.txt | cut -d"/" -f2- | xargs -I {} gsutil -m cp gs://soi_data/{} data/{}
           .venv/bin/python maps/SOI/check_duplicates.py data/to_parse.txt
           mkdir -p export/gtiffs/
           FROM_LIST=data/to_parse.txt .venv/bin/python maps/SOI/parse.py
           gsutil rm gs://soi_data/to_parse.txt
           gsutil -m cp -r export/gtiffs/*.tif gs://soi_data/export/gtiffs/
-          ls export/gtiffs/*.tif | cut -d"/" -f3 | cut -d"." -f1 > retile.txt
-          mkdir -p export/tiles/
-          GOOGLE_APPLICATION_CREDENTIALS=gauth.json FROM_GCS=1 .venv/bin/python maps/SOI/retile.py
+          ls export/gtiffs/*.tif | cut -d"/" -f3 | cut -d"." -f1 > data/to_retile.txt
+          gsutil cp data/to_retile.txt gs://soi_data/to_retile.txt
         timeout-minutes: 60
  
+      - name: Check for retile work
+        id: retile_work
+        run: |
+          if [[ "$(gsutil ls gs://soi_data/to_retile.txt 2>/dev/null)" == "" ]]; then
+            echo "::set-output name=AVAILABLE::false"
+          else
+            mkdir -p data
+            gsutil -m cp gs://soi_data/to_retile.txt data/to_retile.txt
+            echo "::set-output name=AVAILABLE::true"
+          fi
+
+      - name: Retile sheets
+        if: ${{ steps.retile_work.outputs.AVAILABLE == 'true' }} 
+        run: |
+          mkdir -p export/tiles/
+          GOOGLE_APPLICATION_CREDENTIALS=gauth.json FROM_GCS=1 .venv/bin/python maps/SOI/retile.py data/to_retile.txt
+          gsutil rm gs://soi_data/to_retile.txt
+        timeout-minutes: 60
 
 

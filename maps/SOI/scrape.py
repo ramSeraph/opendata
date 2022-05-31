@@ -503,7 +503,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     MAX_CAPTCHA_ATTEMPTS = args.max_captcha_retries
 
-    setup_logging(logging.DEBUG)
+    setup_logging(logging.INFO)
 
     if not CAPTCHA_MANUAL:
         prepare_captcha_models(captcha_model_dir)

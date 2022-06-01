@@ -31,7 +31,7 @@ jobs:
         #uses: actions/cache@v2
         with:
           path: ./.venv/
-          key: SOI-venv-v3-${{ hashFiles('maps/SOI/requirements.parse.txt') }}
+          key: SOI-venv-v4-${{ hashFiles('maps/SOI/requirements.parse.txt') }}
         id: cache-venv
 
       - name: Setup python requirements
@@ -39,6 +39,8 @@ jobs:
         run: |
           python -m venv ./.venv 
           . ./.venv/bin/activate
+          pip install numpy==1.22.3
+          pip install GDAL==3.4.0
           pip install -r maps/SOI/requirements.parse.txt
  
       - name: Authenticate with GCP

@@ -17,6 +17,7 @@ jobs:
 
       - name: Install Extra packages
         run: |
+          sudo add-apt-repository ppa:ubuntugis/ppa
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends mupdf libgl1-mesa-glx libgdal-dev gdal-bin gdal-data webp
 
@@ -38,8 +39,6 @@ jobs:
         run: |
           python -m venv ./.venv 
           . ./.venv/bin/activate
-          pip install numpy==1.22.3
-          pip install GDAL==3.0.4
           pip install -r maps/SOI/requirements.parse.txt
  
       - name: Authenticate with GCP

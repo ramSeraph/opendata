@@ -9,7 +9,7 @@ click==8.1.2
 click-plugins==1.1.1
 cligj==0.7.2
 cryptography==36.0.2
-GDAL
+GDAL==3.4.2
 google-api-core==2.8.0
 google-auth==2.6.6
 google-cloud-core==2.3.0

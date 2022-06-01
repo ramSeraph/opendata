@@ -17,6 +17,8 @@ from gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
 
 from google.cloud import storage
 from google.api_core.exceptions import NotFound
+from google.cloud.storage.retry import DEFAULT_RETRY
+from google.cloud.storage.constants import _DEFAULT_TIMEOUT
 
 FROM_GCS = os.environ.get('FROM_GCS', '0') == '1'
 INDEX_FILE = os.environ.get('INDEX_FILE', 'data/index.geojson')
@@ -82,6 +84,16 @@ if FROM_GCS:
     client = storage.Client()
     bucket = client.get_bucket('soi_data')
 
+def get_gcs_upload_args():
+    timeout = 300
+    modified_retry = DEFAULT_RETRY.with_deadline(300)
+    modified_retry = modified_retry.with_delay(initial=1,
+                                               multiplier=2,
+                                               maximum=60)
+    return { 'retry': modified_retry, 'timeout': timeout }
+
+
+
 def pull_from_gcs(file):
     blob = bucket.blob(str(file))
     if not blob.exists():
@@ -92,7 +104,7 @@ def pull_from_gcs(file):
 
 def push_to_gcs(file):
     blob = bucket.blob(str(file))
-    blob.upload_from_filename(filename=str(file))
+    blob.upload_from_filename(filename=str(file), **get_gcs_upload_args())
 
 
 orig_tiles_dir = Path('export/tiles')
@@ -143,6 +155,7 @@ def push_tiles(tiles_to_push):
         to.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(str(fro), str(to))
         if FROM_GCS:
+            print(f'pushing {to} to gcs')
             push_to_gcs(to)
 
 def create_upper_tiles(all_affected_tiles_by_zoom):

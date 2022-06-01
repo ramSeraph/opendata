@@ -83,13 +83,12 @@ if FROM_GCS:
     bucket = client.get_bucket('soi_data')
 
 def pull_from_gcs(file):
-    try:
-        blob = bucket.blob(str(file))
-        file.parent.mkdir(parents=True, exist_ok=True)
-        print(f'pulling {file} from gcs')
-        blob.download_to_filename(str(file))
-    except NotFound:
-        pass
+    blob = bucket.blob(str(file))
+    if not blob.exists():
+        return
+    file.parent.mkdir(parents=True, exist_ok=True)
+    print(f'pulling {file} from gcs')
+    blob.download_to_filename(str(file))
 
 def push_to_gcs(file):
     blob = bucket.blob(str(file))
@@ -111,21 +110,25 @@ def get_tile_file_orig(tile):
 
 def copy_sheets_over(sheets_to_pull):
     for sheet_no in sheets_to_pull:
+        to = tiffs_dir.joinpath(f'{sheet_no}.tif')
         fro = orig_tiffs_dir.joinpath(f'{sheet_no}.tif')
+        if to.exists():
+            continue
         if FROM_GCS:
             pull_from_gcs(fro)
-        to = tiffs_dir.joinpath(f'{sheet_no}.tif')
         if not fro.exists():
             continue
         shutil.copy(str(fro), str(to))
 
 def copy_tiles_over(tiles_to_pull):
     for tile in tiles_to_pull:
+        to = Path(get_tile_file(tile))
+        if to.exists():
+            continue
         fro = Path(get_tile_file_orig(tile))
         if FROM_GCS:
             pull_from_gcs(fro)
-        to = Path(get_tile_file(tile))
-        if not fro.exists() or to.exists():
+        if not fro.exists():
             continue
         to.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(str(fro), str(to))

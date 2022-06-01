@@ -1296,6 +1296,8 @@ def create_overview_tile(base_tz: int, base_tiles: List[Tuple[int, int]], output
             continue
 
         dsquerytile = gdal.Open(base_tile_path, gdal.GA_ReadOnly)
+        if dsquerytile is None:
+            print(gdal.GetLastErrorMsg())
 
         if base_tx % 2 == 0:
             tileposx = 0

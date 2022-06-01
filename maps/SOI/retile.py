@@ -149,14 +149,14 @@ def push_tiles(tiles_to_push):
     for tile in tiles_to_push:
         fro = Path(get_tile_file(tile))
         to = Path(get_tile_file_orig(tile))
-        #to = Path(get_tile_file(tile).replace('staging', 'staging1'))
+        if FROM_GCS:
+            to = Path(get_tile_file(tile).replace('staging', 'to_gcs/export'))
         if not fro.exists():
             continue
         to.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(str(fro), str(to))
-        if FROM_GCS:
-            print(f'pushing {to} to gcs')
-            push_to_gcs(to)
+    Path('to_gcs/all_done').write_text('')
+
 
 def create_upper_tiles(all_affected_tiles_by_zoom):
     options = AttrDict({

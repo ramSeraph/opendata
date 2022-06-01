@@ -99,12 +99,30 @@ jobs:
             echo "::set-output name=AVAILABLE::true"
           fi
 
+      - name: Get current date
+        run: echo "::set-output name=date::$(date +'%d%b%Y')"
+        id: date
+
+      - name: Restore run data from cache
+        uses: TerrenceHo/cache-always@v0.0.1
+        with:
+          path: |
+            to_gcs/
+          key:  soi-gcs-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          restore-keys: |
+            soi-gcs-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            soi-gcs-v1-${{ steps.date.outputs.date }}-
+
+
       - name: Retile sheets
         if: ${{ steps.retile_work.outputs.AVAILABLE == 'true' }} 
         run: |
-          mkdir -p export/tiles/
-          GOOGLE_APPLICATION_CREDENTIALS=gauth.json FROM_GCS=1 .venv/bin/python maps/SOI/retile.py data/to_retile.txt
+          if [[ ! -e 'to_gcs/all_done' ]]; then
+            mkdir -p export/tiles/
+            GOOGLE_APPLICATION_CREDENTIALS=gauth.json FROM_GCS=1 .venv/bin/python maps/SOI/retile.py data/to_retile.txt
+          fi
+          cd to_gcs
+          gsutil -m cp -r export/* gs://soi_data/export/
           gsutil rm gs://soi_data/to_retile.txt
+          rm -rf to_gcs/
         timeout-minutes: 60
-
-

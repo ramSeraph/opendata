@@ -93,6 +93,7 @@ jobs:
           else
             mkdir -p data
             gsutil -m cp gs://soi_data/to_retile.txt data/to_retile.txt
+            gsutil -m cp gs://soi_data/index.geojson data/index.geojson
             echo "::set-output name=AVAILABLE::true"
           fi
 

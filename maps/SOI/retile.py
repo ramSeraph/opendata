@@ -155,7 +155,8 @@ def push_tiles(tiles_to_push):
             continue
         to.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(str(fro), str(to))
-    Path('to_gcs/all_done').write_text('')
+    if FROM_GCS:
+        Path('to_gcs/all_done').write_text('')
 
 
 def create_upper_tiles(all_affected_tiles_by_zoom):

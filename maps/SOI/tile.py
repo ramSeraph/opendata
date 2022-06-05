@@ -15,10 +15,10 @@ from osgeo import gdal
 from gdal2tiles import main as gdal2tiles_main
 
 index_map = {}
-USE_INDEX_FILE = True
-if USE_INDEX_FILE:
+INDEX_FILE = os.environ.get('INDEX_FILE', 'data/index.geojson')
+if INDEX_FILE != '':
     print('reading index file')
-    with open('data/index.geojson') as fp:
+    with open(INDEX_FILE) as fp:
         index_data = json.load(fp)
         for f in index_data['features']:
             sheet_no = f['properties']['EVEREST_SH'].replace('/', '_')
@@ -68,7 +68,7 @@ def file_to_tiles_using_index(file_name):
 
 
 def file_to_tiles(file_name):
-    if USE_INDEX_FILE:
+    if INDEX_FILE != '':
         return file_to_tiles_using_index(file_name)
     z_min = 2
     z_max = 15

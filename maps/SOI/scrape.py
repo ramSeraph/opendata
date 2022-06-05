@@ -490,6 +490,7 @@ def get_fonts():
         raise Exception(f'Expected zip got html')
 
     logger.info('writing fonts file')
+    Path(out_file).parent.mkdir(exist_ok=True, parents=True)
     with open(out_file, 'wb') as f:
         f.write(content)
     

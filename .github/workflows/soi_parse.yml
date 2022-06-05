@@ -108,10 +108,10 @@ jobs:
         with:
           path: |
             to_gcs/
-          key:  soi-gcs-v2-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  soi-gcs-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            soi-gcs-v2-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            soi-gcs-v2-${{ steps.date.outputs.date }}-
+            soi-gcs-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            soi-gcs-v3-${{ steps.date.outputs.date }}-
 
 
       - name: Retile sheets
@@ -124,5 +124,6 @@ jobs:
           cd to_gcs
           gsutil -m cp -r export/* gs://soi_data/export/
           gsutil rm gs://soi_data/to_retile.txt
+          cd ..
           rm -rf to_gcs/*
         timeout-minutes: 600

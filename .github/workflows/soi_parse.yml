@@ -125,4 +125,4 @@ jobs:
           gsutil -m cp -r export/* gs://soi_data/export/
           gsutil rm gs://soi_data/to_retile.txt
           rm -rf to_gcs/
-        timeout-minutes: 60
+        timeout-minutes: 600

@@ -9,7 +9,7 @@ on:
 
 jobs:
   Run-SOI-Parsing:
-    timeout-minutes: 60
+    timeout-minutes: 600
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -85,7 +85,7 @@ jobs:
           gsutil -m cp -r export/gtiffs/*.tif gs://soi_data/export/gtiffs/
           ls export/gtiffs/*.tif | cut -d"/" -f3 | cut -d"." -f1 > data/to_retile.txt
           gsutil cp data/to_retile.txt gs://soi_data/to_retile.txt
-        timeout-minutes: 60
+        timeout-minutes: 600
  
       - name: Check for retile work
         id: retile_work

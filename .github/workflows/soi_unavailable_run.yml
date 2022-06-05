@@ -80,13 +80,13 @@ jobs:
           key:  SOI-data-ua-raw-v1-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
             SOI-data-ua-raw-v1-${{ github.run_number }}-
-            SOI-data-raw-v1-
+            SOI-data-ua-raw-v1-
 
       # scrape things
       - name: Download SOI data
         run: |
           .venv/bin/python maps/SOI/scrape.py -u -r 15
-        timeout-minutes: 60
+        timeout-minutes: 180
 
       - name: Upload raw files to gcs
         run: |

@@ -9,7 +9,7 @@ The whole thing has been done in a way that is reproducible, starting from the s
 * Scraping
     * Logins were crowd sourced and used to download the sheets
     * Downloading was automated to overcome the pointless restrictions placed
-    * After the initial run to get all the sheets, now only previous unavailable sheets are checked weekly for any newly available data
+    * After the initial run to get all the sheets, now only previously unavailable sheets are checked weekly for any newly available data
 
 
 * Parsing
@@ -32,8 +32,6 @@ The whole thing has been done in a way that is reproducible, starting from the s
                 * Text is easily extractable
                     * `Distiller` - 1090
                     * `Ghostscript` - 1
-        * SOI fonts couldn't be used with `mupdf`, so some of the characters with macrons show up as '<'(ā), '#'(ū), '\\'(ī), '@'(ū).. hoping to fix this some time
-            * list of flavors of pdf for which this happens  - `Distiller`
     * The images were too big to apply wholesale image processing techniques ( tried to avoid things running into minutes where possible )
         * So a shrunk image is first used to locate the pink collar around the map and crop the big picture
         * Couldn't locate the actual black corners on the small picture, so crop just the corners of the previously cropped big picture and use opencv to find lines
@@ -51,4 +49,4 @@ The whole thing has been done in a way that is reproducible, starting from the s
         * this version has support for parallel creation of overview tiles
         * also has `webp` support which I added on top( I do plan to give it back to `gdal` )
             * `webp` was used because of the significant space reduction it offered
-    * also created a retiling script to retile without needing to do it all over again( takes almost a day )
+    * also created a retiling script to retile only the affected tiles without needing to do it all over again( takes almost a day )

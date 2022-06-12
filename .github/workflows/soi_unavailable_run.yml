@@ -77,10 +77,10 @@ jobs:
             data/index.geojson
             data/cookies/
             data/tried_users.txt
-          key:  SOI-data-ua-raw-v1-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  SOI-data-ua-raw-v2-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            SOI-data-ua-raw-v1-${{ github.run_number }}-
-            SOI-data-ua-raw-v1-
+            SOI-data-ua-raw-v2-${{ github.run_number }}-
+            SOI-data-ua-raw-v2-
 
       # scrape things
       - name: Download SOI data
@@ -95,3 +95,7 @@ jobs:
           find data/raw/* && gsutil -m cp -a public-read -r data/raw/*.pdf gs://soi_data/raw/ || true
           find data/raw/* && find data/raw/*.pdf > data/to_parse.txt && gsutil -m cp -a public-read data/to_parse.txt gs://soi_data/to_parse.txt || true
           find data/raw/* && sh -c "ls data/raw/*.pdf | sed 's,data,gs://soi_data,g' | sed 's/.pdf/.pdf.unavailable/g' | xargs gsutil rm " || true
+          rm -rf data/raw/*.pdf
+          rm -rf data/raw/*.pdf.unavailable
+          rm -rf data/cookies
+          rm -rf data/tried_users.txt

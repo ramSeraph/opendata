@@ -34,13 +34,13 @@ from shapely.wkt import loads as wkt_loads
 from shapely.wkt import dumps as wkt_dumps
 from shapely.affinity import translate
 
-import rasterio
-import rasterio.mask
-from rasterio.io import MemoryFile
+#import rasterio
+#import rasterio.mask
+#from rasterio.io import MemoryFile
 from rasterio.crs import CRS
 from rasterio.control import GroundControlPoint
 from rasterio.transform import from_gcps, rowcol
-from rasterio.warp import calculate_default_transform, reproject, Resampling
+#from rasterio.warp import calculate_default_transform, reproject, Resampling
 
 from pyproj.aoi import AreaOfInterest
 from pyproj.transformer import Transformer
@@ -391,6 +391,7 @@ class Converter:
         self.extents = extra.get('extents', None)
         self.jpeg_export_quality = extra.get('jpeg_export_quality', 10)
         #self.grid_line_buf = extra.get('grid_line_buf', None)
+        self.grid_lines = extra.get('grid_lines', None)
 
 
 
@@ -1259,13 +1260,59 @@ class Converter:
             nogrid_file.unlink()
 
 
-    def remove_lines(self):
-        #TODO: should take into account extents
-        nogrid_file = self.file_dir.joinpath('nogrid.jpg')
-        mapbox_file = self.file_dir.joinpath('mapbox.jpg')
-        if nogrid_file.exists():
-            print(f'{nogrid_file} file exists.. skipping')
-            return
+    def remove_line(self, line, map_img):
+        h, w = map_img.shape[:2]
+
+        line_buf_ratio = 6.0 / 12980.0
+        blur_buf_ratio = 30.0 / 12980.0
+        blur_kern_ratio = 19.0 / 12980.0
+
+        line_buf = round(line_buf_ratio * w)
+        blur_buf = round(blur_buf_ratio * w)
+        blur_kern = round(blur_kern_ratio * w)
+        if blur_kern % 2 == 0:
+            blur_kern += 1
+
+        limits = Polygon([(w,0), (w,h), (0,h), (0,0), (w,0)])
+
+        ls = LineString(line)
+        line_poly = ls.buffer(line_buf, resolution=1, cap_style=CAP_STYLE.flat).intersection(limits)
+        blur_poly = ls.buffer(blur_buf, resolution=1, cap_style=CAP_STYLE.flat).intersection(limits)
+        bb = blur_poly.bounds
+        bb = [ round(x) for x in bb ]
+        # restrict to a small img strip to make things less costly
+        img_strip = map_img[bb[1]:bb[3], bb[0]:bb[2]]
+        sh, sw = img_strip.shape[:2]
+        #cv2.imwrite('temp.jpg', img_strip)
+
+        line_poly_t = translate(line_poly, xoff=-bb[0], yoff=-bb[1])
+        mask = np.zeros(img_strip.shape[:2], dtype=np.uint8)
+        poly_coords = np.array([ [int(x[0]), int(x[1])] for x in line_poly_t.exterior.coords ])
+        cv2.fillPoly(mask, pts=[poly_coords], color=1)
+
+        #img_blurred = cv2.medianBlur(img_strip, blur_kern)
+        pad = int(blur_kern/2)
+        img_strip_padded = cv2.copyMakeBorder(img_strip, pad, pad, pad, pad, cv2.BORDER_REFLECT_101)
+
+        img_blurred_padded = cv2.medianBlur(img_strip_padded, blur_kern)
+        img_blurred = img_blurred_padded[pad:pad+sh, pad:pad+sw]
+        #cv2.imwrite('temp.jpg', img_blurred)
+
+        img_strip[mask == 1] = img_blurred[mask == 1]
+
+
+    def locate_grid_lines_by_split(self):
+        corners = self.get_corners()
+        c_lt, c_lb, c_rb, c_rt = corners
+        v_points_t = split_line(c_lt, c_rt)
+        v_points_b = split_line(c_lb, c_rb)
+        h_points_l = split_line(c_lt, c_lb)
+        h_points_r = split_line(c_rt, c_rb)
+        v_lines = list(zip(v_points_t, v_points_b))
+        h_lines = list(zip(h_points_l, h_points_r))
+        return v_lines, h_lines
+
+    def locate_grid_lines_using_coords(self):
         map_img = self.get_map_img()
         corners = self.get_corners()
         geom = self.get_index_geom()
@@ -1308,8 +1355,6 @@ class Converter:
             return sorted(list(grid_p_s))
             
 
-        #print(f'{i_hs=}')
-        #print(f'{i_vs=}')
         grid_hs = get_slots(i_hs)
         grid_vs = get_slots(i_vs)
         print(f'{grid_hs=}')
@@ -1330,67 +1375,32 @@ class Converter:
 
         v_lines = [ [transform_point(l[0]), transform_point(l[1])] for l in v_g_lines ]
         h_lines = [ [transform_point(l[0]), transform_point(l[1])] for l in h_g_lines ]
+
+        return v_lines, h_lines
+
+
+    def remove_lines(self):
+        #TODO: should take into account extents
+        nogrid_file = self.file_dir.joinpath('nogrid.jpg')
+        mapbox_file = self.file_dir.joinpath('mapbox.jpg')
+        if nogrid_file.exists():
+            print(f'{nogrid_file} file exists.. skipping')
+            return
+
+        if self.grid_lines is not None:
+            v_lines, h_lines = self.grid_lines
+        else:
+            v_lines, h_lines = self.locate_grid_lines_using_coords()
         print(f'{v_lines=}')
         print(f'{h_lines=}')
 
-
-        #c_lt, c_lb, c_rb, c_rt = corners
-        #v_points_t = split_line(c_lt, c_rt)
-        #v_points_b = split_line(c_lb, c_rb)
-        #h_points_l = split_line(c_lt, c_lb)
-        #h_points_r = split_line(c_rt, c_rb)
-        #v_lines = list(zip(v_points_t, v_points_b))
-        #h_lines = list(zip(h_points_l, h_points_r))
-
-        h, w = map_img.shape[:2]
-
-        line_buf_ratio = 6.0 / 12980.0
-        blur_buf_ratio = 30.0 / 12980.0
-        blur_kern_ratio = 19.0 / 12980.0
-
-        line_buf = round(line_buf_ratio * w)
-        blur_buf = round(blur_buf_ratio * w)
-        blur_kern = round(blur_kern_ratio * w)
-        if blur_kern % 2 == 0:
-            blur_kern += 1
-
-
-        #limits = Polygon([c_rt, c_rb, c_lb, c_lt, c_rt])
-        limits = Polygon([(w,0), (w,h), (0,h), (0,0), (w,0)])
-        def remove_line(l):
-            ls = LineString(l)
-            line_poly = ls.buffer(line_buf, resolution=1, cap_style=CAP_STYLE.flat).intersection(limits)
-            blur_poly = ls.buffer(blur_buf, resolution=1, cap_style=CAP_STYLE.flat).intersection(limits)
-            bb = blur_poly.bounds
-            bb = [ round(x) for x in bb ]
-            # restrict to a small img strip to make things less costly
-            img_strip = map_img[bb[1]:bb[3], bb[0]:bb[2]]
-            sh, sw = img_strip.shape[:2]
-            #cv2.imwrite('temp.jpg', img_strip)
-
-            line_poly_t = translate(line_poly, xoff=-bb[0], yoff=-bb[1])
-            mask = np.zeros(img_strip.shape[:2], dtype=np.uint8)
-            poly_coords = np.array([ [int(x[0]), int(x[1])] for x in line_poly_t.exterior.coords ])
-            cv2.fillPoly(mask, pts=[poly_coords], color=1)
-
-            #img_blurred = cv2.medianBlur(img_strip, blur_kern)
-            pad = int(blur_kern/2)
-            img_strip_padded = cv2.copyMakeBorder(img_strip, pad, pad, pad, pad, cv2.BORDER_REFLECT_101)
-
-            img_blurred_padded = cv2.medianBlur(img_strip_padded, blur_kern)
-            img_blurred = img_blurred_padded[pad:pad+sh, pad:pad+sw]
-            #cv2.imwrite('temp.jpg', img_blurred)
-
-            img_strip[mask == 1] = img_blurred[mask == 1]
-
-
+        map_img = self.get_map_img()
         print('dropping vertical lines')
         for line in v_lines:
-            remove_line(line)
-        #exit(0)
+            self.remove_line(line, map_img)
         print('dropping horizontal lines')
         for line in h_lines:
-            remove_line(line)
+            self.remove_line(line, map_img)
 
         cv2.imwrite(str(nogrid_file), map_img)
         if DELETE_INTERMEDIATES:
@@ -1511,10 +1521,9 @@ def handle_55J_16(filename):
     converter.full_img = None
     converter.run()
 
-
 super_special_handlers = {
     'data/raw/65A_11.pdf': [ handle_65A_11 ],
-    'data/raw/55J_16.pdf': [ handle_55J_16 ],
+    'data/raw/55J_16.pdf': [ handle_55J_16 ]
 }
 
 
@@ -1528,10 +1537,10 @@ def only_convert(filename, extra):
     #    print('downstream files exist.. not attempting conversion')
     #    return
     converter.convert()
-    converter.rotate()
-    converter.split_image()
-    converter.remove_lines()
-    converter.georeference_mapbox()
+    #converter.rotate()
+    #converter.split_image()
+    #converter.remove_lines()
+    #converter.georeference_mapbox()
     converter.close()
 
 def setup_fonts_folder():

@@ -51,6 +51,7 @@ class Params:
         self.archive_data = False
         self.base_raw_dir = 'data/raw'
         self.temp_dir = 'data/temp'
+        self.save_intermediates = False
         self.no_verify_ssl = False
         self.progress_bar = False
         self.connect_timeout = 10
@@ -548,6 +549,22 @@ class BaseDownloader:
         if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
             raise Exception(f"Expected content length({total_size_in_bytes}) not same as content downloaded({progress_bar.n})")
         return response
+
+    def get_temp_file(self, content, ext):
+        temp_dir_p = Path(self.ctx.params.temp_dir)
+        if not temp_dir_p.exists():
+            temp_dir_p.mkdir(parents=True, exist_ok=True)
+
+        temp_file_p = temp_dir_p.joinpath(self.name + ext)
+        if temp_file_p.exists():
+            temp_file_p.unlink()
+
+        with open(temp_file_p, 'wb') as f:
+            f.write(content)
+
+        temp_file_name = str(temp_file_p)
+        return temp_file_name
+
 
 
 

@@ -461,6 +461,7 @@ if __name__ == '__main__':
     parser.add_argument('--temp-dir', help='directory to write temp data to, will be created if it doesn\'t exist', type=str)
     parser.add_argument('--captcha-model-dir', help='location of the directory with tesseract models', type=str)
     parser.add_argument('--archive-data', help='archive data into a zip file and delete the staging files', action='store_true')
+    parser.add_argument('--save-intermediates', help='save intermediate files before converting to csv, in the temp dir', action='store_true')
 
     parser.add_argument('--enable-gcs', help='R|enable writing to gcs, base-raw-dir is used as staging area for the data,\n' +
                                              ' credentials need to be made available through the GOOGLE_APPLICATION_CREDENTIALS env variable', action='store_true')
@@ -484,7 +485,7 @@ if __name__ == '__main__':
     to_markdown = args.to_markdown
 
     if len(comps_to_run) and len(comps_to_not_run):
-        raise Exception("Can't specify bot comps to tun and not run")
+        raise Exception("Can't specify both comps to run and not run")
 
     setup_logging(log_level)
 

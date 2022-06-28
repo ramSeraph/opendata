@@ -130,7 +130,13 @@ class ReportDownloader(BaseDownloader):
             return []
     
         data_file = io.BytesIO(xls_data)
-        return records_from_excel(data_file)
+        data_file_name = self.get_temp_file(xls_data, '.xls')
+        with open(data_file_name, 'rb') as data_file:
+            recs = records_from_excel(data_file)
+        if not self.ctx.params.save_intermediates:
+            Path(data_file_name).unlink(missing_ok=True)
+        return recs
+
 
 
     def get_birt_session_id(self, birt_url, birt_form_data, report_base_url):

@@ -16,8 +16,6 @@ from .conversion_helper import (records_from_excel, records_from_xslx,
 logger = logging.getLogger(__name__)
 
 
-SAVE_INTERMEDIATE_FILES = False
-
 class CaptchaFailureException(Exception):
     pass
 
@@ -55,22 +53,6 @@ class DirectoryDownloader(BaseDownloader):
         self.excel_conv_args = kwargs['excel_conv_args']
         self.download_types = kwargs['download_types']
         super().__init__(**kwargs)
-
-
-    def get_temp_file(self, content, ext):
-        temp_dir_p = Path(self.ctx.params.temp_dir)
-        if not temp_dir_p.exists():
-            temp_dir_p.mkdir(parents=True, exist_ok=True)
-
-        temp_file_p = temp_dir_p.joinpath(self.name + ext)
-        if temp_file_p.exists():
-            temp_file_p.unlink()
-
-        with open(temp_file_p, 'wb') as f:
-            f.write(content)
-
-        temp_file_name = str(temp_file_p)
-        return temp_file_name
 
 
     def make_request(self, download_type):
@@ -144,7 +126,7 @@ class DirectoryDownloader(BaseDownloader):
                 else:
                     raise Exception(f"unsupprted suffix: {suffix}")
         finally:
-            if not SAVE_INTERMEDIATE_FILES:
+            if not self.ctx.params.save_intermediates:
                 Path(data_file_name).unlink(missing_ok=True)
             else:
                 logger.info(f'intermediate {data_file_name=}')

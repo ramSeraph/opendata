@@ -6,24 +6,33 @@ permalink: /maps/SOI/
 
 Collection of Open Series Maps from [Survey Of India](https://onlinemaps.surveyofindia.gov.in)
 
-[Notes](notes) on the what was done to get the data in the present form and possible problems
+All the data below is updated weekly
 
-[Original sheet grid shapefile](https://storage.googleapis.com/soi_data/raw/OSM_SHEET_INDEX.zip)
+# Collection Summary
+* [List Of All Available Sheets](sheets)
+* [Extraction Status Page](status)
 
-[Modified Index geojson for the sheet grid](https://storage.googleapis.com/soi_data/index.geojson)
+# Web
+* Tile URL
+  * `https://storage.googleapis.com/soi_data/export/tiles/{z}/{x}/{y}.webp`
+* Demo Page
+  * [DEMO of the tilemap](https://storage.googleapis.com/soi_data/index.html)
 
-[List Of All Available Sheets](sheets)
+# JOSM
+* URLs
+  * `https://server.nikhilvj.co.in/soiredirect/{z}/{x}/{y}.webp` (By [Nikhilvj](https://github.com/answerquest))
+  * `https://soi.thoughtfree.space/export/tiles/{z}/{x}/{y}.webp`
+* Plugin
+  * Needs to be used along with the external JOSM webp plugin developed at [ramSeraph/josm-webp-plugin](https://github.com/ramSeraph/josm-webp-plugin)
 
-[Extraction Status Page](status) - updated weekly
+# Appendix
+* [Notes](notes) on the what was done to get the data in the present form and possible problems.
+* [Original sheet grid shapefile](https://storage.googleapis.com/soi_data/raw/OSM_SHEET_INDEX.zip)
+* [Modified Index geojson for the sheet grid](https://storage.googleapis.com/soi_data/index.geojson)
 
-
-Tile URL for the web -
- `https://storage.googleapis.com/soi_data/export/tiles/{z}/{x}/{y}.webp`
-
-Tile URL for JOSM (By [Nikhilvj](https://github.com/answerquest)) -
- `https://server.nikhilvj.co.in/soiredirect/{z}/{x}/{y}.webp` 
- needs to be used along with the external JOSM webp plugin developed at [ramSeraph/josm-webp-plugin](https://github.com/ramSeraph/josm-webp-plugin)
-
-[DEMO of the tilemap](https://storage.googleapis.com/soi_data/index.html)
 
 Part of the [Code](https://github.com/ramSeraph/opendata/tree/master/maps/SOI) used to extract this data.
+
+
+
+

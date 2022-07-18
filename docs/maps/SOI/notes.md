@@ -47,6 +47,6 @@ The whole thing has been done in a way that is reproducible, starting from the s
     * tiles from zoom level 2-15 were created
     * a modified version of `gdal2tiles.py` from `gdal` main branch was used to tile the sheets into a TMS tile map  
         * this version has support for parallel creation of overview tiles
-        * also has `webp` support which I added on top( I do plan to give it back to `gdal` )
+        * also has `webp` support which I added on top( merged into GDAL 3.6 )
             * `webp` was used because of the significant space reduction it offered
     * also created a retiling script to retile only the affected tiles without needing to do it all over again( takes almost a day )

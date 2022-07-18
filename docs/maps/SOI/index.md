@@ -6,6 +6,8 @@ permalink: /maps/SOI/
 
 Collection of Open Series Maps from [Survey Of India](https://onlinemaps.surveyofindia.gov.in)
 
+[Code](https://github.com/ramSeraph/opendata/tree/master/maps/SOI) used to extract this data.
+
 All the data below is updated weekly
 
 # Collection Summary
@@ -29,10 +31,4 @@ All the data below is updated weekly
 * [Notes](notes) on the what was done to get the data in the present form and possible problems.
 * [Original sheet grid shapefile](https://storage.googleapis.com/soi_data/raw/OSM_SHEET_INDEX.zip)
 * [Modified Index geojson for the sheet grid](https://storage.googleapis.com/soi_data/index.geojson)
-
-
-Part of the [Code](https://github.com/ramSeraph/opendata/tree/master/maps/SOI) used to extract this data.
-
-
-
 

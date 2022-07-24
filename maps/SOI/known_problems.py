@@ -11,6 +11,11 @@ known_problems = [
 
     # possible georeferencing issues around 62B/3
 
+    # 47A/15 has a small piece outside the grid
+    # 49E/3 has a small piece outside the grid
+    # 47B/13 has legend data inside map
+    # 47A/16 has legend data inside map
+
     'data/raw/74B_4.pdf', # srikakulam, combined file handled in 74B_3
     'data/raw/74B_7.pdf', # srikakulam, combined file handled in 74B_3
 

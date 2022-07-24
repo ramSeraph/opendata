@@ -1,8 +1,15 @@
 
 known_problems = [
     #'data/raw/86K_7.pdf', # andaman, combined file
+
+    # andaman problematic:
+    # 86H/15, 87B/1, 87H/10, 87H/11( also thick lines ),
+    # 87H/12, 88E/9, 87H/8, 88E/5, 87H/3, 87H/4, 88E/15, 88E/12, 88E/16
     # TODO: some of the andaman sheets might still be in everest datum, check if that is the case
+
     # also, check if the index corrections messed with the georeferencing
+
+    # possible georeferencing issues around 62B/3
 
     'data/raw/74B_4.pdf', # srikakulam, combined file handled in 74B_3
     'data/raw/74B_7.pdf', # srikakulam, combined file handled in 74B_3
@@ -31,6 +38,8 @@ known_problems = [
     'data/raw/48L_15.pdf', # kerala, combined files handled in 48P_3
     'data/raw/58L_5.pdf', # tamilnadu, combined files handled in 58L_1
     'data/raw/52B_5.pdf', # ladakh, combined files handled in 52B_6
+    'data/raw/58N_8.pdf', # tamilnadu, combined files handled in 58N_4
+    'data/raw/47A_11.pdf', # maharashtra, combined file handled in 47A_15
 
     # kept in for now
     #'data/raw/48J_10.pdf', # anamoly, black strip in file

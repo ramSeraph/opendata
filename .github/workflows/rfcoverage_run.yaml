@@ -1,0 +1,84 @@
+name: Daily rfcoverage Run
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  Run-LGD-Extraction:
+    timeout-minutes: 600
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9.4'
+
+      - name: Restore pip data from cache
+        uses: actions/cache@v2
+        with:
+          path: ./.venv/
+          key: $venv-${{ hashFiles('rfcoverage/requirements.txt') }}
+        id: cache-venv
+
+      - name: Setup python requirements
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m venv ./.venv 
+          . ./.venv/bin/activate
+          pip install -r rfcoverage/requirements.txt
+
+      - name: Get current date
+        run: echo "::set-output name=date::$(date +'%d%b%Y')"
+        id: date
+
+      - name: Restore daily run data from cache
+        uses: TerrenceHo/cache-always@v0.0.1
+        with:
+          path: |
+            data/
+          key:  data-raw-rfcoverage-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          restore-keys: |
+            data-raw-rfcoverage-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            data-raw-rfcoverage-${{ steps.date.outputs.date }}-
+
+      - name: Authenticate with GCP
+        run: |
+          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
+
+      - name: Download Rfcoverage data
+        run: |
+          .venv/bin/python rfcoverage/scrape.py
+        timeout-minutes: 300
+
+      - name: Download Previous data from GCP
+        run: |
+          gsutil cp gs://rfcoverage_data/network_data.csv.gz data/
+          gunzip data/network_data.csv.gz 
+          mv data/network_data.csv data/network_data_old.csv
+          .venv/bin/python rfcoverage/combine.py
+          gzip data/network_data.csv
+          gsutil cp data/network_data.csv.gz gs://rfcoverage_data/network_data.csv.gz
+          rm -rf data/
+
+        timeout-minutes: 300
+
+
+
+      - name: Cleanup Processes
+        if: ${{ always() }}
+        run: |
+          ps -fe | grep "\.venv/bin/python" 
+          ps -fe | grep "\.venv/bin/python" | grep -v grep | tr -s " " | cut -d" " -f2 | xargs kill || true
+
+      - name: Upload archive file to gcs
+        run: |
+          gsutil -m cp data/network_data_${{ steps.date.outputs.date }}.zip gs://rfcoverage_data/
+
+

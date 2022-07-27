@@ -20,6 +20,9 @@ jobs:
       - test-job1
     if: always() && needs.test-job1.result == 'failure'
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
       - name: Send PushBullet notification
         uses: ./.github/actions/pb-alert
         with:

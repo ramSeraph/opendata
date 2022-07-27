@@ -1,0 +1,25 @@
+name: Test Run
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  test-job1:
+    runs-on: ubuntu-latest
+    run:
+      exit 1
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: 
+      - test-job1
+    if: always() && needs.test-job1.result == 'failure'
+    steps:
+      - name: Send PushBullet notification
+        uses: ./.github/actions/pb-alert
+        with:
+          title: "Test Action Failed"

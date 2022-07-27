@@ -10,7 +10,7 @@ on:
 jobs:
   test-job1:
     runs-on: ubuntu-latest
-    run:
+    run: |
       exit 1
 
   notify:

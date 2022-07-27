@@ -59,7 +59,7 @@ jobs:
           .venv/bin/python rfcoverage/scrape.py
         timeout-minutes: 20
 
-      - name: Download Previous data from GCP
+      - name: Merge with old data from GCP and push
         run: |
           gsutil cp gs://rfcoverage_data/network_data.csv.gz data/
           gunzip data/network_data.csv.gz 
@@ -75,11 +75,6 @@ jobs:
         run: |
           ps -fe | grep "\.venv/bin/python" 
           ps -fe | grep "\.venv/bin/python" | grep -v grep | tr -s " " | cut -d" " -f2 | xargs kill || true
-
-
-      - name: Upload archive file to gcs
-        run: |
-          gsutil -m cp data/network_data_${{ steps.date.outputs.date }}.zip gs://rfcoverage_data/
 
 
   RFCoverage-failure-notify:

@@ -1,4 +1,4 @@
-name: Monthly RFCoverage Run
+name: RFCoverage Monthly Run
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -88,11 +88,11 @@ jobs:
     needs: [Run-RFCoverage-Extraction]
     if: always() && needs.Run-RFCoverage-Extraction.result == 'failure'
     steps:
-      - name: send pushbullet notification
+      - name: Send PushBullet notification
         run: |
-          export pb_api_url="https://api.pushbullet.com/v2/pushes"
-          export pb_url="https://github.com/${{ github.repository }}/runs/${{ github.run_number }}"
-          export pb_title="RF Coverage pull run failed"
-          export pb_body="RF Coverage pull run failed"
-          export request_body="{\"title\":\"$pb_title\",\"body\":\"$pb_body\",\"type\":\"link\",\"url\":\"$pb_url\"}" 
-          curl -h "access-token: ${{ secrets.pb_token }}" -h "content-type: application/json" --data-binary "$request_body" -x post "$pb_api_url" 
+          export PB_API_URL="https://api.pushbullet.com/v2/pushes"
+          export PB_URL="https://github.com/${{ github.repository }}/runs/${{ github.run_id }}"
+          export PB_TITLE="RF Coverage pull run failed"
+          export PB_BODY="RF Coverage pull run failed"
+          export REQUEST_BODY="{\"title\":\"$PB_TITLE\",\"body\":\"$PB_BODY\",\"type\":\"link\",\"url\":\"$PB_URL\"}" 
+          curl -H "Access-Token: ${{ secrets.PB_TOKEN }}" -H "Content-Type: application/json" --data-binary "$REQUEST_BODY" -X POST "$PB_API_URL" 

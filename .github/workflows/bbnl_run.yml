@@ -40,10 +40,6 @@ jobs:
     if: always() && ( needs.Archive-BBNL-Main-Page.result == 'failure' || needs.Archive-BBNL-Usage-Page.result == 'failure' )
     steps:
       - name: Send PushBullet notification
-        run: |
-          export PB_API_URL="https://api.pushbullet.com/v2/pushes"
-          export PB_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          export PB_TITLE="BBNL Page Archival failed"
-          export PB_BODY="BBNL Page Archival failed"
-          export REQUEST_BODY="{\"title\":\"$PB_TITLE\",\"body\":\"$PB_BODY\",\"type\":\"link\",\"url\":\"$PB_URL\"}" 
-          curl -H "Access-Token: ${{ secrets.PB_TOKEN }}" -H "Content-Type: application/json" --data-binary "$REQUEST_BODY" -X POST "$PB_API_URL" > /dev/null
+        uses: ./.github/actions/pb-alert
+        with:
+          title: "BBNL Page Archival Failed"

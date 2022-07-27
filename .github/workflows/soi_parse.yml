@@ -137,11 +137,8 @@ jobs:
     needs: [Run-SOI-Parsing]
     if: always() && needs.Run-SOI-Parsing.result == 'failure'
     steps:
-      - name: send pushbullet notification
-        run: |
-          export PB_API_URL="https://api.pushbullet.com/v2/pushes"
-          export PB_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          export PB_TITLE="SOI Parse run failed"
-          export PB_BODY="SOI Parse run failed"
-          export REQUEST_BODY="{\"title\":\"$PB_TITLE\",\"body\":\"$PB_BODY\",\"type\":\"link\",\"url\":\"$PB_URL\"}" 
-          curl -H "Access-Token: ${{ secrets.PB_TOKEN }}" -H "Content-Type: application/json" --data-binary "$REQUEST_BODY" -X POST "$PB_API_URL" > /dev/null
+      - name: Send PushBullet notification
+        uses: ./.github/actions/pb-alert
+        with:
+          title: "SOI Parse Run Failed"
+          pb-token: "${{ secrets.PB_TOKEN }}"

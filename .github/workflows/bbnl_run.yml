@@ -43,3 +43,4 @@ jobs:
         uses: ./.github/actions/pb-alert
         with:
           title: "BBNL Page Archival Failed"
+          pb-token: "${{ secrets.PB_TOKEN }}"

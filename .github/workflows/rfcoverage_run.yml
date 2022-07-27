@@ -84,10 +84,7 @@ jobs:
     if: always() && needs.Run-RFCoverage-Extraction.result == 'failure'
     steps:
       - name: Send PushBullet notification
-        run: |
-          export PB_API_URL="https://api.pushbullet.com/v2/pushes"
-          export PB_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          export PB_TITLE="RF Coverage pull run failed"
-          export PB_BODY="RF Coverage pull run failed"
-          export REQUEST_BODY="{\"title\":\"$PB_TITLE\",\"body\":\"$PB_BODY\",\"type\":\"link\",\"url\":\"$PB_URL\"}" 
-          curl -H "Access-Token: ${{ secrets.PB_TOKEN }}" -H "Content-Type: application/json" --data-binary "$REQUEST_BODY" -X POST "$PB_API_URL" > /dev/null
+        uses: ./.github/actions/pb-alert
+        with:
+          title: "RF Coverage Pull run failed"
+          pb-token: "${{ secrets.PB_TOKEN }}"

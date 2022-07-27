@@ -9,9 +9,8 @@ inputs:
     required: true
     default: 'self'
   pb-token:
-    description: 'push bullet token'
+    description: 'Pushbullet Token'
     required: true
-    default: '${{ secrets.PB_TOKEN }}'
 runs:
   using: "composite"
   steps:

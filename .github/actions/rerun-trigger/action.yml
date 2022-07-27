@@ -7,6 +7,9 @@ inputs:
   alert-title:
     description: 'Title of the alert to send'
     required: true
+  pb-token:
+    description: 'Pushbullet Token'
+    required: true
 runs:
   using: "composite"
   steps:
@@ -46,6 +49,7 @@ runs:
       uses: ./.github/actions/pb-alert
       with:
         title: "${{ inputs.alert-title }}"
+        pb-token: "${{ inputs.pb-token }}"
         which-run: 'from-event'
 
 

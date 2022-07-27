@@ -27,3 +27,4 @@ jobs:
         uses: ./.github/actions/pb-alert
         with:
           title: "Test Action Failed"
+          pb-token: "${{ secrets.PB_TOKEN }}"

@@ -15,6 +15,7 @@ runs:
   steps:
     - name: Check to give up
       id: check
+      shell: bash
       run: |
         # conclusion values: action_required, cancelled, failure, neutral, success, skipped, stale, or timed_out
         # TODO: deal with failure conclusions apart from 'failure'
@@ -41,6 +42,7 @@ runs:
 
     - name: Call Rerun API
       if: ${{ steps.check.outputs.RERUN == 'true' }}
+      shell: bash
       run: |
         curl -X POST -u "${{github.repository_owner}}:${{secrets.RERUN_PAT}}" ${{ github.event.workflow_run.rerun_url }}
 

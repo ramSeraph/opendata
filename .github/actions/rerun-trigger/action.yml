@@ -1,0 +1,51 @@
+name: 'Rerun Trigger'
+description: 'Reattempt the workfow run that is being monitored'
+inputs:
+  num-attempts: 
+    description: 'Number of failures which will be retried, after which we give up and send an alert'
+    required: true
+  alert-title:
+    description: 'Title of the alert to send'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Check to give up
+      id: check
+      run: |
+        # conclusion values: action_required, cancelled, failure, neutral, success, skipped, stale, or timed_out
+        # TODO: deal with failure conclusions apart from 'failure'
+        export RUN_ID=${{ github.event.workflow_run.id }}
+        export RUN_NO=${{ github.event.workflow_run.run_number }}
+        export RUN_ATTEMPT=${{ github.event.workflow_run.run_attempt }}
+        export CONCLUSION=${{ github.event.workflow_run.conclusion }}
+        echo "got workflow run event for $RUN_NUMBER( attempt - $RUN_ATTEMPT ), conclusion - $CONCLUSION"
+        if [ "$CONCLUSION" != "failure" ]; then
+          echo "setting RERUN to false and SEND_ALERT to false"
+          echo "::set-output name=RERUN::false"
+          echo "::set-output name=SEND_ALERT::false"
+        else
+          if [ "$RUN_ATTEMPT" -lt ${{ inputs.num-attempts }} ]; then
+            echo "setting RERUN to true and SEND_ALERT to false"
+            echo "::set-output name=RERUN::true"
+            echo "::set-output name=SEND_ALERT::false"
+          else
+            echo "setting RERUN to false and SEND_ALERT to true"
+            echo "::set-output name=RERUN::false"
+            echo "::set-output name=SEND_ALERT::true"
+          fi
+        fi
+
+    - name: Call Rerun API
+      if: ${{ steps.check.outputs.RERUN == 'true' }}
+      run: |
+        curl -X POST -u "${{github.repository_owner}}:${{secrets.RERUN_PAT}}" ${{ github.event.workflow_run.rerun_url }}
+
+    - name: Send PushBullet notification
+      if: ${{ steps.check.outputs.SEND_ALERT == 'true' }}
+      uses: ./.github/actions/pb-alert
+      with:
+        title: "${{ inputs.alert-title }}"
+        which-run: 'from-event'
+
+

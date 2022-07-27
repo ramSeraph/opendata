@@ -12,16 +12,18 @@ runs:
   using: "composite"
   steps:
     - id: get-url
+      shell: bash
       run: |
-        if [[ "${{ inputs.which-run }}" == 'self' ]]; then
+        if [[ "${{ inputs.which-run }}" == "self" ]]; then
             echo "::set-output name=url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        elif [[ "${{ inputs.which-run }}" == 'from-event' ]]; then
+        elif [[ "${{ inputs.which-run }}" == "from-event" ]]; then
             echo "::set-output name=url::${{ github.event.workflow_run.html_url }}"
         else
             echo "Unsupported input which-run; ${{ inputs.which-run }}"
             exit 1
         fi
-    - run: |
+    - shell: bash
+      run: |
         export PB_API_URL="https://api.pushbullet.com/v2/pushes"
         export PB_URL="${{steps.get-url.outputs.url}}"
         export PB_TITLE="${{inputs.title}}"

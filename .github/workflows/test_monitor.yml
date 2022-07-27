@@ -17,3 +17,5 @@ jobs:
           alert-title: "Test Run Failed"
           num-attempts: 2
           pb-token: "${{ secrets.PB_TOKEN }}"
+          rerun-gh-token: "${{ secrets.RERUN_PAT }}"
+

@@ -9,9 +9,15 @@ jobs:
   RetryTrigger:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Rerun Or Alert
         uses: ./.github/actions/rerun-trigger
         with:
           alert-title: "LGD Daily run failed"
           num-attempts: 3
           pb-token: "${{ secrets.PB_TOKEN }}"
+          rerun-gh-token: "${{ secrets.RERUN_PAT }}"
+
+
+

@@ -10,6 +10,9 @@ inputs:
   pb-token:
     description: 'Pushbullet Token'
     required: true
+  rerun-gh-token:
+    description: 'Github Token to use to trigger rerun'
+    required: true
 runs:
   using: "composite"
   steps:
@@ -44,7 +47,7 @@ runs:
       if: ${{ steps.check.outputs.RERUN == 'true' }}
       shell: bash
       run: |
-        curl -X POST -u "${{github.repository_owner}}:${{secrets.RERUN_PAT}}" ${{ github.event.workflow_run.rerun_url }}
+        curl -X POST -u "${{github.repository_owner}}:${{inputs.rerun-gh-token}}" ${{ github.event.workflow_run.rerun_url }}
 
     - name: Send PushBullet notification
       if: ${{ steps.check.outputs.SEND_ALERT == 'true' }}

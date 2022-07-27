@@ -252,7 +252,7 @@ def get_network_data(executor):
             continue
         rec_set.add(val)
 
-    header = list(nw_infos[0].keys() + ['scrape_date'])
+    header = list(nw_infos[0].keys()) + ['scrape_date']
     Path(network_data_filename).parent.mkdir(parents=True, exist_ok=True)
     logger.info(f'writing file {network_data_filename}')
     with open(network_data_filename, 'w') as f:

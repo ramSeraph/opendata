@@ -91,7 +91,7 @@ jobs:
       - name: Send PushBullet notification
         run: |
           export PB_API_URL="https://api.pushbullet.com/v2/pushes"
-          export PB_URL="https://github.com/${{ github.repository }}/runs/${{ github.run_id }}"
+          export PB_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           export PB_TITLE="RF Coverage pull run failed"
           export PB_BODY="RF Coverage pull run failed"
           export REQUEST_BODY="{\"title\":\"$PB_TITLE\",\"body\":\"$PB_BODY\",\"type\":\"link\",\"url\":\"$PB_URL\"}" 

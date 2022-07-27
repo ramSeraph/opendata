@@ -1,15 +1,17 @@
-name: Daily rfcoverage Run
+name: Monthly RFCoverage Run
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on: 
+  schedule:
+    - cron: '0 0 * * 0'
   workflow_dispatch:
 
 jobs:
-  Run-LGD-Extraction:
-    timeout-minutes: 600
+  Run-RFCoverage-Extraction:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -55,7 +57,7 @@ jobs:
       - name: Download Rfcoverage data
         run: |
           .venv/bin/python rfcoverage/scrape.py
-        timeout-minutes: 300
+        timeout-minutes: 20
 
       - name: Download Previous data from GCP
         run: |
@@ -66,19 +68,31 @@ jobs:
           gzip data/network_data.csv
           gsutil cp data/network_data.csv.gz gs://rfcoverage_data/network_data.csv.gz
           rm -rf data/
-
-        timeout-minutes: 300
-
-
+        timeout-minutes: 20
 
       - name: Cleanup Processes
-        if: ${{ always() }}
+        if: always()
         run: |
           ps -fe | grep "\.venv/bin/python" 
           ps -fe | grep "\.venv/bin/python" | grep -v grep | tr -s " " | cut -d" " -f2 | xargs kill || true
+
 
       - name: Upload archive file to gcs
         run: |
           gsutil -m cp data/network_data_${{ steps.date.outputs.date }}.zip gs://rfcoverage_data/
 
 
+  RFCoverage-failure-notify:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    needs: [Run-RFCoverage-Extraction]
+    if: always() && needs.Run-RFCoverage-Extraction.result == 'failure'
+    steps:
+      - name: send pushbullet notification
+        run: |
+          export pb_api_url="https://api.pushbullet.com/v2/pushes"
+          export pb_url="https://github.com/${{ github.repository }}/runs/${{ github.run_number }}"
+          export pb_title="RF Coverage pull run failed"
+          export pb_body="RF Coverage pull run failed"
+          export request_body="{\"title\":\"$pb_title\",\"body\":\"$pb_body\",\"type\":\"link\",\"url\":\"$pb_url\"}" 
+          curl -h "access-token: ${{ secrets.pb_token }}" -h "content-type: application/json" --data-binary "$request_body" -x post "$pb_api_url" 

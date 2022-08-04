@@ -137,6 +137,8 @@ jobs:
     needs: [Run-SOI-Parsing]
     if: always() && needs.Run-SOI-Parsing.result == 'failure'
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Send PushBullet notification
         uses: ./.github/actions/pb-alert
         with:

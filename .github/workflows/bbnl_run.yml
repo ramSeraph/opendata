@@ -39,6 +39,8 @@ jobs:
       - Archive-BBNL-Usage-Page
     if: always() && ( needs.Archive-BBNL-Main-Page.result == 'failure' || needs.Archive-BBNL-Usage-Page.result == 'failure' )
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Send PushBullet notification
         uses: ./.github/actions/pb-alert
         with:

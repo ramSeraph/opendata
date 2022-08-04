@@ -23,7 +23,7 @@ for filename in file_list:
     file_map[filename] = []
 
 duplicate_map = {k:v for k,v in file_map.items() if len(v) != 0}
-print(duplicate_map)
+print(f'{duplicate_map=}')
 if len(duplicate_map) > 0:
     exit(1)
 exit(0)

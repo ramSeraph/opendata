@@ -13,6 +13,7 @@ known_problems = [
 
     # 47A/15 has a small piece outside the grid
     # 49E/3 has a small piece outside the grid
+    # 87C/15 has a small piece outside the grid
     # 47B/13 has legend data inside map
     # 47A/16 has legend data inside map
 
@@ -45,6 +46,11 @@ known_problems = [
     'data/raw/52B_5.pdf', # ladakh, combined files handled in 52B_6
     'data/raw/58N_8.pdf', # tamilnadu, combined files handled in 58N_4
     'data/raw/47A_11.pdf', # maharashtra, combined file handled in 47A_15
+    'data/raw/58O_2.pdf', # tamilnadu, combined files handled in 58O_1
+    'data/raw/58O_4.pdf', # tamilnadu, combined files handled in 58O_3
+    'data/raw/58O_7.pdf', # tamilnadu, combined files handled in 58O_8
+    'data/raw/87C_15.pdf', # andaman, combined files handled in 87C_16
+    'data/raw/87C_12.pdf', # andaman, combined files handled in 87C_16
 
     # kept in for now
     #'data/raw/48J_10.pdf', # anamoly, black strip in file

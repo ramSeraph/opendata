@@ -170,7 +170,7 @@ def get_color_mask(img_hsv, color):
     return final_mask
 
 
-def get_ext_count(point, img_mask, ext_thresh, factor):
+def get_ext_count(point, img_mask, ext_thresh, factor, cwidth):
     x, y = point
     h, w = img_mask.shape[:2]
     uc = 0
@@ -178,30 +178,34 @@ def get_ext_count(point, img_mask, ext_thresh, factor):
     ye = min(y+ext_length, h - 1)
     print(ye)
     uc += np.count_nonzero(img_mask[y:ye, x])
-    uc += np.count_nonzero(img_mask[y:ye, x+1])
-    uc += np.count_nonzero(img_mask[y:ye, x-1])
+    for i in range(cwidth):
+        uc += np.count_nonzero(img_mask[y:ye, x+i])
+        uc += np.count_nonzero(img_mask[y:ye, x-i])
 
     dc = 0
     ye = max(y-ext_length, 0)
     dc += np.count_nonzero(img_mask[ye:y, x])
-    dc += np.count_nonzero(img_mask[ye:y, x+1])
-    dc += np.count_nonzero(img_mask[ye:y, x-1])
+    for i in range(cwidth):
+        dc += np.count_nonzero(img_mask[ye:y, x+i])
+        dc += np.count_nonzero(img_mask[ye:y, x-i])
 
     lc = 0
     xe = min(x+ext_length, w - 1)
     lc += np.count_nonzero(img_mask[y, x:xe])
-    lc += np.count_nonzero(img_mask[y+1, x:xe])
-    lc += np.count_nonzero(img_mask[y-1, x:xe])
+    for i in range(cwidth):
+        lc += np.count_nonzero(img_mask[y+i, x:xe])
+        lc += np.count_nonzero(img_mask[y-i, x:xe])
 
     rc = 0
     xe = max(x-ext_length, 0)
     rc += np.count_nonzero(img_mask[y, xe:x])
-    rc += np.count_nonzero(img_mask[y+1, xe:x])
-    rc += np.count_nonzero(img_mask[y-1, xe:x])
+    for i in range(cwidth):
+        rc += np.count_nonzero(img_mask[y+i, xe:x])
+        rc += np.count_nonzero(img_mask[y-i, xe:x])
 
     counts = [ uc, dc, rc, lc ]
     print(f'{point=}, {counts=}, {ext_thresh=} {factor=}')
-    exts = [ c > ext_thresh*factor for c in counts ]
+    exts = [ c > ext_thresh*factor*(2*cwidth + 1)/3 for c in counts ]
     return exts.count(True)
  
 
@@ -363,7 +367,7 @@ def reorder_poly_points(poly_points):
 
 
 class Converter:
-    def __init__(self, filename, extra={}):
+    def __init__(self, filename, extra={}, extra_ancillary={}):
         self.filename = filename
         self.file_fp = None
         self.file_dir = get_file_dir(filename)
@@ -375,6 +379,7 @@ class Converter:
         self.pdf_document = None
         self.mapbox_corners = None
         self.src_crs = None
+        self.extra_ancillary = extra_ancillary
         self.find_line_iter = extra.get('find_line_iter', 1)
         self.find_line_scale = extra.get('find_line_scale', 3)
         self.ext_thresh_ratio = extra.get('ext_thresh_ratio', 20.0 / 18000.0)
@@ -392,6 +397,9 @@ class Converter:
         self.jpeg_export_quality = extra.get('jpeg_export_quality', 10)
         #self.grid_line_buf = extra.get('grid_line_buf', None)
         self.grid_lines = extra.get('grid_lines', None)
+        self.poly_approx_factor = extra.get('poly_approx_factor', 0.001)
+        self.cwidth = extra.get('cwidth', 1)
+        self.collar_erode = extra.get('collar_erode', 0)
 
 
 
@@ -587,10 +595,15 @@ class Converter:
         else:
             start = time.time()
             img_mask_g = img_mask.astype(np.uint8)*255
-            #imgcat(Image.fromarray(img_mask_g))
+            if self.collar_erode != 0:
+                el1 = cv2.getStructuringElement(cv2.MORPH_RECT, (1, self.collar_erode))
+                #el2 = cv2.getStructuringElement(cv2.MORPH_RECT, (self.collar_erode, 1))
+                img_mask_g = cv2.erode(img_mask_g, el1)
+                #img_mask_g = cv2.erode(img_mask_g, el2)
+            imgcat(Image.fromarray(img_mask_g))
             print(f'getting {self.band_color} contours for whole image')
             contours, hierarchy = cv2.findContours(
-                img_mask.astype(np.uint8)*255, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
+                img_mask_g, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
             )
             ctuples = list(zip(list(contours), list(hierarchy[0])))
             end = time.time()
@@ -675,7 +688,9 @@ class Converter:
             return shrunk_splits
 
         map_bbox, _, map_contour = self.get_maparea()
-        epsilon = 0.001 * cv2.arcLength(map_contour, True)
+        perimeter_len = cv2.arcLength(map_contour, True)
+        print(f'{perimeter_len=}')
+        epsilon = self.poly_approx_factor * perimeter_len
         map_poly = cv2.approxPolyDP(map_contour, epsilon, True)
         map_poly_points = [ list(p[0]) for p in map_poly ]
         print(f'{map_poly_points=}')
@@ -751,7 +766,7 @@ class Converter:
         for pix_factor in [1, 2, 4, 8]:
             four_corner_ips = []
             for ip in ips:
-                ext_count = get_ext_count(ip, img_mask, ext_thresh, pix_factor)
+                ext_count = get_ext_count(ip, img_mask, ext_thresh, pix_factor, self.cwidth)
                 print(f'{ip=}, {ext_count}')
                 if ext_count == 4:
                     four_corner_ips.append(ip)
@@ -946,7 +961,7 @@ class Converter:
         h_proj = get_projection(img_mask, axis=1)
         print_proj(h_proj)
         breaks = get_breaks(h_proj, self.sb_break_min_val)
-        print(f'{breaks=}')
+        #print(f'{breaks=}')
         break_index = -1
         for bi, br in enumerate(breaks):
             if br[1] > c_box_y2:
@@ -1132,30 +1147,35 @@ class Converter:
                         resampling=Resampling.bilinear)
 
 
-    def export_internal(self, filename, out_filename):
+    def export_internal(self, filename, out_filename, jpeg_export_quality):
         if Path(out_filename).exists():
             print(f'{out_filename} exists.. skipping export')
             return
-        creation_opts = f'-co TILED=YES -co COMPRESS=JPEG -co JPEG_QUALITY={self.jpeg_export_quality} -co PHOTOMETRIC=YCBCR' 
+        creation_opts = f'-co TILED=YES -co COMPRESS=JPEG -co JPEG_QUALITY={jpeg_export_quality} -co PHOTOMETRIC=YCBCR' 
         mask_options = '--config GDAL_TIFF_INTERNAL_MASK YES  -b 1 -b 2 -b 3 -mask 4'
         perf_options = '--config GDAL_CACHEMAX 512'
         cmd = f'gdal_translate {perf_options} {mask_options} {creation_opts} {filename} {out_filename}'
         run_external(cmd)
 
+
     def export(self):
         filename = str(self.file_dir.joinpath('final.tif'))
         sheet_no = self.file_dir.name
         out_filename = f'export/gtiffs/{sheet_no}.tif'
-        self.export_internal(filename, out_filename)
+        self.export_internal(filename, out_filename, self.jpeg_export_quality)
         if self.extents is None:
             return
         for k in self.extents.keys():
-            if k == 'full':
+            if k == 'full' or k == sheet_no:
                 continue
             k_dir = Path(f'data/inter/{k}/')
             k_final_file = k_dir.joinpath('final.tif') 
             k_out_filename = f'export/gtiffs/{k}.tif'
-            self.export_internal(str(k_final_file), k_out_filename)
+            jpeg_export_quality = self.jpeg_export_quality
+            if k in self.extra_ancillary and 'jpeg_export_quality' in self.extra_ancillary[k]:
+                jpeg_export_quality = self.extra_ancillary[k]['jpeg_export_quality']
+
+            self.export_internal(str(k_final_file), k_out_filename, jpeg_export_quality)
 
 
     def warp_mapbox(self):
@@ -1198,10 +1218,12 @@ class Converter:
             #addo_cmd = f'export GDAL_NUM_THREADS=ALL_CPUS; gdaladdo {addo_quality_options} -r average {str(final_file)} 2 4 8 16 32'
             #run_external(addo_cmd)
 
+        sheet_no = Path(self.filename).name.replace('.pdf', '')
         if self.extents is None:
             warp_file(sheet_ibox, cutline_file, final_file)
         else:
-            warp_file(sheet_ibox, cutline_file, final_file)
+            if sheet_no not in self.extents:
+                warp_file(sheet_ibox, cutline_file, final_file)
             for k in self.extents.keys():
                 if k == 'full':
                     continue
@@ -1465,7 +1487,7 @@ class Converter:
 # file has no legend or any lines.. 
 # locate the corners manually and join in at the nogrid stage
 def handle_65A_11(filename):
-    converter = Converter(filename, {})
+    converter = Converter(filename, {}, {})
     converter.convert()
     final_file = converter.file_dir.joinpath('final.tif')
     if final_file.exists():
@@ -1503,7 +1525,7 @@ def handle_65A_11(filename):
     converter.close()
 
 def handle_55J_16(filename):
-    converter = Converter(filename, {})
+    converter = Converter(filename, {}, {})
     final_file = converter.file_dir.joinpath('final.tif')
     if final_file.exists():
         print(f'{final_file} exists.. skipping')
@@ -1527,9 +1549,9 @@ super_special_handlers = {
 }
 
 
-def only_convert(filename, extra):
+def only_convert(filename, extra, extra_ancillary):
     print(f'processing {filename}')
-    converter = Converter(filename, extra)
+    converter = Converter(filename, extra, extra_ancillary)
     mapbox_file = converter.file_dir.joinpath('mapbox.jpg')
     nogrid_file = converter.file_dir.joinpath('nogrid.jpg')
     final_file =  converter.file_dir.joinpath('final.tif')
@@ -1537,10 +1559,10 @@ def only_convert(filename, extra):
     #    print('downstream files exist.. not attempting conversion')
     #    return
     converter.convert()
-    #converter.rotate()
-    #converter.split_image()
-    #converter.remove_lines()
-    #converter.georeference_mapbox()
+    converter.rotate()
+    converter.split_image()
+    converter.remove_lines()
+    converter.georeference_mapbox()
     converter.close()
 
 def setup_fonts_folder():
@@ -1553,6 +1575,21 @@ def setup_fonts_folder():
     print('Extracting SOI FONTS')
     with zipfile.ZipFile(str(fonts_zip), 'r') as zip_ref:
         zip_ref.extractall('data/')
+
+
+
+def get_extra(special_cases, filename):
+    extra = special_cases.get(filename, {})
+    sheet_no = Path(filename).name.replace('.pdf', '')
+    extents = extra.get('extents', {})
+    extra_ancillary = {}
+    for k in extents.keys():
+        if k == 'full' or k == sheet_no:
+            continue
+        full_filename = f'data/raw/{k}.pdf'
+        if full_filename in special_cases:
+            extra_ancillary[k] = special_cases[full_filename]
+    return extra, extra_ancillary
 
 
 if __name__ == '__main__':
@@ -1588,7 +1625,6 @@ if __name__ == '__main__':
         special_cases = {}
 
 
-
     ONLY_CONVERT = os.environ.get('ONLY_CONVERT', '0') == '1'
     if ONLY_CONVERT:
         fut_map = {}
@@ -1598,8 +1634,8 @@ if __name__ == '__main__':
                     continue
                 if filename in super_special_handlers:
                     continue
-                extra = special_cases.get(filename, {})
-                fut = executor.submit(only_convert, filename, extra)
+                extra, extra_ancillary = get_extra(special_cases, filename)
+                fut = executor.submit(only_convert, filename, extra, extra_ancillary)
                 fut_map[fut] = filename
         
             total_count = len(fut_map.keys())
@@ -1630,9 +1666,9 @@ if __name__ == '__main__':
             handler(filename, *args)
             continue
         print(f'processing {filename} {i+1}/{len(filenames)}')
-        extra = special_cases.get(filename, {})
+        extra, extra_ancillary = get_extra(special_cases, filename)
         print(extra)
-        converter = Converter(filename, extra)
+        converter = Converter(filename, extra, extra_ancillary)
         #crs = converter.get_source_crs()
         #print(crs)
         try:

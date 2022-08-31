@@ -4,7 +4,7 @@ title: SOI
 permalink: /maps/SOI/
 ---
 
-Collection of Open Series Maps from [Survey Of India](https://onlinemaps.surveyofindia.gov.in)
+Collection of Open Series Maps from [Survey Of India](https://onlinemaps.surveyofindia.gov.in) -  [Copyright Notice](https://surveyofindia.gov.in/pages/copyright-policy)
 
 [Code](https://github.com/ramSeraph/opendata/tree/master/maps/SOI) used to extract this data.
 
@@ -23,7 +23,7 @@ All the data below is updated weekly
 # JOSM
 * URLs
   * `https://server.nikhilvj.co.in/soiredirect/{z}/{x}/{y}.webp` (By [Nikhilvj](https://github.com/answerquest))
-  * `https://soi.thoughtfree.space/export/tiles/{z}/{x}/{y}.webp`
+  * `https://soi.fly.dev/export/tiles/{z}/{x}/{y}.webp`
 * Plugin
   * Needs to be used along with the external JOSM webp plugin developed at [ramSeraph/josm-webp-plugin](https://github.com/ramSeraph/josm-webp-plugin)
 

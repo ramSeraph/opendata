@@ -32,6 +32,7 @@ known_problems = [
 
     'data/raw/41B_16.pdf', # gujarat, combined files handled in 41F_4
 
+    'data/raw/41G_11.pdf', # gujarat, combined files handled in 41G_15
     'data/raw/41G_16.pdf', # gujarat, combined files handled in 41K_4
 
     'data/raw/48E_5.pdf', # gujarat, combined files handled in 48E_9

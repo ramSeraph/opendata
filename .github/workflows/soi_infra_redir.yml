@@ -1,4 +1,4 @@
-name: Deploy SOI redirect
+name: SOI Deploy redirect
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}

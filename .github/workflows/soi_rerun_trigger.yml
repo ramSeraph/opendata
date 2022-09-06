@@ -13,8 +13,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Rerun Or Alert
         uses: ./.github/actions/rerun-trigger
+        secrets: inherit
         with:
           alert-title: "SOI Unavailable Run Failed"
           num-attempts: 20
-          pb-token: "${{ secrets.PB_TOKEN }}"
-          rerun-gh-token: "${{ secrets.RERUN_PAT }}"

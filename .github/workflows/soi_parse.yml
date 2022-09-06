@@ -141,6 +141,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Send PushBullet notification
         uses: ./.github/actions/pb-alert
+        secrets: inherit
         with:
           title: "SOI Parse Run Failed"
-          pb-token: "${{ secrets.PB_TOKEN }}"

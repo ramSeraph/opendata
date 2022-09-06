@@ -10,9 +10,11 @@ inputs:
   pb-token:
     description: 'Pushbullet Token'
     required: true
+    default: '${{ secrets.PB_TOKEN }}'
   rerun-gh-token:
     description: 'Github Token to use to trigger rerun'
     required: true
+    default: "${{ secrets.RERUN_PAT }}"
 runs:
   using: "composite"
   steps:

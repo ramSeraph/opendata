@@ -13,11 +13,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Rerun Or Alert
         uses: ./.github/actions/rerun-trigger
+        secrets: inherit
         with:
           alert-title: "LGD Daily run failed"
           num-attempts: 3
-          pb-token: "${{ secrets.PB_TOKEN }}"
-          rerun-gh-token: "${{ secrets.RERUN_PAT }}"
-
-
-

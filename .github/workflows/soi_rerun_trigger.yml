@@ -10,5 +10,5 @@ jobs:
     uses: ./.github/workflows/common-rerun-trigger.yml
     secrets: inherit
     with:
-      title: "SOI Unavailable Run Failed"
+      alert-title: "SOI Unavailable Run Failed"
       num-attempts: 20

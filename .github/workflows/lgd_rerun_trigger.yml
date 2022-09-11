@@ -10,5 +10,5 @@ jobs:
     uses: ./.github/workflows/common-rerun-trigger.yml
     secrets: inherit
     with:
-      title: "LGD Daily Run failed"
+      alert-title: "LGD Daily Run failed"
       num-attempts: 3

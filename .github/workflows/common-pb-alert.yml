@@ -5,13 +5,16 @@ on:
       title: 
         description: 'Title in alert( also the body for now )'
         required: true
+        type: string
       which-run:
         description: 'workflow run event whose information needs to be sent'
         required: true
+        type: string
         default: 'self'
       pb-token:
         description: 'Pushbullet Token'
         required: true
+        type: string
         default: '${{ secrets.PB_TOKEN }}'
 
 jobs:

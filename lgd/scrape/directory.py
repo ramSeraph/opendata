@@ -481,6 +481,23 @@ def get_all_directory_downloaders(ctx):
                                                'entityCodes': ['35', '0'],
                                                'assemblyParliamentConstituency': '#AC'
                                            }))
+    downloaders.append(DirectoryDownloader(name='PINCODE_VILLAGES',
+                                           desc='Pincode to Village Mapping',
+                                           dropdown='Pincode Mapping --> Pincode to Village Mapping',
+                                           csv_filename='pincode_villages.csv',
+                                           ctx=ctx,
+                                           post_data_extra={
+                                               'rptFileName': 'pincodetoVillageMapping',
+                                           }))
+    downloaders.append(DirectoryDownloader(name='PINCODE_URBAN',
+                                           desc='Pincode to Urban Mapping',
+                                           dropdown='Pincode Mapping --> Pincode to Urban Mapping',
+                                           csv_filename='pincode_urban.csv',
+                                           ctx=ctx,
+                                           post_data_extra={
+                                               'rptFileName': 'pincodetoUrbanMapping',
+                                           }))
+
     downloaders.append(DirectoryDownloader(name='CENTRAL_ORG_DETAILS',
                                            desc='list of all central organization details',
                                            dropdown='Department/Organization --> Departments/Organization Details --> Central',

@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 BASE_URL = 'https://lgdirectory.gov.in'
 INCORRECT_CAPTCHA_MESSAGE = 'The CAPTCHA image code was entered incorrectly.'
 RUN_FOR_PREV_DAY = int(os.environ.get('RUN_FOR_PREV_DAY', '0'))
-TRACING = True
+TRACING = False
 FREE_MEM_THRESHOLD_GB = 2.0
 if TRACING:
     import tracemalloc

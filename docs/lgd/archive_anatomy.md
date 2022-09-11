@@ -120,6 +120,30 @@ Location in LGD
 
 ---
 
+## pincode_villages.csv
+
+description
+: Pincode to Village Mapping
+
+Location in LGD
+: - Download Directory
+    - Pincode Mapping
+      - Pincode to Village Mapping
+
+---
+
+## pincode_urban.csv
+
+description
+: Pincode to Urban Mapping
+
+Location in LGD
+: - Download Directory
+    - Pincode Mapping
+      - Pincode to Urban Mapping
+
+---
+
 ## central_orgs.csv
 
 description

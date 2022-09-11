@@ -78,15 +78,9 @@ jobs:
 
 
   RFCoverage-failure-notify:
-    timeout-minutes: 5
-    runs-on: ubuntu-latest
     needs: [Run-RFCoverage-Extraction]
     if: always() && needs.Run-RFCoverage-Extraction.result == 'failure'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Send PushBullet notification
-        uses: ./.github/actions/pb-alert
-        secrets: inherit
-        with:
-          title: "RF Coverage Pull run failed"
+    uses: ./.github/workflows/common-pb-alert.yml
+    secrets: inherit
+    with:
+      title: "RF Coverage Pull run failed"

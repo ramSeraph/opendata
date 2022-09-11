@@ -600,7 +600,8 @@ class Converter:
                 #el2 = cv2.getStructuringElement(cv2.MORPH_RECT, (self.collar_erode, 1))
                 img_mask_g = cv2.erode(img_mask_g, el1)
                 #img_mask_g = cv2.erode(img_mask_g, el2)
-            imgcat(Image.fromarray(img_mask_g))
+            if SHOW_IMG:
+                imgcat(Image.fromarray(img_mask_g))
             print(f'getting {self.band_color} contours for whole image')
             contours, hierarchy = cv2.findContours(
                 img_mask_g, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
@@ -1559,10 +1560,10 @@ def only_convert(filename, extra, extra_ancillary):
     #    print('downstream files exist.. not attempting conversion')
     #    return
     converter.convert()
-    converter.rotate()
-    converter.split_image()
-    converter.remove_lines()
-    converter.georeference_mapbox()
+    #converter.rotate()
+    #converter.split_image()
+    #converter.remove_lines()
+    #converter.georeference_mapbox()
     converter.close()
 
 def setup_fonts_folder():

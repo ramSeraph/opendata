@@ -1,5 +1,4 @@
 name: 'PushBullet Alert'
-description: 'Send a PushBullet alert'
 on:
   workflow_call:
     inputs:

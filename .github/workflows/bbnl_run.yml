@@ -32,17 +32,12 @@ jobs:
           waybackpy --url "https://bbnl.nic.in/usage2.pdf" --save --headers
 
   BBNL-Archive-failure-notify:
-    timeout-minutes: 5
-    runs-on: ubuntu-latest
     needs: 
       - Archive-BBNL-Main-Page
       - Archive-BBNL-Usage-Page
     if: always() && ( needs.Archive-BBNL-Main-Page.result == 'failure' || needs.Archive-BBNL-Usage-Page.result == 'failure' )
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Send PushBullet notification
-        uses: ./.github/actions/pb-alert
-        secrets: inherit
-        with:
-          title: "BBNL Page Archival Failed"
+    uses: ./.github/workflows/common-pb-alert.yml
+    secrets: inherit
+    with:
+      title: "BBNL Page Archival failed"
+      which-run: "self"

@@ -132,15 +132,10 @@ jobs:
         timeout-minutes: 600
 
   SOI-Parse-Failure-Notify:
-    timeout-minutes: 5
-    runs-on: ubuntu-latest
     needs: [Run-SOI-Parsing]
     if: always() && needs.Run-SOI-Parsing.result == 'failure'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Send PushBullet notification
-        uses: ./.github/actions/pb-alert
-        secrets: inherit
-        with:
-          title: "SOI Parse Run Failed"
+    uses: ./.github/workflows/common-pb-alert.yml
+    secrets: inherit
+    with:
+      title: "SOI Parse Run Failed"
+      which-run: "self"

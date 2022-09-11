@@ -7,13 +7,8 @@ on:
 
 jobs:
   RetryTrigger:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Rerun Or Alert
-        uses: ./.github/actions/rerun-trigger
-        secrets: inherit
-        with:
-          alert-title: "LGD Daily run failed"
-          num-attempts: 3
+    uses: ./.github/workflows/common-rerun-trigger.yml
+    secrets: inherit
+    with:
+      title: "LGD Daily Run failed"
+      num-attempts: 3

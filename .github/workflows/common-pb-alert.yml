@@ -10,12 +10,6 @@ on:
         description: 'workflow run event whose information needs to be sent'
         required: true
         type: string
-        default: 'self'
-      pb-token:
-        description: 'Pushbullet Token'
-        required: true
-        type: string
-        default: '${{ secrets.PB_TOKEN }}'
 
 jobs:
   Send-Alert:
@@ -40,4 +34,4 @@ jobs:
           export PB_TITLE="${{inputs.title}}"
           export PB_BODY="${{inputs.body}}"
           export REQUEST_BODY="{\"title\":\"$PB_TITLE\",\"body\":\"$PB_BODY\",\"type\":\"link\",\"url\":\"$PB_URL\"}" 
-          curl -H "Access-Token: ${{ inputs.pb-token }}" -H "Content-Type: application/json" --data-binary "$REQUEST_BODY" -X POST "$PB_API_URL" > /dev/null
+          curl -H "Access-Token: ${{ secrets.PB_TOKEN }}" -H "Content-Type: application/json" --data-binary "$REQUEST_BODY" -X POST "$PB_API_URL" > /dev/null

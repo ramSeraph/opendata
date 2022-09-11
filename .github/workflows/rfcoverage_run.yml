@@ -84,3 +84,4 @@ jobs:
     secrets: inherit
     with:
       title: "RF Coverage Pull run failed"
+      which-run: "self"

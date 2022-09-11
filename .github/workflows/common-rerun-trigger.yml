@@ -5,7 +5,7 @@ on:
       num-attempts: 
         description: 'Number of failures which will be retried, after which we give up and send an alert'
         required: true
-        type: int
+        type: number
       alert-title:
         description: 'Title of the alert to send'
         required: true

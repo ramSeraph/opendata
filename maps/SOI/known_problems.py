@@ -52,6 +52,7 @@ known_problems = [
     'data/raw/58O_7.pdf', # tamilnadu, combined files handled in 58O_8
     'data/raw/87C_15.pdf', # andaman, combined files handled in 87C_16
     'data/raw/87C_12.pdf', # andaman, combined files handled in 87C_16
+    'data/raw/46C_7.pdf', # gujarat, combined files handled in 46C_3
 
     # kept in for now
     #'data/raw/48J_10.pdf', # anamoly, black strip in file

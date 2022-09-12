@@ -20,5 +20,3 @@ markdown: kramdown
 #remote_theme: 'MyNameIsCosmo/jekyll-theme-markdown-console'
 
 repository: ramSeraph/opendata
-
-google_analytics: G-TZEXHP69XX

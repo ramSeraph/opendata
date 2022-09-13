@@ -1,0 +1,119 @@
+name: Make Release
+on: 
+  workflow_call:
+    inputs:
+      name: 
+        description: 'Name of release and tag to use'
+        required: true
+        type: string
+      assets:
+        description: 'list of assets to push.. multiple lines.. one asset_file_path per line'
+        required: true
+        type: string
+      body:
+        description: 'Body of text to be added to the release'
+        required: true
+        type: string
+
+env:
+  RELEASE: "{{ inputs.name }}"
+  GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+  ERR_FILE: error_file.txt
+
+jobs:
+  Release-Job:
+    timeout-minutes: 30
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Get current date
+        shell: bash
+        run: echo "::set-output name=date::$(date +'%d%b%Y %H:%M:%S')"
+        id: date
+
+      - uses: actions/checkout@v3
+
+      - name: Release Info
+        shell: bash
+        id: release-info
+        run: |
+          source .github/scripts/rfuncs.sh
+          echo "::set-output name=base-hasrelease::$(has_release ${RELEASE})"
+          echo "::set-output name=old-hasrelease::$(has_release ${RELEASE}-old)"
+          echo "::set-output name=new-hasrelease::$(has_release ${RELEASE}-new)"
+
+          echo "::set-output name=base-releaseid::$(get_release_id ${RELEASE})"
+          echo "::set-output name=old-releaseid::$(get_release_id ${RELEASE}-old)"
+          echo "::set-output name=new-releaseid::$(get_release_id ${RELEASE}-new)"
+
+
+      - name: Release Pre Checks
+        shell: bash
+        id: pre-release-check
+        run: |
+          echo "base-hasrelease: ${{ steps.release-info.outputs.base-hasrelease }}"
+          echo "old-hasrelease: ${{ steps.release-info.outputs.old-hasrelease }}"
+          echo "new-hasrelease: ${{ steps.release-info.outputs.new-hasrelease }}"
+
+          echo "base-releaseid: ${{ steps.release-info.outputs.base-releaseid }}"
+          echo "old-releaseid: ${{ steps.release-info.outputs.old-releaseid }}"
+          echo "new-releaseid: ${{ steps.release-info.outputs.new-releaseid }}"
+          
+          if [[ "${{ steps.release-info.outputs.base-hasrelease }}" == "no" ]]; then
+            if [[ "${{ steps.release-info.outputs.old-hasrelease }}" == "yes" ]]; then
+              echo "ERROR: has an old release, but no current release.. exiting"
+              exit 1
+            elif [[ "${{ steps.release-info.outputs.new-hasrelease }}" == "yes" ]]; then
+              echo "ERROR: has an new release, but no current release.. exiting"
+              exit 1
+            fi
+          else
+            if [[ "${{ steps.release-info.outputs.new-hasrelease }}" == "yes" ]]; then
+              echo "ERROR: has an new release and a current release.. exiting"
+              exit 1
+            fi
+          fi
+
+      - name: Create Release
+        id: create-release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            ${{ inputs.body }}
+            Git Ref ${{ github.sha }}
+            Release Date ${{ steps.date.outputs.date }}
+          tag_name: ${{ env.RELEASE }}-new
+          name: ${{ env.RELEASE }}-new
+          fail_on_unmatched_files: true
+          files: ${{ inputs.assets }}
+
+      - name: Delete Old Release
+        id: delete-old-release
+        if: ${{ steps.release-info.outputs.old-hasrelease == 'yes' }}
+        uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        with:
+          delete_release: true
+          tag_name: "${{ env.RELEASE }}-old"
+
+      - name: Move Base to Old Release
+        shell: bash
+        id: pre-release-check
+        if: ${{ steps.release-info.outputs.base-hasrelease == 'yes' }}
+        run: |
+          source .github/scripts/rfuncs.sh
+          move_release "${{ steps.release-info.outputs.base-releaseid }}" "${RELEASE}" "${RELEASE}-old"
+
+      - name: Move New to Base Release
+        shell: bash
+        id: pre-release-check
+        run: |
+          source .github/scripts/rfuncs.sh
+          new_release_id=$(get_release_id ${RELEASE}-new)
+          move_release "$new_release_id" "${RELEASE}-new" "${RELEASE}"
+
+      - name: Debug Failures
+        shell: bash
+        id: pre-release-check
+        if: failure()
+        run: |
+          cat ${ERR_FILE}
+

@@ -1,12 +1,15 @@
-from PIL import Image, ImageOps
 import glob
 import json
-import os.path
+
+from pathlib import Path
+
+from PIL import Image, ImageOps
+
 from lib import print_image
 
-truth_file = 'data/truth.json'
+truth_file = Path('data/truth.json')
 out = {}
-if os.path.exists(truth_file):
+if truth_file.exists(truth_file):
     with open(truth_file) as f:
         out = json.load(f)
 

@@ -7,26 +7,18 @@ import logging
 import collections
 import requests
 import functools
-import psutil
 
-from threading import local, currentThread
-from pathlib import Path
-from bs4 import BeautifulSoup
+from threading import local
 from datetime import datetime, timedelta
+from pathlib import Path
+from timeit import default_timer as timer
+
+
+import psutil
+from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-
-from tqdm import tqdm
-from tqdm.contrib.logging import logging_redirect_tqdm
-from timeit import default_timer as timer
 from humanize import naturalsize
-from google.cloud import storage
-from google.api_core.exceptions import NotFound
-from google.cloud.storage.retry import DEFAULT_RETRY
-from google.cloud.storage.constants import _DEFAULT_TIMEOUT
-
-
-
 
 from .captcha_helper import CaptchaHelper
 
@@ -35,10 +27,6 @@ logger = logging.getLogger(__name__)
 BASE_URL = 'https://lgdirectory.gov.in'
 INCORRECT_CAPTCHA_MESSAGE = 'The CAPTCHA image code was entered incorrectly.'
 RUN_FOR_PREV_DAY = int(os.environ.get('RUN_FOR_PREV_DAY', '0'))
-TRACING = False
-FREE_MEM_THRESHOLD_GB = 2.0
-if TRACING:
-    import tracemalloc
 
 
 class Params:
@@ -53,18 +41,9 @@ class Params:
         self.temp_dir = 'data/temp'
         self.save_intermediates = False
         self.no_verify_ssl = False
-        self.progress_bar = False
         self.connect_timeout = 10
         self.read_timeout = 60
         self.http_retries = 3
-        self.gcs_bucket_name = 'lgd_data_raw'
-        self.gcs_archive_bucket_name = 'lgd_data_archive'
-        self.enable_gcs = False
-        self.gcs_upload_timeout = _DEFAULT_TIMEOUT
-        self.gcs_upload_retry_deadline = DEFAULT_RETRY._deadline
-        self.gcs_upload_retry_initial = DEFAULT_RETRY._initial
-        self.gcs_upload_retry_maximum = DEFAULT_RETRY._maximum
-        self.gcs_upload_retry_multiplier = DEFAULT_RETRY._multiplier
 
     def request_args(self):
         return {
@@ -87,7 +66,6 @@ class Context:
         self.script_session_id = ''
         self.script_batch_id = 0
         self._session = None
-        self._gcs_client = None
 
     def set_csrf_token(self):
         global BASE_URL
@@ -136,15 +114,6 @@ class Context:
             self.set_csrf_token()
         return self._csrf_token
 
-    @property
-    def gcs_client(self):
-        if not self.params.enable_gcs:
-            return None
-        if self._gcs_client is None:
-            self._gcs_client = storage.Client()
-        return self._gcs_client
-    
-
 # moved here due to problems with module imports and python multiprocessing module
 
 def setup_logging(log_level):
@@ -172,8 +141,6 @@ def initialize_context(params):
     local_data.ctx = Context(params)
 
 def initialize_process(params, log_level):
-    if TRACING:
-        tracemalloc.start()
     initialize_context(params)
     setup_logging(log_level)
 
@@ -181,50 +148,6 @@ def get_local_context(params):
     if getattr(local_data, 'ctx', None) is None:
         initialize_context(params)
     return local_data.ctx
-
-class MemoryTracker():
-    def __init__(self, desc, enabled):
-        self.desc = desc
-        self.enabled = enabled
-        #self.initial_snapshot = None
-
-    def __enter__(self):
-        if self.enabled:
-            tracemalloc.reset_peak()
-            #self.initial_snapshot = tracemalloc.take_snapshot()
-        return self
-
-    def __exit__(self, exc_type, value, traceback):
-        if not self.enabled:
-            return
-        size, peak = tracemalloc.get_traced_memory()
-        size, peak = naturalsize(size), naturalsize(peak)
-        logger.debug(f"[ memory size: {size}, peak: {peak} for {self.desc} ]")
-        #final_snapshot = tracemalloc.take_snapshot()
-        #top_stats = final_snapshot.compare_to(self.initial_snapshot, 'traceback')
-        #logger.debug(f"[ Top 20 differences for {self.desc} ]")
-        #for stat in top_stats[:20]:
-        #    logger.debug(stat)
-
-def get_gcs_upload_args(params):
-    timeout = params.gcs_upload_timeout
-    modified_retry = DEFAULT_RETRY.with_deadline(params.gcs_upload_retry_deadline)
-    modified_retry = modified_retry.with_delay(initial=params.gcs_upload_retry_initial,
-                                               multiplier=params.gcs_upload_retry_multiplier,
-                                               maximum=params.gcs_upload_retry_maximum)
-    return { 'retry': modified_retry, 'timeout': timeout }
-
-
-def get_tqdm_position():
-    name = currentThread().getName()
-    thread_idx_str = name.replace('ThreadPoolExecutor-0_','')
-    thread_idx = 0
-    try:
-        thread_idx = int(thread_idx_str)
-    except:
-        pass
-    logging.info('got thread index: {}'.format(thread_idx))
-    return thread_idx + 1
 
 
 def get_date_str(date=None):
@@ -308,17 +231,8 @@ def get_mem_info():
 def download_task(downloader):
     logger.info('getting {}'.format(downloader.desc))
     get_mem_info()
-    #while True:
-    #    smem, pmem = get_mem_info()
-    #    free_mem = smem.total - smem.used
-    #    if free_mem > FREE_MEM_THRESHOLD_GB * (10**9):
-    #        break
-    #    logger.warning('not enough system memory.. sleeping for a min')
-    #    time.sleep(60)
-
-    with MemoryTracker(downloader.name, TRACING):
-        downloader.download(get_local_context(downloader.ctx.params))
-        gc.collect()
+    downloader.download(get_local_context(downloader.ctx.params))
+    gc.collect()
 
 
 
@@ -410,9 +324,6 @@ class BaseDownloader:
         if not self.is_done():
             raise NotReadyException()
 
-        if self.ctx.params.enable_gcs and not Path(csv_filename).exists():
-            self.download_from_gcs(csv_filename, self.get_blobname())
-
         with open(csv_filename) as f:
             reader = csv.DictReader(f)
             for r in reader:
@@ -421,39 +332,6 @@ class BaseDownloader:
     def cleanup(self):
         pass
 
-    def download_from_gcs(self, filename, blobname, ignore_not_found=False):
-        try:
-            bucket = self.ctx.gcs_client.get_bucket(self.ctx.params.gcs_bucket_name)
-            logger.debug(f'downloading {blobname} to local file {filename}')
-            dirname = os.path.dirname(filename)
-            if dirname != '':
-                os.makedirs(dirname, exist_ok=True)
-            bucket.blob(blobname).download_to_filename(filename)
-        except NotFound:
-            if ignore_not_found:
-                logger.warning(f'{blobname} not found in gcs.. ignoring')
-                return
-            raise
-
-
-    def upload_to_gcs(self, filename, blob_name, force=False):
-        bucket_name = self.ctx.params.gcs_bucket_name
-        try:
-            bucket = self.ctx.gcs_client.get_bucket(bucket_name)
-        except NotFound:
-            logger.info(f'Creating bucket {bucket_name}')
-            bucket = self.ctx.gcs_client.create_bucket(bucket_name, location='ASIA-SOUTH1')
-            bucket.make_public(future=True)
-
-        blob = bucket.blob(blob_name)
-        if blob.exists() and not force:
-            logger.warning(f'blob {blob_name} already exists.. not uploading')
-            return
-
-        filesize = naturalsize(Path(filename).stat().st_size)
-        logger.info(f'uploading blob {blob_name}, size: {filesize}')
-        blob.upload_from_filename(filename=filename, **get_gcs_upload_args(self.ctx.params))
- 
     def download(self, ctx=None):
         if ctx is not None:
             self.set_context(ctx)
@@ -492,25 +370,12 @@ class BaseDownloader:
                 Path(csv_filename).unlink(missing_ok=True)
                 raise
 
-        if self.ctx.params.enable_gcs:
-            self.upload_to_gcs(self.get_filename(), self.get_blobname())
-       
         self.cleanup()
 
 
     def is_done(self):
-        if not self.ctx.params.enable_gcs:
-            filename = self.get_filename()
-            return Path(filename).exists()
-
-        blob_name = self.get_blobname()
-        try:
-            bucket = self.ctx.gcs_client.get_bucket(self.ctx.params.gcs_bucket_name)
-        except NotFound:
-            return False
-        return bucket.blob(blob_name).exists()
-
-
+        filename = self.get_filename()
+        return Path(filename).exists()
 
 
     def post_with_progress(self, *args, **kwargs):
@@ -520,35 +385,13 @@ class BaseDownloader:
         logger.info('making remote request')
         logger.debug('post data: {}'.format(kwargs.get('data', {})))
         logger.debug('post headers: {}'.format(kwargs.get('headers', {})))
-        if not self.ctx.params.progress_bar:
-            start = timer()
-            resp = self.ctx.session.post(*args, **req_args)
-            time_taken = timer() - start
-            self.req_time = time_taken
-            self.req_size = len(resp.content)
-            logger.info('done with remote request in {:.2f} secs, size {}'.format(self.req_time, naturalsize(self.req_size)))
-            return resp
-        # Streaming, so we can iterate over the response.
-        req_args['stream'] = True
-        all_data = b''
-        response = self.ctx.session.post(*args, **req_args)
-        total_size_in_bytes= int(response.headers.get('content-length', 0))
-        block_size = 1024 #1 Kibibyte
-        with logging_redirect_tqdm():
-            progress_bar = tqdm(total=total_size_in_bytes,
-                                unit='iB',
-                                unit_scale=True,
-                                desc=self.csv_filename,
-                                position=get_tqdm_position())
-            for data in response.iter_content(block_size):
-                progress_bar.update(len(data))
-                all_data += data
-            progress_bar.close()
-        response._content = all_data
-        logger.info('done with remote request')
-        if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
-            raise Exception(f"Expected content length({total_size_in_bytes}) not same as content downloaded({progress_bar.n})")
-        return response
+        start = timer()
+        resp = self.ctx.session.post(*args, **req_args)
+        time_taken = timer() - start
+        self.req_time = time_taken
+        self.req_size = len(resp.content)
+        logger.info('done with remote request in {:.2f} secs, size {}'.format(self.req_time, naturalsize(self.req_size)))
+        return resp
 
     def get_temp_file(self, content, ext):
         temp_dir_p = Path(self.ctx.params.temp_dir)
@@ -609,44 +452,16 @@ class MultiDownloader(BaseDownloader):
 
         logger.info('Cleaning up for {}'.format(self.name))
 
-        if self.ctx.params.enable_gcs:
-            try:
-                bucket = self.ctx.gcs_client.get_bucket(self.ctx.params.gcs_bucket_name)
-            except NotFound:
-                bucket = None
-
-            prefix_f = self.get_filename().replace('.csv', '_')
-            prefix_b = get_blobname_from_filename(prefix_f, self.ctx.params)
-            existing_child_blob_names = set([ b.name for b in bucket.list_blobs(prefix=prefix_b) ])
-
         files_to_delete = []
-        blobs_to_delete = []
         for ditem in self.downloader_items:
             filename = ditem.downloader.get_filename() 
             if Path(filename).exists():
                 files_to_delete.append(filename)
 
-            if not self.ctx.params.enable_gcs:
-                continue
-
-            if bucket is None:
-                continue
-            blob_name = ditem.downloader.get_blobname()
-            if blob_name in existing_child_blob_names:
-                blob = bucket.blob(blob_name)
-                blobs_to_delete.append(blob)
-
         if len(files_to_delete):
             logger.info(f'deleting files: {files_to_delete}')
             for filename in files_to_delete:
                 os.remove(filename)
-
-        if self.ctx.params.enable_gcs and len(blobs_to_delete):
-            logger.info('deleting blobs: {}'.format([ b.name for b in blobs_to_delete ]))
-            with self.ctx.gcs_client.batch():
-                for blob in blobs_to_delete:
-                    blob.delete()
-        
 
     def get_records(self):
         self.populate_downloaders()

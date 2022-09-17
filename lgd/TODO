@@ -1,0 +1,5 @@
+4) check if u can get historical versions of the data though the dwr apis
+5) double check if any more downloads need to be pulled
+6) add code to pull data from the globaldetail views
+7) create two executors.. one for cpubound tasks and another io bound tasks, use them both together,
+   so that when io bund task take up slots, cpu bound executors still run

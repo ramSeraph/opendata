@@ -2,3 +2,5 @@ data/*
 __pycache__/
 !data/corrections/
 lgd-owner.json
+notes.txt
+.venv

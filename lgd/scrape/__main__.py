@@ -6,7 +6,6 @@ import subprocess
 
 from datetime import datetime
 from pathlib import Path
-from humanize import naturalsize
 from enum import Enum
 from pprint import pprint
 from zipfile import ZipFile, ZIP_LZMA
@@ -14,15 +13,10 @@ from concurrent.futures import (wait, FIRST_COMPLETED,
                                 Future, ProcessPoolExecutor,
                                 ThreadPoolExecutor)
 from concurrent.futures.process import BrokenProcessPool
-from google.api_core.exceptions import NotFound
-try:
-    from graphlib import TopologicalSorter
-except ImportError:
-    from graphlib_backport import TopologicalSorter
+from graphlib import TopologicalSorter
 
-from .base import (Params, Context, expand_comps_to_run,
-                   get_date_str, get_gcs_upload_args,
-                   get_blobname_from_filename,
+from .base import (Params, Context,
+                   get_date_str,  expand_comps_to_run,
                    NotReadyException, initialize_process,
                    download_task, setup_logging)
 from .captcha_helper import CaptchaHelper
@@ -32,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 #TODO: 2) add smoother killing support
 #TODO: 3) cleanup logging
+#TODO: 4) create marker files to avoid incompletely written files from being used
 
 
 class Mode(Enum):
@@ -40,7 +35,6 @@ class Mode(Enum):
     STATUS = 'Status of individual comps'
     CLEANUP = 'Cleanup leftover files'
     RUN = 'Download all things'
-    BEAM_RUN = 'Download all things using Apache Beam'
 
 
 #TODO: handle cancellation?
@@ -161,21 +155,6 @@ def delete_raw_data(ctx):
 
         Path(dir_to_delete).rmdir()
 
-    if params.enable_gcs:
-        try:
-            bucket = ctx.gcs_client.get_bucket(params.gcs_bucket_name)
-        except NotFound:
-            return
-
-        prefix_b = get_blobname_from_filename(str(dir_to_delete) + '/', params)
-        blobs_to_delete = bucket.list_blobs(prefix=prefix_b)
-        if len(blobs_to_delete):
-            blob_names_to_delete = set([ b.name for b in blobs_to_delete ])
-            logger.info('deleting blobs: {}'.format(blob_names_to_delete))
-            with ctx.gcs_client.batch():
-                for blob in blobs_to_delete:
-                    blob.delete()
-
 
 def get_markdown_from_comps(comps_info):
     full_str = "# Archive data details\n\n"
@@ -247,25 +226,9 @@ def archive_all_data(downloaders):
     date_str = get_date_str()
     zip_filename = f'{base_raw_dir}/{date_str}.zip'
 
-    if params.enable_gcs:
-        blob_name = get_blobname_from_filename(zip_filename, params)
-        bucket_name = params.gcs_archive_bucket_name
-        try:
-            bucket = ctx.gcs_client.get_bucket(bucket_name)
-        except NotFound:
-            logger.info(f'Creating bucket {bucket_name}')
-            bucket = ctx.gcs_client.create_bucket(bucket_name, location='ASIA-SOUTH1')
-            bucket.make_public(future=True)
-
-        blob = bucket.blob(blob_name)
-        if blob.exists():
-            logger.info(f'blob {blob_name} already exists, shortcircuiting..')
-            return True
-
     if Path(zip_filename).exists():
-        if not params.enable_gcs:
-            logger.info(f'{zip_filename} already exists, shortcircuiting..')
-            return True
+        logger.info(f'{zip_filename} already exists, shortcircuiting..')
+        return True
     else:
         missing = []
         for filename in filenames:
@@ -308,13 +271,6 @@ def archive_all_data(downloaders):
             raise
         logger.info('Done creating zipfile for archiving')
 
-
-    if not params.enable_gcs:
-        return True
-
-    zip_filesize = naturalsize(Path(zip_filename).stat().st_size)
-    logger.info(f'uploading blob {blob_name}, size: {zip_filesize}')
-    blob.upload_from_filename(filename=zip_filename, **get_gcs_upload_args(params))
     return True
 
 
@@ -389,18 +345,16 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
         return { 'cleanup': True } 
 
 
-    if mode == Mode.RUN or mode == Mode.BEAM_RUN:
+    if mode == Mode.RUN:
         # pull all the captcha related model files
-        CaptchaHelper.prepare(params.captcha_model_dir)
+
+        CaptchaHelper.check_models(params.captcha_model_dir)
 
         logger.info(f'going to run comps: {comps_to_run_expanded}')
         graph_to_run = {d.name:d.deps for d in all_downloaders if d.name in comps_to_run_expanded}
 
         if mode == Mode.RUN:
             comps_done, comps_in_error = run_on_threads(graph_to_run, dmap, num_parallel, use_procs, params)
-        else:
-            from .beam_helper import run_on_beam
-            comps_done, comps_in_error = run_on_beam(comps_to_run_expanded, params, num_parallel)
 
         result = { 'done': comps_done, 'error': comps_in_error, 'left': comps_to_run_expanded - (comps_done | comps_in_error) }
         if params.archive_data:
@@ -448,7 +402,6 @@ if __name__ == '__main__':
     parser.add_argument('-C', '--connect-timeout', help='http connect timeout in secs', type=int)
     parser.add_argument('--no-verify-ssl', help='don\'t verify ssl for connections', action='store_true')
     parser.add_argument('-r', '--http-retries', help='number of times to retry on http failure', type=int)
-    parser.add_argument('--progress-bar', help='show progress bar', action='store_true')
 
     parser.add_argument('--print-captchas', help='print captchas on failure', action='store_true')
     parser.add_argument('--save-failed-html', help='save html for failed requests', action='store_true')
@@ -462,16 +415,6 @@ if __name__ == '__main__':
     parser.add_argument('--captcha-model-dir', help='location of the directory with tesseract models', type=str)
     parser.add_argument('--archive-data', help='archive data into a zip file and delete the staging files', action='store_true')
     parser.add_argument('--save-intermediates', help='save intermediate files before converting to csv, in the temp dir', action='store_true')
-
-    parser.add_argument('--enable-gcs', help='R|enable writing to gcs, base-raw-dir is used as staging area for the data,\n' +
-                                             ' credentials need to be made available through the GOOGLE_APPLICATION_CREDENTIALS env variable', action='store_true')
-    parser.add_argument('--gcs-bucket-name', help='which bucket to write raw data to in gcs', type=str)
-    parser.add_argument('--gcs-archive-bucket-name', help='which bucket to write archived data to in gcs', type=str)
-    parser.add_argument('--gcs-upload-timeout', help='timeout in secs for upload to gcs', type=float)
-    parser.add_argument('--gcs-upload-retry-deadline', help='max deadline in secs for upload to gcs', type=float)
-    parser.add_argument('--gcs-upload-retry-initial', help='initial delay in secs for retrying upload to gcs', type=float)
-    parser.add_argument('--gcs-upload-retry-maximum', help='maximum delay in secs for retrying upload to gcs', type=float)
-    parser.add_argument('--gcs-upload-retry-multiplier', help='multiplier to increase delay between various retries to upload to gcs', type=float)
 
     parser.add_argument('-l', '--log-level', help='Set the logging level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], type=str)
     parser.set_defaults(**default_params_dict)
@@ -492,10 +435,7 @@ if __name__ == '__main__':
     mode = Mode[args.mode]
     if leftover:
         msg = 'unrecognized arguments: {}'.format(' '.join(leftover))
-        if mode == Mode.BEAM_RUN:
-            logger.warning(msg)
-        else:
-            parser.error(msg)
+        parser.error(msg)
 
     args_dict = vars(args)
     logger.debug(f'Running with args: {args_dict}')

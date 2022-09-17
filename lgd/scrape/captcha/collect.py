@@ -19,7 +19,7 @@ def collect_test_captchas(num_to_collect, captcha_helper):
         logger.info('getting captcha image')
         captcha_content = captcha_helper.get_captcha(None)
         ctx.last_captcha = captcha_content
-        captcha_file_name = captcha_helper.save_last_captcha(params, ctx)
+        captcha_file_name = captcha_helper.save_last_captcha()
         captcha_file_names.append(captcha_file_name)
         print_image_c(captcha_content)
         time.sleep(1)

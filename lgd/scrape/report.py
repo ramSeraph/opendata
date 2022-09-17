@@ -8,15 +8,15 @@ import shutil
 import logging
 
 from pathlib import Path
-from bs4 import BeautifulSoup
 from urllib.parse import urlencode, urlparse, parse_qs
 from datetime import datetime, timedelta
+
+from bs4 import BeautifulSoup
 
 from .base import (INCORRECT_CAPTCHA_MESSAGE,
                    BaseDownloader, MultiDownloader, 
                    DownloaderItem, add_defaults_to_args,
-                   RUN_FOR_PREV_DAY,
-                   get_blobname_from_filename)
+                   RUN_FOR_PREV_DAY)
 from .conversion_helper import records_from_excel
 
 logger = logging.getLogger(__name__)
@@ -321,12 +321,6 @@ class ChangesReportDownloader(MultiDownloader, ReportDownloader):
         if self.downloader_items is not None:
             return
 
-        if self.ctx.params.enable_gcs:
-            if not Path(self.date_list_filename).exists():
-                self.download_from_gcs(self.date_list_filename,
-                                       get_blobname_from_filename(self.date_list_filename, self.ctx.params),
-                                       ignore_not_found=True)
- 
         if Path(self.date_list_filename).exists():
             with open(self.date_list_filename, 'r') as f:
                 dates = f.readlines()
@@ -368,10 +362,6 @@ class ChangesReportDownloader(MultiDownloader, ReportDownloader):
     def combine_records(self):
         all_records = super().combine_records()
 
-        if self.ctx.params.enable_gcs and not Path(self.prev_changes_filename).exists():
-            self.download_from_gcs(self.prev_changes_filename,
-                                   get_blobname_from_filename(self.prev_changes_filename, self.ctx.params),
-                                   ignore_not_found=True)
         if Path(self.prev_changes_filename).exists():
             with open(self.prev_changes_filename) as f:
                 reader = csv.DictReader(f)
@@ -398,14 +388,6 @@ class ChangesReportDownloader(MultiDownloader, ReportDownloader):
         with open(self.date_list_filename, 'w') as f:
             for date in covered_dates:
                 f.write(date + '\n')
-
-        if self.ctx.params.enable_gcs:
-            bucket = self.ctx.gcs_client.get_bucket(self.ctx.params.gcs_bucket_name)
-            bucket.copy_blob(bucket.blob(self.get_blobname()),
-                             bucket,
-                             get_blobname_from_filename(self.prev_changes_filename, self.ctx.params))
-            self.upload_to_gcs(self.date_list_filename, get_blobname_from_filename(self.date_list_filename, self.ctx.params), force=True)
-
 
 
 def get_all_report_downloaders(ctx):

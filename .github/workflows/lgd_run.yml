@@ -13,40 +13,24 @@ on:
 jobs:
   Run-LGD-Extraction:
     timeout-minutes: 600
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Setup swap
         uses: pierotofy/set-swap-space@v1.0
         with:
           swap-size-gb: 10
-
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Setup python
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: docker/setup-buildx-action@v2
+      - name: Build Image
+        uses: docker/build-push-action@v3
         with:
-          python-version: '3.9.4'
-
-      - name: Restore pip data from cache
-        uses: actions/cache@v2
-        with:
-          path: ./.venv/
-          key: lgd-venv-${{ hashFiles('lgd/requirements.txt') }}
-        id: cache-venv
-
-      - name: Setup python requirements
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        run: |
-          python -m venv ./.venv 
-          . ./.venv/bin/activate
-          pip install -r lgd/requirements.txt
-
-      - name: Install tesseract OCR
-        run: |
-          #sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel
-          sudo apt-get update
-          sudo apt-get install -y tesseract-ocr
+          context: .
+          load: true
+          build-args: |
+            build_type=final
+          tags: lgd:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Authenticate with GCP
         run: |
@@ -99,14 +83,18 @@ jobs:
 
       - name: Download LGD data
         run: |
-          .venv/bin/python -m lgd.scrape -m RUN -l INFO -R 300 --use-procs -p 10 --archive-data --captcha-model-dir models
+          docker run -d --name runner -v $(pwd):/code -w /code lgd -m lgd.scrape -m RUN -l INFO -R 300 --use-procs -p 10 --archive-data --captcha-model-dir models
+          docker logs -f runner
+          exit_code=$(docker inspect runner --format='{{.State.ExitCode}}')
+          exit $((exit_code))
         timeout-minutes: 300
 
       - name: Cleanup Processes
         if: ${{ always() }}
         run: |
-          ps -fe | grep "\.venv/bin/python" 
-          ps -fe | grep "\.venv/bin/python" | grep -v grep | tr -s " " | cut -d" " -f2 | xargs kill || true
+          docker stop runner || true
+          docker kill runner || true
+          docker rm runner || true
 
       - name: Upload archive file to gcs
         run: |

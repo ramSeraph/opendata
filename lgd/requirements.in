@@ -1,0 +1,12 @@
+psutil
+bs4
+requests
+humanize
+colorlog
+odfpy
+xlsx2csv
+lxml
+calmjs
+numpy
+scipy
+scikit-image

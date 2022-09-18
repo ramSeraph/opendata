@@ -24,7 +24,7 @@ jobs:
       - name: Build Image
         uses: docker/build-push-action@v3
         with:
-          context: .
+          context: lgd
           load: true
           build-args: |
             build_type=final

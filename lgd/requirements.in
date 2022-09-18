@@ -10,3 +10,4 @@ calmjs
 numpy
 scipy
 scikit-image
+pytesseract

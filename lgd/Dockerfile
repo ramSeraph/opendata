@@ -1,5 +1,6 @@
 ARG build_type
 FROM ubuntu:22.04 as base-req-build
+ENV LANG=C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 ENV helper_pkgs="equivs software-properties-common gnupg apt-utils"
 RUN apt-get update && \

@@ -5,7 +5,8 @@ import logging
 
 from pathlib import Path
 
-from .captcha.lib import guess, print_buf, reset_buf
+from .captcha.lib import guess
+from .captcha.print import print_buf, reset_buf
 
 logger = logging.getLogger(__name__)
 

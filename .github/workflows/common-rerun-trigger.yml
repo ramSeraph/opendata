@@ -53,7 +53,7 @@ jobs:
 
   Alert-Sender:
     needs: [Rerun-Attempter]
-    if: always() && needs.Rerun-Attempter.ouputs.send-alert == 'failure'
+    if: always() && needs.Rerun-Attempter.ouputs.send-alert == 'true'
     uses: ./.github/workflows/common-pb-alert.yml
     secrets: inherit
     with:

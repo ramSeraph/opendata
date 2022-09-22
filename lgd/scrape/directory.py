@@ -500,13 +500,13 @@ def get_all_directory_downloaders(ctx):
 
     downloaders.append(DirectoryDownloader(name='CENTRAL_ORG_DETAILS',
                                            desc='list of all central organization details',
-                                           dropdown='Department/Organization --> Departments/Organization Details --> Central',
+                                           dropdown='Department/Organization --> Ministries/Departments/Organization Details --> Central',
                                            csv_filename='central_orgs.csv',
                                            ctx=ctx,
                                            transform=['ignore_if_empty_field', 'Organization Code'],
                                            post_data_extra={
+                                               'deptListbyOption': '0',
                                                'rptFileName': 'parentWiseOrganizationDepartmentDetails',
-                                               'state': '0',
                                                'entityCodes': ['35', '0', '0'],
                                            }))
 
@@ -620,13 +620,13 @@ def get_all_directory_downloaders(ctx):
  
     downloaders.append(StateWiseDirectoryDownloader(name='STATE_ORG_DETAILS',
                                                     desc='list of all state level organizations',
-                                                    dropdown='Department/Organization --> Departments/Organization Details --> State',
+                                                    dropdown='Department/Organization --> Ministries/Departments/Organization Details --> State',
                                                     csv_filename='state_orgs.csv',
                                                     ctx=ctx,
                                                     transform=['ignore_if_empty_field', 'Organization Code'],
                                                     post_data_extra={
                                                         'rptFileName': 'parentWiseOrganizationDepartmentDetails',
-                                                        'state': 'on'
+                                                        'deptListbyOption': '2'
                                                     }))
 
 

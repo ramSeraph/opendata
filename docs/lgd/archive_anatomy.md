@@ -152,7 +152,7 @@ description
 Location in LGD
 : - Download Directory
     - Department/Organization
-      - Departments/Organization Details
+      - Ministries/Departments/Organization Details
         - Central
 
 ---
@@ -273,7 +273,7 @@ description
 Location in LGD
 : - Download Directory
     - Department/Organization
-      - Departments/Organization Details
+      - Ministries/Departments/Organization Details
         - State
 
 ---

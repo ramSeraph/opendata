@@ -1,7 +1,9 @@
 
 Contains code to scrape and parse data from [Survey Of India](https://onlinemaps.surveyofindia.gov.in/)
 
-# Scraping
+# Open Series Map
+
+## Scraping
 
 Uses google tesseract to break the captchas - https://tesseract-ocr.github.io/tessdoc/Home.html
 
@@ -41,7 +43,7 @@ run following command to pull data:
 pdfs for the sheets end up at `data/raw/`
 
 
-# Parsing
+## Parsing
 
 This involves the following steps
 * converting the pdfs to images
@@ -74,7 +76,7 @@ Environment variables can be used to change behavior
 * `FROM_LIST=<filename>` can be used to only parse files listed in `<filename>`, this also errors out on first failure
 
 
-# Tiling
+## Tiling
 
 `python tile.py` to tile
 
@@ -86,7 +88,28 @@ This is still slow and requires the presence of all the previous tiling data, So
 
 Invoke with `python retile.py`.. for now expects a `retile.txt` file containing just the sheet names to retile
 
-# Update Jobs
+## Update Jobs
 
 Update jobs are run with github actions on a weekly basis
 Data ends up at google cloud storage `soi_data` bucket
+
+# Village boundaries
+
+## Scraping
+
+Most directions same as for Open Series Maps, except the final commands
+
+run following command to pull data:
+`python scrape_bounds.py`
+
+shapefile zips end up at `data/raw/villages/`
+
+To recover from intermittent errors, run
+`FORCE=1 python scrape_bounds.py`
+
+To force rechecking previously missing Districts, run
+`FORCE=1 FORCE_UNAVAILABLE=1 python scrape_bounds.py`
+
+
+
+

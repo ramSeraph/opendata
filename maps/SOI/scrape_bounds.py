@@ -1,23 +1,18 @@
 import os
-import glob
 import json
 import pickle
 import logging
 import shutil
-import zipfile
 import time
 
-from pprint import pformat
 from pathlib import Path
 from datetime import datetime
-from functools import cmp_to_key
 
 #import requests
 
 from bs4 import BeautifulSoup
 
 from captcha_helper import (
-     get_captcha_from_page,
      prepare_captcha_models,
      CAPTCHA_MANUAL,
      captcha_model_dir
@@ -39,7 +34,8 @@ raw_data_dir = data_dir + 'raw/villages/'
 MAX_CAPTCHA_ATTEMPTS = 10
 DELAY = 1
 DELAY_DOWNLOAD = 1
-FORCE = 1
+FORCE = (os.ernviron.get('FORCE', '0') == '1')
+FORCE_UNAVAILABLE = (os.ernviron.get('FORCE_UNAVAILABLE', '0') == '1')
 
 def get_secrets():
     with open(data_dir + 'users.json', 'r') as f:
@@ -58,7 +54,6 @@ def get_secrets():
     return secrets_map
 
 def login_wrap(phone_num, password):
-    global session
     FAILED_CAPTCHA = 'Please enter valid Captcha'
     saved_cookie_file = f'data/cookies/saved_cookies.{phone_num}.pkl'
     if Path(saved_cookie_file).exists():
@@ -134,7 +129,6 @@ def check_for_error(resp, err_file=None):
             raise Exception('Some Error Happened')
 
 def scrape(phone_num, password):
-    global session
     global done_states
     global force_map_tried
     login_wrap(phone_num, password)
@@ -210,7 +204,6 @@ def scrape(phone_num, password):
 
         sel_d_id = sels[1].attrs['id']
         options = sels[1].find_all('option')
-        dist_map = {}
         for o in options:
             d_id = o.attrs['value']
             if d_id == "0":
@@ -229,7 +222,7 @@ def scrape(phone_num, password):
                 if not FORCE:
                     continue
 
-                if err_file.read_text().strip() == 'Not Available':
+                if err_file.read_text().strip() == 'Not Available' and not FORCE_UNAVAILABLE:
                     continue
                 f_d_map = force_map_tried.get(s_name, {})
                 if d_name in f_d_map:
@@ -273,6 +266,7 @@ def scrape(phone_num, password):
             logger.debug(f'{msg_el}')
             if msg_el is not None and \
                msg_el.text.strip() == "Selected Product currently not available kindly contact Survey of India":
+                   logger.warning('District Unavailable')
                    err_file.write_text('Not Available')
                    continue
             form_data = get_form_data(soup)
@@ -406,7 +400,6 @@ def update_tried_users(tried_users):
 
  
 def scrape_wrap():
-    global session
     secrets_map = get_secrets()
     p_idx = 0
     tried_users = get_tried_users()
@@ -439,6 +432,11 @@ def scrape_wrap():
 
 if __name__ == '__main__':
     setup_logging(logging.DEBUG)
+
+    if not CAPTCHA_MANUAL:
+        prepare_captcha_models(captcha_model_dir)
+
+
     done_states = []
     force_map_tried = {}
     scrape_wrap()

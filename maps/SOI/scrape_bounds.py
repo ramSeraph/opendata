@@ -418,7 +418,6 @@ def scrape_wrap():
         phone_num, password = s_items[p_idx]
         try:
             logger.info(f'scraping with phone number: {p_idx}/{total_count}')
-            logger.info(f'scraping with phone number: {phone_num}')
             ret = scrape(phone_num, password)
             if ret:
                 if Path(tried_users_file).exists():

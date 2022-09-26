@@ -1195,6 +1195,8 @@ def create_base_tile(tile_job_info: 'TileJobInfo', tile_detail: 'TileDetail') ->
 
     if rxsize != 0 and rysize != 0 and wxsize != 0 and wysize != 0:
         alpha = alphaband.ReadRaster(rx, ry, rxsize, rysize, wxsize, wysize)
+        if alpha is None:
+            print(gdal.GetLastErrorMsg())
 
         # Detect totally transparent tile and skip its creation
         if tile_job_info.exclude_transparent and len(alpha) == alpha.count('\x00'.encode('ascii')):

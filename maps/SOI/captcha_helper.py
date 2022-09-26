@@ -1,17 +1,18 @@
+import os
 import io
 import logging
 
 from pathlib import Path
 from PIL import Image
 from imgcat import imgcat
-from google.cloud import storage
+#from google.cloud import storage
 
 from captcha.auto import guess, save_captcha
 from common import session, base_url
 
 logger = logging.getLogger(__name__)
 
-CAPTCHA_MANUAL = False
+CAPTCHA_MANUAL = (os.environ.get('CAPTCHA_MANUAL', '0') == '1')
 captcha_model_dir = 'data/captcha/models'
 
 def guess_manual(filename):

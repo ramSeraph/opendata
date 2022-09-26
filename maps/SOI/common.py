@@ -50,11 +50,12 @@ def get_form_data(soup):
     inputs = form.find_all('input')
     form_data = {}
     for inp in inputs:
+        t = inp.attrs.get('type', None)
+        if t != 'hidden':
+            continue
         k = inp.attrs['name']
         v = inp.attrs.get('value', None)
-        t = inp.attrs.get('type', None)
-        if t == 'hidden':
-            form_data[k] = v
+        form_data[k] = v
     form_data['__EVENTARGUMENT'] = ''
     form_data['__LASTFOCUS'] = ''
 

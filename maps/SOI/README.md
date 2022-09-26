@@ -110,6 +110,10 @@ To recover from intermittent errors, run
 To force rechecking previously missing Districts, run
 `FORCE=1 FORCE_UNAVAILABLE=1 python scrape_bounds.py`
 
+To enter captcha manually and not depend on auto captch breaking, run `CAPTCHA_MANUAL=1 python scrape_bounds.py`
+
+uses `imgcat` for displaying the captcha, which might work on some terminals.
+
 
 
 

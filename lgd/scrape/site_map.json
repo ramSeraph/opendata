@@ -143,9 +143,10 @@
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Parliament Constituency or Assembly Constituency of a State/India" ],
-    "comp":  {
+    "comp": {
       "CONSTITUENCIES_ASSEMBLY": ["All State", "Assembly Constituency"],
       "CONSTITUENCIES_PARLIAMENT": ["All State", "Parliament Constituency"]
+    }
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Constituency Coverage Details" ],

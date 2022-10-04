@@ -1,4 +1,5 @@
 import copy
+import json
 import glob
 import logging
 import subprocess
@@ -22,6 +23,9 @@ from .base import (Params, Context,
 from .captcha_helper import CaptchaHelper
 from . import get_all_downloaders
 
+from .site_map import (get_sitemap, get_known_site_map,
+                       get_changes_in_site_map)
+
 logger = logging.getLogger(__name__)
 
 #TODO: 2) add smoother killing support
@@ -35,6 +39,7 @@ class Mode(Enum):
     STATUS = 'Status of individual comps'
     CLEANUP = 'Cleanup leftover files'
     RUN = 'Download all things'
+    MONITOR = 'Monitor the web site for changes'
 
 
 #TODO: handle cancellation?
@@ -212,6 +217,34 @@ def get_license_txt():
     """
     return license_txt
 
+def get_comps_info(downloaders):
+    known_site_map = get_known_site_map()
+    lgd_location_map = {}
+    for e in known_site_map:
+        comp = e['name']
+        if comp == 'IGNORE':
+            continue
+        dropdown = e['dropdown']
+        comp_type = type(comp)
+        if comp_type == str:
+            lgd_location_map[comp] = dropdown
+        elif comp_type == dict:
+            for k,v in comp.items():
+                if type(v) == str:
+                    v = [v]
+                lgd_location_map[k] = dropdown + v
+        else:
+            raise Exception(f'In sitemap {comp} is of unsupported type: {comp_type}')
+    return {
+        d.name: {
+            'desc': d.desc,
+            'filename': d.csv_filename,
+            'lgd_location': ' --> '.join(lgd_location_map[d.name])
+       }
+       for d in downloaders
+    }
+
+
 def archive_all_data(downloaders):
     logger.info('archiving all data')
     if len(downloaders) == 0:
@@ -239,9 +272,7 @@ def archive_all_data(downloaders):
             logger.error(f'missing files for archiving: {missing}')
             return False
 
-        comps_info = {d.name:{'desc': d.desc,
-                              'filename': d.csv_filename,
-                              'lgd_location': '{} --> {}'.format(d.section, d.dropdown)} for d in downloaders}
+        comps_info = get_comps_info(downloaders)
 
         data_license_file = str(Path(params.base_raw_dir).joinpath(get_date_str(), 'DATA_LICENSE'))
         with open(data_license_file, 'w') as f:
@@ -280,7 +311,7 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
     dmap = {d.name:d for d in all_downloaders}
     graph = {d.name:d.deps for d in all_downloaders}
 
-    if mode != Mode.COMPS or mode != Mode.DEPS:
+    if mode not in [ Mode.COMPS, Mode.DEPS ]:
         all_comp_names = set([d.name for d in all_downloaders])
         if len(comps_to_not_run) == 0:
             if len(comps_to_run) == 0:
@@ -302,9 +333,8 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
  
 
     if mode == Mode.COMPS:
-        return {d.name:{'desc': d.desc,
-                        'filename': d.csv_filename,
-                        'lgd_location': '{} --> {}'.format(d.section, d.dropdown)} for d in all_downloaders}
+        return get_comps_info(all_downloaders)
+
     if mode == Mode.DEPS:
         return graph
 
@@ -343,7 +373,6 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
                 downloader.cleanup()
 
         return { 'cleanup': True } 
-
 
     if mode == Mode.RUN:
         # pull all the captcha related model files
@@ -450,12 +479,39 @@ if __name__ == '__main__':
     params = Params()
     params.__dict__ = args_dict
 
-    ret = run(params, mode, set(comps_to_run), set(comps_to_not_run), num_parallel, use_procs)
-    pprint(ret)
-    if mode == Mode.RUN and params.archive_data and not ret['archival_status']:
-        exit(1)
+    if mode == Mode.MONITOR:
+        site_map_file = Path(params.base_raw_dir).joinpath(get_date_str(), 'site_map.json')
+        if not site_map_file.exists():
+            ctx = Context(params)
+            site_map = get_sitemap(ctx)
+            site_map_file.parent.mkdir(exist_ok=True, parents=True)
+            with open(site_map_file, 'w') as f:
+                json.dump(site_map, f, indent=2)
+        else:
+            with open(site_map_file, 'r') as f:
+                site_map = json.load(f)
 
+        path = Path(params.base_raw_dir).joinpath(get_date_str(), 'struct_changes.json')
+        if path.exists():
+            logger.warning(f'deleting previously existing {path}')
+            path.unlink()
+        known_site_map = get_known_site_map()
+        changes = get_changes_in_site_map(known_site_map, site_map)
+        if len(changes['added']) == 0 and len(changes['removed']) == 0:
+            logger.info('No changes')
+            exit(0)
+        with open(path, 'w') as f:
+            json.dump(changes, f)
+        exit(0)
+
+
+    ret = run(params, mode, set(comps_to_run), set(comps_to_not_run), num_parallel, use_procs)
     if mode == Mode.COMPS and to_markdown:
         markdown_str = get_markdown_from_comps(ret)
         print('\n\nMarkdown:\n\n')
         print(markdown_str)
+    else:
+        pprint(ret)
+
+    if mode == Mode.RUN and params.archive_data and not ret['archival_status']:
+        exit(1)

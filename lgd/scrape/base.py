@@ -241,8 +241,6 @@ class BaseDownloader:
     def __init__(self, **kwargs):
         kwargs = add_defaults_to_args({'name': '',
                                        'desc': '',
-                                       'section': '',
-                                       'dropdown': '',
                                        'transform': ['identity'],
                                        'csv_filename': '',
                                        'deps': [],
@@ -251,8 +249,6 @@ class BaseDownloader:
 
         self.name = kwargs['name']
         self.desc = kwargs['desc']
-        self.section = kwargs['section']
-        self.dropdown = kwargs['dropdown']
         self.transform = kwargs['transform']
         self.csv_filename = kwargs['csv_filename']
         self.deps = kwargs['deps']

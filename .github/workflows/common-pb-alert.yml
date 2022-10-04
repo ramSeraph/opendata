@@ -10,6 +10,10 @@ on:
         description: 'workflow run event whose information needs to be sent'
         required: true
         type: string
+      url:
+        description: 'url to send in alert'
+        required: false
+        type: string
 
 jobs:
   Send-Alert:
@@ -23,8 +27,14 @@ jobs:
               echo "::set-output name=url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           elif [[ "${{ inputs.which-run }}" == "from-event" ]]; then
               echo "::set-output name=url::${{ github.event.workflow_run.html_url }}"
+          elif [[ "${{ inputs.which-run }}" == "ignore" ]]; then
+              if [[ -z "${{ inputs.url }}" ]]; then
+                  echo "'which-run' input is set to 'ignore'. 'url' input can't be empty"
+                  exit 1
+              fi
+              echo "::set-output name=url::${{ inputs.url }}"
           else
-              echo "Unsupported input which-run; ${{ inputs.which-run }}"
+              echo "Unsupported input 'which-run'; '${{ inputs.which-run }}'"
               exit 1
           fi
       - shell: bash

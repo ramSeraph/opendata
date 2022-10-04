@@ -225,8 +225,6 @@ def get_all_dwr_downloaders(ctx):
     downloaders = []
     downloaders.append(DwrDownloader(name='CENTRAL_ADMIN_DEPTS',
                                      desc='list of all central administrative departments',
-                                     section='Download Directory',
-                                     dropdown='Department/Organization --> Administrative Unit Level Wise Administrative Unit Entity --> Central --> Internal Dwr Call',
                                      csv_filename='central_admin_depts.csv',
                                      script_name='lgdAdminDepatmentDwr',
                                      method_name='getAdministrationLevelList',
@@ -244,8 +242,6 @@ def get_all_dwr_downloaders(ctx):
 
     downloaders.append(StateWiseDwrDownloader(name='STATE_ADMIN_DEPTS',
                                               desc='list of all state administrative departments',
-                                              section='Download Directory',
-                                              dropdown='Department/Organization --> Administrative Unit Level Wise Administrative Unit Entity --> State --> Internal Dwr Call',
                                               csv_filename='state_admin_depts.csv',
                                               script_name='lgdAdminDepatmentDwr',
                                               method_name='getAdministrationLevelList',

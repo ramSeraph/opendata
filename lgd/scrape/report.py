@@ -42,7 +42,6 @@ class ReportDownloader(BaseDownloader):
                                         'query_data': {},
                                         'oprand_data_extra': {},
                                         'allow_empty': False }, kwargs)
-        kwargs['section'] = 'Reports'
         self.sub_url = kwargs['sub_url']
         self.post_data = kwargs['post_data']
         self.query_data = kwargs['query_data']
@@ -394,7 +393,6 @@ def get_all_report_downloaders(ctx):
     downloaders = []
     downloaders.append(ReportDownloader(name='INVALIDATED_VILLAGES',
                                         desc='list of all invalidated census villages',
-                                        dropdown='Exceptional Reports --> Invalidated Census villages',
                                         csv_filename='invalidated_census_villages.csv',
                                         sub_url='exceptionalReports.do',
                                         ctx=ctx,
@@ -409,13 +407,11 @@ def get_all_report_downloaders(ctx):
 
     downloaders.append(StateWiseReportDownloader(name='NOFN_PANCHAYATS',
                                                  desc='list of all panchayats with NOFN',
-                                                 dropdown='NOFN Panchayat List',
                                                  csv_filename='nofn_panchayats.csv',
                                                  sub_url='nofnStates.do',
                                                  ctx=ctx))
     downloaders.append(ChangesReportDownloader(name='CHANGES',
                                                desc='all changes to entities in LGD',
-                                               dropdown='List of Modification done in LGD',
                                                csv_filename='changes.csv',
                                                sub_url='changedEntity.do',
                                                ctx=ctx,

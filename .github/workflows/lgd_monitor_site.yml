@@ -1,0 +1,243 @@
+name: LGD Daily Site Monitor
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on: 
+  schedule:
+    - cron: '15 3 * * *'
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'lgd/scrape/site_map.json'
+  workflow_dispatch:
+
+
+env:
+  ISSUE_TITLE: "LGD Site Structure Change"
+  ISSUE_BODY_FILE: "issue_body.md"
+
+jobs:
+  Run-LGD-Monitor:
+    timeout-minutes: 10
+    runs-on: ubuntu-22.04
+    outputs:
+      changes: ${{ steps.monitor-changes.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-buildx-action@v2
+      - name: Build Image
+        uses: docker/build-push-action@v3
+        with:
+          context: lgd
+          load: true
+          build-args: |
+            build_type=final
+          tags: lgd:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Get current date
+        run: echo "::set-output name=date::$(date +'%d%b%Y')"
+        id: date
+
+      - name: Cache changes
+        uses: TerrenceHo/cache-always@v0.0.1
+        with:
+          path: data/raw
+          key: LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          restore-keys: |
+            LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+      - name: Monitor site for changes
+        id: monitor-changes
+        run: |
+          docker run -d --name runner -v $(pwd):/code -w /code lgd -m lgd.scrape -m MONITOR -l INFO 
+          docker logs -f runner
+          exit_code=$(docker inspect runner --format='{{.State.ExitCode}}')
+          filename="data/raw/${{ steps.date.outputs.date }}/struct_changes.json" 
+          if [[ -f $filename ]]; then
+            cat $filename
+            echo
+            echo "::set-output name=changes::$filename"
+          else
+            echo "::set-output name=changes::none"
+          fi
+          exit $((exit_code))
+        timeout-minutes: 5
+
+      - name: Cleanup Processes
+        if: ${{ always() }}
+        run: |
+          docker stop runner || true
+          docker kill runner || true
+          docker rm runner || true
+
+  LGD-Issue-Lister:
+    runs-on: ubuntu-22.04
+    needs:
+      - Run-LGD-Monitor
+    outputs:
+      next-id: ${{ steps.get-next-id.outputs.next-id }}
+      issue-number: ${{ steps.last-issue.outputs.issue-number }}
+      has-found: ${{ steps.last-issue.outputs.has-found }}
+      is-closed: ${{ steps.last-issue.outputs.is-closed }}
+    steps:
+      - name: Find the last open report issue
+        id: last-issue
+        uses: micalevisk/last-issue-action@v2
+        with:
+          state: all
+          labels: |
+            LGD
+            site map tracker
+
+      - name: Get Id of last issue
+        id: get-next-id
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          last_issue_number="${{ steps.last-issue.outputs.issue-number }}"
+          if [[ "$last_issue_number" != "" ]]; then
+            title="$(gh api -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/issues/$last_issue_number | jq '.title')"
+            next_id=$(echo "$title" | sed "s/$ISSUE_TITLE - \([0-9]+\)/\1/g")
+            echo "prev id is $next_id"
+            next_id=$(( next_id + 1 ))
+          else
+            next_id=0
+          fi
+          echo "next id is $next_id"
+          echo "::set-output name=next-id::$next_id"
+
+
+  LGD-Issue-Closer:
+    runs-on: ubuntu-22.04
+    needs:
+      - Run-LGD-Monitor
+      - LGD-Issue-Lister
+    if: needs.Run-LGD-Monitor.outputs.changes == 'none'
+    steps:
+      - name: Issue Closure Checks
+        id: closure-checks
+        run: |
+          echo "::set-output name=close::false"
+          if [[ "${{ needs.LGD-Issue-Lister.outputs.has-found }}" == "true" || "${{ needs.LGD-Issue-Lister.outputs.is-closed }}" == "false" ]]; then
+            echo "need to close current issue"
+            echo "::set-output name=close::true"
+            if [[ "${{ github.event_name }}" == "push" ]]; then
+              echo "${{ toJSON(github.event) }}"
+              compare="${{ github.event.push.compare }}"
+              echo "::set-output name=reason::[User made Changes]($compare) or website changed"
+            else
+              echo "::set-output name=reason::Changes in website"
+            fi
+          fi
+      - name: Close Issue
+        if: steps.closure-checks.outputs.close == 'true'
+        uses: peter-evans/close-issue@v2
+        with:
+          issue-number: ${{ needs.LGD-Issue-Lister.outputs.issue-number }}
+          comment: Auto-closing issue - ${{ steps.closure-checks.outputs.reason }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+
+  LGD-Issue-Creator:
+    runs-on: ubuntu-22.04
+    needs:
+      - Run-LGD-Monitor
+      - LGD-Issue-Lister
+    outputs:
+      create: ${{ steps.issue-body-creator.outputs.create }}
+      issue-number: ${{ steps.issue-body-creator.outputs.issue-number }}
+    if: needs.Run-LGD-Monitor.outputs.changes != 'none'
+    steps:
+      - name: Get current date
+        run: echo "::set-output name=date::$(date +'%d%b%Y')"
+        id: date
+      - name: Cache changes
+        uses: TerrenceHo/cache-always@v0.0.1
+        with:
+          path: data/raw
+          key: LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          restore-keys: |
+            LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+
+      - id: issue-body-creator
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "\`\`\`yaml" > $ISSUE_BODY_FILE
+          cat ${{ needs.Run-LGD-Monitor.outputs.changes }} >> $ISSUE_BODY_FILE
+          echo >> $ISSUE_BODY_FILE
+          echo "\`\`\`" >> $ISSUE_BODY_FILE
+
+          cat $ISSUE_BODY_FILE
+
+          issue_id="${{ needs.LGD-Issue-Lister.outputs.issue-number }}"
+          
+          if [[ "${{ needs.LGD-Issue-Lister.outputs.has-found }}" == "false" || "${{ needs.LGD-Issue-Lister.outputs.is-closed }}" == "true" ]]; then
+            echo "need to create new issue"
+            echo "::set-output name=issue-number::"
+            echo "::set-output name=create::true"
+          else
+            issue_url="https://api.github.com/repos/${{ github.repository }}/issues/$issue_id"
+            gh api -H "Accept: application/vnd.github+json" $issue_url | jq -r '.body' > existing_${ISSUE_BODY_FILE}
+            sed -i '${/^$/d;}' existing_${ISSUE_BODY_FILE}
+            cat existing_${ISSUE_BODY_FILE}
+            echo "existing issue $issue_id found"
+            echo "::set-output name=issue-number::$issue_id"
+            echo "::set-output name=create::false"
+            diff $ISSUE_BODY_FILE existing_$ISSUE_BODY_FILE || ( echo "issue needs to be updated" && echo "::set-output name=create::true" )
+          fi
+
+      - id: create-issue
+        if: steps.issue-body-creator.outputs.create == 'true'
+        uses: peter-evans/create-issue-from-file@v4
+        name: Create Issue Action
+        with:
+          title: ${{ env.ISSUE_TITLE }} - ${{ needs.LGD-Issue-Lister.outputs.next-id }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ steps.issue-body-creator.outputs.issue-number }}
+          content-filepath: ${{ env.ISSUE_BODY_FILE }}
+          assignees: ${{github.repository_owner}}
+          labels: |
+            LGD
+            site map tracker
+
+  LGD-Monitor-Notify-Issue:
+    needs: 
+      - Run-LGD-Monitor
+      - LGD-Issue-Lister
+      - LGD-Issue-Creator
+    if: |
+       needs.Run-LGD-Monitor.outputs.changes != 'none' &&
+       needs.LGD-Issue-Creator.outputs.create == 'true'
+    uses: ./.github/workflows/common-pb-alert.yml
+    secrets: inherit
+    with:
+      title: "LGD Catalog Change"
+      which-run: "ignore"
+      url: "https://github.com/${{ github.repository }}/issues/${{ needs.LGD-Issue-Creator.outputs.issue-number }}"
+
+  LGD-Monitor-Notify-Run-Failure:
+    needs: 
+      - Run-LGD-Monitor
+      - LGD-Issue-Lister
+      - LGD-Issue-Closer
+      - LGD-Issue-Creator
+      - LGD-Monitor-Notify-Issue
+    if: |
+      always() && 
+      (
+        needs.Run-LGD-Monitor.result == 'failure' ||
+        needs.LGD-Issue-Lister.result == 'failure' ||
+        needs.LGD-Issue-Creator.result == 'failure' ||
+        needs.LGD-Monitor-Notify-Issue.result == 'failure'
+      )
+    uses: ./.github/workflows/common-pb-alert.yml
+    secrets: inherit
+    with:
+      title: "LGD Site Monitor Run Failed"
+      which-run: "self"
+

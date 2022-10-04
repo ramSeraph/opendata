@@ -17,6 +17,6 @@ jobs:
       - run: |
           source .github/scripts/cfuncs.sh
           get_cache_info | jq .
-          delete_caches "lgd-data-raw-.*" 3
+          delete_caches "lgd-data-raw-v1-.*" 2
         env:
           GITHUB_TOKEN: "${{ github.token }}"

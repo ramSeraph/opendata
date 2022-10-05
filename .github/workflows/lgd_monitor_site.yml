@@ -127,7 +127,7 @@ jobs:
             echo "::set-output name=close::true"
             if [[ "${{ github.event_name }}" == "push" ]]; then
               echo "${{ toJSON(github.event) }}"
-              compare="${{ github.event.push.compare }}"
+              compare="${{ github.event.compare }}"
               echo "::set-output name=reason::[User made Changes]($compare) or website changed"
             else
               echo "::set-output name=reason::Changes in website"

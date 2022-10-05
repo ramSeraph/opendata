@@ -221,7 +221,7 @@ def get_comps_info(downloaders):
     known_site_map = get_known_site_map()
     lgd_location_map = {}
     for e in known_site_map:
-        comp = e['name']
+        comp = e['comp']
         if comp == 'IGNORE':
             continue
         dropdown = e['dropdown']

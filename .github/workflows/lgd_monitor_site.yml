@@ -98,11 +98,17 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           last_issue_number="${{ steps.last-issue.outputs.issue-number }}"
           if [[ "$last_issue_number" != "" ]]; then
-            title="$(gh api -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/issues/$last_issue_number | jq '.title')"
-            next_id=$(echo "$title" | sed "s/$ISSUE_TITLE - \([0-9]+\)/\1/g")
+            title="$(gh api -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/issues/$last_issue_number | jq -r '.title')"
+            echo "title = $title"
+            next_id=$(echo "$title" | sed 's/^${{env.ISSUE_TITLE}} - //g')
             echo "prev id is $next_id"
+            re='^[0-9]+$'
+            if ! [[ $next_id =~ $re ]] ; then
+              echo "error: Not a number" >&2; exit 1
+            fi
             next_id=$(( next_id + 1 ))
           else
             next_id=0
@@ -121,6 +127,7 @@ jobs:
       - name: Issue Closure Checks
         id: closure-checks
         run: |
+          set -euo pipefail
           echo "::set-output name=close::false"
           if [[ "${{ needs.LGD-Issue-Lister.outputs.has-found }}" == "true" || "${{ needs.LGD-Issue-Lister.outputs.is-closed }}" == "false" ]]; then
             echo "need to close current issue"
@@ -167,6 +174,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           echo "\`\`\`yaml" > $ISSUE_BODY_FILE
           cat ${{ needs.Run-LGD-Monitor.outputs.changes }} >> $ISSUE_BODY_FILE
           echo >> $ISSUE_BODY_FILE

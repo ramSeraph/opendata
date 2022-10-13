@@ -135,7 +135,8 @@
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "State Wise Parliament Constituency and Assembly Constituency along with coverage details PRI" ],
-    "comp": "CONSTITUENCIES_MAPPINGS_PRI"
+    "comp": "IGNORE",
+    "ignore_reason": "Needs Review, Broken"
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "State Wise Parliament Constituency and Assembly Constituency along with coverage details Urban" ],

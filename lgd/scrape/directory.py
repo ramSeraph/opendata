@@ -549,16 +549,17 @@ def get_all_directory_downloaders(ctx):
     #                                                enrichers={
     #                                                    'State Code': 'State Code'
     #                                                }))
-    downloaders.append(StateWiseDirectoryDownloader(name='CONSTITUENCIES_MAPPINGS_PRI',
-                                                    desc='list of all constituencies with PRI local body coverage',
-                                                    csv_filename='constituencies_mapping_pri.csv',
-                                                    ctx=ctx,
-                                                    post_data_extra={
-                                                        'rptFileName': 'parlimentConstituencyAndAssemblyConstituencyPRI@state'
-                                                    },
-                                                    enrichers={
-                                                        'State Code': 'State Code'
-                                                    }))
+    # broken.. 
+    #downloaders.append(StateWiseDirectoryDownloader(name='CONSTITUENCIES_MAPPINGS_PRI',
+    #                                                desc='list of all constituencies with PRI local body coverage',
+    #                                                csv_filename='constituencies_mapping_pri.csv',
+    #                                                ctx=ctx,
+    #                                                post_data_extra={
+    #                                                    'rptFileName': 'parlimentConstituencyAndAssemblyConstituencyPRI@state'
+    #                                                },
+    #                                                enrichers={
+    #                                                    'State Code': 'State Code'
+    #                                                }))
     downloaders.append(StateWiseDirectoryDownloader(name='CONSTITUENCIES_MAPPINGS_URBAN',
                                                     desc='list of all constituencies with Urban local body coverage',
                                                     csv_filename='constituencies_mapping_urban.csv',

@@ -1,4 +1,4 @@
-name: Clear Caches
+name: Util Clear Caches
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}

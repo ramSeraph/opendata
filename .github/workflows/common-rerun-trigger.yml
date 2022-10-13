@@ -1,4 +1,4 @@
-name: 'Rerun Trigger'
+name: 'Common Rerun Trigger'
 on:
   workflow_call:
     inputs:

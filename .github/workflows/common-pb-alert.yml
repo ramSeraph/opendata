@@ -1,4 +1,4 @@
-name: 'PushBullet Alert'
+name: 'Common PushBullet Alert'
 on:
   workflow_call:
     inputs:

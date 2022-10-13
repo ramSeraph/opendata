@@ -152,7 +152,7 @@ description
 Location in LGD
 : - Download Directory
     - Department/Organization
-      - Ministries/Departments/Organization Details
+      - Ministries/Departments/Organizations Details
         - Central
 
 ---
@@ -164,8 +164,8 @@ description
 
 Location in LGD
 : - Download Directory
-    - Gram Panchayat Mapping to village
-      - Gram Panchayat Mapping to village
+    - Village To Gram Panchayat Mapping
+      - Village To Gram Panchayat Mapping
 
 ---
 
@@ -189,7 +189,7 @@ description
 Location in LGD
 : - Download Directory
     - Block
-      - Subdistrict, Block,Village and Gps Mapping
+      - Subdistrict, Village,Block and Gps Mapping
 
 ---
 
@@ -202,18 +202,6 @@ Location in LGD
 : - Download Directory
     - Local body
       - PRI Local Body of a State
-
----
-
-## constituencies_mapping_pri.csv
-
-description
-: list of all constituencies with PRI local body coverage
-
-Location in LGD
-: - Download Directory
-    - Parliament/Assembly Constituency
-      - State Wise Parliament Constituency and Assembly Constituency along with coverage details PRI
 
 ---
 
@@ -249,7 +237,7 @@ description
 Location in LGD
 : - Download Directory
     - Local body
-      - Wards of Urban Local Bodies
+      - Wards of Urban local bodies
 
 ---
 
@@ -273,7 +261,7 @@ description
 Location in LGD
 : - Download Directory
     - Department/Organization
-      - Ministries/Departments/Organization Details
+      - Ministries/Departments/Organizations Details
         - State
 
 ---
@@ -402,9 +390,8 @@ description
 : list of all invalidated census villages
 
 Location in LGD
-: - Reports
-    - Exceptional Reports
-      - Invalidated Census villages
+: - Exceptional Reports
+    - Invalidated Census villages
 
 ---
 
@@ -426,5 +413,4 @@ description
 
 Location in LGD
 : - Reports
-    - List of Modification done in LGD
-
+    - List Of Modification Done In LGD

@@ -125,6 +125,9 @@ def get_changes_in_site_map(known, scraped):
     missing_in_new = [ list(k) for k in missing_in_new ]
     missing_in_old = [ list(k) for k in missing_in_old ]
 
+    missing_in_new.sort(key=lambda l: ' '.join(l))
+    missing_in_old.sort(key=lambda l: ' '.join(l))
+
     return {
         "removed": missing_in_old,
         "added": missing_in_new

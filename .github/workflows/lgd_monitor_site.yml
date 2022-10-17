@@ -44,7 +44,7 @@ jobs:
         id: date
 
       - name: Cache changes
-        uses: TerrenceHo/cache-always@v0.0.1
+        uses: ramSeraph/cache-always@v0.0.1
         with:
           path: data/raw
           key: LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
@@ -163,7 +163,7 @@ jobs:
         run: echo "::set-output name=date::$(date +'%d%b%Y')"
         id: date
       - name: Cache changes
-        uses: TerrenceHo/cache-always@v0.0.1
+        uses: ramSeraph/cache-always@v0.0.1
         with:
           path: data/raw
           key: LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}

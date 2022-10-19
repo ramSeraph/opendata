@@ -30,7 +30,7 @@ jobs:
           python-version: '3.9.4'
 
       - name: Restore pip data from cache
-        uses: TerrenceHo/cache-always@v0.0.1
+        uses: ramSeraph/cache-always@v0.0.1
         #uses: actions/cache@v2
         with:
           path: ./.venv/
@@ -70,7 +70,7 @@ jobs:
           gsutil ls gs://soi_data/raw/* | sed 's/^gs:\/\/soi_data\/raw\///g' > data/files_done.txt
 
       - name: Restore prev workspace
-        uses: TerrenceHo/cache-always@v0.0.1
+        uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
             data/raw/

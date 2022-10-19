@@ -41,7 +41,7 @@ jobs:
         id: date
 
       - name: Restore daily run data from cache
-        uses: TerrenceHo/cache-always@v0.0.1
+        uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
             data/

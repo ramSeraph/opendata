@@ -50,6 +50,7 @@ jobs:
           key: LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
             LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+
       - name: Monitor site for changes
         id: monitor-changes
         run: |
@@ -179,6 +180,7 @@ jobs:
           cat ${{ needs.Run-LGD-Monitor.outputs.changes }} >> $ISSUE_BODY_FILE
           echo >> $ISSUE_BODY_FILE
           echo "\`\`\`" >> $ISSUE_BODY_FILE
+          rm ${{ needs.Run-LGD-Monitor.outputs.changes }} 
 
           cat $ISSUE_BODY_FILE
 

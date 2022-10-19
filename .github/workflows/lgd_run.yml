@@ -54,7 +54,7 @@ jobs:
         id: date
 
       - name: Restore daily run data from cache
-        uses: TerrenceHo/cache-always@v0.0.1
+        uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
             data/raw/${{ steps.date.outputs.date }}
@@ -65,7 +65,7 @@ jobs:
             lgd-data-raw-v1-${{ steps.date.outputs.date }}-
 
       - name: Restore changes data from cache
-        uses: TerrenceHo/cache-always@v0.0.1
+        uses: ramSeraph/cache-always@v0.0.1
         with:
           path: data/raw/changes 
           key:  lgd-data-raw-changes-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}

@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Get current date
         shell: bash
-        run: echo "::set-output name=date::$(date +'%d%b%Y %H:%M:%S')"
+        run: echo "date=$(date +'%d%b%Y %H:%M:%S')"
         id: date
 
       - uses: actions/checkout@v3
@@ -37,13 +37,13 @@ jobs:
         id: release-info
         run: |
           source .github/scripts/rfuncs.sh
-          echo "::set-output name=base-hasrelease::$(has_release ${RELEASE})"
-          echo "::set-output name=old-hasrelease::$(has_release ${RELEASE}-old)"
-          echo "::set-output name=new-hasrelease::$(has_release ${RELEASE}-new)"
+          echo "base-hasrelease=$(has_release ${RELEASE})" >> $GITHUB_OUTPUT
+          echo "hasrelease=$(has_release ${RELEASE}-old)" >> $GITHUB_OUTPUT
+          echo "new-hasrelease=$(has_release ${RELEASE}-new)" >> $GITHUB_OUTPUT
 
-          echo "::set-output name=base-releaseid::$(get_release_id ${RELEASE})"
-          echo "::set-output name=old-releaseid::$(get_release_id ${RELEASE}-old)"
-          echo "::set-output name=new-releaseid::$(get_release_id ${RELEASE}-new)"
+          echo "base-releaseid=$(get_release_id ${RELEASE})" >> $GITHUB_OUTPUT
+          echo "old-releaseid=$(get_release_id ${RELEASE}-old)" >> $GITHUB_OUTPUT
+          echo "new-releaseid=$(get_release_id ${RELEASE}-new)" >> $GITHUB_OUTPUT
 
 
       - name: Release Pre Checks

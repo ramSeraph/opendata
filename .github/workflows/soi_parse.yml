@@ -68,11 +68,11 @@ jobs:
         id: work
         run: |
           if [[ "$(gsutil ls gs://soi_data/to_parse.txt 2>/dev/null)" == "" ]]; then
-            echo "::set-output name=AVAILABLE::false"
+            echo "AVAILABLE=false" >> $GITHUB_OUTPUT
           else
             mkdir -p data
             gsutil -m cp gs://soi_data/to_parse.txt data/to_parse.txt
-            echo "::set-output name=AVAILABLE::true"
+            echo "AVAILABLE=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Parse SOI sheets
@@ -94,16 +94,16 @@ jobs:
         id: retile_work
         run: |
           if [[ "$(gsutil ls gs://soi_data/to_retile.txt 2>/dev/null)" == "" ]]; then
-            echo "::set-output name=AVAILABLE::false"
+            echo "AVAILABLE=false" >> $GITHUB_OUTPUT
           else
             mkdir -p data
             gsutil -m cp gs://soi_data/to_retile.txt data/to_retile.txt
             gsutil -m cp gs://soi_data/index.geojson data/index.geojson
-            echo "::set-output name=AVAILABLE::true"
+            echo "AVAILABLE=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Get current date
-        run: echo "::set-output name=date::$(date +'%d%b%Y')"
+        run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
         id: date
 
       - name: Restore run data from cache

@@ -24,15 +24,15 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ inputs.which-run }}" == "self" ]]; then
-              echo "::set-output name=url::https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              echo "url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
           elif [[ "${{ inputs.which-run }}" == "from-event" ]]; then
-              echo "::set-output name=url::${{ github.event.workflow_run.html_url }}"
+              echo "url=${{ github.event.workflow_run.html_url }}" >> $GITHUB_OUTPUT
           elif [[ "${{ inputs.which-run }}" == "ignore" ]]; then
               if [[ -z "${{ inputs.url }}" ]]; then
                   echo "'which-run' input is set to 'ignore'. 'url' input can't be empty"
                   exit 1
               fi
-              echo "::set-output name=url::${{ inputs.url }}"
+              echo "url=${{ inputs.url }}" >> $GITHUB_OUTPUT
           else
               echo "Unsupported input 'which-run'; '${{ inputs.which-run }}'"
               exit 1

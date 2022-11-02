@@ -40,7 +40,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Get current date
-        run: echo "::set-output name=date::$(date +'%d%b%Y')"
+        run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
         id: date
 
       - name: Cache changes
@@ -61,9 +61,9 @@ jobs:
           if [[ -f $filename ]]; then
             cat $filename
             echo
-            echo "::set-output name=changes::$filename"
+            echo "changes=$filename" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=changes::none"
+            echo "changes=none" >> $GITHUB_OUTPUT
           fi
           exit $((exit_code))
         timeout-minutes: 5
@@ -115,7 +115,7 @@ jobs:
             next_id=0
           fi
           echo "next id is $next_id"
-          echo "::set-output name=next-id::$next_id"
+          echo "next-id=$next_id" >> $GITHUB_OUTPUT
 
 
   LGD-Issue-Closer:
@@ -129,16 +129,16 @@ jobs:
         id: closure-checks
         run: |
           set -euo pipefail
-          echo "::set-output name=close::false"
+          echo "close=false"
           if [[ "${{ needs.LGD-Issue-Lister.outputs.has-found }}" == "true" || "${{ needs.LGD-Issue-Lister.outputs.is-closed }}" == "false" ]]; then
             echo "need to close current issue"
-            echo "::set-output name=close::true"
+            echo "close=true" >> $GITHUB_OUTPUT
             if [[ "${{ github.event_name }}" == "push" ]]; then
               echo "${{ toJSON(github.event) }}"
               compare="${{ github.event.compare }}"
-              echo "::set-output name=reason::[User made Changes]($compare) or website changed"
+              echo "reason=\"[User made Changes]($compare) or website changed\"" >> $GITHUB_OUTPUT
             else
-              echo "::set-output name=reason::Changes in website"
+              echo "reason=\"Changes in website\"" >> $GITHUB_OUTPUT
             fi
           fi
       - name: Close Issue
@@ -161,7 +161,7 @@ jobs:
     if: needs.Run-LGD-Monitor.outputs.changes != 'none'
     steps:
       - name: Get current date
-        run: echo "::set-output name=date::$(date +'%d%b%Y')"
+        run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
         id: date
       - name: Cache changes
         uses: ramSeraph/cache-always@v0.0.1
@@ -188,17 +188,17 @@ jobs:
           
           if [[ "${{ needs.LGD-Issue-Lister.outputs.has-found }}" == "false" || "${{ needs.LGD-Issue-Lister.outputs.is-closed }}" == "true" ]]; then
             echo "need to create new issue"
-            echo "::set-output name=issue-number::"
-            echo "::set-output name=create::true"
+            echo "issue-number=" >> $GITHUB_OUTPUT
+            echo "create=true" >> $GITHUB_OUTPUT
           else
             issue_url="https://api.github.com/repos/${{ github.repository }}/issues/$issue_id"
             gh api -H "Accept: application/vnd.github+json" $issue_url | jq -r '.body' > existing_${ISSUE_BODY_FILE}
             sed -i '${/^$/d;}' existing_${ISSUE_BODY_FILE}
             cat existing_${ISSUE_BODY_FILE}
             echo "existing issue $issue_id found"
-            echo "::set-output name=issue-number::$issue_id"
-            echo "::set-output name=create::false"
-            diff $ISSUE_BODY_FILE existing_$ISSUE_BODY_FILE || ( echo "issue needs to be updated" && echo "::set-output name=create::true" )
+            echo "issue-number=$issue_id" >> $GITHUB_OUTPUT
+            echo "create=false" >> $GITHUB_OUTPUT
+            diff $ISSUE_BODY_FILE existing_$ISSUE_BODY_FILE || ( echo "issue needs to be updated" && echo "create=true" >> $GITHUB_OUTPUT )
           fi
 
       - id: create-issue

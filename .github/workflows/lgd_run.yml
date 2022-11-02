@@ -37,7 +37,7 @@ jobs:
           gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
 
       - name: Restore tesseract models from cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: 'models/' 
           key:  'lgd-tesseract-models-gcs-v2'
@@ -50,7 +50,7 @@ jobs:
           gsutil -m cp -r gs://lgd_captcha_tesseract_models/* models/
 
       - name: Get current date
-        run: echo "::set-output name=date::$(date +'%d%b%Y')"
+        run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
         id: date
 
       - name: Restore daily run data from cache

@@ -31,17 +31,17 @@ jobs:
           echo "got workflow run event for $RUN_NUMBER( attempt - $RUN_ATTEMPT ), conclusion - $CONCLUSION"
           if [ "$CONCLUSION" != "failure" ]; then
             echo "setting RERUN to false and SEND_ALERT to false"
-            echo "::set-output name=RERUN::false"
-            echo "::set-output name=SEND_ALERT::false"
+            echo "=RERUN=false" >> $GITHUB_OUTPUT
+            echo "=SEND_ALERT=false" >> $GITHUB_OUTPUT
           else
             if [ "$RUN_ATTEMPT" -lt ${{ inputs.num-attempts }} ]; then
               echo "setting RERUN to true and SEND_ALERT to false"
-              echo "::set-output name=RERUN::true"
-              echo "::set-output name=SEND_ALERT::false"
+              echo "RERUN=true" >> $GITHUB_OUTPUT
+              echo "SEND_ALERT=false" >> $GITHUB_OUTPUT
             else
               echo "setting RERUN to false and SEND_ALERT to true"
-              echo "::set-output name=RERUN::false"
-              echo "::set-output name=SEND_ALERT::true"
+              echo "RERUN=false" >> $GITHUB_OUTPUT
+              echo "SEND_ALERT=true" >> $GITHUB_OUTPUT
             fi
           fi
 

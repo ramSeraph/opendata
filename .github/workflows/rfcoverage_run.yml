@@ -23,7 +23,7 @@ jobs:
           python-version: '3.9.4'
 
       - name: Restore pip data from cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ./.venv/
           key: $venv-${{ hashFiles('rfcoverage/requirements.txt') }}
@@ -37,7 +37,7 @@ jobs:
           pip install -r rfcoverage/requirements.txt
 
       - name: Get current date
-        run: echo "::set-output name=date::$(date +'%d%b%Y')"
+        run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
         id: date
 
       - name: Restore daily run data from cache

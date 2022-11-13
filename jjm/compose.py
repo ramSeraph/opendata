@@ -19,7 +19,7 @@ if __name__ == '__main__':
             with open(filename, 'r') as inp_f:
                 data = json.load(inp_f)
                 for entry in data:
-                    new_entry = { 'state': state_name, 'ditrict': dist_name }
+                    new_entry = { 'state': state_name, 'district': dist_name }
                     new_entry['block'] = entry.pop('block')
                     new_entry['gp'] = entry.pop('gp')
                     new_entry['village'] = entry.pop('village')

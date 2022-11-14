@@ -22,7 +22,7 @@ jobs:
         with:
           context: maps/SOI
           load: true
-          file: Dockerfile.parse
+          file: maps/SOI/Dockerfile.parse
           build-args: |
             build_type=final
           tags: soi-parse:latest

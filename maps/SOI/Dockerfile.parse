@@ -30,9 +30,15 @@ RUN apt-get update && \
 FROM base-req-build as base-final
 RUN python -m venv /venv
 COPY requirements.parse.txt /requirements.txt
-RUN GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2) && \
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y build-essential && \
+    GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2) && \
     sed -i "s/gdal==.*/gdal==${GDAL_VERSION}/g" /requirements.txt && \
-    /venv/bin/pip install --no-cache-dir -r /requirements.txt
+    /venv/bin/pip install --no-cache-dir -r /requirements.txt && \
+    apt-get -y --purge remove build-essential && \
+    apt-get -y autoremove && \
+    apt-get -y clean && \
+    rm -rf /var/lib/apt/lists/*
 COPY --from=mutool-build /bin/mutool /bin/
 ENTRYPOINT ["/venv/bin/python"]
 

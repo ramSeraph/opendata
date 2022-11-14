@@ -5,3 +5,4 @@ requests
 colorlog
 numpy
 opencv-python
+pytesseract

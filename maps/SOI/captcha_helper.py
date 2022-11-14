@@ -70,8 +70,8 @@ def download_folder(bucket_name, dirname, client=None):
         logger.info(f'downloading file {filename}')
         blob.download_to_filename(str(path))
 
+def check_captcha_models(models_pathname):
 
-def prepare_captcha_models(models_pathname):
     models_path = Path(models_pathname)
     # hardcoding list of files here so as to not hit the network everytime
     paths = []
@@ -82,8 +82,8 @@ def prepare_captcha_models(models_pathname):
     missing_files = any([not path.exists() for path in paths])
 
     if missing_files:
-        client = storage.Client.create_anonymous_client()
-        download_folder('lgd_captcha_tesseract_models', str(models_path), client)
-
-if __name__ == '__main__':
-    prepare_captcha_models(captcha_model_dir)
+        logging.error(f'missing model files: {missing_files}')
+        script_file = Path(__file__).parent / 'util' / 'download_captcha_models.sh'
+        script_filename = str(script_file)
+        logging.error(f'to get the models run {script_filename} {models_pathname}')
+        raise Exception('missing captcha model files')

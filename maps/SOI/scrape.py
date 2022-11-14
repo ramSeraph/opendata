@@ -17,7 +17,7 @@ from bs4 import BeautifulSoup
 
 from captcha_helper import (
      get_captcha_from_page,
-     prepare_captcha_models,
+     check_captcha_models,
      CAPTCHA_MANUAL,
      captcha_model_dir
 )
@@ -507,7 +507,7 @@ if __name__ == '__main__':
     setup_logging(logging.INFO)
 
     if not CAPTCHA_MANUAL:
-        prepare_captcha_models(captcha_model_dir)
+        check_captcha_models(captcha_model_dir)
 
     get_fonts()
     scrape_wrap(args.unavailable)

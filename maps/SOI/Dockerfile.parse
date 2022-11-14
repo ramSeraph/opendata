@@ -31,7 +31,7 @@ FROM base-req-build as base-final
 RUN python -m venv /venv
 COPY requirements.parse.txt /requirements.txt
 RUN GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2) && \
-    sed -i "s/gdal==.*/gdal==${GDAL_VERSION}/g" requirements.txt && \
+    sed -i "s/gdal==.*/gdal==${GDAL_VERSION}/g" /requirements.txt && \
     /venv/bin/pip install --no-cache-dir -r /requirements.txt
 COPY --from=mutool-build /bin/mutool /bin/
 ENTRYPOINT ["/venv/bin/python"]

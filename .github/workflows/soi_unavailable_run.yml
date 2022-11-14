@@ -15,36 +15,21 @@ jobs:
     timeout-minutes: 600
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Install Extra packages
-        run: |
-          sudo add-apt-repository ppa:alex-p/tesseract-ocr-devel
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends tesseract-ocr libgl1-mesa-glx libgdal-dev gdal-bin
-
-      - name: Setup python
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: docker/setup-buildx-action@v2
+      - name: Build Image
+        uses: docker/build-push-action@v3
         with:
-          python-version: '3.9.4'
+          context: maps/SOI
+          load: true
+          build-args: |
+            build_type=final
+          tags: soi:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Restore pip data from cache
-        uses: ramSeraph/cache-always@v0.0.1
-        #uses: actions/cache@v2
-        with:
-          path: ./.venv/
-          key: SOI-venv-${{ hashFiles('maps/SOI/requirements.txt') }}
-        id: cache-venv
-
-      - name: Setup python requirements
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        run: |
-          python -m venv ./.venv 
-          . ./.venv/bin/activate
-          pip install -r maps/SOI/requirements.txt
       - name: Restore tesseract models from cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: 'data/captcha/models/'
           key:  'SOI-tesseract-models-gcs-v2'
@@ -85,17 +70,31 @@ jobs:
       # scrape things
       - name: Download SOI data
         run: |
-          .venv/bin/python maps/SOI/scrape.py -u -r 15
+          docker run -d --name runner -v $(pwd):/code -w /code soi:latest maps/SOI/scrape.py -u -r 15
+          docker logs -f runner
+          exit_code=$(docker inspect runner --format='{{.State.ExitCode}}')
+          exit $((exit_code))
         timeout-minutes: 180
+
+      - name: Cleanup Processes
+        if: ${{ always() }}
+        run: |
+          docker stop runner || true
+          docker kill runner || true
+          docker rm runner || true
 
       - name: Upload raw files to gcs
         run: |
           [[ "$(gsutil ls gs://soi_data/index.geojson 2>/dev/null)" == "" ]] && gsutil -m cp data/index.geojson gs://soi_data/index.geojson
           [[ "$(gsutil ls gs://soi_data/raw/SOI_FONTS.zip 2>/dev/null)" == "" ]] && gsutil -m cp data/raw/SOI_FONTS.zip gs://soi_data/raw/SOI_FONTS.zip
-          find data/raw/* && gsutil -m cp -a public-read -r data/raw/*.pdf gs://soi_data/raw/ || true
-          find data/raw/* && find data/raw/*.pdf > data/to_parse.txt && gsutil -m cp -a public-read data/to_parse.txt gs://soi_data/to_parse.txt || true
+          find data/raw/* && gsutil -m cp -r data/raw/*.pdf gs://soi_data/raw/ || true
+          find data/raw/* && find data/raw/*.pdf > data/to_parse.txt && gsutil -m cp data/to_parse.txt gs://soi_data/to_parse.txt || true
           find data/raw/* && sh -c "ls data/raw/*.pdf | sed 's,data,gs://soi_data,g' | sed 's/.pdf/.pdf.unavailable/g' | xargs gsutil rm " || true
           rm -rf data/raw/*.pdf
           rm -rf data/raw/*.pdf.unavailable
           rm -rf data/cookies
           rm -rf data/tried_users.txt
+
+      - name: Update lists
+        run: |
+          ./generate_lists.sh

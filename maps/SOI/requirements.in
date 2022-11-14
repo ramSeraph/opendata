@@ -1,0 +1,7 @@
+bs4
+Pillow
+imgcat
+requests
+colorlog
+numpy
+opencv-python

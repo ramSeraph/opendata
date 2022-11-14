@@ -1,0 +1,14 @@
+numpy
+Pillow
+imgcat
+opencv-python
+pdfminer.six
+PyPDF2
+rasterio
+requests
+shapely
+pyproj
+GDAL
+google-cloud-storage
+imutils
+mercantile

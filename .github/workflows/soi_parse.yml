@@ -15,55 +15,25 @@ jobs:
     timeout-minutes: 600
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Install Extra packages
-        run: |
-          sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libgl1-mesa-glx libgdal-dev gdal-bin gdal-data webp
-
-      - name: Setup python
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: docker/setup-buildx-action@v2
+      - name: Build Image
+        uses: docker/build-push-action@v3
         with:
-          python-version: '3.9.4'
+          context: maps/SOI
+          load: true
+          file: Dockerfile.parse
+          build-args: |
+            build_type=final
+          tags: soi-parse:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Restore pip data from cache
-        uses: ramSeraph/cache-always@v0.0.1
-        #uses: actions/cache@v2
-        with:
-          path: ./.venv/
-          key: SOI-venv-v4-${{ hashFiles('maps/SOI/requirements.parse.txt') }}
-        id: cache-venv
-
-      - name: Setup python requirements
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        run: |
-          python -m venv ./.venv 
-          . ./.venv/bin/activate
-          pip install numpy==1.22.3
-          pip install GDAL==3.4.0
-          pip install -r maps/SOI/requirements.parse.txt
- 
       - name: Authenticate with GCP
         run: |
           echo ${{ secrets.GCP_AUTH }} | base64 -d > gauth.json
           gcloud auth activate-service-account --key-file=gauth.json
 
-      - name: Restore mutool from cache
-        uses: ramSeraph/cache-always@v0.0.1
-        with:
-          path: 'bin/mutool'
-          key:  'SOI-mutool-v3'
-        id: mutool-cache
-
-      - name: Build mutool
-        if: steps.mutool-cache.outputs.cache-hit != 'true'
-        run: |
-          cp maps/SOI/mupdf.patch .
-          bash maps/SOI/build_mutool.sh
- 
       - name: Check for work
         id: work
         run: |
@@ -81,15 +51,29 @@ jobs:
           gsutil -m cp gs://soi_data/raw/SOI_FONTS.zip data/raw/SOI_FONTS.zip
           gsutil -m cp gs://soi_data/index.geojson data/index.geojson
           cat data/to_parse.txt | cut -d"/" -f2- | xargs -I {} gsutil -m cp gs://soi_data/{} data/{}
-          .venv/bin/python maps/SOI/check_duplicates.py data/to_parse.txt
+          docker run -d --name dup-checker -v $(pwd):/code -w /code soi-parse:latest maps/SOI/check_duplicates.py data/to_parse.txt
+          docker logs -f dup-checker
+          exit_code=$(docker inspect dup-checker --format='{{.State.ExitCode}}')
+          if [[ "$exit_code" != "0" ]]; then
+            exit 1
+          fi
           mkdir -p export/gtiffs/
-          FROM_LIST=data/to_parse.txt .venv/bin/python maps/SOI/parse.py
+          docker run -d --name parser -v $(pwd):/code -w /code -e FROM_LIST=data/to_parse.txt soi-parse maps/SOI/parse.py
+          docker logs -f parser
+          exit_code=$(docker inspect parser --format='{{.State.ExitCode}}')
+          if [[ "$exit_code" != "0" ]]; then
+              exit 1
+          fi
           gsutil rm gs://soi_data/to_parse.txt
           gsutil -m cp -r export/gtiffs/*.tif gs://soi_data/export/gtiffs/
           ls export/gtiffs/*.tif | cut -d"/" -f3 | cut -d"." -f1 > data/to_retile.txt
           gsutil cp data/to_retile.txt gs://soi_data/to_retile.txt
         timeout-minutes: 600
  
+      - name: Update lists
+        run: |
+          ./generate_lists.sh
+
       - name: Check for retile work
         id: retile_work
         run: |
@@ -107,7 +91,7 @@ jobs:
         id: date
 
       - name: Restore run data from cache
-        uses: TerrenceHo/cache-always@v0.0.1
+        uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
             to_gcs/
@@ -122,7 +106,12 @@ jobs:
         run: |
           if [[ ! -e 'to_gcs/all_done' ]]; then
             mkdir -p export/tiles/
-            GOOGLE_APPLICATION_CREDENTIALS=gauth.json FROM_GCS=1 .venv/bin/python maps/SOI/retile.py data/to_retile.txt
+            docker run -d --name retiler -v $(pwd):/code -w /code -e GOOGLE_APPLICATION_CREDENTIALS=gauth.json -e FROM_GCS=1 soi-parse maps/SOI/retile.py data/to_retile.txt
+            docker logs -f retiler
+            exit_code=$(docker inspect retiler --format='{{.State.ExitCode}}')
+            if [[ "$exit_code" != "0" ]]; then
+              exit 1
+            fi
           fi
           cd to_gcs
           gsutil -m cp -r export/* gs://soi_data/export/
@@ -130,6 +119,7 @@ jobs:
           cd ..
           rm -rf to_gcs/*
         timeout-minutes: 600
+
 
   SOI-Parse-Failure-Notify:
     needs: [Run-SOI-Parsing]

@@ -1,0 +1,41 @@
+ARG build_type
+FROM ubuntu:22.04 as base-req-build
+ENV LANG=C.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
+ENV to_install="python3 python3-pip python3-venv python-is-python3 libgl1-mesa-glx libgdal-dev gdal-bin gdal-data webp poppler-utils poppler-data"
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y $to_install && \
+    apt-get -y autoremove && \
+    apt-get -y clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir /venv
+
+FROM ubuntu:22.04 as mutool-build
+RUN pwd
+COPY mupdf.patch .
+COPY build_mutool.sh .
+ENV CXX=clang++
+ENV AR=llvm-ar
+ENV pkgs="git make clang ca-certificates pkg-config llvm" 
+RUN apt-get update && \
+    apt install --no-install-recommends -y $pkgs && \
+    bash build_mutool.sh && \
+    apt-get -y --purge remove $pkgs && \
+    apt-get -y autoremove && \
+    apt-get -y clean && \
+    rm -rf /var/lib/apt/lists/*
+
+
+FROM base-req-build as base-final
+RUN python -m venv /venv
+COPY requirements.txt /requirements.txt
+RUN GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2) && \
+    NUMPY_VERSION=$(cat requirements.txt | grep numpy | cut -d"=" -f3) && \
+    /venv/bin/pip install --no-cache-dir numpy==$NUMPY_VERSION && \
+    /venv/bin/pip install --no-cache-dir GDAL==$GDAL_VERSION && \
+    /venv/bin/pip install --no-cache-dir -r /requirements.txt
+COPY --from=mutool-build /bin/mutool /bin/
+ENTRYPOINT ["/venv/bin/python"]
+
+FROM base-${build_type} AS final

@@ -34,13 +34,9 @@ from shapely.wkt import loads as wkt_loads
 from shapely.wkt import dumps as wkt_dumps
 from shapely.affinity import translate
 
-#import rasterio
-#import rasterio.mask
-#from rasterio.io import MemoryFile
 from rasterio.crs import CRS
 from rasterio.control import GroundControlPoint
 from rasterio.transform import from_gcps, rowcol
-#from rasterio.warp import calculate_default_transform, reproject, Resampling
 
 from pyproj.aoi import AreaOfInterest
 from pyproj.transformer import Transformer
@@ -1056,98 +1052,6 @@ class Converter:
             json.dump(cutline_data, f, indent=4)
 
 
-
-    def georeference_mapbox_new(self):
-        nogrid_file = self.file_dir.joinpath('nogrid.jpg')
-        georef_file = self.file_dir.joinpath('georef.tif')
-        cropped_file = self.file_dir.joinpath('cropped.tif')
-        reproj_file = self.file_dir.joinpath('reproj.tif')
-        final_file = self.file_dir.joinpath('final.tif')
-        if final_file.exists():
-            print(f'{final_file} exists.. skipping')
-            return
-
-        geom = self.get_index_geom()
-        ibox = geom['coordinates'][0]
-        corners = self.get_corners()
-
-        ibox = ibox[:4]
-        i_lt, i_lb, i_rb, i_rt = ibox
-        # get source crs using the center of the box
-        src_crs = get_utm_crs((i_lt[0] + i_rt[0])/2, (i_lt[1] + i_lb[1])/2)
-        box_crs = CRS.from_epsg(4326)
-        transformer = Transformer.from_crs(box_crs, src_crs, always_xy=True)
-        ibox_conv = [ transformer.transform(*c) for c in ibox ]
-
-        i_lt, i_lb, i_rb, i_rt = ibox_conv
-        c_lt, c_lb, c_rb, c_rt = corners
-        gcps = [
-            GroundControlPoint(row=c_rt[1], col=c_rt[0], x=i_rt[0], y=i_rt[1]),
-            GroundControlPoint(row=c_lt[1], col=c_lt[0], x=i_lt[0], y=i_lt[1]),
-            GroundControlPoint(row=c_lb[1], col=c_lb[0], x=i_lb[0], y=i_lb[1]),
-            GroundControlPoint(row=c_rb[1], col=c_rb[0], x=i_rb[0], y=i_rb[1]),
-        ]
-        geom_i = Polygon(ibox_conv + [ibox_conv[0]])
-        geom_s = Polygon([c_rt, c_rb, c_lb, c_lt, c_rt])
-        with rasterio.open(str(nogrid_file)) as src:
-            profile = src.profile.copy()
-            profile.update({
-                'driver': 'GTiff',
-                'tiled': True,
-                'blockxsize': 512,
-                'blockysize': 512,
-                'photometric': 'RGB',
-                'nodata': 0,
-                'count': 3,
-                'compress': 'JPEG',
-                'interleave': 'pixel',
-                'nodata': 0,
-            })
-            data = src.read()
-
-        print(f'writing file {georef_file}')
-        with rasterio.open(str(georef_file), 'w', **profile) as reffed:
-            reffed.crs = src_crs
-            reffed.transform = from_gcps(gcps)
-            reffed.write(data)
-
-        print(f'writing file {cropped_file}')
-        with rasterio.open(str(georef_file)) as reffed:
-            print(reffed.profile)
-            out_img, out_transform = rasterio.mask.mask(reffed, [geom_i], crop=True)
-            out_profile = reffed.profile.copy()
-            out_profile.update({"height": out_img.shape[1],
-                                "width": out_img.shape[2],
-                                "transform": out_transform})
-
-            with rasterio.open(str(cropped_file), 'w', **out_profile) as dst:
-                dst.write(out_img)
-
-        with rasterio.open(str(cropped_file)) as src:
-            dst_crs = { 'init': 'EPSG:3857' }
-            transform, width, height = calculate_default_transform(
-                    src.crs, dst_crs, src.width, src.height, *src.bounds)
-            kwargs = src.meta.copy()
-            kwargs.update({
-                'crs': dst_crs,
-                'transform': transform,
-                'width': width,
-                'height': height
-            })
-
-            print(f'writing file {reproj_file}')
-            with rasterio.open(str(reproj_file), 'w', **kwargs) as dst:
-                for i in range(1, src.count + 1):
-                    reproject(
-                        source=rasterio.band(src, i),
-                        destination=rasterio.band(dst, i),
-                        src_transform=src.transform,
-                        src_crs=src.crs,
-                        dst_transform=transform,
-                        dst_crs=dst_crs,
-                        resampling=Resampling.bilinear)
-
-
     def export_internal(self, filename, out_filename, jpeg_export_quality):
         if Path(out_filename).exists():
             print(f'{out_filename} exists.. skipping export')
@@ -1472,7 +1376,6 @@ class Converter:
         self.georeference_mapbox()
         self.warp_mapbox()
         self.export()
-        #self.georeference_mapbox_new()
         #self.process_legend()
         #self.process_magvar()
         #self.process_cbox()

@@ -72,7 +72,7 @@ jobs:
  
       - name: Update lists
         run: |
-          ./generate_lists.sh
+          maps/SOI/generate_lists.sh
 
       - name: Check for retile work
         id: retile_work

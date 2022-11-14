@@ -90,11 +90,11 @@ jobs:
           find data/raw/* && gsutil -m cp -r data/raw/*.pdf gs://soi_data/raw/ || true
           find data/raw/* && find data/raw/*.pdf > data/to_parse.txt && gsutil -m cp data/to_parse.txt gs://soi_data/to_parse.txt || true
           find data/raw/* && sh -c "ls data/raw/*.pdf | sed 's,data,gs://soi_data,g' | sed 's/.pdf/.pdf.unavailable/g' | xargs gsutil rm " || true
-          rm -rf data/raw/*.pdf
-          rm -rf data/raw/*.pdf.unavailable
+          rm -rf data/raw/*.pdf || true
+          rm -rf data/raw/*.pdf.unavailable || true
           rm -rf data/cookies
           rm -rf data/tried_users.txt
 
       - name: Update lists
         run: |
-          ./generate_lists.sh
+          maps/SOI/generate_lists.sh

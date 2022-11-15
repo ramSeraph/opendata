@@ -93,7 +93,7 @@ pypdf2==1.27.8
     # via -r requirements.parse.in
 pyproj==3.3.1
     # via -r requirements.parse.in
-rasterio==1.2.10
+rasterio==1.3.3
     # via -r requirements.parse.in
 requests==2.27.1
     # via

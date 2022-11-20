@@ -195,6 +195,7 @@ def create_upper_tiles(all_affected_tiles_by_zoom):
 
 if __name__ == '__main__':
     import sys
+    os.umask(0o000)
     retile_list_file = sys.argv[1]
     tiles_dir.mkdir(parents=True, exist_ok=True)
     tiffs_dir.mkdir(parents=True, exist_ok=True)

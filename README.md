@@ -6,4 +6,4 @@ Contains scripts to deal with pulling/analyzing data from various Indian governm
 
 [maps/SOI/](maps/SOI/) - Code for pulling data from [Survey Of India](https://onlinemaps.surveyofindia.gov.in/) - [data](http://ramseraph.github.io/opendata/maps/SOI)
 
-[doc/](doc/) - Code for the [Website](http://ramseraph.github.io/opendata) for accesing pulled data
+[doc/](doc/) - Code for the [Website](http://ramseraph.github.io/opendata) for accessing pulled data

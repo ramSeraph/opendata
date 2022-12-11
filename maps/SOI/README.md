@@ -33,7 +33,7 @@ example `users.json`
         "email_id": "<email_id_2>",
         "first_login": false
     }
-}
+]
 
 ```
 
@@ -82,9 +82,10 @@ Environment variables can be used to change behavior
 
 Tiles get created at `export/tiles`, also generates an auxilary `export/prev_files_to_tile.json` which contains the list of sheet files that went in and their modification times
 
-Rerunning `python tiles.py` picks up any any new/modified sheet files in `export/gtiffs` and does a incremetal retitling operation
+Rerunning `python tile.py` picks up any new/modified sheet files in `export/gtiffs` and does an incremetal retitling operation
 
-This is still slow and requires the presence of all the previous tiling data, So a newer retiling script was created to just pull the requisite tiles from the original tiles into a staging area, retile and push back only the affected tiles into the main area.
+This is still slow and requires the presence of all the previous tiling data,
+So a newer retiling script was created to just pull the requisite tiles from the original tiles into a staging area, retile and push back only the affected tiles into the main area.
 
 Invoke with `python retile.py`.. for now expects a `retile.txt` file containing just the sheet names to retile
 

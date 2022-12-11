@@ -252,7 +252,7 @@ def run_external(cmd):
     print(f'STDERR: {res.stderr}')
     print(f'command took {end - start} secs to run')
     if res.returncode != 0:
-        raise Exception(f'command {cmd} failed')
+        raise Exception(f'command {cmd} failed with exit code: {res.returncode}')
 
 
 def crop_img(img, bbox):

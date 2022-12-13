@@ -126,7 +126,8 @@
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Parliament Wise Local Body Mapping" ],
-    "comp": "PARLIAMENT_CONSTITUENCIES_LOCAL_BODY_MAPPINGS"
+    "comp": "IGNORE",
+    "ignore_reason": "Needs Review, Broken"
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Assembly Wise Local Body Mapping" ],
@@ -144,10 +145,8 @@
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Parliament Constituency or Assembly Constituency of a State/India" ],
-    "comp": {
-      "CONSTITUENCIES_ASSEMBLY": ["All State", "Assembly Constituency"],
-      "CONSTITUENCIES_PARLIAMENT": ["All State", "Parliament Constituency"]
-    }
+    "comp": "IGNORE",
+    "ignore_reason": "Needs Review, Broken"
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Constituency Coverage Details" ],

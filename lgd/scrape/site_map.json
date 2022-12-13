@@ -190,6 +190,11 @@
     "ignore_reason": "Needs Review"
   },
   {
+    "dropdown": [ "Download Directory", "Block", "District, Village,Block and GPs/TLB Mapping"],
+    "comp": "IGNORE",
+    "ignore_reason": "Needs Review"
+  },
+  {
     "dropdown": [ "Download Directory", "Department/Organization", "Organization Units of a Department/Organization" ],
     "comp": {
       "STATE_ORG_UNITS": "State",

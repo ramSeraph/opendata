@@ -92,34 +92,6 @@ Location in LGD
 
 ---
 
-## parliament_constituencies.csv
-
-description
-: list of all parliament constituencies
-
-Location in LGD
-: - Download Directory
-    - Parliament/Assembly Constituency
-      - Parliament Constituency or Assembly Constituency of a State/India
-        - All State
-          - Parliament Constituency
-
----
-
-## assembly_constituencies.csv
-
-description
-: list of all assembly constituencies
-
-Location in LGD
-: - Download Directory
-    - Parliament/Assembly Constituency
-      - Parliament Constituency or Assembly Constituency of a State/India
-        - All State
-          - Assembly Constituency
-
----
-
 ## pincode_villages.csv
 
 description
@@ -263,18 +235,6 @@ Location in LGD
     - Department/Organization
       - Ministries/Departments/Organizations Details
         - State
-
----
-
-## parliament_constituencies_lb_mapping.csv
-
-description
-: list of all parliament constituencies with local body coverage
-
-Location in LGD
-: - Download Directory
-    - Parliament/Assembly Constituency
-      - Parliament Wise Local Body Mapping
 
 ---
 

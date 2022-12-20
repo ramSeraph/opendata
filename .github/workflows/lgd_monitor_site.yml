@@ -130,7 +130,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "close=false"
-          if [[ "${{ needs.LGD-Issue-Lister.outputs.has-found }}" == "true" || "${{ needs.LGD-Issue-Lister.outputs.is-closed }}" == "false" ]]; then
+          if [[ "${{ needs.LGD-Issue-Lister.outputs.has-found }}" == "true" && "${{ needs.LGD-Issue-Lister.outputs.is-closed }}" == "false" ]]; then
             echo "need to close current issue"
             echo "close=true" >> $GITHUB_OUTPUT
             if [[ "${{ github.event_name }}" == "push" ]]; then

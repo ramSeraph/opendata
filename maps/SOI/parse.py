@@ -391,6 +391,7 @@ class Converter:
         self.shrunk_map_area_corners = extra.get('shrunk_map_area_corners', None)
         self.extents = extra.get('extents', None)
         self.jpeg_export_quality = extra.get('jpeg_export_quality', 10)
+        self.warp_jpeg_export_quality = extra.get('warp_jpeg_export_quality', 75)
         #self.grid_line_buf = extra.get('grid_line_buf', None)
         self.grid_lines = extra.get('grid_lines', None)
         self.poly_approx_factor = extra.get('poly_approx_factor', 0.001)
@@ -1095,11 +1096,11 @@ class Converter:
 
         sheet_ibox = geom['coordinates'][0]
 
-        def warp_file(box, cline_file, f_file):
+        def warp_file(box, cline_file, f_file, jpeg_quality):
             img_quality_config = {
                 'COMPRESS': 'JPEG',
                 #'PHOTOMETRIC': 'YCBCR',
-                'JPEG_QUALITY': '75'
+                'JPEG_QUALITY': f'{jpeg_quality}'
             }
 
             #if not USE_4326:
@@ -1125,10 +1126,10 @@ class Converter:
 
         sheet_no = Path(self.filename).name.replace('.pdf', '')
         if self.extents is None:
-            warp_file(sheet_ibox, cutline_file, final_file)
+            warp_file(sheet_ibox, cutline_file, final_file, self.warp_jpeg_export_quality)
         else:
             if sheet_no not in self.extents:
-                warp_file(sheet_ibox, cutline_file, final_file)
+                warp_file(sheet_ibox, cutline_file, final_file, self.warp_jpeg_export_quality)
             for k in self.extents.keys():
                 if k == 'full':
                     continue
@@ -1137,7 +1138,10 @@ class Converter:
                 k_cutline_file = k_dir.joinpath('cutline.geojson')
                 k_final_file = k_dir.joinpath('final.tif') 
                 k_ibox = self.extents[k]
-                warp_file(k_ibox, k_cutline_file, k_final_file) 
+                k_warp_jpeg_export_quality = self.warp_jpeg_export_quality
+                if k in self.extra_ancillary and 'warp_jpeg_export_quality' in self.extra_ancillary[k]:
+                    k_warp_jpeg_export_quality = self.extra_ancillary[k]['warp_jpeg_export_quality']
+                warp_file(k_ibox, k_cutline_file, k_final_file, k_warp_jpeg_export_quality) 
                 # TODO: this didn't work
                 # an attempt to fill partial tiffs
                 #fill_tif(k, k_dir)

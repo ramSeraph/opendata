@@ -63,22 +63,7 @@ jobs:
           fi
           mkdir -p export/gtiffs/
           docker run -d --name parser -v $(pwd):/code -w /code -e FROM_LIST=data/to_parse.txt --memory="6g" --memory-swap="-1" soi-parse maps/SOI/parse.py
-          # temp debug
-          free -h
-          docker inspect parser
-          while true
-          do
-            docker stats --no-stream parser
-            free -h
-            df -h
-            sleep 2
-            status=$(docker inspect parser --format='{{.State.Status}}')
-            if [[ "$status" != "running" ]]; then
-              break
-            fi
-          done
-          docker logs parser
-          #docker logs -f parser
+          docker logs -f parser
           exit_code=$(docker inspect parser --format='{{.State.ExitCode}}')
           if [[ "$exit_code" != "0" ]]; then
               echo "exit_code: $exit_code"

@@ -68,7 +68,6 @@ known_problems = [
     #'data/raw/49N_14.pdf', # anamoly, black strip in file
 
     'data/raw/54N_12.pdf', # bad file
-    'data/raw/45D_14.pdf', # bad file
     'data/raw/40M_11.pdf', # bad file
 ]
 

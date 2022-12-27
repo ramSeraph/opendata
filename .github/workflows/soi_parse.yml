@@ -13,7 +13,7 @@ on:
 jobs:
   Run-SOI-Parsing:
     timeout-minutes: 600
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Setup swap
         uses: pierotofy/set-swap-space@v1.0
@@ -63,7 +63,18 @@ jobs:
           fi
           mkdir -p export/gtiffs/
           docker run -d --name parser -v $(pwd):/code -w /code -e FROM_LIST=data/to_parse.txt --memory-swap -1 soi-parse maps/SOI/parse.py
-          docker logs -f parser
+          # temp debug
+          while true
+          do
+            docker stats parser
+            sleep 2
+            status=$(docker inspect parser --format='{{.State.Status}}')
+            if [[ "$status" != "running"]]; then
+              break;
+            fi
+          done
+          docker logs parser
+          #docker logs -f parser
           exit_code=$(docker inspect parser --format='{{.State.ExitCode}}')
           if [[ "$exit_code" != "0" ]]; then
               echo "exit_code: $exit_code"

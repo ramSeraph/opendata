@@ -69,7 +69,7 @@ jobs:
             docker stats parser
             sleep 2
             status=$(docker inspect parser --format='{{.State.Status}}')
-            if [[ "$status" != "running"]]; then
+            if [[ "$status" != "running" ]]; then
               break
             fi
           done

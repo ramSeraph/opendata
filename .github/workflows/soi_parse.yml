@@ -18,7 +18,7 @@ jobs:
       - name: Setup swap
         uses: pierotofy/set-swap-space@v1.0
         with:
-          swap-size-gb: 10
+          swap-size-gb: 12
       - uses: actions/checkout@v3
       - uses: docker/setup-buildx-action@v2
       - name: Build Image
@@ -70,6 +70,7 @@ jobs:
           do
             docker stats --no-stream parser
             free -h
+            df -h
             sleep 2
             status=$(docker inspect parser --format='{{.State.Status}}')
             if [[ "$status" != "running" ]]; then

@@ -62,13 +62,14 @@ jobs:
             exit 1
           fi
           mkdir -p export/gtiffs/
-          docker run -d --name parser -v $(pwd):/code -w /code -e FROM_LIST=data/to_parse.txt --memory-swap -1 soi-parse maps/SOI/parse.py
+          docker run -d --name parser -v $(pwd):/code -w /code -e FROM_LIST=data/to_parse.txt --memory="6g" --memory-swap="-1" soi-parse maps/SOI/parse.py
           # temp debug
           free -h
           docker inspect parser
           while true
           do
             docker stats --no-stream parser
+            free -h
             sleep 2
             status=$(docker inspect parser --format='{{.State.Status}}')
             if [[ "$status" != "running" ]]; then

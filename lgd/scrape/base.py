@@ -77,7 +77,7 @@ class Context:
         page_html = web_data.text
         
         soup = BeautifulSoup(page_html, 'html.parser')
-        lgd_features_section = soup.find('section', { "id" : "lgdfeatures" })
+        lgd_features_section = soup.find('section', { "id" : "hero" })
         link_fragments = lgd_features_section.find_all('a')
         link_url = None
         for link_fragment in link_fragments:

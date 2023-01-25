@@ -243,322 +243,327 @@
     "comp": "PINCODE_URBAN"
   },
   {
-    "dropdown": [ "Reports", "View States" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of States/UTs" ],
     "comp": "IGNORE",
     "ignore_reason": "handled in STATES, Needs Review for versioning info?"
   },
   {
-    "dropdown": [ "Reports", "View Districts" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Districts" ],
     "comp": "IGNORE",
     "ignore_reason": "handled in DISTRICTS, Needs Review for versioning info?"
   },
   {
-    "dropdown": [ "Reports", "View Sub-Districts" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Sub-Districts" ],
     "comp": "IGNORE",
     "ignore_reason": "handled in SUB_DISTRICTS, Needs Review for versioning info?"
   },
   {
-    "dropdown": [ "Reports", "View Villages" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Villages" ],
     "comp": "IGNORE",
     "ignore_reason": "handled in VILLAGES, Needs Review for versioning info?"
   },
   {
-    "dropdown": [ "Reports", "View Blocks" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Blocks" ],
     "comp":  "IGNORE",
     "ignore_reason": "handled in BLOCKS, Needs Review for versioning info?"
   },
   {
-    "dropdown": [ "Reports", "View Block Wise Villages" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Block Wise Villages" ],
     "comp":  "IGNORE",
     "ignore_reason": "handled in BLOCK_VILLAGES, Needs Review for versioning info?"
   },
   {
-    "dropdown": [ "Reports", "View Wards" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Wards" ],
     "comp":  "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "View Local Bodies"],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Localbodies"],
     "comp": "IGNORE",
     "ignore_reason": "handled in PRI_LOCAL_BODIES|URBAN_LOCAL_BODIES, Needs Review for versioning info?"
   },
   {
-    "dropdown": [ "Reports", "View Local Bodies", "View Cantonment Boards"],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Localbodies", "LGD Codes of Cantonment Boards"],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Consolidated Report of LocalBodies" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Consolidated LGD Codes of Localbodies" ],
     "comp": "IGNORE",
     "ignore_reason": "handled elsewhere, Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Consolidated Report of Panchayats" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Consolidated LGD Codes of Panchayats" ],
     "comp":  "IGNORE",
     "ignore_reason": "handled elsewhere, Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Consolidated Report On Land Region Entities" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Consolidated LGD Codes of Land Region Entities" ],
     "comp": "IGNORE",
     "ignore_reason": "handled elsewhere"
   },
   {
-    "dropdown": [ "Reports", "Report on District wise villages and their mapped Gram Panchayats and Urban localbodies" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of District wise Villages and their mapped Gram Panchayats and Urban localbodies" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Report on District wise Blocks and Mapped Gram Panchayats/TLB" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of District wise Blocks and Mapped Gram Panchayats/TLB" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Report on State Panchayat Set-up" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on State Panchayat Set-up" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, Download once?"
   },
   {
-    "dropdown": [ "Reports", "Report on State wise Unmapped Villages (Villages not mapped to any village panchayats/equivalent local body)" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on State wise Unmapped Villages (Villages not mapped to any village panchayats/equivalent local body)" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Report on PC/AC Wise Mapped Landregion/LocalBodies/Ward" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on PC/AC Wise Mapped Landregion/LocalBodies/Ward" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, Covered elsewhere?"
   },
   {
-    "dropdown": [ "Reports", "State wise Village Mapping Status", "State wise Village to GP/ULB Mapping Status" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "State wise Village Mapping Status", "State wise Village to GP/ULB Mapping Status" ],
     "comp": "IGNORE",
     "ignore_reason": "Summary"
   },
   {
-    "dropdown": [ "Reports", "State wise Village Mapping Status", "State wise Village to GP Mapping Status" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "State wise Village Mapping Status", "State wise Village to GP Mapping Status" ],
     "comp": "IGNORE",
     "ignore_reason": "Summary"
   },
   {
-    "dropdown": [ "Reports", "State wise Gram Panchayat to Census village mapping Status Detailed" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "State wise Gram Panchayat to Census village mapping Status Detailed" ],
     "comp": "IGNORE",
     "ignore_reason": "Summary"
   },
   {
-    "dropdown": [ "Reports", "Unmapped Landregion/Local Bodies/Ward for PC/AC" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Unmapped Landregion/Local Bodies/Ward for PC/AC" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Report on District Wise Local Bodies" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on District Wise Local Bodies" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, Covered elsewhere"
   },
   {
-    "dropdown": [ "Reports", "Report of Summary on Wards" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report of Summary on Wards" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, Covered elsewhere"
   },
   {
-    "dropdown": [ "Reports", "View UnMapped LocalBodies" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "View UnMapped LocalBodies" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, No Data"
   },
   {
-    "dropdown": [ "Reports", "Report on District Wise Invalidated Villages" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on District Wise Invalidated Villages" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, Covered elsewhere"
   },
   {
-    "dropdown": [ "Reports", "District Panchayat Ward/Constituency Wise village Panchayat" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "District Panchayat Ward/Constituency Wise village Panchayat" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, Covered elsewhere"
   },
   {
-    "dropdown": [ "Reports", "District wise Detailed Report" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "District wise Detailed Report" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "List of PESA Panchayat" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "List of PESA Panchayat" ],
     "comp":  "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "PRI Localbody Email IDs Report" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "PRI Localbody Email IDs Report" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Report on Organization Unit" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Organization Unit" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, covered elsewhere"
   },
   {
-    "dropdown": [ "Reports", "Report on Nomenclature of Sub-District" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Nomenclature of Sub-District" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, One Time"
   },
   {
-    "dropdown": [ "Reports", "Report on Designation details" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Designation details" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, Covered elsewhere"
   },
   {
-    "dropdown": [ "Reports", "Ward to Halka Mapping Report (Jharkhand State)" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Ward to Halka Mapping Report (Jharkhand State)" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Halka to Village Mapping Report (Jharkhand State)" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Halka to Village Mapping Report (Jharkhand State)" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "StateWise GIS Mapped Local Body" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "StateWise GIS Mapped Local Body" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Local Bodies Mapped to more than One District" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Local Bodies Mapped to more than One District" ],
     "comp": "IGNORE",
     "ignore_reason": "Covered Elsewhere"
   },
   {
-    "dropdown": [ "Reports", "View State Wise Freezed Status" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "View State Wise Freezed Status" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "State Wise Population" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "State Wise Population" ],
     "comp":  "IGNORE",
     "ignore_reason": "Dont care"
   },
   {
-    "dropdown": [ "Reports", "NOFN Panchayat List" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "NOFN Panchayat List" ],
     "comp": "NOFN_PANCHAYATS"
   },
   {
-    "dropdown": [ "Reports", "List Of Modification Done In LGD" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "List Of Modification Done In LGD" ],
     "comp": "CHANGES"
   },
   {
-    "dropdown": [ "Reports", "GIS Map Verification Status" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "GIS Map Verification Status" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Report on consumers of web services" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on consumers of web services" ],
     "comp": "IGNORE",
     "ignore_reason": "Dont care"
   },
   { 
-    "dropdown": [ "Reports", "Report on State Wise number of Urban Localbodies and Wards" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on State Wise number of Urban Localbodies and Wards" ],
     "comp": "IGNORE",
     "ignore_reason": "Covered elsewhere"
   },
   {
-    "dropdown": [ "Reports", "Report on State wise Last Updation Date" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on State wise Last Updation Date" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Report on State wise LGD Data Confirmation" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on State wise LGD Data Confirmation" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Number of village Panchayats/Equivalent local bodies which are mapped with part of villages" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Number of village Panchayats/Equivalent local bodies which are mapped with part of villages" ],
     "comp": "IGNORE",
     "ignore_reason": "Covered elsewhere"
   },
   {
-    "dropdown": [ "Reports", "State Wise Village Mapping Status" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "State Wise Village Mapping Status" ],
     "comp": "IGNORE",
     "ignore_reason": "Covered elsewhere"
   },
   {
-    "dropdown": [ "Reports", "State Wise Unmapped Vilages List" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "State Wise Unmapped Vilages List" ],
     "comp": "IGNORE",
     "ignore_reason": "Covered elsewhere, Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Consolidated Report of Panchayats as available in other PES applications" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Consolidated Report of Panchayats as available in other PES applications" ],
     "comp":  "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Report on Invalidated Local Bodies" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Invalidated Local Bodies" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Villages which are partially mapped with more than one village level rural local bodies" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Villages which are partially mapped with more than one village level rural local bodies" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, Covered elsewhere"
   },
   {
-    "dropdown": [ "Reports", "Report on Local Bodies in Disturb State" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Local Bodies in Disturb State" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Village Converted from Rural to Urban" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Village Converted from Rural to Urban" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Data For PFMS" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Data For PFMS" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown":  [ "Reports", "Mapped List Of PC/AC With Any Land Region" ],
+    "dropdown":  [ "Local Government Directory (LGD) Reports", "Mapped List Of PC/AC With Any Land Region" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Report on Datewise Active Entities (Local Bodies/Land Region)" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Datewise Active Entities (Local Bodies/Land Region)" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   { 
-    "dropdown": [ "Reports", "Aspirational District Wise Village Level Localbodies" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Aspirational District Wise Village Level Localbodies" ],
     "comp": "IGNORE",
     "ignore_reason": "Dont care"
   },
   {
-    "dropdown": [ "Reports", "State Wise PC/AC Covered Entity Count" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "State Wise PC/AC Covered Entity Count" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere"
   },
   {
-    "dropdown": [ "Reports", "Organization Unit Hierarchy of Department" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Organization Unit Hierarchy of Department" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere"
   },
   {
-    "dropdown": [ "Reports", "Organization Unit Coverage Details" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Organization Unit Coverage Details" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Report on Urban Locality" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Urban Locality" ],
     "comp": "IGNORE",
     "ignore_reason": "No Data, Needs Review"
   },
   {
-    "dropdown": [ "Reports", "Report on Number of Villages & ULBs Mapped with Pincodes" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Number of Villages & ULBs Mapped with Pincodes" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, Covered Elsewhere"
   },
   {
-    "dropdown": [ "Reports", "Report On Pincode Villages/ULBs mapping" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report On Pincode Villages/ULBs mapping" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Reports", "View Postal Divisions yet to Freeze Pincode Mapping" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "View Postal Divisions yet to Freeze Pincode Mapping" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
+  },
+  {
+    "dropdown":  [ "Local Government Directory (LGD) Reports", "Report on Rural Inhabited Villages Mapped with Blocks and GPs" ],
+    "comp": "IGNORE",
+    "ignore_reason": "probably covered elsewhere, Needs Review"
   },
   {
     "dropdown": [ "Exceptional Reports", "Invalidated Census villages" ],

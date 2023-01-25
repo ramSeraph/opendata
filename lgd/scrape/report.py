@@ -17,7 +17,7 @@ from .base import (INCORRECT_CAPTCHA_MESSAGE,
                    BaseDownloader, MultiDownloader, 
                    DownloaderItem, add_defaults_to_args,
                    RUN_FOR_PREV_DAY)
-from .conversion_helper import records_from_excel
+from .conversion_helper import records_from_excel, records_from_htm
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,75 @@ def merge_url_query_params(url, additional_params):
     updated_query = urlencode(merged_params, doseq=True)
     # _replace() is how you can create a new NamedTuple with a changed field
     return url_components._replace(query=updated_query).geturl()
+
+
+class ReportSimpleDownloader(BaseDownloader):
+    def __init__(self, **kwargs):
+        kwargs = add_defaults_to_args({ 'sub_url': '',
+                                        'post_data': {},
+                                        'query_data': {},
+                                        'oprand_data_extra': {},
+                                        'allow_empty': False }, kwargs)
+        self.sub_url = kwargs['sub_url']
+        self.post_data = kwargs['post_data']
+        self.query_data = kwargs['query_data']
+        self.allow_empty = kwargs['allow_empty']
+        self.oprand_data_extra = kwargs['oprand_data_extra']
+        super().__init__(**kwargs)
+
+    def get_records(self):
+        report_base_url = '{}/{}'.format(self.base_url, self.sub_url)
+        query_data = copy.copy(self.query_data)
+        query_data['OWASP_CSRFTOKEN'] = self.ctx.csrf_token_reports
+        q_str = urlencode(query_data)
+        referer_url = '{}?{}'.format(report_base_url, q_str)
+        post_headers = {
+            'referer': referer_url,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+
+        count = 0
+        while True:
+            captcha_code = self.captcha_helper.get_code(referer_url)
+
+            post_form_data = copy.copy(self.post_data)
+            post_form_data.update({
+                'OWASP_CSRFTOKEN': self.ctx.csrf_token_reports,
+                'captchaAnswer': captcha_code
+            })
+            logger.debug('posting with captcha to {}'.format(report_base_url))
+            web_data = self.ctx.session.post(report_base_url,
+                                             data=post_form_data,
+                                             headers=post_headers,
+                                             **self.ctx.params.request_args())
+            if not web_data.ok:
+                raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
+
+
+            if INCORRECT_CAPTCHA_MESSAGE in web_data.text:
+                self.captcha_helper.mark_failure()
+                if count > 5:
+                    raise Exception('failed after trying for 5 times')
+                time.sleep(1)
+                count += 1
+                continue
+
+            self.captcha_helper.mark_success()
+            break
+
+        content = web_data.content
+        try:
+            data_file_name = self.get_temp_file(content, '.htm')
+            del content
+            del web_data
+            with open(data_file_name, 'rb') as data_file:
+                records = records_from_htm(data_file, table_id='printble', divs_in_cells=False)
+        finally:
+            if not self.ctx.params.save_intermediates:
+                Path(data_file_name).unlink(missing_ok=True)
+            else:
+                logger.info(f'intermediate {data_file_name=}')
+        return records
 
 
 
@@ -59,11 +128,11 @@ class ReportDownloader(BaseDownloader):
             'referer': referer_url,
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-    
+
         count = 0
         while True:
             captcha_code = self.captcha_helper.get_code(referer_url)
-    
+
             post_form_data = copy.copy(self.post_data)
             post_form_data.update({
                 'OWASP_CSRFTOKEN': self.ctx.csrf_token,
@@ -76,8 +145,8 @@ class ReportDownloader(BaseDownloader):
                                              **self.ctx.params.request_args())
             if not web_data.ok:
                 raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
-    
-            
+
+
             if INCORRECT_CAPTCHA_MESSAGE in web_data.text:
                 self.captcha_helper.mark_failure()
                 if count > 5:
@@ -85,17 +154,17 @@ class ReportDownloader(BaseDownloader):
                 time.sleep(1)
                 count += 1
                 continue
-    
+
             self.captcha_helper.mark_success()
             break
-    
+
         birt_form_data = {}
         soup = BeautifulSoup(web_data.text, 'html.parser')
         birt_params_div = soup.find('div', { "id" : "params_birtViewer" })
         birt_inputs = birt_params_div.find_all('input')
         for birt_input in birt_inputs:
             birt_form_data[birt_input.attrs['name']] = birt_input.attrs['value']
-    
+
         birt_seg_url_loc = web_data.text.find('/LIVE-BIRT/frameset')
         if birt_seg_url_loc == -1:
             raise Exception('unable to locate birt url segment')
@@ -105,7 +174,7 @@ class ReportDownloader(BaseDownloader):
         birt_seg_url = match.group(1)
         logger.debug('got birt seg url: {}'.format(birt_seg_url))
         birt_url = '{}{}'.format(self.base_url, birt_seg_url)
-    
+
         num_attempts = 0
         while True:
             session_id, oprand_data = self.get_birt_session_id(birt_url, birt_form_data, report_base_url)
@@ -116,18 +185,18 @@ class ReportDownloader(BaseDownloader):
                 time.sleep(5)
                 continue
             break
-    
+
         if session_id is None:
             raise Exception("Couldn't get birt session id")
-    
-    
+
+
         # wait till the soap call returns before exporting
         self.make_birt_soap_call(birt_url, session_id, oprand_data)
         xls_data = self.get_birt_export(birt_url, session_id)
-    
+
         if xls_data is None:
             return []
-    
+
         data_file = io.BytesIO(xls_data)
         data_file_name = self.get_temp_file(xls_data, '.xls')
         with open(data_file_name, 'rb') as data_file:
@@ -152,28 +221,28 @@ class ReportDownloader(BaseDownloader):
             if web_data.status_code == 404:
                 return None, None, None
             raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
-    
+
         session_id_snippet_loc = web_data.text.find('Constants.viewingSessionId')
         if session_id_snippet_loc == -1:
             raise Exception("couldn't find session id in birt page")
-    
+
         match = re.match(r'Constants.viewingSessionId[ ]*=[ ]*"(.*)"[ ]*;', web_data.text[session_id_snippet_loc:])
         if match is None:
             raise Exception('unexpected format of session id string')
-    
+
         session_id = match.group(1)
         logger.debug('got session id: {}'.format(session_id))
-    
+
         oprand_data = {}
         soup = BeautifulSoup(web_data.text, 'html.parser')
-    
+
         param_div = soup.find('div', { "class" : "birtviewer_parameter_dialog" })
         inputs = param_div.find_all('input', attrs={ "class": "BirtViewer_parameter_dialog_Input" })
         for inp in inputs:
             oprand_data[inp.attrs['id']] = inp.attrs['value']
 
         oprand_data.update(self.oprand_data_extra)
-    
+
         logger.debug(f'oprand_data: {oprand_data}')
         return session_id, oprand_data
 
@@ -183,7 +252,7 @@ class ReportDownloader(BaseDownloader):
         for k, v in oprand_data.items():
             extra_oprand_txt += "<Oprand><Name>{}</Name><Value>{}</Value></Oprand>\n".format(k,v)
             extra_oprand_txt += "<Oprand><Name>__isdisplay__{}</Name><Value>{}</Value></Oprand>\n".format(k,v)
-    
+
         soap_body = """
         <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
             <soap:Body>
@@ -218,14 +287,14 @@ class ReportDownloader(BaseDownloader):
             </soap:Body>
         </soap:Envelope>
         """.format(session_id)
-    
+
         headers = {
             'referer': birt_url,
             'Content-Type': 'text/xml; charset=UTF-8; charset=UTF-8',
             'request-type': 'SOAP',
             'SOAPAction': ''
         }
-    
+
         soap_url_full = merge_url_query_params(birt_url, {
                 '__sessionId': session_id,
                 '__dpi': '96',
@@ -246,7 +315,7 @@ class ReportDownloader(BaseDownloader):
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-    
+
         export_url_full = merge_url_query_params(birt_url, {
                 '__sessionId': session_id,
                 '__dpi': '96',
@@ -258,7 +327,7 @@ class ReportDownloader(BaseDownloader):
         web_data = self.post_with_progress(export_url_full, data={}, headers=headers)
         if not web_data.ok:
             raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
-    
+
         if web_data.headers['Content-Type'] != 'application/vnd.ms-excel':
             return None
         return web_data.content
@@ -391,19 +460,19 @@ class ChangesReportDownloader(MultiDownloader, ReportDownloader):
 
 def get_all_report_downloaders(ctx):
     downloaders = []
-    downloaders.append(ReportDownloader(name='INVALIDATED_VILLAGES',
-                                        desc='list of all invalidated census villages',
-                                        csv_filename='invalidated_census_villages.csv',
-                                        sub_url='exceptionalReports.do',
-                                        ctx=ctx,
-                                        post_data={
-                                            'reportName': 'Invalidated Census villages',
-                                            'fileName': 'ER_InvalidateCensusVillage',
-                                        },
-                                        query_data={
-                                            'reportName': 'Invalidated Census villages',
-                                            'fileName': 'ER_InvalidateCensusVillage',
-                                        }))
+    downloaders.append(ReportSimpleDownloader(name='INVALIDATED_VILLAGES',
+                                              desc='list of all invalidated census villages',
+                                              csv_filename='invalidated_census_villages.csv',
+                                              sub_url='exceptionalReports.do',
+                                              ctx=ctx,
+                                              post_data={
+                                                  'reportName': 'Invalidated Census villages',
+                                                  'fileName': 'ER_InvalidateCensusVillage',
+                                              },
+                                              query_data={
+                                                  'reportName': 'Invalidated Census villages',
+                                                  'fileName': 'ER_InvalidateCensusVillage',
+                                              }))
 
     downloaders.append(StateWiseReportDownloader(name='NOFN_PANCHAYATS',
                                                  desc='list of all panchayats with NOFN',

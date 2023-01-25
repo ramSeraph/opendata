@@ -63,11 +63,12 @@ class Context:
         self.params = params
         self.last_captcha = None
         self._csrf_token = None
+        self._csrf_token_reports = None
         self.script_session_id = ''
         self.script_batch_id = 0
         self._session = None
 
-    def set_csrf_token(self):
+    def set_csrf_tokens(self):
         global BASE_URL
         logger.info('retrieving csrf token')
         web_data = self.session.get(BASE_URL, **self.params.request_args())
@@ -87,6 +88,20 @@ class Context:
             raise Exception('Download directory link not found')
 
         self._csrf_token = link_url.split('?')[1].replace('OWASP_CSRFTOKEN=', '')
+
+        lgd_reports_div = soup.find('div', { "id" : "reports-model" })
+        links = lgd_reports_div.find_all('a')
+        link_url = None
+        #TODO: individual links to reports can probably be extracted
+        #      exceptional reports are probably a common url with different params
+        for link in links:
+            link_url = link.attrs['href']
+            break
+        if link_url is None:
+            raise Exception('No Reports link not found')
+
+        self._csrf_token_reports = link_url.split('?')[1].replace('OWASP_CSRFTOKEN=', '')
+
 
     def set_session(self):
         s = requests.session()
@@ -111,8 +126,16 @@ class Context:
     @property
     def csrf_token(self):
         if self._csrf_token is None:
-            self.set_csrf_token()
+            self.set_csrf_tokens()
         return self._csrf_token
+
+
+    @property
+    def csrf_token_reports(self):
+        if self._csrf_token_reports is None:
+            self.set_csrf_tokens()
+        return self._csrf_token_reports
+
 
 # moved here due to problems with module imports and python multiprocessing module
 

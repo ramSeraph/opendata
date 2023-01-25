@@ -195,7 +195,7 @@ def records_from_htm_heavy(input_file):
     return convert_to_dicts(out_rows)
 
 
-def records_from_htm(html_file):
+def records_from_htm(html_file, table_id='__bookmark_2', divs_in_cells=True):
     records = []
     in_table = False
     in_row = False
@@ -216,7 +216,7 @@ def records_from_htm(html_file):
         #print(event, elem.tag)
 
         if event == 'start' and elem.tag == 'table':
-            if 'id' not in elem.attrib or elem.attrib['id'] != '__bookmark_2':
+            if 'id' not in elem.attrib or elem.attrib['id'] != table_id:
                 continue
             #print('starting table')
             in_table = True
@@ -261,6 +261,8 @@ def records_from_htm(html_file):
             in_cell = True
             continue
         if event == 'end' and elem.tag == cell_tag:
+            if not divs_in_cells:
+                data_strs = [ str(x).strip() for x in elem.itertext() ]
             values.append('\n'.join(data_strs))
             data_strs = []
             clear(elem)
@@ -269,6 +271,11 @@ def records_from_htm(html_file):
         if not in_cell:
             if event == 'end':
                 clear(elem)
+            continue
+
+        # don't nest further if we are not expecting data to be in divs inside cells
+        if not divs_in_cells and event == 'end':
+            clear(elem)
             continue
 
         if event == 'start' and elem.tag == 'div':

@@ -273,7 +273,7 @@ class StateWiseReportDownloader(MultiDownloader, ReportDownloader):
         if 'deps' not in kwargs:
             kwargs['deps'] = []
 
-        if 'STATES' not in kwargs:
+        if 'STATES' not in kwargs['deps']:
             kwargs['deps'].append('STATES')
         super().__init__(**kwargs)
 

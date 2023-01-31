@@ -46,8 +46,8 @@ displayResults = (sizeMap) => {
     for (const dateStr in sizeMap) {
         var objInfo = getDateParts(dateStr)
         objInfo['url'] = `https://storage.googleapis.com/${bucketName}/${dateStr}.zip`
-        objInfo['size'] = sizemap[dateStr]
-        objInfo['name'] = name
+        objInfo['size'] = sizeMap[dateStr]
+        objInfo['name'] = `${dateStr}.zip`
         objInfos.push(objInfo)
     }
 

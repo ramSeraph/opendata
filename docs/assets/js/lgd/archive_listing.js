@@ -44,10 +44,8 @@ displayResults = (sizeMap) => {
     var objInfos = []
 
     for (const dateStr in sizeMap) {
-        var name = `${dateStr}.zip`
-
-        var objInfo = getDateParts(name)
-        objInfo['url'] = `https://storage.googleapis.com/${bucketName}/${name}`
+        var objInfo = getDateParts(dateStr)
+        objInfo['url'] = `https://storage.googleapis.com/${bucketName}/${dateStr}.zip`
         objInfo['size'] = sizemap[dateStr]
         objInfo['name'] = name
         objInfos.push(objInfo)
@@ -115,7 +113,7 @@ parseListing = (listingText) => {
     var sizeMap = {}
     for (var entryText of entryTexts) {
         var pieces = entryText.split(' ')
-        sizemap[pieces[1]] = pieces[0]
+        sizeMap[pieces[1]] = pieces[0]
     }
     return sizeMap
 }

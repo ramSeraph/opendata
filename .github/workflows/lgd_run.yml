@@ -99,6 +99,14 @@ jobs:
       - name: Upload archive file to gcs
         run: |
           gsutil -m cp data/raw/${{ steps.date.outputs.date }}.zip gs://lgd_data_archive/
+          gsutil acl ch -u AllUsers:R gs://lgd_data_archive/${{ steps.date.outputs.date }}.zip
+
+      - name: Update lists
+        run: |
+          list_fname='listing_archives.txt'
+          gsutil ls -l gs://lgd_data_archive/ | grep "\.zip" | tr -s " " | cut -d" " -f2,4 | sed 's,gs://lgd_data_archive/,,g' | sed 's,\.zip,,g' > $list_fname
+          gsutil -m cp $list_fname gs://lgd_data_archive/$list_fname
+          gsutil acl ch -u AllUsers:R gs://lgd_data_archive/$list_fname
 
       - name: Upload changes file to gcs
         run: |

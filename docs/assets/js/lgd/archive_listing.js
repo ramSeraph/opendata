@@ -36,17 +36,19 @@ getDateParts = (name) => {
     }
 }
 
-displayResults = (resp) => {
+bucketName = 'lgd_data_archive'
+listFileName = 'listing_archives.txt'
+
+displayResults = (sizeMap) => {
     var archivesDiv = document.getElementById('archive_list')
     var objInfos = []
 
-    for (obj of resp['items']) {
-        var name = obj['name']
-        var bucket = obj['bucket']
+    for (const dateStr in sizeMap) {
+        var name = `${dateStr}.zip`
 
         var objInfo = getDateParts(name)
-        objInfo['url'] = `https://storage.googleapis.com/${bucket}/${name}`
-        objInfo['size'] = fileSize(obj['size'])
+        objInfo['url'] = `https://storage.googleapis.com/${bucketName}/${name}`
+        objInfo['size'] = sizemap[dateStr]
         objInfo['name'] = name
         objInfos.push(objInfo)
     }
@@ -107,6 +109,18 @@ displayResults = (resp) => {
     archivesDiv.innerHTML = allHtml
 }
 
+
+parseListing = (listingText) => {
+    var entryTexts = listingText.split('\n')
+    var sizeMap = {}
+    for (var entryText of entryTexts) {
+        var pieces = entryText.split(' ')
+        sizemap[pieces[1]] = pieces[0]
+    }
+    return sizeMap
+}
+
+
 window.onload = (event) => {
     console.log('on window load')
 
@@ -127,9 +141,9 @@ window.onload = (event) => {
     alertContents = () => {
         if (httpRequest.readyState === XMLHttpRequest.DONE) {
             if (httpRequest.status === 200) {
-                var jsonResponse = JSON.parse(httpRequest.responseText)
+                var sizeMap = parseListing(httpRequest.responseText)
                 setStatus('', false)
-                displayResults(jsonResponse)
+                displayResults(sizeMap)
             } else {
                 setStatus('Remote Request failed', true)
                 console.log(`Remote Request failed with ${httpRequest.status} and text: ${httpRequest.responseText}`)
@@ -143,8 +157,7 @@ window.onload = (event) => {
         return
     }
     httpRequest.onreadystatechange = alertContents
-    bucketName = 'lgd_data_archive'
-    httpRequest.open('GET', `https://storage.googleapis.com/storage/v1/b/${bucketName}/o`)
+    httpRequest.open('GET', `https://storage.googleapis.com/${bucketName}/${listFileName}`)
     httpRequest.send()
     console.log('call sent')
 }

@@ -14,9 +14,9 @@ function displayData(statusInfo) {
         if ('gtiffUrl' in info) {
             allHtml += `<li><a href="${info['gtiffUrl']}">gtiff</a> ${info['gtiffFilesize']}</li>`
         }
-        /* if ('pdfUrl' in info) {
+        if ('pdfUrl' in info) {
             allHtml += `<li><a href="${info['pdfUrl']}">pdf</a> ${info['pdfFilesize']}</li>`
-        } */
+        }
         allHtml += '</ul>'
         allHtml += '</li>'
     }

@@ -57,6 +57,7 @@ function setFeatureStates() {
 
 function updateStatusInfo(statusInfo) {
     gStatusInfo = statusInfo
+    console.log(gStatusInfo)
     setFeatureStates()
 }
 
@@ -107,7 +108,7 @@ map.on('load', () => {
         'paint': {
             'fill-color': [ 
                 'case',
-                [ '==', ['feature-state', 'status'], 'found'],
+                [ '==', ['feature-state', 'status'], 'parsed'],
                 green,
                 [ '==', ['feature-state', 'status'], 'not_found'],
                 red,
@@ -214,7 +215,7 @@ map.on('dblclick', 'india-states-fill', (e) => {
         const fstate = map.getFeatureState({ id: feature.id, source: 'tiles'})
         if (!('status' in fstate)) {
             not_downloaded.push(feature)
-        } else if (fstate.status === 'found') {
+        } else if (fstate.status !== 'not_found') {
             available.push([feature, fstate.url])
         } else {
             unavailable.push(feature)

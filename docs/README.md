@@ -16,8 +16,23 @@ This can be done by installing `http-server-subpath` using the `npm i -g http-se
 
 Now run `npx http-server --path opendata _site/` from this folder. this makes the local build at `_site` accessible at http://127.0.0.1:8080/opendata
 
-# generating stripped down turf.js
+# Generating stripped down turf.js
 
 run the following:
-`cd generators`
-`./create_turf.sh`
+
+```
+cd generators
+./create_turf.sh
+```
+
+generates `assets/js/maps/SOI/turf.min.js`
+
+# Creating static map assets
+
+```
+cd generators
+./create_static_pmtiles.sh
+```
+
+uploads the generated pmtiles files to GCS
+

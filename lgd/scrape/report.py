@@ -38,14 +38,10 @@ class ReportSimpleDownloader(BaseDownloader):
     def __init__(self, **kwargs):
         kwargs = add_defaults_to_args({ 'sub_url': '',
                                         'post_data': {},
-                                        'query_data': {},
-                                        'oprand_data_extra': {},
-                                        'allow_empty': False }, kwargs)
+                                        'query_data': {} }, kwargs)
         self.sub_url = kwargs['sub_url']
         self.post_data = kwargs['post_data']
         self.query_data = kwargs['query_data']
-        self.allow_empty = kwargs['allow_empty']
-        self.oprand_data_extra = kwargs['oprand_data_extra']
         super().__init__(**kwargs)
 
     def get_records(self):
@@ -109,12 +105,10 @@ class ReportDownloader(BaseDownloader):
         kwargs = add_defaults_to_args({ 'sub_url': '',
                                         'post_data': {},
                                         'query_data': {},
-                                        'oprand_data_extra': {},
-                                        'allow_empty': False }, kwargs)
+                                        'oprand_data_extra': {} }, kwargs)
         self.sub_url = kwargs['sub_url']
         self.post_data = kwargs['post_data']
         self.query_data = kwargs['query_data']
-        self.allow_empty = kwargs['allow_empty']
         self.oprand_data_extra = kwargs['oprand_data_extra']
         super().__init__(**kwargs)
 
@@ -361,7 +355,6 @@ class StateWiseReportDownloader(MultiDownloader, ReportDownloader):
                                           desc='{} for state {}({})'.format(self.desc, state_name, state_code),
                                           csv_filename=csv_filename_s,
                                           sub_url=self.sub_url,
-                                          allow_empty=self.allow_empty,
                                           ctx=self.ctx,
                                           post_data={
                                               'entityname': state_code,

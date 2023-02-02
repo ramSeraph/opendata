@@ -124,18 +124,12 @@ p_states.getHeader().then(h => {
                                            sourceLayer: 'indexfgb' })
         var sheetNo = feature.properties.EVEREST_SH
         var html = `<b>${sheetNo}</b><br>`
-        if ('pdfUrl' in fstate) {
-            //html += '<br>'
+        if ('pdfUrl' in fstate && fstate['pdfUrl'] !== null) {
             html += ' '
             html += `<a target="_blank" href=${fstate.pdfUrl}>pdf</a>`
         }
-        if ('gtiffUrl' in fstate) {
-            if (!('pdfUrl' in fstate)) {
-                // html += '<br>'
-                html += ' '
-            } else {
-                html += ' '
-            }
+        if ('gtiffUrl' in fstate && fstate['gtiffUrl'] !== null) {
+            html += ' '
             html += `<a target="_blank" href=${fstate.gtiffUrl}>gtiff</a>`
         }
     

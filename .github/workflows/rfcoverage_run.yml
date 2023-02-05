@@ -12,15 +12,15 @@ on:
 jobs:
   Run-RFCoverage-Extraction:
     timeout-minutes: 30
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Setup python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.9.4'
+          python-version: '3.10'
 
       - name: Restore pip data from cache
         uses: actions/cache@v3

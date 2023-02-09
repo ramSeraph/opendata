@@ -76,9 +76,8 @@ def populate_map(elem, main_arr, keys, main=False):
 
 def get_report_lists(ctx):
     main_arr = []
-    reports_url = '{}/welcome.do?OWASP_CSRFTOKEN={}'.format(BASE_URL, ctx.csrf_token)
     req_args = ctx.params.request_args()
-    web_data = ctx.session.get(reports_url, **req_args)
+    web_data = ctx.session.get(BASE_URL, **req_args)
     if not web_data.ok:
         raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
     soup = BeautifulSoup(web_data.text, 'html.parser')
@@ -92,6 +91,29 @@ def get_report_lists(ctx):
     populate_map(div_body, main_arr, keys, main=True)
     return main_arr
 
+def get_exceptional_report_lists(ctx):
+    out_arr = []
+    section_title = 'Likely Erroneous/Exceptions'
+    web_data = ctx.session.get(BASE_URL, **ctx.params.request_args())
+    if not web_data.ok:
+        raise ValueError('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
+
+    page_html = web_data.text
+    soup = BeautifulSoup(page_html, 'html.parser')
+    all_card_divs = soup.find_all('div', { 'class': 'card' })
+    exception_card_div = None
+    for div in all_card_divs:
+        card_header_div = div.find('div', { 'class': 'card-header' }, recursive=False)
+        if card_header_div.text.strip().startswith(section_title):
+            exception_card_div = div
+            break
+    if exception_card_div is None:
+        raise Exception("Can't find the exceptional reports section")
+    lis = exception_card_div.find_all('li')
+    for li in lis:
+        out_arr.append([section_title, li.text.strip()])
+    return out_arr
+
 
 def get_sitemap(ctx):
     full_arr = []
@@ -99,6 +121,8 @@ def get_sitemap(ctx):
     full_arr.extend(dd_arr)
     rp_arr = get_report_lists(ctx)
     full_arr.extend(rp_arr)
+    exp_rp_arr = get_exceptional_report_lists(ctx)
+    full_arr.extend(exp_rp_arr)
     logger.info(pformat(full_arr))
     full_arr = [ [ re.sub(' +', ' ', t) for t in k ] for k in full_arr ]
     return full_arr

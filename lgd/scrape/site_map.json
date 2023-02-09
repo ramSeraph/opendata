@@ -561,51 +561,51 @@
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown":  [ "Local Government Directory (LGD) Reports", "Report on Rural Inhabited Villages Mapped with Blocks and GPs" ],
+    "dropdown":  [ "Local Government Directory (LGD) Reports", "Report on State wise Administrative Units & Panchayati Raj Institutions" ],
     "comp": "IGNORE",
-    "ignore_reason": "probably covered elsewhere, Needs Review"
+    "ignore_reason": "General Overview"
   },
   {
-    "dropdown": [ "Exceptional Reports", "Invalidated Census villages" ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "Invalidated Census villages" ],
     "comp": "INVALIDATED_VILLAGES"
   },
   { 
-    "dropdown": [ "Exceptional Reports", "GPs mapped to villages of multiple blocks" ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "GPs mapped to villages of multiple blocks" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere, Needs Review"
   },
   { 
-    "dropdown": [ "Exceptional Reports", "GPs mapped to villages of multiple districts" ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "GPs mapped to villages of multiple districts" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere, Needs Review"
   },
   { 
-    "dropdown": [ "Exceptional Reports", "Villages which are not mapped to any Block by excluding villages mapped ULBs" ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "Villages which are not mapped to any Block by excluding villages mapped ULBs" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere, Needs Review"
   },
   { 
-    "dropdown": [ "Exceptional Reports", "Blocks mapped to villages of multiple districts" ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "Blocks mapped to villages of multiple districts" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere, Needs Review"
   },
   { 
-    "dropdown": [ "Exceptional Reports", "Inhabitant villages not mapped to any local body" ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "Inhabitant villages not mapped to any local body" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere, Needs Review"
   },
   { 
-    "dropdown": [ "Exceptional Reports", "List of land region entity FULLY mapped under more than one local bodies" ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "List of land region entity FULLY mapped under more than one local bodies" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere, No Data"
   },
   { 
-    "dropdown": [ "Exceptional Reports", "Villages which are mapped to block but not mapped to Rural local bodies and vice versa" ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "Villages which are mapped to block but not mapped to Rural local bodies and vice versa" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere"
   },
   { 
-    "dropdown": [ "Exceptional Reports", "List of All urban local bodies with no Wards." ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "List of All urban local bodies with no Wards." ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere, Needs Review"
   }

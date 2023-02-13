@@ -561,6 +561,11 @@
     "ignore_reason": "Needs Review"
   },
   {
+    "dropdown":  [ "Local Government Directory (LGD) Reports", "Report on Rural Inhabited Villages Mapped with Blocks and GPs" ],
+    "comp": "IGNORE",
+    "ignore_reason": "Needs Review, covered elsewhere"
+  },
+  {
     "dropdown":  [ "Local Government Directory (LGD) Reports", "Report on State wise Administrative Units & Panchayati Raj Institutions" ],
     "comp": "IGNORE",
     "ignore_reason": "General Overview"

@@ -1,6 +1,8 @@
 import csv
 from datetime import datetime
 
+from common import is_problem_expansion_combo
+
 def get_date_str():
     date = datetime.today()
     date_str = date.strftime("%d%b%Y")
@@ -36,8 +38,14 @@ def combine_network_files(prev_file, curr_file, comb_file):
     missing_in_curr = prev_set - curr_set
     missing_in_prev = curr_set - prev_set
 
+    prob_entries = set()
     if len(missing_in_curr) > 0:
-        raise Exception(f'{len(missing_in_curr)} entries missing in current data')
+        for e in missing_in_curr:
+            if is_problem_expansion_combo(e):
+                continue
+            prob_entries.add(e)
+        if len(prob_entries) > 0:
+            raise Exception(f'{len(prob_entries)} entries missing in current data')
     print(f'{len(missing_in_prev)} entries being added')
 
     all_map.update(prev_map)

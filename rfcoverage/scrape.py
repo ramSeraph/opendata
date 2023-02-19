@@ -12,6 +12,8 @@ from concurrent.futures import (wait, ALL_COMPLETED,
 import requests
 from bs4 import BeautifulSoup
 
+from common import is_problem_combo
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,6 @@ def request_args(self):
         'timeout': (self.connect_timeout, self.read_timeout)
     }
 
-known_problems = [["", ""]]
 
 
 def get_date_str():
@@ -209,14 +210,6 @@ def get_state_network_data(tsp, technology):
             wr.writerow(v)
     return data
 
-
-known_problem_networks = [{ "technology": "4G", "tsp": "JIO" }]
-
-def is_problem_combo(tsp, technology):
-    for prob in known_problem_networks:
-        if prob["technology"] == technology and prob["tsp"] == tsp:
-            return True
-    return False
 
 def get_network_data(executor):
     date_str = get_date_str()

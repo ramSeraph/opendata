@@ -24,6 +24,8 @@ def request_args(self):
         'timeout': (self.connect_timeout, self.read_timeout)
     }
 
+known_problems = [["", ""]]
+
 
 def get_date_str():
     date = datetime.today()
@@ -189,7 +191,8 @@ def get_state_network_data(tsp, technology):
              'technology[]': technology }
     web_data = session.post(url, headers=headers, data=data)
     if not web_data.ok:
-        raise Exception(f'unable to retrieve data from {url} for dist {dist_id}')
+        raise Exception(f'unable to retrieve village data from {url=} for {data=}, status:{web_data.status_code}')
+
     if web_data.text == 'not_found':
         data = []
     else:
@@ -206,6 +209,14 @@ def get_state_network_data(tsp, technology):
             wr.writerow(v)
     return data
 
+
+known_problem_networks = [{ "technology": "4G", "tsp": "JIO" }]
+
+def is_problem_combo(tsp, technology):
+    for prob in known_problem_networks:
+        if prob["technology"] == technology and prob["tsp"] == tsp:
+            return True
+    return False
 
 def get_network_data(executor):
     date_str = get_date_str()
@@ -225,6 +236,8 @@ def get_network_data(executor):
     fut_map = {}
     for tsp in tsps:
         for technology in technologies:
+            if is_problem_combo(tsp, technology):
+                continue
             fut = executor.submit(get_state_network_data, tsp, technology)
             fut_map[fut] = (tsp, technology)
 

@@ -21,11 +21,9 @@ All the data below is updated weekly
   * [DEMO of the tilemap](https://storage.googleapis.com/soi_data/index.html)
 
 # JOSM
-* URLs
-  * `https://server.nikhilvj.co.in/soiredirect/{z}/{x}/{y}.webp` (By [Nikhilvj](https://github.com/answerquest))
-  * `https://soi.fly.dev/export/tiles/{z}/{x}/{y}.webp`
-* Plugin
-  * Needs to be used along with the external JOSM webp plugin developed at [ramSeraph/josm-webp-plugin](https://github.com/ramSeraph/josm-webp-plugin)
+* Plugins needed to use the above the tile url with JOSM
+  * [ramSeraph/josm-webp-plugin](https://github.com/ramSeraph/josm-webp-plugin)
+  * [ramSeraph/josm-gcs-imagery-enabler](https://github.com/ramSeraph/josm-gcs-imagery-enabler)
 
 # Appendix
 * [Notes](notes) on the what was done to get the data in the present form and possible problems.

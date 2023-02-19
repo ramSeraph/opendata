@@ -21,7 +21,7 @@ All the data below is updated weekly
   * [DEMO of the tilemap](https://storage.googleapis.com/soi_data/index.html)
 
 # JOSM
-* Plugins needed to use the above the tile url with JOSM
+* Plugins needed to use the above tile url with JOSM
   * [ramSeraph/josm-webp-plugin](https://github.com/ramSeraph/josm-webp-plugin)
   * [ramSeraph/josm-gcs-imagery-enabler](https://github.com/ramSeraph/josm-gcs-imagery-enabler)
 

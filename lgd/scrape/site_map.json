@@ -571,6 +571,11 @@
     "ignore_reason": "General Overview"
   },
   {
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Financial Year wise Count of Gram Panchayats" ],
+    "comp": "IGNORE",
+    "ignore_reason": "Needs Review, General Overview of change in GPS"
+  },
+  {
     "dropdown": [ "Likely Erroneous/Exceptions", "Invalidated Census villages" ],
     "comp": "INVALIDATED_VILLAGES"
   },

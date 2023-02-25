@@ -243,6 +243,16 @@
     "comp": "PINCODE_URBAN"
   },
   {
+    "dropdown": [ "Download Directory", "Pincode Mapping", "Pincode to Village Mapping With Major/Minor Versions" ],
+    "comp": "IGNORE",
+    "ignore_reason": "handled in PINCODE_VILLAGES, Needs Review for using the versioning info, which might be useful elsewhere"
+  },
+  {
+    "dropdown": [ "Download Directory", "Pincode Mapping", "Pincode to Urban Mapping With Major/Minor Versions" ],
+    "comp": "IGNORE",
+    "ignore_reason": "handled in PINCODE_URBAN, Needs Review for using the versioning info, which might be useful elsewhere"
+  },
+  {
     "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of States/UTs" ],
     "comp": "IGNORE",
     "ignore_reason": "handled in STATES, Needs Review for versioning info?"

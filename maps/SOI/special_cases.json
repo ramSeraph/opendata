@@ -65,6 +65,10 @@
     "data/raw/78O_2.pdf": {
         "sb_color": ["red1", "red2"]
     },
+    "data/raw/43P_4.pdf": {
+        "band_color": ["red1", "red2"],
+        "corner_overrides": [null, [4228, 15388], [16734, 15264], null]
+    },
     "data/raw/82L_8.pdf": {
         "line_color": "black"
     },

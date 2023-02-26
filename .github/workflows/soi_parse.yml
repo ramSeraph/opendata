@@ -49,6 +49,23 @@ jobs:
             echo "AVAILABLE=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Get current date
+        run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
+        id: date
+
+      - name: Restore parse run data from cache
+        uses: ramSeraph/cache-always@v0.0.1
+        with:
+          path: |
+            data/index.geojson
+            data/raw/
+            export/gtiffs/
+          key:  soi-gcs-parse-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          restore-keys: |
+            soi-gcs-parse-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            soi-gcs-parse-v3-${{ steps.date.outputs.date }}-
+
+
       - name: Parse SOI sheets
         if: steps.work.outputs.AVAILABLE == 'true'
         run: |
@@ -73,6 +90,8 @@ jobs:
           gsutil -m cp -r export/gtiffs/*.tif gs://soi_data/export/gtiffs/
           ls export/gtiffs/*.tif | cut -d"/" -f3 | cut -d"." -f1 > data/to_retile.txt
           gsutil cp data/to_retile.txt gs://soi_data/to_retile.txt
+          rm -rf data/*
+          rm -rf export/*
         timeout-minutes: 600
  
       - name: Update lists
@@ -90,11 +109,6 @@ jobs:
             gsutil -m cp gs://soi_data/index.geojson data/index.geojson
             echo "AVAILABLE=true" >> $GITHUB_OUTPUT
           fi
-
-      - name: Get current date
-        run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
-        id: date
-
       - name: Restore run data from cache
         uses: ramSeraph/cache-always@v0.0.1
         with:

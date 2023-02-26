@@ -71,6 +71,10 @@ jobs:
         run: |
           gsutil -m cp gs://soi_data/raw/SOI_FONTS.zip data/raw/SOI_FONTS.zip
           gsutil -m cp gs://soi_data/index.geojson data/index.geojson
+          find data
+          find export
+          cat data/to_parse.txt | xargs -I {} bash -c "[[ -e {} ]] || echo {}" > data/to_parse_filt.txt
+          mv data/to_parse_filt.txt data/to_parse.txt
           cat data/to_parse.txt | cut -d"/" -f2- | xargs -I {} gsutil -m cp gs://soi_data/{} data/{}
           docker run -d --name dup-checker -v $(pwd):/code -w /code soi-parse:latest maps/SOI/check_duplicates.py data/to_parse.txt
           docker logs -f dup-checker

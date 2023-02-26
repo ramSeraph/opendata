@@ -1367,6 +1367,12 @@ class Converter:
 
         
     def run(self):
+        sheet_no = self.file_dir.name
+        export_file = Path(f'export/gtiffs/{sheet_no}.tif')
+        if export_file.exists():
+            print(f'{export_file} exists.. skipping')
+            return
+
         final_file = self.file_dir.joinpath('final.tif')
         if final_file.exists():
             print(f'{final_file} exists.. skipping')

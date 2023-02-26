@@ -432,6 +432,8 @@ class Converter:
             flavor = 'Adultpdf'
         elif 'GPL Ghostscript' in doc_producer:
             flavor = 'Ghostscript'
+        elif 'GS PDF LIB' in doc_producer:
+            flavor = 'GSPDF'
         elif 'Adobe PDF Library' in doc_producer:
             flavor = 'Microstation'
         else:

@@ -69,6 +69,9 @@
         "band_color": ["red1", "red2"],
         "corner_overrides": [null, [4228, 15388], [16734, 15264], null]
     },
+    "data/raw/44D_5.pdf": {
+        "corner_overrides": [null, null, [16168, 15929], null]
+    },
     "data/raw/82L_8.pdf": {
         "line_color": "black"
     },

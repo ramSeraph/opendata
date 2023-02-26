@@ -72,10 +72,9 @@ jobs:
           gsutil -m cp gs://soi_data/raw/SOI_FONTS.zip data/raw/SOI_FONTS.zip
           gsutil -m cp gs://soi_data/index.geojson data/index.geojson
           find data
-          find export
-          cat data/to_parse.txt | xargs -I {} bash -c "[[ -e {} ]] || echo {}" > data/to_parse_filt.txt
-          mv data/to_parse_filt.txt data/to_parse.txt
-          cat data/to_parse.txt | cut -d"/" -f2- | xargs -I {} gsutil -m cp gs://soi_data/{} data/{}
+          find export || true
+          cat data/to_parse.txt | xargs -I {} bash -c "[[ -e {} ]] || echo {}" > data/to_download.txt
+          cat data/to_download.txt | cut -d"/" -f2- | xargs -I {} gsutil -m cp gs://soi_data/{} data/{}
           docker run -d --name dup-checker -v $(pwd):/code -w /code soi-parse:latest maps/SOI/check_duplicates.py data/to_parse.txt
           docker logs -f dup-checker
           exit_code=$(docker inspect dup-checker --format='{{.State.ExitCode}}')
@@ -94,8 +93,9 @@ jobs:
           gsutil -m cp -r export/gtiffs/*.tif gs://soi_data/export/gtiffs/
           ls export/gtiffs/*.tif | cut -d"/" -f3 | cut -d"." -f1 > data/to_retile.txt
           gsutil cp data/to_retile.txt gs://soi_data/to_retile.txt
-          rm -rf data/*
-          rm -rf export/*
+          rm -rf data/inter/*
+          rm -rf data/raw/*
+          rm -rf export/gtiffs/*
         timeout-minutes: 600
  
       - name: Update lists

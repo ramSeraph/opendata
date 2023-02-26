@@ -72,6 +72,10 @@
     "data/raw/44D_5.pdf": {
         "corner_overrides": [null, null, [16168, 15929], null]
     },
+    "data/raw/44F_16.pdf": {
+        "band_color": ["red1", "red2"],
+        "corner_overrides": [null, null, [16903, 14863], null]
+    },
     "data/raw/82L_8.pdf": {
         "line_color": "black"
     },

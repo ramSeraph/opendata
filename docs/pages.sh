@@ -15,4 +15,4 @@ LOCAL_WORKSPACE_DIR="$(dirname $PWD)"
 
 docker run --platform linux/amd64 --name buildpages --workdir /github/workspace --rm \
 	-e INPUT_SOURCE -e INPUT_DESTINATION -e INPUT_FUTURE -e INPUT_BUILD_REVISION -e INPUT_VERBOSE -e INPUT_TOKEN \
-	-e GITHUB_WORKSPACE -e GITHUB_REPOSITORY -e CI=true -v "$LOCAL_WORKSPACE_DIR":"/github/workspace" "$IMAGE"
+	-e GITHUB_WORKSPACE -e GITHUB_REPOSITORY -e CI=true -v "$LOCAL_WORKSPACE_DIR":"$GITHUB_WORKSPACE" -v "${GITHUB_WORKSPACE}/docs/generators" "$IMAGE"

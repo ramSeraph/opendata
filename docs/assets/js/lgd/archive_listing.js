@@ -1,43 +1,5 @@
 
-function fileSize(size) {
-    var i = Math.floor(Math.log(size) / Math.log(1024));
-    return (size / Math.pow(1024, i)).toFixed(2) + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
-}
-
-getDateStr = (d, forArchive) => {
-    var ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(d);
-    var mo = new Intl.DateTimeFormat('en', { month: 'short' }).format(d);
-    var ml = new Intl.DateTimeFormat('en', { month: 'long' }).format(d);
-    var da = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(d);
-    if (forArchive === true) {
-        return `${da}${mo}${ye}`
-    }
-    return `${da} ${ml} ${ye}`
-}
-
-var monthNames = ["January", "February", "March", "April",
-                  "May", "June", "July", "August", "September",
-                  "October", "November", "December"]
-var monthMap = {}
-for (m of monthNames) {
-    monthMap[m.substring(0,3)] = m
-}
-
-getDateParts = (name) => {
-    var day = name.substring(0,2)
-    var month = monthMap[name.substring(2,5)]
-    var year = name.substring(5,9)
-
-    return {
-        'day': day,
-        'month': month,
-        'year': year,
-        'date': new Date(`${year}-${month}-${day}`)
-    }
-}
-
-bucketName = 'lgd_data_archive'
-listFileName = 'listing_archives.txt'
+// uses fileSize, getDateParts, monthNames, getArchiveList from archive_common.js
 
 displayResults = (sizeMap) => {
     var archivesDiv = document.getElementById('archive_list')
@@ -107,26 +69,9 @@ displayResults = (sizeMap) => {
     archivesDiv.innerHTML = allHtml
 }
 
-
-parseListing = (listingText) => {
-    var entryTexts = listingText.split('\n')
-    var sizeMap = {}
-    for (var entryText of entryTexts) {
-        entryText = entryText.trim()
-        if (entryText === '') {
-            continue
-        }
-        var pieces = entryText.split(' ')
-        sizeMap[pieces[1]] = pieces[0]
-    }
-    return sizeMap
-}
-
-
 window.onload = (event) => {
     console.log('on window load')
 
-    var hasError = false
     var statusSpan = document.getElementById('call_status')
     setStatus = (msg, error) => {
         statusSpan.innerHTML = msg
@@ -137,30 +82,14 @@ window.onload = (event) => {
         }
     }
     setStatus(`Getting list of all archives.. `, false)
-    console.log('getting list of all archives')
-    var httpRequest = new XMLHttpRequest()
-    
-    alertContents = () => {
-        if (httpRequest.readyState === XMLHttpRequest.DONE) {
-            if (httpRequest.status === 200) {
-                var sizeMap = parseListing(httpRequest.responseText)
-                setStatus('', false)
-                displayResults(sizeMap)
-            } else {
-                setStatus('Remote Request failed', true)
-                console.log(`Remote Request failed with ${httpRequest.status} and text: ${httpRequest.responseText}`)
-            }
+    update = (data, error) => {
+        if (error === true) {
+            setStatus(data, true)
+            return
         }
-    }
-    
-    if (!httpRequest) {
-        setStatus('Internal Error', true)
-        console.log('Giving up :( Cannot create an XMLHTTP instance')
-        return
-    }
-    httpRequest.onreadystatechange = alertContents
-    httpRequest.open('GET', `https://storage.googleapis.com/${bucketName}/${listFileName}`)
-    httpRequest.send()
-    console.log('call sent')
-}
 
+        setStatus('', false)
+        displayResults(data)
+    }
+    getArchiveList(update)
+}

@@ -29,10 +29,10 @@ The archives use a zip format which is not understood by the standard unix `unzi
 
 
 <link rel="stylesheet" property="stylesheet" type="text/css" href="{{ "/assets/css/lgd/status.css" | relative_url }}">
-<script src="{{ "/assets/js/lgd/archive_searcher.js" | relative_url }}" ></script>
-<form name='archive_search_form'>
-  <input type="date" id="archive_date" name="date" text="Get LGD archive link for date: " autocomplete="off" />
-</form>
-
+<link rel="stylesheet" href="{{ "/assets/css/lgd/flatpickr_dark_custom.min.css" | relative_url }}" >
+<script src="{{ "/assets/js/lgd/flatpickr.min.js" | relative_url }}" ></script>
+<script src="{{ "/assets/js/lgd/archive_common.js" | relative_url }}" ></script>
+<script src="{{ "/assets/js/lgd/archive_picker.js" | relative_url }}" ></script>
+<hr>
+<div id="archive_date" class="flatpickr"></div>
 <span id='form_status'></span>
-<span id='archive_list'></span>

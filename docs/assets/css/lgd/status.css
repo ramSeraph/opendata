@@ -1,3 +1,6 @@
 .error {
     color: #f00;
 }
+.selected {
+    color: #009485;
+}

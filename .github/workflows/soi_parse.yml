@@ -93,9 +93,8 @@ jobs:
           gsutil -m cp -r export/gtiffs/*.tif gs://soi_data/export/gtiffs/
           ls export/gtiffs/*.tif | cut -d"/" -f3 | cut -d"." -f1 > data/to_retile.txt
           gsutil cp data/to_retile.txt gs://soi_data/to_retile.txt
-          rm -rf data/inter/*
-          rm -rf data/raw/*
-          rm -rf export/gtiffs/*
+          rm -rf data/raw/* || true
+          rm -rf export/gtiffs/* || true
         timeout-minutes: 600
  
       - name: Update lists

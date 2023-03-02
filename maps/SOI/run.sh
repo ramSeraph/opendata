@@ -3,7 +3,7 @@
 PLATFORM=${PLATFORM:-"linux/amd64"}
 
 if [ "$BUILD" == "1" ]; then
-	docker build --platform linux/amd64 -f Dockerfile -t soi .
+	docker build --platform linux/amd64 --build-arg build_type=final -f Dockerfile -t soi .
 fi
 
 DOCKER_CMD="docker run --platform $PLATFORM --rm --env SHOW_IMG=1 -v $PWD:/code -w /code/ -it --name soi_run soi" 

@@ -27,12 +27,27 @@ cd generators
 
 generates `assets/js/maps/SOI/turf.min.js`
 
+
+# Generating flatpickr.js and custom style for it
+
+run the following:
+
+```
+cd generators
+./create_custom_cal_style.sh
+```
+
+generates `assets/js/lgd/flatpickr.min.js` and 'assets/css/lgd/flatpickr_dark_custom.min.css`
+
+
 # Creating static map assets
+
+run the following:
 
 ```
 cd generators
 ./create_static_pmtiles.sh
 ```
 
-uploads the generated pmtiles files to GCS
+uploads the generated pmtiles files( `index.pmtiles`, `polymap15m_area.pmtiles` and 'states.fgd` to GCS
 

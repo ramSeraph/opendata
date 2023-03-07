@@ -7,9 +7,9 @@
 
   <link rel="shortcut icon" type="image/png" href="{{ "/assets/images/favicon.png" | relative_url }}"/>
 
-  {% if page.robots %}
+  {%- if page.robots -%}
     <meta name="robots" content="{{page.robots}}" />
-  {% endif %}
+  {%- endif -%}
 
   {%- if site.listen_for_clients_preferred_style -%}
     <link rel="stylesheet" type="text/css" href="{{ "/assets/css/main.css" | relative_url }}">
@@ -22,5 +22,38 @@
       <link rel="stylesheet" type="text/css" href="{{ "/assets/css/main-dark.css" | relative_url }}">
     {%- endif -%}
   {%- endif -%}
+    
+  {%- if page.custom-css-list -%}
+    {%- for css_info in page.custom-css-list -%}
+      {%- if css_info.abs == true -%}
+      <link href="{{ css_info.url }}" rel="stylesheet" property="stylesheet" type="text/css">
+      {%- else -%}
+      <link href="{{ css_info.url | relative_url }}" rel="stylesheet" property="stylesheet" type="text/css">
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endif -%}
 
+  {% if page.custom-js-list %}
+    {% for js_info in page.custom-js-list %}
+      {% assign extra = "" %}
+      {%- if js_info.async == true -%}
+        {%- capture extra -%}
+        {{ extra | append: " async" }}
+        {%- endcapture -%}
+      {%- endif -%}
+      {%- if js_info.defer == true -%}
+        {%- capture extra -%}
+        {{ extra | append: " defer" }}
+        {%- endcapture -%}
+      {%- endif -%}
+      {%- assign url = js_info.url -%}
+      {%- if js_info.abs != true -%}
+        {%- capture url -%}
+        {{ js_info.url | relative_url }}
+        {%- endcapture -%}
+      {%- endif -%}
+
+      <script src="{{ url }}" {{extra}}></script>
+    {% endfor %}
+  {% endif %}
 </head>

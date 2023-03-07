@@ -2,6 +2,13 @@
 layout: page
 title: LGD
 permalink: /lgd/
+custom-js-list:
+  - url: "/assets/js/lgd/flatpickr.min.js"
+  - url: "/assets/js/lgd/archive_common.js"
+  - url: "/assets/js/lgd/archive_picker.js"
+custom-css-list:
+  - url: "/assets/css/lgd/flatpickr_dark_custom.min.css"
+  - url: "/assets/css/lgd/status.css"
 ---
 
 Collection of Data from [Local Government Directory](https://lgdirectory.gov.in)
@@ -27,12 +34,7 @@ The archives use a zip format which is not understood by the standard unix `unzi
 
 # Get Archive for date
 
-
-<link rel="stylesheet" property="stylesheet" type="text/css" href="{{ "/assets/css/lgd/status.css" | relative_url }}">
-<link rel="stylesheet" href="{{ "/assets/css/lgd/flatpickr_dark_custom.min.css" | relative_url }}" >
-<script src="{{ "/assets/js/lgd/flatpickr.min.js" | relative_url }}" ></script>
-<script src="{{ "/assets/js/lgd/archive_common.js" | relative_url }}" ></script>
-<script src="{{ "/assets/js/lgd/archive_picker.js" | relative_url }}" ></script>
-<hr>
+---
 <div id="archive_date" class="flatpickr"></div>
+<br>
 <span id='form_status'></span>

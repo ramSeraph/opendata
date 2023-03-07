@@ -2,11 +2,12 @@
 layout: page
 title: LGD Archive Listing
 permalink: /lgd/archives
+custom-js-list:
+  - url: "/assets/js/lgd/archive_common.js"
+  - url: "/assets/js/lgd/archive_listing.js"
+custom-css-list:
+  - url:  "/assets/css/lgd/status.css"
 ---
-
-<link rel="stylesheet" property="stylesheet" type="text/css" href="{{ "/assets/css/lgd/status.css" | relative_url }}">
-<script src="{{ "/assets/js/lgd/archive_common.js" | relative_url }}" ></script>
-<script src="{{ "/assets/js/lgd/archive_listing.js" | relative_url }}" ></script>
 
 <span id='call_status'></span>
 <div id='archive_list'></div>

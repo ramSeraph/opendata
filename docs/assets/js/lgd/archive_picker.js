@@ -33,7 +33,7 @@ function showLink(date, sizeMap, statusSetter) {
     const dateStr = getDateStr(date, true)
     const objName = dateStr + '.zip'
     const size = fileSize(sizeMap[dateStr])
-    statusSetter(`<a href=https://storage.googleapis.com/${bucketName}/${objName} class='selected'>${objName}</a> ${size}`, false)
+    statusSetter(`Archive: <a href=https://storage.googleapis.com/${bucketName}/${objName} >${objName}</a> ${size}`, false)
 }
 
 

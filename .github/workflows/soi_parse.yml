@@ -136,7 +136,7 @@ jobs:
             fi
           fi
           cd to_gcs
-          gsutil -m cp -r export/* gs://soi_data/export/
+          gsutil -m -h "Content-Type:image/webp" cp -r export/tiles/* gs://soi_data/export/tiles/
           gsutil rm gs://soi_data/to_retile.txt
           cd ..
           rm -rf to_gcs/*

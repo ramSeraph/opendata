@@ -1,293 +1,422 @@
 
-BOUNDS_INDIA = [[61.1113787, 2.5546079], [101.395561, 39.6745457]]
-STATES_URL = 'https://storage.googleapis.com/soi_data/states.pmtiles'
-INDEX_URL = 'https://storage.googleapis.com/soi_data/index.pmtiles'
-const green = 'green'
-const red = 'red'
-const yellow = 'yellow'
+// TODO: move to pmtiles
+// TODO: highlight sheet on hover
+//
+// unlikely to be fixed
+// TODO: legend/popup should block click events.. 
+// TODO: adjust viewport on fullscreen.. show what was being shown before
+
+INDEX_URL = 'https://storage.googleapis.com/soi_data/index.geojson';
+// STATES_URL = 'https://raw.githubusercontent.com/datameet/maps/master/website/docs/data/geojson/states.geojson';
+
+function makeLink(url, text) {
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+}
+
+INDEX_ATTRIBUTION = makeLink("https://onlinemaps.surveyofindia.gov.in/FreeOtherMaps.aspx", "SOI OSM Index(simplified)");
+// STATES_ATTRIBUTION = makeLink("https://github.com/datameet/maps/blob/master/website/docs/data/geojson/states.geojson", "Datameet State boundaries");
 
 
+// copied from openlayers code
+function getElementSize(el) {
+    const computedStyle = getComputedStyle(el);
+    const width =
+        el.offsetWidth -
+        parseFloat(computedStyle['borderLeftWidth']) -
+        parseFloat(computedStyle['paddingLeft']) -
+        parseFloat(computedStyle['paddingRight']) -
+        parseFloat(computedStyle['borderRightWidth']);
+    const height =
+        el.offsetHeight -
+        parseFloat(computedStyle['borderTopWidth']) -
+        parseFloat(computedStyle['paddingTop']) -
+        parseFloat(computedStyle['paddingBottom']) -
+        parseFloat(computedStyle['borderBottomWidth']);
+    return [width, height];
+}
 
-let protocol = new pmtiles.Protocol()
-maplibregl.addProtocol("pmtiles", protocol.tile)
-const p_states = new pmtiles.PMTiles(STATES_URL)
-const p_index = new pmtiles.PMTiles(INDEX_URL)
-protocol.add(p_states)
-protocol.add(p_index)
+function updateMap(map, extent) {
+    const eCenter = ol.extent.getCenter(extent);
+    const eSize = ol.extent.getSize(extent);
+    console.log('extent size', eSize);
 
-var map = null
+    // update map div size 
+    let el = map.getTargetElement();
+    const tSize = getElementSize(el);
+    console.log('target size', tSize);
+    const expectedHeight = Math.ceil(eSize[1] * (tSize[0]/eSize[0]));
+    el.style.height = `${expectedHeight}px`;
+    console.log(`setting container height to ${expectedHeight}`);
+    map.updateSize();
 
-p_states.getHeader().then(h => {
+    let view = map.getView();
+    const size = map.getSize();
+    const resolution = view.getResolutionForExtent(extent, size);
+    console.log('resolution', resolution);
+    const zoom = view.getZoomForResolution(resolution);
+    const intZoom = Math.floor(zoom);
+    view.setZoom(intZoom);
+    view.setMinZoom(intZoom);
+    view.setCenter(eCenter);
+    view.fit(extent);
+}
 
-    map = new maplibregl.Map({
-        container: 'map', 
-        zoom: h.maxZoom - 3,
-        maxZoom: h.maxZoom,
-        /*center: [h.centerLon, h.centerLat],*/
-        bounds: BOUNDS_INDIA,
-        maxBounds: BOUNDS_INDIA,
-        minZoom: 1,
-        style:  {
-            version: 8,
-            sources: {
-                "india-states": {
-                    type: "vector",
-                    url: "pmtiles://" + STATES_URL,
-                },
-                "tiles": {
-                    type: "vector",
-                    url: "pmtiles://" + INDEX_URL,
-                }
-            },
-            layers: [
-                {
-                    id: 'background',
-                    type: 'background',
-                    paint: { 'background-color': 'black' }
-                },
-                {
-                    id: 'tiles-fill',
-                    type: 'fill',
-                    'source': 'tiles', 
-                    'source-layer': 'indexfgb', 
-                    layout: {},
-                    paint: {
-                        'fill-color': [
-                            'case',
-                            [ '==', ['feature-state', 'status'], 'parsed'],
-                            green,
-                            [ '==', ['feature-state', 'status'], 'not_found'],
-                            red,
-                            yellow
-                        ],
-                        'fill-opacity': 0.5
-                    },
-                },
-                {
-                    id: 'tiles-outline',
-                    type: 'line',
-                    'source': 'tiles', 
-                    'source-layer': 'indexfgb',
-                    layout: {},
-                    paint: {
-                        'line-color': '#000',
-                        'line-width': 0.5
-                    }
-                },
-                {
-                    id: 'india-states-fill',
-                    type: 'fill',
-                    'source': 'india-states',
-                    'source-layer': 'statesfgb',
-                    layout: {},
-                    paint: {
-                        'fill-color': '#000',
-                        'fill-opacity': 0.0
-                    }
-                },
-                {
-                    id: 'india-states-outline',
-                    type: 'line',
-                    'source': 'india-states',
-                    'source-layer': 'statesfgb',
-                    layout: {},
-                    paint: {
-                        'line-color': '#000',
-                        'line-width': 1
-                    }
-                }
-            ]
-        }
-    })
-    map.addControl(new maplibregl.NavigationControl())
-    //map.doubleClickZoom.disable()
+const baseStyle = new ol.style.Style({
+    stroke: new ol.style.Stroke({
+        color: 'black',
+        width: 0.5,
+    }),
+    fill: new ol.style.Fill({
+        color: 'rgba(255,255,255,0.9)',
+    }),
+});
 
-    map.once('idle', () => {
-        const features = map.querySourceFeatures('tiles', {'sourceLayer': 'indexfgb'})
-        var alreadySeen = new Set()
-        var filtered = []
-        for (f of features) {
-            const sheetNum = f.properties.EVEREST_SH
-            if (alreadySeen.has(sheetNum)) {
-                continue
+const statesStyle = new ol.style.Style({
+    stroke: new ol.style.Stroke({
+        color: 'white',
+        width: 2,
+    }),
+    fill: new ol.style.Fill({
+        color: 'rgba(255,255,255,0.0)',
+    }),
+});
+
+
+const parsed_color = '#f4f4f4';
+const found_color = '#b3b3b3';
+const not_found_color = '#5e5e5e';
+
+function getTilePopoverContent(sheetNo, statusMap) {
+    const sheetInfo = statusMap[sheetNo];
+
+    var html = `<b text-align="center">${sheetNo}</b><br>`
+    if (sheetInfo === undefined) {
+        return html;
+    }
+    if ('pdfUrl' in sheetInfo && sheetInfo['pdfUrl'] !== null) {
+        html += ' ';
+        html += `<a target="_blank" href=${sheetInfo['pdfUrl']}>pdf</a>`;
+    }
+    if ('gtiffUrl' in sheetInfo && sheetInfo['gtiffUrl'] !== null) {
+        html += ' ';
+        html += `<a target="_blank" href=${sheetInfo['gtiffUrl']}>gtiff</a>`;
+    }
+    //TODO: add link to demo map
+    return html;
+}
+
+
+function getStyleFn(statusMap) {
+    return (f) => {
+        const sheetNo = f.get('EVEREST_SH');
+        const sheetInfo = statusMap[sheetNo];
+        if (sheetInfo === undefined) {
+            baseStyle.getStroke().setColor('grey');
+            baseStyle.getFill().setColor('rgba(255,255,255,0.0)');
+        } else {
+            const status = sheetInfo['status'];
+            baseStyle.getStroke().setColor('black');
+            var color;
+            if (status === 'not_found') {
+                color = not_found_color;
+            } else if (status === 'found') {
+                color = found_color;
+            } else if (status === 'parsed') {
+                color = parsed_color;
             }
-            alreadySeen.add(sheetNum)
-            filtered.push(f)
+            baseStyle.getFill().setColor(color);
         }
-        updateFeatureData(filtered)
-    })
-    
-    map.on('click', 'tiles-fill', (e) => {
-        var feature = e.features[0]
-        var fstate = map.getFeatureState({ id: feature.id,
-                                           source: 'tiles',
-                                           sourceLayer: 'indexfgb' })
-        var sheetNo = feature.properties.EVEREST_SH
-        var html = `<b>${sheetNo}</b><br>`
-        if ('pdfUrl' in fstate && fstate['pdfUrl'] !== null) {
-            html += ' '
-            html += `<a target="_blank" href=${fstate.pdfUrl}>pdf</a>`
+        return baseStyle;
+    };
+}
+
+function getLegendCtrl(textStyle) {
+
+    var legend = new ol.legend.Legend({
+        'title': 'Legend',
+        'size': [15, 15],
+        // 'maxWidth':     
+        'margin': 5,
+        'textStyle': textStyle,
+        'style': getStyleFn({
+            'Available':     { 'status': 'parsed' },
+            'Not Available': { 'status': 'not_found' },
+            'Not Parsable':  { 'status': 'found' }
+        })
+    });
+    const legendSymbolPoints = [[[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]]];
+    for (let s of ['Available', 'Not Available', 'Not Parsable', 'Info Unavailable']) {
+        legend.addItem(new ol.legend.Item({
+            'title': s,
+            'textStyle': textStyle,
+            'feature': new ol.Feature({
+                'EVEREST_SH': s,
+                'geometry': new ol.geom.Polygon(legendSymbolPoints)
+            }),
+        }));
+    }
+    legend.on('select', (e) => {
+        console.log(e);
+    });
+    const legendCtrl = new ol.control.Legend({
+        legend: legend,
+        collapsed: true
+    });
+
+    return legendCtrl;
+}
+
+function getControls() {
+    let controls = ol.control.defaults.defaults();
+    let fControl = new ol.control.FullScreen();
+
+    /*
+
+    // NOTE: didn't work
+    var adjustToPrevState = (e) => {
+        console.log(e);
+        const map = e.target.getMap();
+        if (!map) {
+            return;
         }
-        if ('gtiffUrl' in fstate && fstate['gtiffUrl'] !== null) {
-            html += ' '
-            html += `<a target="_blank" href=${fstate.gtiffUrl}>gtiff</a>`
+        let view = map.getView();
+        let { viewState, extent } = view.getViewStateAndExtent();
+        view.fit(extent);
+    };
+    fControl.on('enterfullscreen', adjustToPrevState);
+    fControl.on('leavefullscreen', adjustToPrevState);
+
+    */
+    controls.push(fControl);
+    return controls;
+}
+
+function getInteractions() {
+    let interactions = ol.interaction.defaults.defaults();
+    let pinchIndex = -1;
+    for (let i = 0; i < interactions.getLength(); i++) {
+        if (interactions.item(i) instanceof ol.interaction.PinchRotate) {
+            pinchIndex = i;
+            break;
         }
-    
-        new maplibregl.Popup()
-                      .setLngLat(e.lngLat)
-                      .setHTML(html)
-                      .addTo(map)
-    })
-    
-    map.on('dblclick', 'india-states-fill', (e) => {
-        const sfeature = e.features[0]
-        const sgeom = turf.getGeom(sfeature)
-        const sbbox = turf.bbox(sgeom)
-        intersecting_feature_idxs = lookupIndex.search(...sbbox)
-        console.log(intersecting_feature_idxs)
-        available = []
-        unavailable = []
-        not_downloaded = []
-        for (const i of intersecting_feature_idxs) {
-            const feature = indexMap[i]
-            const intersects = turf.booleanIntersects(turf.getGeom(feature), sgeom)
-            if (!intersects) {
-                continue
-            }
-            const sheetNo = feature.properties.EVEREST_SH
-            console.log(i, sheetNo)
-            const fstate = map.getFeatureState({ id: feature.id, source: 'tiles', sourceLayer: 'indexfgb'})
-            if (!('status' in fstate)) {
-                not_downloaded.push(feature)
-            } else if (fstate.status !== 'not_found') {
-                available.push([feature, fstate.url])
+    }
+    if (pinchIndex !== -1) {
+        interactions.removeAt(pinchIndex);
+    }
+
+    return interactions;
+}
+
+function getDocStyle(el) {
+    const style = getComputedStyle(el);
+    const fontFamily = style['fontFamily'];
+    const fontSize = style['fontSize'];
+    const lineHeight = style['lineHeight'];
+    const color = style['color'];
+    const backgroundColor = style['backgroundColor'];
+    return { fontFamily, fontSize, lineHeight, color, backgroundColor };
+}
+
+function getTextStyle(el) {
+    let { fontFamily, fontSize, lineHeight, color, backgroundColor } = getDocStyle(el);
+    const olTextStyle  = new ol.style.Text({
+      font: `${fontSize}/${lineHeight} ${fontFamily}`,
+      fill: new ol.style.Fill({
+        color: color
+      }),
+      backgroundFill: new ol.style.Fill({
+        color: backgroundColor
+      })
+    });
+    return olTextStyle;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    var successCount = 0;
+    // 2 status updates for each layer, 2 for the map, 1 for the sheeet list map
+    // var expectedSuccessCount = 7;
+    var expectedSuccessCount = 5;
+    var statusElem = document.getElementById('call_status');
+    var setStatus = (msg, err) => {
+        var alreadyError = false;
+        const prevMsg = statusElem.innerHTML;
+        if (statusElem.hasAttribute("class")) {
+            alreadyError = true;
+        }
+        if (err === true) {
+            if (alreadyError === true) {
+                msg = prevMsg + '<br>' + msg;
             } else {
-                unavailable.push(feature)
+                statusElem.setAttribute("class", "error");
             }
+            statusElem.innerHTML = msg;
+        } else if (alreadyError !== true) {
+            statusElem.removeAttribute("class");
+            successCount += 1;
+            if (expectedSuccessCount <= successCount) {
+                msg = '';
+            }
+            statusElem.innerHTML = msg;
         }
-            
-        var html = '<table>'
-        const props = sfeature.properties
-        for (k in props) {
-            html += `<tr><td class="td-top">${k}</td><td>${props[k]}</td></tr>`
+    };
+
+    var sheetStatusMap = {}
+    getStatusData((err, data) => {
+        if (err !== null) {
+            console.log(err);
+            setStatus("Failed to get status list", true);
+        } else {
+            Object.assign(sheetStatusMap, data);
+            setStatus('Done loading status list', false);
         }
+    });
+
+    ol.proj.useGeographic();
+
+    const map = new ol.Map({
+        interactions: getInteractions(),
+        controls: getControls(),
+        target: 'map',
+        view:  new ol.View({
+            // extent: 
+            showFullExtent: true,
+            maxZoom: 9,
+            center: [0, 0],
+            zoom: 2,
+        })
+    });
+
+    var createLayer = (url, srcLabel, attribution, style, statusFn) => {
     
-        var sheetList = ''
-            
-        var pieces = []
-        for (const ar of available) {
-            const f = ar[0]
-            const url = ar[1]
-            const sheetNo = f.properties.EVEREST_SH
-            pieces.push(`<a target="_blank" href=${url}><b>${sheetNo}</b></a>`)
+        const src = new ol.source.Vector({
+            format: new ol.format.GeoJSON(),
+            url: url,
+            overlaps: false,
+            attributions: [ attribution ]
+        });
+        const layer = new ol.layer.Vector({
+            background: 'black',
+            source: src,
+            style: style
+        });
+    
+        src.on('featuresloadstart', (e) => {
+            statusFn(`Loading ${srcLabel} features..`, false);
+        });
+        src.on('featuresloadend', (e) => {
+            console.log(e);
+            statusFn(`Done loading ${srcLabel} features`, false);
+            updateMap(map, src.getExtent());
+        });
+        src.on('featuresloaderror', (e) => {
+            statusFn(`Failed to load ${srcLabel}`, true);
+        });
+        return layer;
+    };
+
+    const indexLayer = createLayer(INDEX_URL, 'Index', INDEX_ATTRIBUTION, getStyleFn(sheetStatusMap), setStatus);
+    map.addLayer(indexLayer);
+
+    // const statesLayer = createLayer(STATES_URL, 'State Boundaries', STATES_ATTRIBUTION, statesStyle, setStatus);
+    // map.addLayer(statesLayer);
+
+
+    function showPopup(e, pop, contentFn) {
+        const features = map.getFeaturesAtPixel(e.pixel);
+        const feature = features.length ? features[0] : undefined;
+        if (feature === undefined) {
+            pop.hide();
+            return;
         }
-        sheetList = pieces.join(' ')
-        html += `<tr><td class="td-top">Available</td><td>${sheetList}</td></tr>`
-    
-        var pieces = []
-        for (const f of unavailable) {
-            const sheetNo = f.properties.EVEREST_SH
-            pieces.push(`${sheetNo}`)
+        const html = contentFn(feature);
+        if (html === null) {
+            pop.hide();
+            return;
         }
-        sheetList = pieces.join(' ')
-        html += `<tr><td class="td-top">UnAvailable</td><td>${sheetList}</td></tr>`
-    
-        var pieces = []
-        for (const f of not_downloaded) {
-            const sheetNo = f.properties.EVEREST_SH
-            pieces.push(`${sheetNo}`)
+        pop.show(e.coordinate, html);
+    }
+
+    var popup = new ol.Overlay.Popup({
+        popupClass: "tooltips black", //"tooltips", "warning" "black" "default", "tips", "shadow",
+        closeBox: false,
+        positioning: 'center-left',
+        autoPan: {
+          animation: { duration: 250 }
         }
-        sheetList = pieces.join(' ')
-        html += `<tr><td class="td-top">NotDownloaded</td><td>${sheetList}</td></tr>`
-    
-        html += '</table>'
-    
-        new maplibregl.Popup()
-                      .setLngLat(e.lngLat)
-                      .setHTML(html)
-                      .addTo(map)
-    })
-    
-    map.on('mouseenter', 'tiles-fill', () => {
-        map.getCanvas().style.cursor = 'pointer'
-    })
-    
-    map.on('mouseleave', 'tiles-fill', () => {
-        map.getCanvas().style.cursor = ''
-    })
-})
+    });
+    map.addOverlay(popup);
+    var tooltip = new ol.Overlay.Popup({
+        popupClass: "tooltips black", //"tooltips", "warning" "black" "default", "tips", "shadow",
+        closeBox: false,
+        positioning: 'center-left',
+        autoPan: {
+          animation: { duration: 250 }
+        }
+    });
 
+    let activePopupSheetNo = null;
+    let activeTooltipSheetNo = null;
+    map.addOverlay(tooltip);
+    map.on('click', function(e) {
+        showPopup(e, popup, (f) => {
+            const sheetNo = f.get('EVEREST_SH');
+            if (tooltip.getVisible() && sheetNo === activeTooltipSheetNo) {
+                tooltip.hide();
+            }
+            activePopupSheetNo = sheetNo;
+            return getTilePopoverContent(sheetNo, sheetStatusMap);
+        });
+    });
+    map.on('pointermove', function(e) {
+        showPopup(e, tooltip, (f) => {
+            const sheetNo = f.get('EVEREST_SH');
+            if (popup.getVisible() && sheetNo === activePopupSheetNo) {
+                return null;
+            }
+            activeTooltipSheetNo = sheetNo;
+            return `<b text-align="center">${sheetNo}</b>`;
+        });
+    });
 
+    map.addControl(getLegendCtrl(getTextStyle(document.body)));
+    map.on('loadstart', function () {
+        setStatus('Loading Map..', false);
+    });
+    map.on('loadend', function () {
+        setStatus('Done loading Map', false);
+    });
 
+    /*
+    map.on('click', function (e) {
+        console.log(e);
+        const features = map.getFeaturesAtPixel(e.pixel);
+        console.log(features)
+        const feature = features.length ? features[0] : undefined;
+        if (feature === undefined) {
+            popup.hide();
+            return;
+        }
+        const html = getTilePopoverContent(feature, sheetStatusMap);
+        popup.show(e.coordinate, html);
+    });
+    map.on('pointermove', function (e) {
+        // const hasFeature = map.hasFeatureAtPixel(e.pixel, function(layer) {
+        // });
+        const features = map.getFeaturesAtPixel(e.pixel);
+        // const type = map.hasFeatureAtPixel(e.pixel) ? 'pointer' : 'inherit';
+        // map.getViewport().style.cursor = type;
+        console.log(features)
+        const feature = features.length ? features[0] : undefined;
+        if (feature === undefined) {
+            popup.hide();
+            return;
+        }
+        const html = getTilePopoverContent(feature, sheetStatusMap);
+        popup.show(e.coordinate, html);
 
-var gFeatures = null
-var gStatusInfo = null
-var lookupIndex = null
-var indexMap = {}
-function setFeatureStates() {
-    if (gStatusInfo === null || gFeatures === null) {
-        return
-    }
-    var featureMap = {}
-    lookupIndex = new Flatbush(gFeatures.length)
-    console.log(gFeatures)
-    for (feature of gFeatures) {
-        var sheetNum = feature.properties.EVEREST_SH
-        featureMap[sheetNum] = feature
-        const geom = turf.getGeom(feature)
-        const bbox = turf.bbox(geom)
-        idx = lookupIndex.add(...bbox)
-        indexMap[idx] = feature
-    }
-    lookupIndex.finish()
-
-    for (var s in gStatusInfo) {
-        var featureId = featureMap[s].id
-        map.setFeatureState(
-            { source: 'tiles', id: featureId, sourceLayer: 'indexfgb' },
-            gStatusInfo[s]            
-        )
-    }
-}
-
-
-function updateStatusInfo(statusInfo) {
-    gStatusInfo = statusInfo
-    console.log(gStatusInfo)
-    setFeatureStates()
-}
-
-
-function updateFeatureData(feats) {
-    gFeatures = feats
-    setFeatureStates()
-}
-
-function setStatus(msg, isErr) {
-    var statusDiv = document.getElementById('call_status')
-    var toSet = "";
-    if (isErr) {
-        statusDiv.style.color = 'red'
-        toSet = "Error: "
-    }
-    toSet += msg
-    statusDiv.innerHTML = msg
-}
-
-function fetchStatusInfoCb(err, data) {
-    if (err !== null) {
-        console.log(err)
-        setStatus("Couldn't get status list", true)
-    } else {
-        setStatus('', false)
-        updateStatusInfo(data)
-    }
-}
-
-
-window.onload = (event) => {
-    setStatus('Loading Status Info..', false)
-    getStatusData(fetchStatusInfoCb)
-}
-
-
+    });
+    */
+    // updateMap(map);
+    // map.addInteraction(new ol.interaction.Link());
+});

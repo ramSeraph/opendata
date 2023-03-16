@@ -3,29 +3,22 @@ layout: page
 title: SOI Extraction Status
 permalink: /maps/SOI/status
 custom-js-list:
-  - url: "https://unpkg.com/protomaps@1.9.3/p ist/protomaps.min.js"
-    rel: false
-  - url: "https://unpkg.com/protomaps@1.23.0/dist/protomaps.min.js"
-    rel: false
-  - url: "https://cdn.jsdelivr.net/npm/flatbush"
-    rel: false
-  - url: "/assets/js/maps/SOI/turf.min.js"
+  - url: "https://cdn.jsdelivr.net/npm/elm-pep@1.0.6/dist/elm-pep.js"
+    abs: true
+  - url: "https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"
+    abs: true
+  - url: "https://cdn.jsdelivr.net/gh/Viglino/ol-ext@v4.0.5/dist/ol-ext.min.js"
+    abs: true
   - url: "/assets/js/maps/SOI/sheets_common.js"
   - url: "/assets/js/maps/SOI/map.js"
 custom-css-list:
-  - url: "/assets/css/maps/SOI/common.css" 
+  - url: "https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css"
+    abs: true
+  - url: "https://cdn.jsdelivr.net/gh/Viglino/ol-ext@v4.0.5/dist/ol-ext.min.css"
+    abs: true
   - url: "/assets/css/maps/SOI/map.css"
 ---
+# Extraction Status
 
-<div id='call_status'>Loading Page..</div>
-<div id="map"></div>
-
----
-Legend
-: - <span class="green-text">Data Available</span>
-  - <span class="yellow-text">Data Available but not parsable</span>
-  - <span class="red-text">Data Unavailable</span>
----
-Sources
-: - (https://github.com/datameet/maps/blob/master/website/docs/data/geojson/states.geojson)[Datameet State boundaries]
-  - (https://onlinemaps.surveyofindia.gov.in/FreeOtherMaps.aspx)[Survey of India Open Series Map Index( simplified by me )]
+<div id='call_status'></div>
+<div id="map" class="map"></div>

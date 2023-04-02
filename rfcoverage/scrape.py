@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 base_url = 'https://rfcoverage.dot.gov.in'
 session = requests.session()
+VERIFY_SSL = False
 
 def request_args(self):
     return {
@@ -36,7 +37,7 @@ def get_date_str():
 
 def get_states():
     logger.info('getting all states')
-    web_data = session.get(base_url)
+    web_data = session.get(base_url, verify=VERIFY_SSL)
     if not web_data.ok:
         raise Exception(f'unable to retrieve {base_url}')
     soup = BeautifulSoup(web_data.text, 'html.parser')
@@ -51,7 +52,7 @@ def get_districts(state_id):
     url = f'{base_url}/ajax/getDistrict'
     headers = { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }
     data = { 'id': f'{state_id}', 'type': 'state' }
-    web_data = session.post(url, headers=headers, data=data)
+    web_data = session.post(url, headers=headers, data=data, verify=VERIFY_SSL)
     if not web_data.ok:
         raise Exception(f'unable to retrieve data from {url} for state {state_id}')
     data = json.loads(web_data.text)
@@ -74,7 +75,7 @@ def get_villages(dist_id):
     url = f'{base_url}/ajax/getVillage'
     headers = { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }
     data = { 'id': f'{dist_id}', 'type': 'district' }
-    web_data = session.post(url, headers=headers, data=data)
+    web_data = session.post(url, headers=headers, data=data, verify=VERIFY_SSL)
     if not web_data.ok:
         raise Exception(f'unable to retrieve data from {url} for dist {dist_id}')
     data = json.loads(web_data.text)
@@ -190,7 +191,7 @@ def get_state_network_data(tsp, technology):
              'fetchData': 'village',
              'tsp[]': tsp,
              'technology[]': technology }
-    web_data = session.post(url, headers=headers, data=data)
+    web_data = session.post(url, headers=headers, data=data, verify=VERIFY_SSL)
     if not web_data.ok:
         raise Exception(f'unable to retrieve village data from {url=} for {data=}, status:{web_data.status_code}')
 

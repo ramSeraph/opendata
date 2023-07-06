@@ -13,7 +13,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 
 from captcha_helper import (
-     prepare_captcha_models,
+     check_captcha_models,
      CAPTCHA_MANUAL,
      captcha_model_dir
 )
@@ -34,8 +34,8 @@ raw_data_dir = data_dir + 'raw/villages/'
 MAX_CAPTCHA_ATTEMPTS = 10
 DELAY = 1
 DELAY_DOWNLOAD = 1
-FORCE = (os.ernviron.get('FORCE', '0') == '1')
-FORCE_UNAVAILABLE = (os.ernviron.get('FORCE_UNAVAILABLE', '0') == '1')
+FORCE = (os.environ.get('FORCE', '0') == '1')
+FORCE_UNAVAILABLE = (os.environ.get('FORCE_UNAVAILABLE', '0') == '1')
 
 def get_secrets():
     with open(data_dir + 'users.json', 'r') as f:
@@ -152,9 +152,16 @@ def scrape(phone_num, password):
     check_for_error(resp)
     soup = BeautifulSoup(resp.text, 'html.parser')
     main_div = soup.find('div', { 'id': 'divMain' })
-    a = main_div.find('a')
-    href = a.attrs['href']
-    val = href.split("'")[1]
+    a_s = main_div.find_all('a')
+    val = None
+    for a in a_s:
+        if a.text.strip() != 'Click to Buy':
+            continue
+        href = a.attrs['href']
+        val = href.split("'")[1]
+
+    if val is None:
+        raise Exception("couldn't find product link")
     form_data = get_form_data(soup)
     form_data['__EVENTTARGET'] = val
     resp = session.post(dp_page, headers=headers, data=form_data)
@@ -434,7 +441,7 @@ if __name__ == '__main__':
     setup_logging(logging.DEBUG)
 
     if not CAPTCHA_MANUAL:
-        prepare_captcha_models(captcha_model_dir)
+        check_captcha_models(captcha_model_dir)
 
 
     done_states = []

@@ -13,10 +13,10 @@ from functools import partial
 
 import mercantile
 
-#from osgeo_utils.gdal2tiles import main as gdal2tiles_main
-#from osgeo_utils.gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
-from gdal2tiles import main as gdal2tiles_main
-from gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
+from osgeo_utils.gdal2tiles import main as gdal2tiles_main
+from osgeo_utils.gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
+#from gdal2tiles import main as gdal2tiles_main
+#from gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
 
 from google.cloud import storage
 from google.api_core.exceptions import NotFound

@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import shutil
 
@@ -12,6 +13,8 @@ from functools import partial
 
 import mercantile
 
+#from osgeo_utils.gdal2tiles import main as gdal2tiles_main
+#from osgeo_utils.gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
 from gdal2tiles import main as gdal2tiles_main
 from gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
 
@@ -20,8 +23,24 @@ from google.api_core.exceptions import NotFound
 from google.cloud.storage.retry import DEFAULT_RETRY
 from google.cloud.storage.constants import _DEFAULT_TIMEOUT
 
-FROM_GCS = os.environ.get('FROM_GCS', '0') == '1'
+from tile_sources import DiskSource, PartitionedPMTilesSource, MissingTileError
+
+MAX_Z = int(os.environ.get('MAX_Z', '14'))
+SHEETS_FROM_GCS = os.environ.get("SHEETS_FROM_GCS", '0') == '1'
+TILES_FROM_GCS = os.environ.get("TILES_FROM_GCS", '0') == '1'
+TILES_TO_GCS = os.environ.get("TILES_TO_GCS", '0') == '1'
+TILES_FROM_PMTILES = os.environ.get('TILES_FROM_PMTILES', '1') == '1'
+TILES_TO_PMTILES = os.environ.get('TILES_TO_PMTILES', '1') == '1'
 INDEX_FILE = os.environ.get('INDEX_FILE', 'data/index.geojson')
+
+
+orig_pmtiles_dir = Path('export/pmtiles')
+orig_tiles_dir = Path('export/tiles')
+orig_tiffs_dir = Path('export/gtiffs')
+tiles_dir = Path('staging/tiles')
+tiffs_dir = Path('staging/gtiffs')
+z_min = 2
+z_max = MAX_Z
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -40,8 +59,19 @@ def run_external(cmd):
     if res.returncode != 0:
         raise Exception(f'command {cmd} failed')
 
+def convert_paths_in_vrt(vrt_fname):
+    # <SourceFilename relativeToVRT="1">40M_15.tif</SourceFilename>
+    vrt_file = Path(vrt_fname)
+    vrt_dirname = str(vrt_file.resolve().parent)
+    vrt_text = vrt_file.read_text()
+    replaced = re.sub(
+        r'<SourceFilename relativeToVRT="1">(.*)</SourceFilename>',
+        rf'<SourceFilename relativeToVRT="0">{vrt_dirname}/\1</SourceFilename>',
+        vrt_text
+    )
+    vrt_file.write_text(replaced)
 
-def get_sheets_to_basetile_mapping(ndex_data):
+def get_sheets_to_basetile_mapping(index_data):
     sheets_to_base_tiles = {}
     base_tiles_to_sheets = {}
     for f in index_data['features']:
@@ -80,7 +110,7 @@ def create_tiles(inp_file, output_dir, zoom_levels):
                      inp_file, output_dir])
 
 bucket = None
-if FROM_GCS:
+if TILES_FROM_GCS or SHEETS_FROM_GCS:
     client = storage.Client()
     bucket = client.get_bucket('soi_data')
 
@@ -107,12 +137,29 @@ def push_to_gcs(file):
     blob.upload_from_filename(filename=str(file), **get_gcs_upload_args())
 
 
-orig_tiles_dir = Path('export/tiles')
-orig_tiffs_dir = Path('export/gtiffs')
-tiles_dir = Path('staging/tiles')
-tiffs_dir = Path('staging/gtiffs')
-z_min = 2
-z_max = 15
+pmtiles_reader = None
+def get_pmtiles_reader():
+    global pmtiles_reader
+    if pmtiles_reader is None:
+        pmtiles_reader = PartitionedPMTilesSource(f'{orig_pmtiles_dir}/soi-',
+                                                  f'{orig_pmtiles_dir}/partition_info.json')
+    return pmtiles_reader
+
+
+def pull_from_pmtiles(file):
+    reader = get_pmtiles_reader()
+    fname = str(file)
+    pieces = fname.split('/')
+    tile = mercantile.Tile(x=int(pieces[-2]),
+                           y=int(pieces[-1].replace('.webp', '')),
+                           z=int(pieces[-3]))
+    try:
+        t_data = reader.get_tile_data(tile)
+    except MissingTileError:
+        return
+    file.parent.mkdir(exist_ok=True, parents=True)
+    file.write_bytes(t_data)
+
 
 def get_tile_file(tile):
     return f'{tiles_dir}/{tile.z}/{tile.x}/{tile.y}.webp'
@@ -121,12 +168,13 @@ def get_tile_file_orig(tile):
     return f'{orig_tiles_dir}/{tile.z}/{tile.x}/{tile.y}.webp'
 
 def copy_sheets_over(sheets_to_pull):
+    print(sheets_to_pull)
     for sheet_no in sheets_to_pull:
         to = tiffs_dir.joinpath(f'{sheet_no}.tif')
         fro = orig_tiffs_dir.joinpath(f'{sheet_no}.tif')
         if to.exists():
             continue
-        if FROM_GCS:
+        if SHEETS_FROM_GCS:
             pull_from_gcs(fro)
         if not fro.exists():
             continue
@@ -138,7 +186,9 @@ def copy_tiles_over(tiles_to_pull):
         if to.exists():
             continue
         fro = Path(get_tile_file_orig(tile))
-        if FROM_GCS:
+        if TILES_FROM_PMTILES:
+            pull_from_pmtiles(fro)
+        if TILES_FROM_GCS:
             pull_from_gcs(fro)
         if not fro.exists():
             continue
@@ -149,13 +199,13 @@ def push_tiles(tiles_to_push):
     for tile in tiles_to_push:
         fro = Path(get_tile_file(tile))
         to = Path(get_tile_file_orig(tile))
-        if FROM_GCS:
+        if TILES_TO_GCS:
             to = Path(get_tile_file(tile).replace('staging', 'to_gcs/export'))
         if not fro.exists():
             continue
         to.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(str(fro), str(to))
-    if FROM_GCS:
+    if TILES_TO_GCS:
         Path('to_gcs/all_done').write_text('')
 
 
@@ -218,7 +268,7 @@ if __name__ == '__main__':
     sheets_to_base_tiles = data['sheets_to_base_tiles']
 
     sheets_to_pull_by_sheet = {}
-    all_affected_tiled_by_sheet_no = {}
+    all_affected_tiles_by_sheet_no = {}
     all_tiles_to_pull = set()
     full_affected_tile_list = set()
     for sheet_no in retile_sheets:
@@ -242,7 +292,7 @@ if __name__ == '__main__':
         for tile in all_affected_tiles:
             print(get_tile_file(tile))
 
-        all_affected_tiled_by_sheet_no[sheet_no] = all_affected_tiles
+        all_affected_tiles_by_sheet_no[sheet_no] = all_affected_tiles
         for tile in all_affected_tiles:
             if tile.z not in all_affected_tiles_by_zoom:
                 all_affected_tiles_by_zoom[tile.z] = set()
@@ -273,18 +323,22 @@ if __name__ == '__main__':
         print(f'deleted {deleted_count} tiles')
         # for the base level create a vrt of all the sheets needed for this sheet
         tiff_list = [ tiffs_dir.joinpath(f'{p_sheet}.tif').resolve() for p_sheet in sheets_to_pull ]
+        #tiff_list = [ tiffs_dir.joinpath(f'{p_sheet}.tif').name for p_sheet in sheets_to_pull ]
         tiff_list = [ str(f) for f in tiff_list if f.exists() ]
         tiff_list_str = ' '.join(tiff_list)
-        vrt_file = Path(f'staging/{sheet_no}.vrt')
-        run_external(f'gdalbuildvrt {str(vrt_file)} {tiff_list_str}')
+        vrt_file = f'{tiffs_dir}/{sheet_no}.vrt'
+        run_external(f'gdalbuildvrt {vrt_file} {tiff_list_str}')
+        convert_paths_in_vrt(vrt_file)
+
         # and run gdal2tiles for just the base tiles
         print('creating tiles for base zoom with a vrt')
-        create_tiles(str(vrt_file), str(tiles_dir), f'{z_max}')
+        create_tiles(f'{vrt_file}', str(tiles_dir), f'{z_max}')
         # then run gdal2tiles for all the other levels with just the sheet
         print('creating tiles for all levels with just the sheet')
         create_upper_tiles(all_affected_tiles_by_zoom)
-    print('pushing back tiles to main')
-    push_tiles(full_affected_tile_list)
+    if not TILES_TO_PMTILES:
+        print('pushing back tiles to main')
+        push_tiles(full_affected_tile_list)
     #shutil.rmtree('staging')
 
 

@@ -10,9 +10,7 @@ from pathlib import Path
 
 import mercantile
 from osgeo import gdal
-#from osgeo_utils.gdal2tiles import main as gdal2tiles_main
-
-from gdal2tiles import main as gdal2tiles_main
+from osgeo_utils.gdal2tiles import main as gdal2tiles_main
 
 index_map = {}
 INDEX_FILE = os.environ.get('INDEX_FILE', 'data/index.geojson')

@@ -1,10 +1,11 @@
 import json
+import copy
 from pathlib import Path
 
 import mercantile
 from pprint import pprint
 from pmtiles.tile import zxy_to_tileid, tileid_to_zxy, TileType, Compression
-from pmtiles.writer import Writer, write
+from pmtiles.writer import Writer as PMTilesWriter
 
 from tile_sources import (
     DiskSource,
@@ -110,8 +111,8 @@ def get_top_slice(reader):
             return l - 1, tiles
     return max_level, tiles
 
-def save_partition_info(p_info, partition_file):
-    out = {}
+def save_partition_info(inp_p_info, partition_file):
+    p_info = copy.deepcopy(inp_p_info)
     for p_name, p_data in p_info.items():
         tiles_new = { f'{t.z},{t.x},{t.y}':size for t, size in p_data['tiles'].items() }
         p_data['tiles'] = tiles_new
@@ -194,45 +195,73 @@ def get_partition_info(reader):
 
 def create_pmtiles(partition_info, reader):
     mosaic_data = {}
+    writers = {}
+    suffix_arr = []
+    tiles_to_suffix = {}
     to_pmtiles_prefix = 'staging/pmtiles/soi-'
+    i = 0
     for suffix, data in partition_info.items():
         out_pmtiles_file = f'{to_pmtiles_prefix}{suffix}.pmtiles'
         Path(out_pmtiles_file).parent.mkdir(exist_ok=True, parents=True)
-        with write(out_pmtiles_file) as writer:
-            curr_z = None
-            for t in data['tiles'].keys():
-                if curr_z is None or curr_z < t.z:
-                    max_lat = min_lat = max_lon = min_lon = None
-                    curr_z = t.z
-                t_bounds = mercantile.bounds(t)
-                if max_lat is None or t_bounds.north > max_lat:
-                    max_lat = t_bounds.north
-                if min_lat is None or t_bounds.south < min_lat:
-                    min_lat = t_bounds.south
-                if max_lon is None or t_bounds.east > max_lon:
-                    max_lon = t_bounds.east
-                if min_lon is None or t_bounds.west < min_lon:
-                    min_lon = t_bounds.west
-                t_data = reader.get_tile_data(t)
-                t_id = zxy_to_tileid(t.z, t.x, t.y)
-                writer.write_tile(t_id, t_data)
-            metadata = { 'attribution': SOI_ATTRIBUTION }
-            header = {
-                "tile_type": TileType.WEBP,
-                "tile_compression": Compression.NONE,
-                "min_lon_e7": int(min_lon * 10000000),
-                "min_lat_e7": int(min_lat * 10000000),
-                "max_lon_e7": int(max_lon * 10000000),
-                "max_lat_e7": int(max_lat * 10000000),
-                "center_zoom": 0,
-                "center_lon_e7": int(10000000 * (min_lon + max_lon)/2),
-                "center_lat_e7": int(10000000 * (min_lat + max_lat)/2),
-            }
-            m_key = f'./{Path(out_pmtiles_file).name}'
-            header['tile_type'] = header['tile_type'].value
-            header['tile_compression'] = header['tile_compression'].value
-            mosaic_data[m_key] = header
-            writer.finalize(header, metadata)
+        writer = PMTilesWriter(open(out_pmtiles_file, 'wb'))
+        writers[suffix] = writer
+        suffix_arr.append(suffix)
+        for t in data['tiles'].keys():
+            tiles_to_suffix[t] = i
+        i += 1
+
+    curr_zs = {}
+    max_lats = {}
+    min_lats = {}
+    max_lons = {}
+    min_lons = {}
+    for suffix in suffix_arr:
+        curr_zs[suffix] = max_lats[suffix] = min_lats[suffix] = max_lons[suffix] = min_lons[suffix] = None
+    done = set()
+
+    for t, t_data in reader.all():
+        if t in done:
+            continue
+        suffix = suffix_arr[tiles_to_suffix[t]]
+        writer = writers[suffix]
+        if curr_zs[suffix] is None or curr_zs[suffix] < t.z:
+            max_lats[suffix] = min_lats[suffix] = max_lons[suffix] = min_lons[suffix] = None
+            curr_zs[suffix] = t.z
+        t_bounds = mercantile.bounds(t)
+        if max_lats[suffix] is None or t_bounds.north > max_lats[suffix]:
+            max_lats[suffix] = t_bounds.north
+        if min_lats[suffix] is None or t_bounds.south < min_lats[suffix]:
+            min_lats[suffix] = t_bounds.south
+        if max_lons[suffix] is None or t_bounds.east > max_lons[suffix]:
+            max_lons[suffix] = t_bounds.east
+        if min_lons[suffix] is None or t_bounds.west < min_lons[suffix]:
+            min_lons[suffix] = t_bounds.west
+        t_id = zxy_to_tileid(t.z, t.x, t.y)
+        writer.write_tile(t_id, t_data)
+        done.add(t)
+
+    for suffix in suffix_arr:
+        out_pmtiles_file = f'{to_pmtiles_prefix}{suffix}.pmtiles'
+        metadata = { 'attribution': SOI_ATTRIBUTION }
+        header = {
+            "tile_type": TileType.WEBP,
+            "tile_compression": Compression.NONE,
+            "min_lon_e7": int(min_lons[suffix] * 10000000),
+            "min_lat_e7": int(min_lats[suffix] * 10000000),
+            "max_lon_e7": int(max_lons[suffix] * 10000000),
+            "max_lat_e7": int(max_lats[suffix] * 10000000),
+            "center_zoom": 0,
+            "center_lon_e7": int(10000000 * (min_lons[suffix] + max_lons[suffix])/2),
+            "center_lat_e7": int(10000000 * (min_lats[suffix] + max_lats[suffix])/2),
+        }
+        m_header = copy.copy(header)
+        m_key = f'./{Path(out_pmtiles_file).name}'
+        m_header['tile_type'] = header['tile_type'].value
+        m_header['tile_compression'] = header['tile_compression'].value
+        writer = writers[suffix]
+        print(f'finalizing writing {suffix}')
+        writer.finalize(header, metadata)
+        mosaic_data[m_key] = m_header
     return mosaic_data
 
 
@@ -247,5 +276,6 @@ if __name__ == '__main__':
         save_partition_info(partition_info, to_partition_file)
 
     mosaic_data = create_pmtiles(partition_info, reader)
+    pprint(mosaic_data)
     Path('staging/pmtiles/mosaic.json').write_text(json.dumps(mosaic_data))
 

@@ -1,9 +1,12 @@
 import os
 import glob
 import json
+
+from pathlib import Path
+
 import mercantile
 
-from pmtiles.reader import MmapSource, Reader as PMTilesReader
+from pmtiles.reader import MmapSource, Reader as PMTilesReader, all_tiles
 from pmtiles.tile import (
     zxy_to_tileid,
     tileid_to_zxy,
@@ -54,6 +57,13 @@ class DiskSource:
             tile = self.get_tile_from_file(fname)
             fstats = os.stat(fname)
             yield (tile, fstats.st_size)
+
+    def all(self):
+        fnames = glob.glob(f'{self.dir}/*/*/*.webp')
+        for fname in fnames:
+            tile = self.get_tile_from_file(fname)
+            t_data = Path(fname).read_bytes()
+            yield (tile, t_data)
 
     def cleanup(self):
         pass
@@ -152,7 +162,12 @@ class PartitionedPMTilesSource:
         #    for res in self.all_z_from_reader(z, reader):
         #        yield res
 
-    #def all(self):
+    def all(self):
+        for suffix, reader in self.readers.items():
+            print(f'yielding from {suffix}')
+            for t, t_data in all_tiles(reader.get_bytes):
+                tile = mercantile.Tile(x=t[1], y=t[2], z=t[0])
+                yield tile, t_data
 
     def cleanup(self):
         for f in self.files:
@@ -191,6 +206,13 @@ class DiskAndPartitionedPMTilesSource:
             yield (tile, size)
         print(f'iterated over all {z} pmtiles')
 
+    def all(self):
+        print('yielding from disk')
+        for res in self.dsrc.all():
+            yield res
+        print('yielding from pmtiles files')
+        for res in self.psrc.all():
+            yield res
 
     def cleanup(self):
         self.dsrc.cleanup()

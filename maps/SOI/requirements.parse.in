@@ -12,3 +12,4 @@ GDAL
 google-cloud-storage
 imutils
 mercantile
+pmtiles

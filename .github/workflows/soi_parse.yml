@@ -57,9 +57,8 @@ jobs:
         uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
-            data/index.geojson
-            data/raw/
-            export/gtiffs/
+            data/index.geojson            data/raw/
+export/gtiffs/
           key:  soi-gcs-parse-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
             soi-gcs-parse-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-
@@ -116,32 +115,65 @@ jobs:
         uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
-            to_gcs/
+            staging/
+            export/
           key:  soi-gcs-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
             soi-gcs-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-
             soi-gcs-v3-${{ steps.date.outputs.date }}-
 
-
-      - name: Retile sheets
+      - name: Download pmtiles
+        id: download-pmtiles
         if: steps.retile_work.outputs.AVAILABLE == 'true'
         run: |
-          if [[ ! -e 'to_gcs/all_done' ]]; then
-            mkdir -p export/tiles/
-            docker run -d --name retiler -v $(pwd):/code -w /code -e GOOGLE_APPLICATION_CREDENTIALS=gauth.json -e FROM_GCS=1 soi-parse maps/SOI/retile.py data/to_retile.txt
-            docker logs -f retiler
-            exit_code=$(docker inspect retiler --format='{{.State.ExitCode}}')
-            if [[ "$exit_code" != "0" ]]; then
-              exit 1
-            fi
+          source .github/scripts/rfuncs.sh
+          mkdir -p export/pmtiles
+          release_id="$(get_release_id soi-latest)"
+          download_release_assets $release_id export/pmtiles
+
+      - name: Retile sheets
+        id: retile-sheets
+        needs:
+          - downlaod-pmtiles
+        run: |
+          if [[ -e staging/all_done ]]; then
+            exit 0
           fi
-          cd to_gcs
-          gsutil -m -h "Content-Type:image/webp" cp -r export/tiles/* gs://soi_data/export/tiles/
-          gsutil rm gs://soi_data/to_retile.txt
-          cd ..
-          rm -rf to_gcs/*
+          mkdir -p export/tiles/
+          mkdir -p staging/tiles/
+          mkdir -p staging/pmtiles/
+          docker run -d --name retiler -v $(pwd):/code -w /code -e GOOGLE_APPLICATION_CREDENTIALS=gauth.json -e soi-parse maps/SOI/retile.py data/to_retile.txt
+          docker logs -f retiler
+          exit_code=$(docker inspect retiler --format='{{.State.ExitCode}}')
+          if [[ "$exit_code" != "0" ]]; then
+            exit 1
+          fi
+          touch staging/all_done
+          rm -rf export/*
+          staging_files=$(find staging/pmtiles -type f)
+          echo "release_files<<EOF" >> $GITHUB_OUTPUT
+          echo "$staging_files" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
         timeout-minutes: 600
 
+      - name: Push pmtiles
+        id: push-pmtiles
+        needs:
+          - retile-sheets
+        uses: ./.github/workflows/common-releaser.yml
+        secrets: inherit
+        with:
+          name: soi-latest
+          assets: ${{ needs.push-pmtiles.outputs.release-files }} 
+
+      - name: Cleanup
+        needs:
+          - push-pmtiles
+        run: |
+          rm -rf staging/*
+          gsutil rm gs://soi_data/to_retile.txt
+ 
 
   SOI-Parse-Failure-Notify:
     needs: [Run-SOI-Parsing]

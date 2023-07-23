@@ -116,51 +116,10 @@ class PartitionedPMTilesSource:
             raise MissingTileError()
         return self.tiles_to_size[tile]
 
-        #reader = self.get_reader_from_tile(tile)
-        #tile_id = zxy_to_tileid(tile.z, tile.x, tile.y)
-        #header = reader.header()
-        #dir_offset = header["root_offset"]
-        #dir_length = header["root_length"]
-        #for depth in range(0, 4):  # max depth
-        #    directory = deserialize_directory(reader.get_bytes(dir_offset, dir_length))
-        #    result = find_tile(directory, tile_id)
-        #    if result:
-        #        if result.run_length == 0:
-        #            dir_offset = header["leaf_directory_offset"] + result.offset
-        #            dir_length = result.length
-        #        else:
-        #            return result.length
-        #raise MissingTileError()
-
-    #def traverse_sizes(self, reader, header, dir_offset, dir_length):
-    #    entries = deserialize_directory(reader.get_bytes(dir_offset, dir_length))
-    #    for entry in entries:
-    #        if entry.run_length > 0:
-    #            (z, x, y) = tileid_to_zxy(entry.tile_id)
-    #            yield mercantile.Tile(x=x, y=y, z=z), entry.length
-    #        else:
-    #            for t in self.traverse_sizes(
-    #                reader,
-    #                header,
-    #                header["leaf_directory_offset"] + entry.offset,
-    #                entry.length,
-    #            ):
-    #                yield t
-
-    #def all_z_from_reader(self, z, reader):
-    #    header = deserialize_header(reader.get_bytes(0, 127))
-    #    for tile, size in self.traverse_sizes(reader, header, header["root_offset"], header["root_length"]):
-    #        if tile.z != z:
-    #            continue
-    #        yield (tile, size)
-
     def for_all_z(self, z):
         for tile, size in self.tiles_to_size.items():
             if tile.z == z:
                 yield (tile, size)
-        #for reader in self.readers.values():
-        #    for res in self.all_z_from_reader(z, reader):
-        #        yield res
 
     def all(self):
         for suffix, reader in self.readers.items():

@@ -1,5 +1,5 @@
 ARG build_type
-FROM ubuntu:22.04 as base-req-build
+FROM ubuntu:23.04 as base-req-build
 ENV LANG=C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 ENV to_install="python3 python3-pip python3-venv python-is-python3 libgl1-mesa-glx libglib2.0-0 libgdal-dev gdal-bin gdal-data webp poppler-utils poppler-data"
@@ -11,7 +11,7 @@ RUN apt-get update && \
 
 RUN mkdir /venv
 
-FROM ubuntu:22.04 as mutool-build
+FROM ubuntu:23.04 as mutool-build
 RUN pwd
 COPY mupdf.patch .
 COPY build_mutool.sh .

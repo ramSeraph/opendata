@@ -1,36 +1,14 @@
-# fly.toml app configuration file generated for soi on 2023-05-27T12:56:23+05:30
+# fly.toml app configuration file generated for soi on 2023-08-10T09:16:38+05:30
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
 app = "soi"
-primary_region = "maa"
-kill_signal = "SIGQUIT"
-kill_timeout = "5s"
+primary_region = "bos"
 
-[experimental]
-  auto_rollback = true
-
-[[services]]
-  protocol = "tcp"
-  internal_port = 8080
-  processes = ["app"]
-
-  [[services.ports]]
-    port = 80
-    handlers = ["http"]
-    force_https = true
-
-  [[services.ports]]
-    port = 443
-    handlers = ["tls", "http"]
-  [services.concurrency]
-    type = "connections"
-    hard_limit = 250
-    soft_limit = 200
-
-  [[services.tcp_checks]]
-    interval = "15s"
-    timeout = "2s"
-    grace_period = "1s"
-    restart_limit = 0
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0

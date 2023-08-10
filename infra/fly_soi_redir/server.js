@@ -4,6 +4,7 @@ const pmtiles = require('pmtiles');
 const tilebelt = require('@mapbox/tilebelt');
 
 const url = 'https://github.com/ramSeraph/opendata/releases/download/soi-latest/mosaic.json';
+const ancillaryUrl = 'https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/';
 const port = 3000;
 
 let pmtilesDict = null;
@@ -16,22 +17,21 @@ function _getBounds(coord) {
 }
 
 function _isInSource(header, bounds) {
-    const corner0 = bounds[0];
-    const corner1 = bounds[1];
-    if (corner0[0] > header['maxLat'] ||
-        corner0[1] > header['maxLon'] ||
-        corner1[0] < header['minLat'] ||
-        corner1[1] < header['minLon']) {
-        return false;
-    }
-    return true;
+  const corner0 = bounds[0];
+  const corner1 = bounds[1];
+  if (corner0[0] > header['maxLat'] ||
+      corner0[1] > header['maxLon'] ||
+      corner1[0] < header['minLat'] ||
+      corner1[1] < header['minLon']) {
+      return false;
+  }
+  return true;
 }
 
 function getSourceKey(coord) {
   let z = coord.z;
   let k = null;
   const bounds = _getBounds(coord);
-  // console.log(`${bounds} for  (${coord.x} ${coord.y} ${coord.z})`);
   for (const [key, entry] of Object.entries(this.dict)) {
     if (z > entry.header.max_zoom || z < entry.header.min_zoom) {
       continue;
@@ -40,7 +40,7 @@ function getSourceKey(coord) {
       continue;
     }
     k = key;
-    console.log(`key=${k} for  (${coord.x} ${coord.y} ${coord.z})`);
+    fastify.log.info(`key=${k} for  (${coord.x} ${coord.y} ${coord.z})`);
     break;
   }
   return k;
@@ -100,7 +100,7 @@ async function getTile(request, reply) {
       continue;
     }
     k = key;
-    fastify.log.info(`key=${k} for (${x} ${y} ${z})`);
+    fastify.log.info(`found key=${k} for (${x} ${y} ${z})`);
     break;
   }
   if (k === null) {
@@ -115,10 +115,22 @@ async function getTile(request, reply) {
   return reply.code(404);
 }
 
+function getCorsProxyFn(targetUrl, request, reply) {
+    return async function(request, reply) {
+      const tResp = await fetch(targetUrl)
+      const stream = tResp.body;
+      return reply.header("Access-Control-Allow-Origin", "*")
+                  .send(stream);
+    }
+}
+
+
 async function start() {
   try {
     fastify.addHook('onReady', populateMosaic);
     fastify.get('/export/tiles/:z/:x/:y.webp', getTile);
+    fastify.get('/index.geojson', getCorsProxyFn(ancillaryUrl + 'index.geojson'));
+    fastify.get('/polymap15m_area.geojson', getCorsProxyFn(ancillaryUrl + 'polymap15m_area.geojson'));
     await fastify.listen({ host: '0.0.0.0', port: port });
   } catch (err) {
     fastify.log.error(err);

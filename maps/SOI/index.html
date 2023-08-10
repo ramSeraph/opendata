@@ -8,8 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.vectorgrid@latest/dist/Leaflet.VectorGrid.bundled.js"></script>
-    <script src="https://cdn.rawgit.com/turban/Leaflet.Sync/master/L.Map.Sync.js">
-    </script>
+    <script src="https://cdn.rawgit.com/turban/Leaflet.Sync/master/L.Map.Sync.js"></script>
     <style type="text/css">
         body {
             margin:0;
@@ -35,11 +34,23 @@
     <script type="text/javascript">
         // Default options we'll use for both maps. Se the center of the map,
         // default zoom levels, and other Leaflet map options here.
+        var baseUrl = 'https://soi.fly.dev/';
+        // var baseUrl = 'http:/127.0.0.1:3000/';
+        var soiUrl = baseUrl + 'export/tiles/{z}/{x}/{y}.webp';
+        var soiOptions = {
+            maxZoom: 20,
+            maxNativeZoom: 14,
+            attribution: '<a href="https://onlinemaps.surveyofindia.gov.in/FreeMapSpecification.aspx" target="_blank">1:50000 Open Series Maps</a> &copy; <a href="https://www.surveyofindia.gov.in/pages/copyright-policy" target="_blank">Survey Of India</a>'
+        };
 
         var OSM =  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
         }); 
+        var OTM = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 17,
+            attribution: 'Map data: {attribution.OpenStreetMap}, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+		});
         var gStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 20,
             subdomains: ['mt0','mt1','mt2','mt3'],
@@ -55,15 +66,12 @@
             maxNativeZoom:18,
             maxZoom: 20
         });
-        var soi = L.tileLayer('export/tiles/{z}/{x}/{y}.webp', {
-            maxZoom: 20,
-            maxNativeZoom: 15,
-            attribution: '<a href="https://onlinemaps.surveyofindia.gov.in/FreeMapSpecification.aspx" target="_blank">1:50000 Open Series Maps</a> &copy; <a href="https://www.surveyofindia.gov.in/pages/copyright-policy" target="_blank">Survey Of India</a>'
-        });
+        var soi = L.tileLayer(soiUrl, soiOptions);
 
 
         var baseLayers = {
             "OpenStreetMap.org" : OSM,
+            "OpenTopoMap" : OTM,
             "ESRI Satellite": esriWorld,
             "gStreets": gStreets,
             "gHybrid": gHybrid,
@@ -98,7 +106,7 @@
             style: myStyle
         });
 
-        fetch("https://storage.googleapis.com/soi_data/index.geojson")
+        fetch(baseUrl + "index.geojson")
         .then(response => {
             return response.json();
         })
@@ -111,7 +119,7 @@
         var borderStyle = {
             "stroke": true,
             "color": "#000000",
-            "weight": 1,
+            "weight": 2,
             "opacity": 1.0,
             "fill": true,
             "fillOpacity": 0.0
@@ -120,7 +128,7 @@
         var indiaOutline1 = L.geoJson([], {style: borderStyle})
         var indiaOutline2 = L.geoJson([], {style: borderStyle})
 
-        fetch("https://storage.googleapis.com/soi_data/polymap15m_area.geojson")
+        fetch(baseUrl + "polymap15m_area.geojson")
         .then(response => {
             return response.json();
         })
@@ -138,11 +146,8 @@
         L.control.attribution({prefix: '', position: 'bottomleft'}).addTo(map1)
         L.control.layers({}, { grid: grid }, {collapsed: true, autoZIndex:false, position: 'topleft'}).addTo(map1);
         indiaOutline1.addTo(map1)
-        L.tileLayer('export/tiles/{z}/{x}/{y}.webp', {
-            maxZoom: 20,
-            maxNativeZoom: 15,
-            attribution: '<a href="https://onlinemaps.surveyofindia.gov.in/FreeMapSpecification.aspx" target="_blank">1:50000 Open Series Maps</a> &copy; <a href="https://www.surveyofindia.gov.in/pages/copyright-policy" target="_blank">Survey Of India</a>'
-        }).addTo(map1); 
+
+        L.tileLayer(soiUrl, soiOptions).addTo(map1); 
 
         options['layers'] = [OSM];
         var map2 = L.map('map-right', options);

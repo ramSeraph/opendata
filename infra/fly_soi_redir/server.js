@@ -75,7 +75,8 @@ async function populateMosaic() {
   let data = await res.json();
   pmtilesDict = {};
   mimeTypes = {};
-  for (const [key, header] of Object.entries(data)) {
+  for (const [key, entry] of Object.entries(data)) {
+    var header = entry.header;
     var resolvedUrl = _resolveKey(key);
     var archive = new pmtiles.PMTiles(resolvedUrl);
     header['minLat'] = header['min_lat_e7'] / 10000000;
@@ -104,7 +105,7 @@ async function getTile(request, reply) {
     break;
   }
   if (k === null) {
-    return reply.code(404);
+    return reply.code(404).send('');
   }
   let source = getSource(k);
   let arr = await source.getZxy(z,x,y);
@@ -112,7 +113,7 @@ async function getTile(request, reply) {
     return reply.header('Content-Type', mimeTypes[k])
                 .send(new Uint8Array(arr.data));
   }
-  return reply.code(404);
+  return reply.code(404).send('');
 }
 
 function getCorsProxyFn(targetUrl, request, reply) {

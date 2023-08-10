@@ -13,10 +13,13 @@ from tile_sources import (
     MissingTileError
 )
 
-# account for some sqlite overhead
+# account for some directory overhead
+# TODO: this should be dependant on the file size
 DELTA = 5 * 1024 * 1024
 # github release limit
 size_limit_bytes = (2 * 1024 * 1024 * 1024) - DELTA
+# github git file size limit
+#size_limit_bytes = (100 * 1024 * 1024) - DELTA
 # cloudflare cache size limit
 #size_limit_bytes = (512 * 1024 * 1024) - DELTA
 max_level = 14
@@ -63,8 +66,8 @@ def get_buckets(sizes, tiles):
 
 missing_tiles = set()
 
+# TODO: can do better than just vertical slices
 def get_stripes(l, reader):
-
     tiles = {}
     sizes = {}
     #max_x = min_x = max_y = min_y = None
@@ -215,8 +218,12 @@ def create_pmtiles(partition_info, reader):
     min_lats = {}
     max_lons = {}
     min_lons = {}
+    min_zooms = {}
+    max_zooms = {}
     for suffix in suffix_arr:
-        curr_zs[suffix] = max_lats[suffix] = min_lats[suffix] = max_lons[suffix] = min_lons[suffix] = None
+        curr_zs[suffix] = None
+        max_lats[suffix] = min_lats[suffix] = max_lons[suffix] = min_lons[suffix] = None
+        min_zooms[suffix] = max_zooms[suffix] = None
     done = set()
 
     for t, t_data in reader.all():
@@ -236,6 +243,10 @@ def create_pmtiles(partition_info, reader):
             max_lons[suffix] = t_bounds.east
         if min_lons[suffix] is None or t_bounds.west < min_lons[suffix]:
             min_lons[suffix] = t_bounds.west
+        if min_zooms[suffix] is None or min_zooms[suffix] > t.z:
+            min_zooms[suffix] = t.z
+        if max_zooms[suffix] is None or max_zooms[suffix] < t.z:
+            max_zooms[suffix] = t.z
         t_id = zxy_to_tileid(t.z, t.x, t.y)
         writer.write_tile(t_id, t_data)
         done.add(t)
@@ -250,18 +261,20 @@ def create_pmtiles(partition_info, reader):
             "min_lat_e7": int(min_lats[suffix] * 10000000),
             "max_lon_e7": int(max_lons[suffix] * 10000000),
             "max_lat_e7": int(max_lats[suffix] * 10000000),
+            "min_zoom": min_zooms[suffix],
+            "max_zoom": max_zooms[suffix],
             "center_zoom": 0,
             "center_lon_e7": int(10000000 * (min_lons[suffix] + max_lons[suffix])/2),
             "center_lat_e7": int(10000000 * (min_lats[suffix] + max_lats[suffix])/2),
         }
         m_header = copy.copy(header)
-        m_key = f'./{Path(out_pmtiles_file).name}'
+        m_key = f'../{Path(out_pmtiles_file).name}'
         m_header['tile_type'] = header['tile_type'].value
         m_header['tile_compression'] = header['tile_compression'].value
         writer = writers[suffix]
         print(f'finalizing writing {suffix}')
         writer.finalize(header, metadata)
-        mosaic_data[m_key] = m_header
+        mosaic_data[m_key] = { 'header': m_header, 'metadata': metadata }
     return mosaic_data
 
 

@@ -27,7 +27,7 @@ from pdfminer.converter import PDFPageAggregator
 from pdfminer.layout import LTImage
 from pdfminer.pdftypes import resolve_all, PDFObjRef, PDFNotImplementedError
 
-from PyPDF2 import PdfFileReader
+from pypdf import PdfReader
 
 from shapely.geometry import LineString, LinearRing, Polygon, CAP_STYLE, JOIN_STYLE
 from shapely.wkt import loads as wkt_loads
@@ -496,10 +496,10 @@ class Converter:
 
 
     def convert_pdf_to_image(self, size_hint=18000):
-        inp = PdfFileReader(open(self.filename, 'rb'))
-        page = inp.getPage(0)
-        bbox = page.mediaBox
-        print(f'Advertised ROTATE: {page.get("/Rotate")}')
+        inp = PdfReader(open(self.filename, 'rb'))
+        page = inp.pages[0]
+        bbox = page.mediabox
+        print(f'Advertised ROTATE: {page.rotation}')
         rotate = self.pdf_rotate
         print(f'ROTATE: {rotate}')
         w, h = bbox.getWidth(), bbox.getHeight()

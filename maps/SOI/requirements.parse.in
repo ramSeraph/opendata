@@ -3,7 +3,7 @@ Pillow
 imgcat
 opencv-python
 pdfminer.six
-PyPDF2
+pypdf
 rasterio
 requests
 shapely

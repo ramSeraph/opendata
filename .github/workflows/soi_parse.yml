@@ -134,8 +134,7 @@ jobs:
 
       - name: Retile sheets
         id: retile-sheets
-        needs:
-          - downlaod-pmtiles
+        if: steps.retile_work.outputs.AVAILABLE == 'true'
         run: |
           if [[ -e staging/all_done ]]; then
             exit 0
@@ -160,8 +159,7 @@ jobs:
 
       - name: Push pmtiles
         id: push-pmtiles
-        needs:
-          - retile-sheets
+        if: steps.retile_work.outputs.AVAILABLE == 'true'
         uses: ./.github/workflows/common-releaser.yml
         secrets: inherit
         with:

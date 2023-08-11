@@ -111,6 +111,7 @@ async function getTile(request, reply) {
   let arr = await source.getZxy(z,x,y);
   if (arr) {
     return reply.header('Content-Type', mimeTypes[k])
+                .header('Cache-Control', 'max-age=86400')
                 .send(new Uint8Array(arr.data));
   }
   return reply.code(404).send('');

@@ -192,28 +192,9 @@ def get_version_text():
 
 
 def get_license_txt():
-    date = datetime.today()
-    date_year = date.strftime("%Y")
-    date_ddmm = date.strftime("%d%m")
     license_txt = f"""
-    Government Open Data License – India
-    
-    Copyright (c) Ministry of Panchayati Raj, {date_year}, Local Government Directory, {date_ddmm}, https://lgdirectory.gov.in/
-    
-    Terms and Conditions of Use of Data
-    
-    a . Attribution: The user must acknowledge the provider, source, and license of data by explicitly publishing the attribution statement11, including the DOI (Digital Object Identifier), or the URL (Uniform Resource Locator), or the URI (Uniform Resource Identifier) of the data concerned.
-    
-    b . Attribution of Multiple Data: If the user is using multiple data together and/or listing of sources of multiple data is not possible, the user
-    may provide a link to a separate page/list that includes the attribution statements and specific URL/URI of all data used.
-    
-    c . Non-endorsement: The user must not indicate or suggest in any manner that the data provider(s) endorses their use and/or the user.
-    
-    d . No Warranty: The data provider(s) are not liable for any errors or omissions, and will not under any circumstances be liable for any direct, indirect, special, incidental, consequential, or other loss, injury or damage caused by its use or otherwise arising in connection with this license or the data, even if specifically advised of the possibility of such loss, injury or damage. Under any circumstances, the user may not hold the data provider(s) responsible for: i) any error, omission or loss of data, and/or ii) any undesirable consequences due to the use of the data as part of an application/product/service (including violation of any prevalent law).
-    
-    e . Continuity of Provision: The data provider(s) will strive for continuously updating the data concerned, as new data regarding the same becomes available. However, the data provider(s) do not guarantee the continued supply of updated or up-to-date versions of the data, and will not be held liable in case the continued supply of updated data is not provided.
-    
-    https://data.gov.in/government-open-data-license-india
+    COPYRIGHT POLICY: https://lgdirectory.gov.in/copyRightPolicy.do( archived - https://web.archive.org/web/20230322190637/https://lgdirectory.gov.in/copyRightPolicy.do )
+    SOURCE: https://lgdirectory.gov.in
     """
     return license_txt
 

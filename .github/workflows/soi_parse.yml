@@ -60,10 +60,10 @@ jobs:
             data/index.geojson
             data/raw/
             export/gtiffs/
-          key:  soi-gcs-parse-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  soi-gcs-parse-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            soi-gcs-parse-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            soi-gcs-parse-v3-${{ steps.date.outputs.date }}-
+            soi-gcs-parse-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            soi-gcs-parse-v4-${{ steps.date.outputs.date }}-
 
 
       - name: Parse SOI sheets

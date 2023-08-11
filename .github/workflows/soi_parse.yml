@@ -130,10 +130,12 @@ jobs:
           if [[ -e staging/download_done ]]; then
             exit 0
           fi
+          set -ex
           source .github/scripts/rfuncs.sh
           mkdir -p export/pmtiles
           release_id="$(get_release_id soi-latest)"
           download_release_assets $release_id export/pmtiles
+          mkdir -p staging
           touch staging/download_done
 
       - name: Retile sheets

@@ -16,6 +16,8 @@ known_problems = [
     # 87C/15 has a small piece outside the grid
     # 47B/13 has legend data inside map
     # 47A/16 has legend data inside map
+    # 66C/5 is a small patch in 66C/1 which has been ignored
+    # 66C/2 and 66C/1 are misaligned - georeferencing issue
 
     'data/raw/74B_4.pdf', # srikakulam, combined file handled in 74B_3
     'data/raw/74B_7.pdf', # srikakulam, combined file handled in 74B_3
@@ -70,6 +72,5 @@ known_problems = [
     #'data/raw/49N_14.pdf', # anamoly, black strip in file
 
     'data/raw/54N_12.pdf', # bad file
-    #'data/raw/73M_2.pdf', # needs a redo
 ]
 

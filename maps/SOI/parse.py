@@ -502,7 +502,7 @@ class Converter:
         print(f'Advertised ROTATE: {page.rotation}')
         rotate = self.pdf_rotate
         print(f'ROTATE: {rotate}')
-        w, h = bbox.getWidth(), bbox.getHeight()
+        w, h = bbox.width, bbox.height
         ow = size_hint
         oh = round(float(h) * float(ow) / float(w))
         img_filename = str(self.get_full_img_file())

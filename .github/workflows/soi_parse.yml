@@ -127,10 +127,14 @@ jobs:
         id: download-pmtiles
         if: steps.retile_work.outputs.AVAILABLE == 'true'
         run: |
+          if [[ -e staging/download_done ]]; then
+            exit 0
+          fi
           source .github/scripts/rfuncs.sh
           mkdir -p export/pmtiles
           release_id="$(get_release_id soi-latest)"
           download_release_assets $release_id export/pmtiles
+          touch staging/download_done
 
       - name: Retile sheets
         id: retile-sheets
@@ -161,10 +165,9 @@ jobs:
         id: push-pmtiles
         if: steps.retile_work.outputs.AVAILABLE == 'true'
         uses: ./.github/workflows/common-releaser.yml
-        secrets: inherit
         with:
           name: soi-latest
-          assets: ${{ needs.push-pmtiles.outputs.release-files }} 
+          assets: ${{ steps.retile-sheets.outputs.release-files }} 
 
       - name: Cleanup
         needs:

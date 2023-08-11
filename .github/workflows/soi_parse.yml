@@ -6,7 +6,7 @@ concurrency:
 
 on: 
   schedule:
-    - cron: 0 5 * * 0
+    - cron: 0 5 1 * *
   workflow_dispatch:
 
 
@@ -57,8 +57,9 @@ jobs:
         uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
-            data/index.geojson            data/raw/
-export/gtiffs/
+            data/index.geojson
+            data/raw/
+            export/gtiffs/
           key:  soi-gcs-parse-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
             soi-gcs-parse-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-

@@ -170,8 +170,7 @@ jobs:
           assets: ${{ steps.retile-sheets.outputs.release-files }} 
 
       - name: Cleanup
-        needs:
-          - push-pmtiles
+        if: steps.retile_work.outputs.AVAILABLE == 'true'
         run: |
           rm -rf staging/*
           gsutil rm gs://soi_data/to_retile.txt

@@ -1,4 +1,4 @@
-name: SOI Weekly Parse Run
+name: SOI Monthly Parse Run
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}

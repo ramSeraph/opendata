@@ -1,4 +1,4 @@
-name: SOI Weekly Unavailable Pull Run
+name: SOI Monthly Unavailable Pull Run
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}

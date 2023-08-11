@@ -118,10 +118,10 @@ jobs:
           path: |
             staging/
             export/
-          key:  soi-gcs-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  soi-gcs-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            soi-gcs-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            soi-gcs-v3-${{ steps.date.outputs.date }}-
+            soi-gcs-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            soi-gcs-v4-${{ steps.date.outputs.date }}-
 
       - name: Download pmtiles
         id: download-pmtiles
@@ -130,7 +130,7 @@ jobs:
           if [[ -e staging/download_done ]]; then
             exit 0
           fi
-          set -ex
+          set -e
           source .github/scripts/rfuncs.sh
           mkdir -p export/pmtiles
           release_id="$(get_release_id soi-latest)"
@@ -148,7 +148,7 @@ jobs:
           mkdir -p export/tiles/
           mkdir -p staging/tiles/
           mkdir -p staging/pmtiles/
-          docker run -d --name retiler -v $(pwd):/code -w /code -e GOOGLE_APPLICATION_CREDENTIALS=gauth.json -e soi-parse maps/SOI/retile.py data/to_retile.txt
+          docker run -d --name retiler -v $(pwd):/code -w /code -e GOOGLE_APPLICATION_CREDENTIALS=gauth.json soi-parse maps/SOI/retile.py data/to_retile.txt
           docker logs -f retiler
           exit_code=$(docker inspect retiler --format='{{.State.ExitCode}}')
           if [[ "$exit_code" != "0" ]]; then

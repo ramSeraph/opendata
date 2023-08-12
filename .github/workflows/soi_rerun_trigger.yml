@@ -1,4 +1,4 @@
-name: SOI Monitor Weekly Pull Run
+name: SOI Monitor Monthly Unavailable Pull Run
 on:
   workflow_run:
     workflows:

@@ -98,6 +98,7 @@ jobs:
         timeout-minutes: 600
  
       - name: Update lists
+        if: steps.work.outputs.AVAILABLE == 'true'
         run: |
           maps/SOI/generate_lists.sh
 
@@ -118,10 +119,10 @@ jobs:
           path: |
             staging/
             export/
-          key:  soi-gcs-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  soi-gcs-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            soi-gcs-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            soi-gcs-v4-${{ steps.date.outputs.date }}-
+            soi-gcs-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            soi-gcs-v5-${{ steps.date.outputs.date }}-
 
       - name: Download pmtiles
         id: download-pmtiles
@@ -132,10 +133,8 @@ jobs:
             echo "download alread don.. shortcircuitong"
             exit 0
           fi
-          set -x
           source .github/scripts/rfuncs.sh
           mkdir -p export/pmtiles
-          set +x
           echo "getting release id"
           release_id="$(get_release_id soi-latest)"
           echo "release id is $release_id"

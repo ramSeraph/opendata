@@ -136,6 +136,7 @@ jobs:
           source .github/scripts/rfuncs.sh
           mkdir -p export/pmtiles
           echo "getting release id"
+          echo "repo=$GITHUB_REPOSITORY"
           release_id="$(get_release_id soi-latest)"
           echo "release id is $release_id"
           download_release_assets $release_id export/pmtiles

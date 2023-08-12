@@ -127,6 +127,7 @@ jobs:
         id: download-pmtiles
         if: steps.retile_work.outputs.AVAILABLE == 'true'
         run: |
+          ls staging || true
           if [[ -e staging/download_done ]]; then
             exit 0
           fi

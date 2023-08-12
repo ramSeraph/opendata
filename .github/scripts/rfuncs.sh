@@ -40,7 +40,7 @@ function move_release {
 function download_release_assets {
     record_call "$@"
     export from_id=$1
-    export out_dir=$1
+    export out_dir=$2
 
     lines=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${GITHUB_REPOSITORY}/releases/${from_id}/assets 2>>$err_file | jq -r '.[] | "\(.id),\(.name)"')
     for line in $(echo $lines)

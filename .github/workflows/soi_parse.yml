@@ -139,6 +139,7 @@ jobs:
           echo "repo=$GITHUB_REPOSITORY"
           release_id="$(get_release_id soi-latest)"
           echo "release id is $release_id"
+          cat err_file.txt
           download_release_assets $release_id export/pmtiles
           mkdir -p staging
           touch staging/download_done

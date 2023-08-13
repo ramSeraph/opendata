@@ -194,10 +194,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         id: push-pmtiles
         if: steps.retile_work.outputs.AVAILABLE == 'true'
-        uses: ./.github/workflows/common-releaser.yml
+        uses: ./.github/actions/releaser
         with:
-          name: soi-latest
+          name: "SOI Open Series Maps"
+          tag_name: soi-latest
           assets: ${{ steps.partition-pmtiles.outputs.release-files }} 
+          body: "SOI Open Series Maps as partitioned PMTiles."
+          gh_token: ${{ secrets.github_token }}
 
       - name: Cleanup
         if: steps.retile_work.outputs.AVAILABLE == 'true'

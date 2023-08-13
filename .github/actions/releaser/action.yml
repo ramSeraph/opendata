@@ -1,0 +1,129 @@
+name: Common Make Release
+inputs:
+  name: 
+    description: 'Name of the release'
+    required: true
+    type: string
+  tag_name: 
+    description: 'tag to use'
+    required: true
+    type: string
+  assets:
+    description: 'list of assets to push.. multiple lines.. one asset_file_path per line'
+    required: true
+    type: string
+  body:
+    description: 'Body of text to be added to the release'
+    required: true
+    type: string
+  gh_token:
+    description: 'token to use to create releases'
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get current date
+      shell: bash
+      run: echo "date=$(date +'%d%b%Y %H:%M:%S')" >> $GITHUB_OUTPUT
+      id: date
+
+    - name: Release Info
+      shell: bash
+      id: release-info
+      env:
+        GH_TOKEN: "${{ inputs.gh_token }}"
+        ERR_FILE: error_file.txt
+      run: |
+        echo "assets: ${{ inputs.assets }}"
+        source ${GITHUB_ACTION_PATH}/rfuncs.sh
+        echo "base-hasrelease=$(has_release ${{ inputs.tag_name }})" >> $GITHUB_OUTPUT
+        echo "old-hasrelease=$(has_release ${{ inputs.tag_name }}-old)" >> $GITHUB_OUTPUT
+        echo "new-hasrelease=$(has_release ${{ inputs.tag_name }}-new)" >> $GITHUB_OUTPUT
+
+        echo "base-releaseid=$(get_release_id ${{ inputs.tag_name }})" >> $GITHUB_OUTPUT
+        echo "old-releaseid=$(get_release_id ${{ inputs.tag_name }}-old)" >> $GITHUB_OUTPUT
+        echo "new-releaseid=$(get_release_id ${{ inputs.tag_name }}-new)" >> $GITHUB_OUTPUT
+
+
+    - name: Release Pre Checks
+      shell: bash
+      id: pre-release-check
+      run: |
+        echo "base-hasrelease: ${{ steps.release-info.outputs.base-hasrelease }}"
+        echo "old-hasrelease: ${{ steps.release-info.outputs.old-hasrelease }}"
+        echo "new-hasrelease: ${{ steps.release-info.outputs.new-hasrelease }}"
+
+        echo "base-releaseid: ${{ steps.release-info.outputs.base-releaseid }}"
+        echo "old-releaseid: ${{ steps.release-info.outputs.old-releaseid }}"
+        echo "new-releaseid: ${{ steps.release-info.outputs.new-releaseid }}"
+        
+        if [[ "${{ steps.release-info.outputs.base-hasrelease }}" == "no" ]]; then
+          if [[ "${{ steps.release-info.outputs.old-hasrelease }}" == "yes" ]]; then
+            echo "ERROR: has an old release, but no current release.. exiting"
+            exit 1
+          elif [[ "${{ steps.release-info.outputs.new-hasrelease }}" == "yes" ]]; then
+            echo "ERROR: has an new release, but no current release.. exiting"
+            exit 1
+          fi
+        else
+          if [[ "${{ steps.release-info.outputs.new-hasrelease }}" == "yes" ]]; then
+            echo "ERROR: has an new release and a current release.. exiting"
+            exit 1
+          fi
+        fi
+
+    - name: Create Release
+      id: create-release
+      uses: softprops/action-gh-release@v1
+      with:
+        body: |
+          ${{ inputs.body }}
+          Git Ref ${{ github.sha }}
+          Release Date ${{ steps.date.outputs.date }}
+        tag_name: ${{ inputs.tag_name }}-new
+        name: ${{ inputs.name }} new
+        fail_on_unmatched_files: true
+        files: ${{ inputs.assets }}
+
+    - name: Delete Old Release
+      id: delete-old-release
+      if: ${{ steps.release-info.outputs.old-hasrelease == 'yes' }}
+      shell: bash
+      env:
+        GH_TOKEN: "${{ inputs.gh_token }}"
+        ERR_FILE: error_file.txt
+      run: |
+        source ${GITHUB_ACTION_PATH}/rfuncs.sh
+        delete_release ${{ steps.release-info.outputs.old-releaseid }}
+
+    - name: Move Base to Old Release
+      shell: bash
+      env:
+        GH_TOKEN: "${{ inputs.gh_token }}"
+        ERR_FILE: error_file.txt
+      id: release-backup
+      if: ${{ steps.release-info.outputs.base-hasrelease == 'yes' }}
+      run: |
+        source ${GITHUB_ACTION_PATH}/rfuncs.sh
+        move_release "${{ steps.release-info.outputs.base-releaseid }}" "${{ inputs.tag_name }}-old" "${{ inputs.name }} old"
+
+    - name: Move New to Base Release
+      shell: bash
+      id: move-new
+      env:
+        GH_TOKEN: "${{ inputs.gh_token }}"
+        ERR_FILE: error_file.txt
+      run: |
+        source ${GITHUB_ACTION_PATH}/rfuncs.sh
+        new_release_id=$(get_release_id ${{ inputs.tag_name }}-new)
+        move_release "$new_release_id" "${{ inputs.tag_name }}" "${{ inputs.name }}"
+
+    - name: Debug Failures
+      shell: bash
+      id: debug-failures
+      if: failure()
+      run: |
+        cat error_file.txt
+

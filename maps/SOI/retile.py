@@ -26,7 +26,7 @@ from google.cloud.storage.constants import _DEFAULT_TIMEOUT
 from tile_sources import DiskSource, PartitionedPMTilesSource, MissingTileError
 
 MAX_Z = int(os.environ.get('MAX_Z', '14'))
-SHEETS_FROM_GCS = os.environ.get("SHEETS_FROM_GCS", '0') == '1'
+SHEETS_FROM_GCS = os.environ.get("SHEETS_FROM_GCS", '1') == '1'
 TILES_FROM_GCS = os.environ.get("TILES_FROM_GCS", '0') == '1'
 TILES_TO_GCS = os.environ.get("TILES_TO_GCS", '0') == '1'
 TILES_FROM_PMTILES = os.environ.get('TILES_FROM_PMTILES', '1') == '1'

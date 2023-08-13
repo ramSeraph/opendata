@@ -179,6 +179,7 @@ jobs:
           fi
           rm -rf export/*
           staging_files=$(find staging/pmtiles -type f)
+          echo "staging_files: $staging_files"
           echo "release_files<<EOF" >> $GITHUB_OUTPUT
           echo "$staging_files" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -194,7 +195,7 @@ jobs:
         with:
           name: "SOI Open Series Maps"
           tag_name: soi-latest
-          assets: ${{ steps.partition-pmtiles.outputs.release-files }} 
+          assets: ${{ steps.partition-pmtiles.outputs.release_files }} 
           body: "SOI Open Series Maps as partitioned PMTiles."
           gh_token: ${{ secrets.github_token }}
 

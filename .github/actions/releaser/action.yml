@@ -117,7 +117,7 @@ runs:
         ERR_FILE: error_file.txt
       run: |
         source ${GITHUB_ACTION_PATH}/rfuncs.sh
-        new_release_id=$(get_release_id ${{ inputs.tag_name }}-new)
+        new_release_id="${{ steps.create-release.outputs.id }}"
         move_release "$new_release_id" "${{ inputs.tag_name }}" "${{ inputs.name }}"
 
     - name: Debug Failures

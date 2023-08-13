@@ -220,6 +220,7 @@ def create_upper_tiles(all_affected_tiles_by_zoom):
         'resampling': 'antialias',
         'tiledriver': 'WEBP',
         'webp_quality': 50,
+        'webp_lossless': False
     })
     tile_job_info = TileJobInfo(
         tile_driver='WEBP',

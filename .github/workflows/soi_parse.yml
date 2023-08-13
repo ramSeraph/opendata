@@ -120,7 +120,7 @@ jobs:
           path: |
             staging/
             export/
-            !export/pmtiles/
+            !export/pmtiles/*
           key:  soi-gcs-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
             soi-gcs-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-
@@ -151,7 +151,7 @@ jobs:
         id: retile-sheets
         if: steps.retile_work.outputs.AVAILABLE == 'true'
         run: |
-          if [[ -e staging/all_done ]]; then
+          if [[ -e staging/retiling_done ]]; then
             exit 0
           fi
           mkdir -p export/tiles/
@@ -161,16 +161,33 @@ jobs:
           docker logs -f retiler
           exit_code=$(docker inspect retiler --format='{{.State.ExitCode}}')
           if [[ "$exit_code" != "0" ]]; then
+            echo "exit_code: $exit_code"
             exit 1
           fi
-          touch staging/all_done
+          touch staging/retiling_done
+        timeout-minutes: 600
+
+      - name: Partition pmtiles
+        id: partition-pmtiles
+        if: steps.retile_work.outputs.AVAILABLE == 'true'
+        run: |
+          if [[ -e staging/all_done ]]; then
+            exit 0
+          fi
+          docker run -d --name partitioner -v $(pwd):/code -w /code soi-parse maps/SOI/partition.py
+          docker logs -f partitioner
+          exit_code=$(docker inspect partitioner --format='{{.State.ExitCode}}')
+          if [[ "$exit_code" != "0" ]]; then
+            echo "exit_code: $exit_code"
+            exit 1
+          fi
           rm -rf export/*
           staging_files=$(find staging/pmtiles -type f)
           echo "release_files<<EOF" >> $GITHUB_OUTPUT
           echo "$staging_files" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          touch staging/all_done
           
-        timeout-minutes: 600
 
       - name: Push pmtiles
         env:
@@ -180,7 +197,7 @@ jobs:
         uses: ./.github/workflows/common-releaser.yml
         with:
           name: soi-latest
-          assets: ${{ steps.retile-sheets.outputs.release-files }} 
+          assets: ${{ steps.partition-pmtiles.outputs.release-files }} 
 
       - name: Cleanup
         if: steps.retile_work.outputs.AVAILABLE == 'true'

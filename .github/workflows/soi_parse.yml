@@ -137,13 +137,9 @@ jobs:
             echo "download already done.. shortcircuiting"
             exit 0
           fi
-          source .github/scripts/rfuncs.sh
+          source .github/actions/releaser/rfuncs.sh
           mkdir -p export/pmtiles
-          echo "getting release id"
-          echo "repo=$GITHUB_REPOSITORY"
           release_id="$(get_release_id soi-latest)"
-          echo "release id is $release_id"
-          cat err_file.txt
           download_release_assets $release_id export/pmtiles
           mkdir -p staging
 

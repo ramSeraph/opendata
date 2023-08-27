@@ -5,3 +5,4 @@ vendor
 token.txt
 TODO
 cors.config
+node_modules/

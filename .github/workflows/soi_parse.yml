@@ -207,11 +207,15 @@ jobs:
           rm -rf staging/*
           gsutil rm gs://soi_data/to_retile.txt
 
+      - name: Setup fly tools
+        if: steps.retile_work.outputs.AVAILABLE == 'true'
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
       - name: Restart Fly Server
         if: steps.retile_work.outputs.AVAILABLE == 'true'
         run: |
-          fly scale count 0 --app soi -y
-          fly scale count 1 --app soi -y
+          flyctl scale count 0 --app soi -y
+          flyctl scale count 1 --app soi -y
  
 
   SOI-Parse-Failure-Notify:

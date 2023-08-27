@@ -25,6 +25,7 @@ git clone https://github.com/ramSeraph/opendata.git
 cd opendata/maps/SOI/
 pip install pmtiles==3.2.0 mercantile==1.2.1 requests==2.30.0
 python download_as_mbtiles.py
+
 ```
 
 
@@ -43,7 +44,7 @@ The process requires a disk space of around 20GB and will download around 10GB f
   * [ramSeraph/josm-webp-plugin](https://github.com/ramSeraph/josm-webp-plugin)
 * A locally downloaded `soi.mbtiles` file can also be used by installing the following plugins and opening the file in JOSM.
   * [ramSeraph/josm-webp-plugin](https://github.com/ramSeraph/josm-webp-plugin)
-  * [iandees/json-mbtiles](https://github.com/iandees/josm-mbtiles)
+  * [iandees/josm-mbtiles](https://github.com/iandees/josm-mbtiles)
 
 # Appendix
 * [Notes](notes) on the what was done to get the data in the present form and possible problems.

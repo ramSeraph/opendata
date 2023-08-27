@@ -17,7 +17,8 @@ All the data below is updated monthly
 # Get A Copy
 The data is also hosted as a mosaic of [pmtiles](https://protomaps.com/docs/pmtiles) files in the [releases](https://github.com/ramSeraph/opendata/releases/tag/soi-latest)
 
-This can be downloaded as local [mbtiles](https://docs.mapbox.com/help/glossary/mbtiles/) by running the following commands
+This can be downloaded as local [mbtiles](https://docs.mapbox.com/help/glossary/mbtiles/) by running the following commands:
+
 
 ```
 git clone https://github.com/ramSeraph/opendata.git
@@ -26,7 +27,9 @@ pip install pmtiles==3.2.0 mercantile==1.2.1 requests==2.30.0
 python download_as_mbtiles.py
 ```
 
+
 This creates a file `soi.mbtiles` in the current directory containing the whole data.
+
 The process requires a disk space of around 20GB and will download around 10GB from the internet.
 
 # Web

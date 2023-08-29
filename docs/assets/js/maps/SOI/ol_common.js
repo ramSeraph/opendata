@@ -53,7 +53,8 @@ function updateMap(map, el, extent) {
     let view = map.getView();
     const size = map.getSize();
     const resolution = view.getResolutionForExtent(extent, size);
-    const zoom = view.getZoomForResolution(resolution);
+    var zoom = view.getZoomForResolution(resolution);
+    zoom = Math.floor(zoom);
     view.setMinZoom(zoom);
 
     // constrain extent as well

@@ -256,6 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
             pop.hide();
             return;
         }
+        console.log(feature.getGeometry().getExtent());
         const html = contentFn(feature);
         if (html === null) {
             pop.hide();

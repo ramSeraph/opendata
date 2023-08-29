@@ -6,60 +6,11 @@
 // TODO: legend/popup should block click events.. 
 // TODO: adjust viewport on fullscreen.. show what was being shown before
 
-INDEX_URL = 'https://storage.googleapis.com/soi_data/index.geojson';
+INDEX_URL = 'https://soi.fly.dev/index.geojson';
 // STATES_URL = 'https://raw.githubusercontent.com/datameet/maps/master/website/docs/data/geojson/states.geojson';
-
-function makeLink(url, text) {
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-}
 
 INDEX_ATTRIBUTION = makeLink("https://onlinemaps.surveyofindia.gov.in/FreeOtherMaps.aspx", "SOI OSM Index(simplified)");
 // STATES_ATTRIBUTION = makeLink("https://github.com/datameet/maps/blob/master/website/docs/data/geojson/states.geojson", "Datameet State boundaries");
-
-
-// copied from openlayers code
-function getElementSize(el) {
-    const computedStyle = getComputedStyle(el);
-    const width =
-        el.offsetWidth -
-        parseFloat(computedStyle['borderLeftWidth']) -
-        parseFloat(computedStyle['paddingLeft']) -
-        parseFloat(computedStyle['paddingRight']) -
-        parseFloat(computedStyle['borderRightWidth']);
-    const height =
-        el.offsetHeight -
-        parseFloat(computedStyle['borderTopWidth']) -
-        parseFloat(computedStyle['paddingTop']) -
-        parseFloat(computedStyle['paddingBottom']) -
-        parseFloat(computedStyle['borderBottomWidth']);
-    return [width, height];
-}
-
-function updateMap(map, extent) {
-    const eCenter = ol.extent.getCenter(extent);
-    const eSize = ol.extent.getSize(extent);
-    console.log('extent size', eSize);
-
-    // update map div size 
-    let el = map.getTargetElement();
-    const tSize = getElementSize(el);
-    console.log('target size', tSize);
-    const expectedHeight = Math.ceil(eSize[1] * (tSize[0]/eSize[0]));
-    el.style.height = `${expectedHeight}px`;
-    console.log(`setting container height to ${expectedHeight}`);
-    map.updateSize();
-
-    let view = map.getView();
-    const size = map.getSize();
-    const resolution = view.getResolutionForExtent(extent, size);
-    console.log('resolution', resolution);
-    const zoom = view.getZoomForResolution(resolution);
-    const intZoom = Math.floor(zoom);
-    view.setZoom(intZoom);
-    view.setMinZoom(intZoom);
-    view.setCenter(eCenter);
-    view.fit(extent);
-}
 
 const baseStyle = new ol.style.Style({
     stroke: new ol.style.Stroke({
@@ -86,7 +37,7 @@ const parsed_color = '#f4f4f4';
 const found_color = '#b3b3b3';
 const not_found_color = '#5e5e5e';
 
-function getTilePopoverContent(sheetNo, statusMap) {
+function getTilePopoverContent(sheetNo, feature, statusMap) {
     const sheetInfo = statusMap[sheetNo];
 
     var html = `<b text-align="center">${sheetNo}</b><br>`
@@ -101,7 +52,12 @@ function getTilePopoverContent(sheetNo, statusMap) {
         html += ' ';
         html += `<a target="_blank" href=${sheetInfo['gtiffUrl']}>gtiff</a>`;
     }
-    //TODO: add link to demo map
+
+    const extent = feature.getGeometry().getExtent();
+    const cx = (extent[0] + extent[2]) / 2;
+    const cy = (extent[1] + extent[3]) / 2;
+    html += ' ';
+    html += `<a target="_blank" href=compare?x=${cx}&y=${cy}&z=11&r=0&l=10000111$>view</a>`;
     return html;
 }
 
@@ -166,70 +122,6 @@ function getLegendCtrl(textStyle) {
     return legendCtrl;
 }
 
-function getControls() {
-    let controls = ol.control.defaults.defaults();
-    let fControl = new ol.control.FullScreen();
-
-    /*
-
-    // NOTE: didn't work
-    var adjustToPrevState = (e) => {
-        console.log(e);
-        const map = e.target.getMap();
-        if (!map) {
-            return;
-        }
-        let view = map.getView();
-        let { viewState, extent } = view.getViewStateAndExtent();
-        view.fit(extent);
-    };
-    fControl.on('enterfullscreen', adjustToPrevState);
-    fControl.on('leavefullscreen', adjustToPrevState);
-
-    */
-    controls.push(fControl);
-    return controls;
-}
-
-function getInteractions() {
-    let interactions = ol.interaction.defaults.defaults();
-    let pinchIndex = -1;
-    for (let i = 0; i < interactions.getLength(); i++) {
-        if (interactions.item(i) instanceof ol.interaction.PinchRotate) {
-            pinchIndex = i;
-            break;
-        }
-    }
-    if (pinchIndex !== -1) {
-        interactions.removeAt(pinchIndex);
-    }
-
-    return interactions;
-}
-
-function getDocStyle(el) {
-    const style = getComputedStyle(el);
-    const fontFamily = style['fontFamily'];
-    const fontSize = style['fontSize'];
-    const lineHeight = style['lineHeight'];
-    const color = style['color'];
-    const backgroundColor = style['backgroundColor'];
-    return { fontFamily, fontSize, lineHeight, color, backgroundColor };
-}
-
-function getTextStyle(el) {
-    let { fontFamily, fontSize, lineHeight, color, backgroundColor } = getDocStyle(el);
-    const olTextStyle  = new ol.style.Text({
-      font: `${fontSize}/${lineHeight} ${fontFamily}`,
-      fill: new ol.style.Fill({
-        color: color
-      }),
-      backgroundFill: new ol.style.Fill({
-        color: backgroundColor
-      })
-    });
-    return olTextStyle;
-}
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -365,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 tooltip.hide();
             }
             activePopupSheetNo = sheetNo;
-            return getTilePopoverContent(sheetNo, sheetStatusMap);
+            return getTilePopoverContent(sheetNo, f, sheetStatusMap);
         });
     });
     map.on('pointermove', function(e) {
@@ -387,36 +279,4 @@ document.addEventListener("DOMContentLoaded", () => {
         setStatus('Done loading Map', false);
     });
 
-    /*
-    map.on('click', function (e) {
-        console.log(e);
-        const features = map.getFeaturesAtPixel(e.pixel);
-        console.log(features)
-        const feature = features.length ? features[0] : undefined;
-        if (feature === undefined) {
-            popup.hide();
-            return;
-        }
-        const html = getTilePopoverContent(feature, sheetStatusMap);
-        popup.show(e.coordinate, html);
-    });
-    map.on('pointermove', function (e) {
-        // const hasFeature = map.hasFeatureAtPixel(e.pixel, function(layer) {
-        // });
-        const features = map.getFeaturesAtPixel(e.pixel);
-        // const type = map.hasFeatureAtPixel(e.pixel) ? 'pointer' : 'inherit';
-        // map.getViewport().style.cursor = type;
-        console.log(features)
-        const feature = features.length ? features[0] : undefined;
-        if (feature === undefined) {
-            popup.hide();
-            return;
-        }
-        const html = getTilePopoverContent(feature, sheetStatusMap);
-        popup.show(e.coordinate, html);
-
-    });
-    */
-    // updateMap(map);
-    // map.addInteraction(new ol.interaction.Link());
 });

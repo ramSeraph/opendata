@@ -10,6 +10,7 @@ custom-js-list:
   - url: "https://cdn.jsdelivr.net/gh/Viglino/ol-ext@v4.0.5/dist/ol-ext.min.js"
     abs: true
   - url: "/assets/js/maps/SOI/sheets_common.js"
+  - url: "/assets/js/maps/SOI/ol_common.js"
   - url: "/assets/js/maps/SOI/map.js"
 custom-css-list:
   - url: "https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css"

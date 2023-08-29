@@ -52,7 +52,7 @@ function getSOILayer() {
 function getGridSource() {
     const src = new ol.source.Vector({
         format: new ol.format.GeoJSON(),
-        url: 'https://storage.googleapis.com/soi_data/index.geojson',
+        url: 'https://soi.fly.dev/index.geojson',
         overlaps: false,
         attributions: [
             makeLink("https://onlinemaps.surveyofindia.gov.in/FreeOtherMaps.aspx", "SOI OSM Index(simplified)")
@@ -62,7 +62,7 @@ function getGridSource() {
 }
 
 function getIndiaOutlineSource(map1, map2, container, statusFn) {
-    const url = 'https://storage.googleapis.com/soi_data/polymap15m_area.geojson';
+    const url = 'https://soi.fly.dev/polymap15m_area.geojson';
     const src = new ol.source.Vector({
         format: new ol.format.GeoJSON(),
         url: url,

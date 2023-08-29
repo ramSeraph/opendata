@@ -37,7 +37,7 @@ The process requires a disk space of around 20GB and will download around 10GB f
 * Tile URL
   * `https://soi.fly.dev/export/tiles/{z}/{x}/{y}.webp`
 * Demo Page
-  * [DEMO of the tilemap](https://storage.googleapis.com/soi_data/index.html)
+  * [DEMO of the tilemap](compare)
 
 # JOSM
 * Plugins needed to use the above tile url with JOSM

@@ -1,0 +1,161 @@
+/*
+:root {
+  --lighter-background-color: #1e1e1e;
+}
+*/
+
+/*
+.tools {
+  text-align: center;
+  display: inline-block;
+  width: 2.5em;
+  height: 500px;
+  background: #eee;
+}
+.tools i {
+  font-size: 2em;
+  cursor: pointer;
+  display: inline-block;
+}
+*/
+
+#compare {
+  display: block;
+  position: relative;
+  /*
+  float: left;
+  width: calc(100% - 2.5em);
+  */
+  width: 100%;
+  height: 500px;
+}
+#compare:-webkit-full-screen {
+    height: 100%;
+    margin: 0;
+}
+#compare:fullscreen {
+    height: 100%;
+}
+
+/*
+.fullscreen .tools {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  padding: 6em 0;
+  touch-action: none;
+}
+
+.fullscreen #compare {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  height: auto;
+}
+*/
+
+/* Place map2 over map1 */
+#map1,
+#map2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+}
+/* Map 1 */
+#compare.view1 #map2 {
+  display: none;
+}
+#compare.view2 #map1 {
+  display: none;
+}
+/* Remove controls on map 1 */
+/*
+#compare.swipev #map1 .ol-control,
+#compare.swipeh #map1 .ol-control,
+#compare.clip #map1 .ol-control {
+  display: none;
+}
+*/
+/* Remove cross on swipe */
+#compare.swipev .ol-target-overlay,
+#compare.swipeh .ol-target-overlay {
+  display: none;
+}
+/* Compare 50% */
+/*
+.compare #map1 {
+  width: 50%;
+}
+.compare #map2 {
+  left: 50%;
+  width: 50%;
+}
+*/
+
+/*
+.ol-control button {
+    color: var(--text-color);
+    background-color: var(--background-color);
+}
+
+.ol-swipe:before {
+    background-color: var(--background-color);
+}
+*/
+
+/* popup style */
+.ol-popup {
+  max-width:300px;
+  min-width:100px;
+  min-height:1em;
+  z-index: 1;
+}
+/* Image on popup */
+.ol-popup img {
+  float: left;
+  margin: 0 0.5em 0 0;
+  max-width: 100px;
+  max-height: 100px;
+}
+
+/* attribution tweaks */
+.ol-attribution>ul>li:before {
+    content: "";
+    margin-right: inherit;
+}
+.ol-attribution li:not(:last-child):after {
+    content: "|";
+    /*color: var(--text-color);*/
+}
+/*
+.ol-attribution a {
+    color: var(--text-color);
+    text-shadow: 0 0 2px var(--background-color);
+}
+.ol-attribution a:hover {
+    color: var(--background-color);
+    background-color: var(--text-color);
+}
+.ol-attribution:not(.ol-collapsed) {
+    background-color: var(--lighter-background-color);
+}
+*/
+.ol-layerswitcher .panel {
+    color: black
+}
+.ol-layerswitcher .panel p, ul, ol {
+    color: black
+}
+.ol-popup .ol-popup-content {
+    color: black;
+}
+
+/* common */
+.error {
+   color: red;
+}

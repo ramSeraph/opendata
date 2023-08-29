@@ -179,6 +179,8 @@ document.addEventListener("DOMContentLoaded", () => {
         })
     });
 
+    var mapElem = document.getElementById('map');
+
     var createLayer = (url, srcLabel, attribution, style, statusFn) => {
     
         const src = new ol.source.Vector({
@@ -199,7 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
         src.on('featuresloadend', (e) => {
             console.log(e);
             statusFn(`Done loading ${srcLabel} features`, false);
-            updateMap(map, src.getExtent());
+            updateMap(map, mapElem, src.getExtent());
         });
         src.on('featuresloaderror', (e) => {
             statusFn(`Failed to load ${srcLabel}`, true);

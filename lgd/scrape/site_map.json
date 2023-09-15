@@ -566,11 +566,6 @@
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Local Government Directory (LGD) Reports", "View Postal Divisions yet to Freeze Pincode Mapping" ],
-    "comp": "IGNORE",
-    "ignore_reason": "Needs Review"
-  },
-  {
     "dropdown":  [ "Local Government Directory (LGD) Reports", "Report on Rural Inhabited Villages Mapped with Blocks and GPs" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, covered elsewhere"
@@ -584,6 +579,11 @@
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Financial Year wise Count of Gram Panchayats" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, General Overview of change in GPS"
+  },
+  {
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Napix Webservices Consumers" ],
+    "comp": "IGNORE",
+    "ignore_reason": "don't care"
   },
   {
     "dropdown": [ "Likely Erroneous/Exceptions", "Invalidated Census villages" ],

@@ -91,6 +91,8 @@ jobs:
           find data/raw/* && find data/raw/*.pdf > data/to_parse.txt && gsutil -m cp data/to_parse.txt gs://soi_data/to_parse.txt || true
           find data/raw/* && sh -c "ls data/raw/*.pdf | sed 's,data,gs://soi_data,g' | sed 's/.pdf/.pdf.unavailable/g' | xargs gsutil rm " || true
           ls -l data/raw/*
+          id
+          cat /etc/group
           rm -rf data/raw/*.pdf || true
           rm -rf data/raw/*.pdf.unavailable || true
           rm -rf data/cookies

@@ -284,10 +284,13 @@ if __name__ == '__main__':
     #reader = DiskSource('export/tiles')
     reader = DiskAndPartitionedPMTilesSource('staging/tiles', 'export/pmtiles/soi-', 'export/pmtiles/partition_info.json')
 
+    print('getting partition info')
     partition_info = get_partition_info(reader)
     if not to_partition_file.exists():
+        print('saving partition info')
         save_partition_info(partition_info, to_partition_file)
 
+    print('creating pmtiles')
     mosaic_data = create_pmtiles(partition_info, reader)
     pprint(mosaic_data)
     Path('staging/pmtiles/mosaic.json').write_text(json.dumps(mosaic_data))

@@ -172,6 +172,7 @@ jobs:
           if [[ -e staging/all_done ]]; then
             exit 0
           fi
+          df -h .
           docker run -d --name partitioner -v $(pwd):/code -w /code soi-parse maps/SOI/partition.py
           docker logs -f partitioner
           exit_code=$(docker inspect partitioner --format='{{.State.ExitCode}}')

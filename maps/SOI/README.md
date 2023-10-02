@@ -98,23 +98,30 @@ Data ends up at google cloud storage `soi_data` bucket
 
 ## Scraping
 
-Most directions same as for Open Series Maps, except the final commands
+Most directions/software requirements same as for Open Series Maps, except the final commands
 
 run following command to pull data:
-`python scrape_bounds.py`
+`python scrape_villages.py`
 
 shapefile zips end up at `data/raw/villages/`
 
 To recover from intermittent errors, run
-`FORCE=1 python scrape_bounds.py`
+`FORCE=1 python scrape_villages.py`
 
 To force rechecking previously missing Districts, run
-`FORCE=1 FORCE_UNAVAILABLE=1 python scrape_bounds.py`
+`FORCE=1 FORCE_UNAVAILABLE=1 python scrape_villages.py`
 
 To enter captcha manually and not depend on auto captch breaking, run `CAPTCHA_MANUAL=1 python scrape_bounds.py`
 
 uses `imgcat` for displaying the captcha, which might work on some terminals.
 
+The python requirements for the scraping part are captured in `requirements.txt`
 
+To convert the resulting shapefiles to OSM xml files which can be directly used in JOSM, run 
+`python convert_villages.py`
+
+this requires an extra python dependency of `pytopojson==1.1.2` and an extra software dependency on `gdal`
+
+the resulting per tehsil `.osm` files end up in corresponding district folders in `data/raw/villages/` 
 
 

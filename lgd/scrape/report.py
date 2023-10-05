@@ -459,12 +459,8 @@ def get_all_report_downloaders(ctx):
                                               sub_url='exceptionalReports.do',
                                               ctx=ctx,
                                               post_data={
-                                                  'reportName': 'Invalidated Census villages',
-                                                  'fileName': 'ER_InvalidateCensusVillage',
-                                              },
-                                              query_data={
-                                                  'reportName': 'Invalidated Census villages',
-                                                  'fileName': 'ER_InvalidateCensusVillage',
+                                                  'reportName': '',
+                                                  'fileName': ''
                                               }))
 
     downloaders.append(StateWiseReportDownloader(name='NOFN_PANCHAYATS',

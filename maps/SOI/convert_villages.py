@@ -5,6 +5,7 @@ import time
 import subprocess
 from pathlib import Path
 from pprint import pprint
+import traceback
 
 from pytopojson import topology
 
@@ -60,6 +61,7 @@ def convert_to_osm(topo, tag_transformer):
     arc_to_way = {}
     for i,arc in enumerate(topo['arcs']):
         way_nodes = []
+        prev_node_id = None
         for coord in arc:
             node_counter -= 1
             c_str = ','.join([ str(c) for c in coord ])
@@ -67,7 +69,11 @@ def convert_to_osm(topo, tag_transformer):
                 nodes[c_str] = node_counter
                 out_str += f'  <node id="{node_counter}" visible="true" lat="{coord[1]}" lon="{coord[0]}" />\n'
             node_id = nodes[c_str]
-            way_nodes.append(node_id);
+            if prev_node_id is None or prev_node_id != node_id:
+                way_nodes.append(node_id)
+            else:
+                print(f'collapsing node_id: {node_id}')
+            prev_node_id = node_id
         chunks = chunk(way_nodes)
         for c_index, w_chunk in enumerate(chunks):
             if len(set(w_chunk)) <= 1:
@@ -82,8 +88,8 @@ def convert_to_osm(topo, tag_transformer):
                 out_str += f'    <nd ref="{way_node}"/>\n'
            
             # join this chunk to the first node of the next chunk if there is a next chunk
-            if len(chunks) > 1 and c_index < len(chunks):
-                out_str += '    <nd ref="{chunks[c_index + 1][0]}"/>\n'
+            if len(chunks) > 1 and c_index < len(chunks) - 1:
+                out_str += f'    <nd ref="{chunks[c_index + 1][0]}"/>\n'
             out_str += '  </way>\n'
 
     relation_counter = 0
@@ -119,6 +125,11 @@ def fix_soi_string(v):
     v = v.replace("@", "U")
     v = v.replace("#", "u")
     return v
+
+def sanitize_tag(v):
+    v = v.replace('&', 'and')
+    v = " ".join(v.split())
+    return v
  
 
 def convert_tags(props):
@@ -127,6 +138,7 @@ def convert_tags(props):
         if k != 'VILLAGE':
             continue
         v = fix_soi_string(v)
+        v = sanitize_tag(v)
         out['name'] = string.capwords(v)
     out['admin_level'] = '9'
     out['boundary'] = 'administrative'
@@ -151,6 +163,8 @@ if __name__ == '__main__':
 
     for p in Path('data/raw/villages/').glob('*/*/data.zip'):
         data_dir = str(p.parent)
+        dist_name = p.parent.name
+        state_name = p.parent.parent.name
         geojson_fname = f'{data_dir}/data.geojson'
         if not Path(geojson_fname).exists():
             run_external(f'ogr2ogr -f GeoJSON -t_srs EPSG:4326 "{geojson_fname}" "/vsizip/{data_dir}/data.zip"')
@@ -160,14 +174,16 @@ if __name__ == '__main__':
         
         for t_name, t_data in split_data.items():
             t_name = fix_soi_string(t_name)
-            print(f'handling tehsil: {t_name}')
+            t_name = sanitize_tag(t_name)
+            print(f'handling tehsil: {state_name=} {dist_name=} {t_name=}')
             topology_ = topology.Topology()
             topo = topology_({ 'villages': t_data })
             try:
                 osm_str = convert_to_osm(topo, convert_tags)
                 Path(f'{data_dir}/{t_name}.osm').write_text(osm_str)
             except Exception as ex:
-                print(f'got exception: {ex}')
+                print(f'!!! ERROR: got exception: {ex}')
+                traceback.print_exc()
 
         Path(geojson_fname).unlink()
 

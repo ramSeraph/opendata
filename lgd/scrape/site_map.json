@@ -46,6 +46,11 @@
     "ignore_reason": "handled in VILLAGES"
   },
   {
+    "dropdown": [ "Download Directory", "VILLAGE", "All Villages of India With Village Category" ],
+    "comp": "IGNORE",
+    "ignore_reason": "handled in VILLAGES, has extra info, needs review"
+  },
+  {
     "dropdown": [ "Download Directory", "Local body", "PRI Local Body of a State" ],
     "comp": "PRI_LOCAL_BODIES"
   },

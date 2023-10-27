@@ -32,13 +32,15 @@ def chunk(l):
     return out
 
 
-def convert_polygon(poly, arc_to_way):
+def convert_polygon(poly, arc_to_way, arcs_to_ignore):
     out_str = ''
     for r_index, ring in enumerate(poly):
         for arc in ring:
             role = 'outer' if r_index == 0 else 'inner'
             if arc < 0:
                 arc = ~arc
+            if arc in arcs_to_ignore:
+                continue
             if arc not in arc_to_way:
                 raise Exception(f'arc: {arc} missing in arc to way mapping')
             for ref in arc_to_way[arc]:
@@ -59,6 +61,7 @@ def convert_to_osm(topo, tag_transformer):
     way_counter = 0
     nodes = {}
     arc_to_way = {}
+    arcs_to_ignore = set()
     for i,arc in enumerate(topo['arcs']):
         way_nodes = []
         prev_node_id = None
@@ -74,10 +77,13 @@ def convert_to_osm(topo, tag_transformer):
             else:
                 print(f'collapsing node_id: {node_id}')
             prev_node_id = node_id
+        if len(way_nodes) == 1:
+            arcs_to_ignore.add(i)
+            #TODO: maybe this should be treated as a point and included somehow?
+            print(f'WARNING: ignoring arc {i} with one node')
+            continue
         chunks = chunk(way_nodes)
         for c_index, w_chunk in enumerate(chunks):
-            if len(set(w_chunk)) <= 1:
-                raise Exception('found a chunk with only 1 unique node')
             way_counter -= 1
             if i not in arc_to_way:
                 arc_to_way[i] = []
@@ -101,10 +107,10 @@ def convert_to_osm(topo, tag_transformer):
 
             g_type = geom['type']
             if g_type == 'Polygon':
-                out_str += convert_polygon(geom['arcs'], arc_to_way)
+                out_str += convert_polygon(geom['arcs'], arc_to_way, arcs_to_ignore)
             elif g_type == 'MultiPolygon':
                 for poly in geom['arcs']:
-                    out_str += convert_polygon(poly, arc_to_way)
+                    out_str += convert_polygon(poly, arc_to_way, arcs_to_ignore)
             else:
                 raise Exception(f'Unsupported geometry type: {g_type} found')
             tags = tag_transformer(geom['properties'])
@@ -162,28 +168,24 @@ def split_by_taluka(data):
 if __name__ == '__main__':
 
     for p in Path('data/raw/villages/').glob('*/*/data.zip'):
-        data_dir = str(p.parent)
+        state_dir = str(p.parent.parent)
+        dist_dir = str(p.parent)
         dist_name = p.parent.name
         state_name = p.parent.parent.name
-        geojson_fname = f'{data_dir}/data.geojson'
+        geojson_fname = f'{dist_dir}/data.geojson'
         if not Path(geojson_fname).exists():
-            run_external(f'ogr2ogr -f GeoJSON -t_srs EPSG:4326 "{geojson_fname}" "/vsizip/{data_dir}/data.zip"')
+            run_external(f'ogr2ogr -f GeoJSON -t_srs EPSG:4326 "{geojson_fname}" "/vsizip/{dist_dir}/data.zip"')
         data = json.loads(Path(geojson_fname).read_text())
 
-        split_data = split_by_taluka(data)
-        
-        for t_name, t_data in split_data.items():
-            t_name = fix_soi_string(t_name)
-            t_name = sanitize_tag(t_name)
-            print(f'handling tehsil: {state_name=} {dist_name=} {t_name=}')
-            topology_ = topology.Topology()
-            topo = topology_({ 'villages': t_data })
-            try:
-                osm_str = convert_to_osm(topo, convert_tags)
-                Path(f'{data_dir}/{t_name}.osm').write_text(osm_str)
-            except Exception as ex:
-                print(f'!!! ERROR: got exception: {ex}')
-                traceback.print_exc()
+        print(f'handling district: {state_name=} {dist_name=}')
+        topology_ = topology.Topology()
+        topo = topology_({ 'villages': data })
+        try:
+            osm_str = convert_to_osm(topo, convert_tags)
+            Path(f'{state_dir}/{dist_name}.osm').write_text(osm_str)
+        except Exception as ex:
+            print(f'!!! ERROR: got exception: {ex}')
+            traceback.print_exc()
 
         Path(geojson_fname).unlink()
 

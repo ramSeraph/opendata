@@ -1,11 +1,34 @@
 [
   {
     "dropdown": [ "Download Directory", "STATE", "All States of India" ],
-    "comp": "STATES"
+    "comp": "STATES",
+    "file": "states.csv",
+    "desc": "list of all states",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Version": { "action": "KEEP", "description": "State LGD Version" },
+      "State Name(In English)": { "action": "KEEP", "description": "State Name in English" },
+      "State Name (In Local)": { "action": "IGNORE", "description": "State Name in Local" },
+      "Census 2001 Code": { "action": "KEEP", "description": "State Code from 2001 Census" },
+      "Census 2011 Code": { "action": "KEEP", "description": "State Code from 2011 Census" },
+      "State or UT": { "action": "KEEP", "description": "State(S) or Union Territory(U)"}
+    }
   },
   {
     "dropdown": [ "Download Directory", "DISTRICT", "All Districts of India" ],
-    "comp": "DISTRICTS"
+    "comp": "DISTRICTS",
+    "file": "districts.csv",
+    "desc": "list of all districts",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name (In English)": { "action": "KEEP", "description": "State Name in English" },
+      "District Code": { "action": "KEEP", "description": "District LGD Code" },
+      "District Name (In English)": { "action": "KEEP", "description": "District Name in English" },
+      "Census 2001 Code": { "action": "KEEP", "description": "District Code from 2001 Census" },
+      "Census 2011 Code": { "action": "KEEP", "description": "District Code from 2011 Census" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "DISTRICT", "All Districts of a State" ],
@@ -14,7 +37,22 @@
   },
   {
     "dropdown": [ "Download Directory", "SUB-DISTRICT", "All Sub-Districts of India" ],
-    "comp": "SUB_DISTRICTS"
+    "comp": "SUB_DISTRICTS",
+    "file": "subdistricts.csv",
+    "desc": "list of all subdistricts",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" },
+      "District Code": { "action": "KEEP", "description": "District LGD Code" },
+      "District Name": { "action": "KEEP", "description": "District Name in English" },
+      "Sub-district Code": { "action": "KEEP", "description": "Sub District LGD Code" },
+      "Sub-district Version": { "action": "KEEP", "description": "Sub District LGD Version" },
+      "Sub-district Name": { "action": "KEEP", "description": "Sub District Name in English" },
+      "Census 2001 code": { "action": "KEEP", "description": "Sub District Code from 2001 Census" },
+      "Census 2011 code": { "action": "KEEP", "description": "Sub District Code from 2011 Census" }
+    }
+
   },
   {
     "dropdown": [ "Download Directory", "SUB-DISTRICT", "All Sub-Districts of a State" ],
@@ -33,7 +71,23 @@
   },
   {
     "dropdown": [ "Download Directory", "VILLAGE", "All Villages of a State" ],
-    "comp": "VILLAGES"
+    "comp": "VILLAGES",
+    "file": "villages.csv",
+    "desc": "list of all villages",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "District Code": { "action": "KEEP", "description": "District LGD Code" },
+      "District Name (In English)": { "action": "KEEP", "description": "District Name in English" },
+      "Sub-District Code": { "action": "KEEP", "description": "Sub District LGD Code" },
+      "Sub-District Name (In English)": { "action": "KEEP", "description": "Sub District Name in English" },
+      "Village Code": { "action": "KEEP", "description": "Village LGD Code" },
+      "Village Version": { "action": "KEEP", "description": "Village LGD Version" },
+      "Village Name (In English)": { "action": "KEEP", "description": "Village Name in English" },
+      "Census 2001 code": { "action": "KEEP", "description": "Village Code from 2001 Census" },
+      "Census 2011 code": { "action": "KEEP", "description": "Village Code from 2011 Census" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name (In English)": { "action": "KEEP", "description": "State Name in English" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "VILLAGE", "All Villages of a District" ],
@@ -52,12 +106,26 @@
   },
   {
     "dropdown": [ "Download Directory", "Local body", "PRI Local Body of a State" ],
-    "comp": "PRI_LOCAL_BODIES"
+    "comp": "PRI_LOCAL_BODIES",
+    "file": "pri_local_bodies.csv",
+    "desc": "list of all PRI(Panchayati Raj India) local bodies",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Localbody Type Code": { "action": "KEEP", "description": "LGD Code for the type of local body" },
+      "Localbody Type Name": { "action": "KEEP", "description": "Name of the type of local body" },
+      "Localbody Code": { "action": "KEEP", "description": "LGD Code for the local body" },
+      "Localbody Version": { "action": "KEEP", "description": "Version of the local body in LGD" },
+      "Localbody Name (In English)": { "action": "KEEP", "description": "Name of the local body in English" },
+      "Localbody Name (In Local)": { "action": "KEEP", "description": "Name of the local body in Local language" },
+      "Parent Localbody Code": { "action": "KEEP", "description": "LGD Code for the parent local body" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Local body", "PRI Local Body of a District" ],
     "comp": "IGNORE",
-    "ignore_reason": "handled in PRI_LOCAL_BODIES"
+    "ignore_reason": "handled in PRI_LOCAL_BODIES, has district coverage.. reconsider?"
   },
   {
     "dropdown": [ "Download Directory", "Local body", "Urban Local Body of a State" ],
@@ -67,7 +135,7 @@
   {
     "dropdown": [ "Download Directory", "Local body", "Urban Local Body of a District" ],
     "comp": "IGNORE",
-    "ignore_reason": "handled in URBAN_LOCAL_BODIES"
+    "ignore_reason": "handled in URBAN_LOCAL_BODIES, has district coverage.. reconsider?"
   },
   {
     "dropdown": [ "Download Directory", "Local body", "Traditional Local Body of a State" ],
@@ -77,20 +145,48 @@
   {
     "dropdown": [ "Download Directory", "Local body", "Traditional Local Body of a District" ],
     "comp": "IGNORE",
-    "ignore_reason": "handled in TRADITIONAL_LOCAL_BODIES"
+    "ignore_reason": "handled in TRADITIONAL_LOCAL_BODIES, has district coverage.. reconsider?"
   },
   {
     "dropdown": [ "Download Directory", "Local body", "Wards of Urban local bodies" ],
-    "comp": "URBAN_LOCAL_BODY_WARDS"
+    "comp": "URBAN_LOCAL_BODY_WARDS",
+    "file": "urban_local_body_wards.csv",
+    "desc": "list of all Traditional local bodies",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Local Body Code": { "action": "KEEP", "description": "LGD Code for the local body" },
+      "Local Body Name": { "action": "KEEP", "description": "Name of the local body in English" },
+      "Ward Code": { "action": "KEEP", "description": "Ward LGD Code" },
+      "Ward Number": { "action": "KEEP", "description": "Number of the Ward" },
+      "Ward Name": { "action": "KEEP", "description": "Ward Name" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Local body", "Wards of Urban local bodies along with coverage details" ],
-    "comp":  "IGNORE",
-    "ignore_reason": "Needs Review"
+    "comp": "IGNORE",
+    "ignore_reason": "Coverage Details mostly unavailable"
   },
   {
     "dropdown": [ "Download Directory", "Local body", "Wards of PRI Local Bodies" ],
-    "comp": "PRI_LOCAL_BODY_WARDS"
+    "comp": "PRI_LOCAL_BODY_WARDS",
+    "file": "pri_local_body_wards.csv",
+    "desc": "list of all PRI Local body wards",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Local Body Code": { "action": "KEEP", "description": "LGD Code for the local body" },
+      "Local Body Name": { "action": "KEEP", "description": "Name of the local body in English" },
+      "Local Body Type": { "action": "KEEP", "description": "Type of the local body" },
+      "Disrtict Level Parent Name": { "action": "KEEP", "description": "The name of the parent District Level Panchayat" },
+      "Intermediate Level Parent Name": { "action": "KEEP", "description": "The name of the parent intermediate Level Panchayat" },
+      "Ward Code": { "action": "KEEP", "description": "Ward LGD Code" },
+      "Ward Number": { "action": "KEEP", "description": "Number of the Ward" },
+      "Ward Name (In English)": { "action": "KEEP", "description": "Ward Name in English" },
+      "Ward Name (In Local)": { "action": "KEEP", "description": "Ward Name in Local" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" }
+    }
   },
   { 
     "dropdown": [ "Download Directory", "Local body", "All PRI Local Bodies of India" ],
@@ -99,15 +195,58 @@
   },
   {
     "dropdown": [ "Download Directory", "Local body", "All Traditional Local Bodies of India" ],
-    "comp": "TRADITIONAL_LOCAL_BODIES"
+    "comp": "TRADITIONAL_LOCAL_BODIES",
+    "file": "traditional_local_bodies.csv",
+    "desc": "list of all Traditional Local bodies",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name (In English)": { "action": "KEEP", "description": "State Name in English" },
+      "District Panchayat Code": { "action": "KEEP", "description": "LGD code of the District Panchayat the local body belongs to" },
+      "Intermediate/Block Panchayat Code": { "action": "KEEP", "description": "LGD code of the Intermediate/Block Panchayat the local body belongs to" },
+      "Local Body Code": { "action": "KEEP", "description": "LGD Code for the local body" },
+      "Local Body Version": { "action": "KEEP", "description": "Version of the local body in LGD" },
+      "Local Body Name (In English)": { "action": "KEEP", "description": "Name of the local body in English" },
+      "Local Body Name (In Local)": { "action": "KEEP", "description": "Name of the local body in Local language" },
+      "Localbody Type Code": { "action": "KEEP", "description": "LGD Code for the type of local body" },
+      "Localbody Type Name": { "action": "KEEP", "description": "The type of local body" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Local body", "All Urban Local Bodies of India" ],
-    "comp": "URBAN_LOCAL_BODIES"
+    "comp": "URBAN_LOCAL_BODIES",
+    "file": "urban_local_bodies.csv",
+    "desc": "list of all Urban Local bodies",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name (In English)": { "action": "KEEP", "description": "State Name in English" },
+      "Local Body Code": { "action": "KEEP", "description": "LGD Code for the local body" },
+      "Local Body Version": { "action": "KEEP", "description": "Version of the local body in LGD" },
+      "Local Body Name (In English)": { "action": "KEEP", "description": "Name of the local body in English" },
+      "Local Body Name (In Local)": { "action": "KEEP", "description": "Name of the local body in Local language" },
+      "Localbody Type Code": { "action": "KEEP", "description": "LGD Code for the type of local body" },
+      "Census 2011 Code": { "action": "KEEP", "description": "census 2011 Code for the local body" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Local body", "Urban Localbodies with Coverage" ],
-    "comp": "URBAN_LOCAL_BODIES_COVERAGE"
+    "comp": "URBAN_LOCAL_BODIES_COVERAGE",
+    "file": "statewise_ulbs_coverage.csv",
+    "desc": "list of all urban local bodies with coverage",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Name (In English)": { "action": "KEEP", "description": "State Name in English" },
+      "Localbody Code": { "action": "KEEP", "description": "LGD Code for the local body" },
+      "Localbody Name (In English)": { "action": "KEEP", "description": "Name of the local body in English" },
+      "Census 2011 Code": { "action": "KEEP", "description": "census 2011 Code for the local body" },
+      "District Code": { "action": "KEEP", "description": "District LGD Code" },
+      "District Name (In English)": { "action": "KEEP", "description": "District  Name in English" },
+      "Subdistrict Code": { "action": "KEEP", "description": "Sub District LGD Code" },
+      "Subdistrict Name (In English)": { "action": "KEEP", "description": "Sub District Name in English" },
+      "Village Code": { "action": "KEEP", "description": "Village LGD Code" },
+      "Village Name (In English)": { "action": "KEEP", "description": "Village Name in English" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Local body", "State and District Wise Urban Local Bodies" ],
@@ -116,50 +255,142 @@
   },
   {
     "dropdown": [ "Download Directory", "Local body", "District To District Panchayat Mapping Of India" ],
-    "comp": "IGNORE",
-    "ignore_reason": "Needs Review"
+    "comp": "DISTRICT_PANCHAYATS",
+    "file": "district_panchayats.csv",
+    "desc": "list of all district panchayats with mapping to districts",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" },
+      "District Code": { "action": "KEEP", "description": "District LGD Code" },
+      "District Name": { "action": "KEEP", "description": "District Name in English" },
+      "District Panchayat Code": { "action": "KEEP", "description": "District Panchayat LGD Code" },
+      "District Panchayat": { "action": "KEEP", "description": "District Panchayat Name in English" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Local body", "Localities Of Urban Localbodies" ],
     "comp": "IGNORE",
-    "ignore_reason": "Needs Review"
+    "ignore_reason": "No Data"
   },
   {
     "dropdown": [ "Download Directory", "Local body", "All PRI Local body of India with Covered Village" ],
     "comp": "IGNORE",
-    "ignore_reason": "Needs Review"
+    "ignore_reason": "Covered in PANCHAYAT_MAPPINGS but has Block and District Panchayat mappings as well.. reconsider?"
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Parliament Wise Local Body Mapping" ],
     "comp": "IGNORE",
-    "ignore_reason": "Needs Review, Broken"
+    "ignore_reason": "Needs Review, Confusing"
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Assembly Wise Local Body Mapping" ],
     "comp": "IGNORE",
-    "ignore_reason": "Needs Review"
+    "ignore_reason": "Needs Review, Confusing"
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "State Wise Parliament Constituency and Assembly Constituency along with coverage details PRI" ],
     "comp": "IGNORE",
-    "ignore_reason": "Needs Review, Broken"
+    "ignore_reason": "Needs Review, Confusing"
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "State Wise Parliament Constituency and Assembly Constituency along with coverage details Urban" ],
-    "comp": "CONSTITUENCIES_MAPPINGS_URBAN"
+    "comp": "CONSTITUENCIES_MAPPINGS_URBAN",
+    "file": "constituencies_mapping_urban.csv",
+    "desc": "list of all constituencies with Urban local body coverage",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Parliament Constituency code": { "action": "KEEP", "description": "LGD Code for the parliament constituency" },
+      "Parliament Constituency ECI Code": { "action": "KEEP", "description": "ECI(Election Commision of India) Code for the parliament constituency" },
+      "Parliament Constituency Name": { "action": "KEEP", "description": "Name of the parliament constituency" },
+      "Assembly Constituency code": { "action": "KEEP", "description": "LGD Code for the assembly constituency" },
+      "Assembly Constituency ECI Code": { "action": "KEEP", "description": "ECI(Election Commision of India) Code for the assembly constituency" },
+      "Assembly Constituency Name": { "action": "KEEP", "description": "Name of the assembly constituency" },
+      "District Code": { "action": "KEEP", "description": "District LGD Code" },
+      "District Name": { "action": "KEEP", "description": "Name of the District" },
+      "SubDistrict Code": { "action": "KEEP", "description": "Sub District LGD Code" },
+      "SubDistrict Name": { "action": "KEEP", "description": "Name of the Sub District" },
+      "Ward Code": { "action": "KEEP", "description": "Ward LGD Code" },
+      "Ward Name": { "action": "KEEP", "description": "Ward LGD Name" },
+      "Urban Localbody Code": { "action": "KEEP", "description": "LGD Code of the Urban Local Body Code" },
+      "Urban Localbody Name": { "action": "KEEP", "description": "Name of the Urban Local Body" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" }
+    }
   },
   {
-    "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Parliament Constituency or Assembly Constituency of a State/India" ],
-    "comp": "IGNORE",
-    "ignore_reason": "Needs Review, Broken"
+    "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Parliament Constituency or Assembly Constituency of a State/India", "Parliament Radio Button" ],
+    "comp": "CONSTITUENCIES_PARLIAMENT",
+    "desc": "list of all parliament constituencies",
+    "file": "parliament_constituencies.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" },
+      "Parliament Constituency Code": { "action": "KEEP", "description": "Parliament Constituency LGD Code" },
+      "Parliament Constituency Name": { "action": "KEEP", "description": "Parliament Constituency Name" },
+      "Assembly Constituency Code": { "action": "IGNORE", "description": "Assembly Constituency LGD Code" },
+      "Assembly Constituency Name": { "action": "IGNORE", "description": "Assembly Constituency Name" }
+    }
+  },
+  {
+    "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Parliament Constituency or Assembly Constituency of a State/India", "Assembly Radio Button" ],
+    "comp": "CONSTITUENCIES_ASSEMBLY",
+    "desc": "list of all assembly constituencies",
+    "file": "assembly_constituencies.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" },
+      "Parliament Constituency Code": { "action": "KEEP", "description": "Parliament Constituency LGD Code" },
+      "Parliament Constituency Name": { "action": "KEEP", "description": "Parliament Constituency Name" },
+      "Assembly Constituency Code": { "action": "KEEP", "description": "Assembly Constituency LGD Code" },
+      "Assembly Constituency Name": { "action": "KEEP", "description": "Assembly Constituency Name" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Constituency Coverage Details" ],
-    "comp": "CONSTITUENCY_COVERAGE"
+    "comp": "CONSTITUENCY_COVERAGE",
+    "desc": "list of all assembly/parliament constituencies and their coverage",
+    "file": "constituency_coverage.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name English": { "action": "IGNORE", "description": "State Name in English" },
+      "Parliament Constituency Code": { "action": "KEEP", "description": "LGD Code for the parliament constituency" },
+      "Parliament Constituency Name": { "action": "KEEP", "description": "Name of the parliament constituency" },
+      "Assembly Constituency Code": { "action": "KEEP", "description": "LGD Code for the assembly constituency" },
+      "Assembly Constituency Name": { "action": "KEEP", "description": "Name of the assembly constituency" },
+      "Entity Type": { "action": "KEEP", "description": "Entity Type( like District, SubDistrict, Localbody )" },
+      "Entity Code": { "action": "KEEP", "description": "Entity LGD Code" },
+      "Entity Name": { "action": "KEEP", "description": "Entity Name" },
+      "Coverage Type": { "action": "KEEP", "description": "Type of coverage, fully or partialy covered" },
+      "State Name": { "action": "KEEP", "description": "State Name" }
+    }
   },
   {
     "dropdown":  [ "Download Directory", "Village To Gram Panchayat Mapping", "Village To Gram Panchayat Mapping" ],
-    "comp": "PANCHAYAT_MAPPINGS"
+    "comp": "PANCHAYAT_MAPPINGS",
+    "desc": "list of all panchayat mappings",
+    "file": "gp_mapping.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "District Code": { "action": "KEEP", "description": "District LGD Code" },
+      "District Name (in English)": { "action": "KEEP", "description": "District Name in English" },
+      "District Census Code 2011": { "action": "KEEP", "description": "District Census 2011 Code" },
+      "District Census Code 2001": { "action": "KEEP", "description": "District Census 2001 Code" },
+      "Sub District Code": { "action": "KEEP", "description": "Sub District LGD Code" },
+      "Sub District Name (in English)": { "action": "KEEP", "description": "Sub District Name in English" },
+      "Sub District Census Code 2011": { "action": "KEEP", "description": "Sub District Census 2011 Code" },
+      "Sub District Census Code 2001": { "action": "KEEP", "description": "Sub District Census 2001 Code" },
+      "Village Code": { "action": "KEEP", "description": "Village LGD Code" },
+      "Village Name (in English)": { "action": "KEEP", "description": "Village Name in English" },
+      "Village Census Code 2011": { "action": "KEEP", "description": "Village Census 2011 Code" },
+      "Village Census Code 2001": { "action": "KEEP", "description": "Village Census 2001 Code" },
+      "Local Body Code": { "action": "KEEP", "description": "Local Body LGD Code" },
+      "Local Body Name (in English)": { "action": "KEEP", "description": "Local Body Name in English" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Block", "All Blocks of State" ],
@@ -168,7 +399,20 @@
   },
   {
     "dropdown": [ "Download Directory", "Block", "All Blocks of India" ],
-    "comp": "BLOCKS"
+    "comp": "BLOCKS",
+    "desc": "list of all blocks",
+    "file": "blocks.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name (In English)": { "action": "KEEP", "description": "State Name in English" },
+      "District Code": { "action": "KEEP", "description": "District LGD Code" },
+      "District Name (In English)": { "action": "KEEP", "description": "District Name in English" },
+      "Block Code": { "action": "KEEP", "description": "Block LGD Code" },
+      "Block Version": { "action": "KEEP", "description": "Version of Block in LGD" },
+      "Block Name (In English)": { "action": "KEEP", "description": "Block Name in English" },
+      "Block Name (In Local)": { "action": "KEEP", "description": "Block Name in Local language" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Block", "All Block of India with Covered Villages" ],
@@ -183,50 +427,226 @@
   {
     "dropdown": [ "Download Directory", "Block", "Covered Villages And Gram Panchayats of a Block" ],
     "comp": "IGNORE",
-    "ignore_reason": "Needs Review"
+    "ignore_reason": "No Data"
   },
   {
     "dropdown": [ "Download Directory", "Block", "Subdistrict, Village,Block and Gps Mapping" ],
-    "comp": "BLOCK_VILLAGES"
+    "comp": "BLOCK_VILLAGES",
+    "desc": "list of all village to block mappings",
+    "file": "villages_by_blocks.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name (In English)": { "action": "KEEP", "description": "State Name in English" },
+      "District Code": { "action": "KEEP", "description": "District LGD Code" },
+      "District Name (In English)": { "action": "KEEP", "description": "District Name in English" },
+      "District Census Code 2011": { "action": "KEEP", "description": "District Census 2011 Code" },
+      "Subdistrict Code": { "action": "KEEP", "description": "Sub District LGD Code" },
+      "Subdistrict Name (In English)": { "action": "KEEP", "description": "Sub District Name in English" },
+      "Subdistrict Census Code 2011": { "action": "KEEP", "description": "Sub District Census 2011 Code" },
+      "Village Code": { "action": "KEEP", "description": "Village LGD Code" },
+      "Village Name (In English)": { "action": "KEEP", "description": "Village Name in English" },
+      "Village Census Code 2011": { "action": "KEEP", "description": "Village Census 2011 Code" },
+      "localbody Code": { "action": "KEEP", "description": "Local Body LGD Code" },
+      "Localbody Name (In English)": { "action": "KEEP", "description": "Local Body Name in English" },
+      "Localbody Census Code 2011": { "action": "KEEP", "description": "Local Body Census 2011 Code" },
+      "Block Code": { "action": "KEEP", "description": "Block LGD Code" },
+      "Block Name (In English)": { "action": "KEEP", "description": "Block Name in English" },
+      "District Code of Block": { "action": "KEEP", "description": "District of block LGD Code" },
+      "District Name of Block (In English)": { "action": "KEEP", "description": "District Name of block in English" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Block", "Subdistrict, Village,Block and GPs/TLB Mapping" ],
-    "comp": "IGNORE",
-    "ignore_reason": "Needs Review"
+    "comp": "TLB_VILLAGES",
+    "desc": "the mapping of villages to Tradition Local Bodies and Panchayats",
+    "file": "tlb_villages.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial Number" },
+      "State Census 2011 Code": { "action": "KEEP", "description": "State Census 2011 Code" },
+      "District Code": { "action": "KEEP", "description": "Sub District LGD Code" },
+      "District Name (In English)": { "action": "KEEP", "description": "Sub District Name in English" },
+      "District Census 2011 Code": { "action": "KEEP", "description": "Sub District Census 2011 Code" },
+      "Sub-district Code": { "action": "KEEP", "description": "Sub District LGD Code" },
+      "Sub-district Name (In English)": { "action": "KEEP", "description": "Sub District Name in English" },
+      "Sub-district Census 2011 code": { "action": "KEEP", "description": "Sub District Census 2011 Code" },
+      "Village Code": { "action": "KEEP", "description": "Village LGD Code" },
+      "Village Name (In English)": { "action": "KEEP", "description": "Village Name in English" },
+      "Village Census 2011 Code ": { "action": "KEEP", "description": "Village Census 2011 Code" },
+      "Gram Panchayat/ TLB Code": { "action": "KEEP", "description": "LGD code of TLB/GP" },
+      "Gram Panchayat/ TLB (In English)": { "action": "KEEP", "description": "Name of TLB/GP in English" },
+      "Gram Panchayat/ TLB Census 2011 Code": { "action": "KEEP", "description": "TLB/GP Census 2011 Code" },
+      "Gram Panchayat/ TLB Type Code": { "action": "KEEP", "description": "Type Code of TLB/GP" },
+      "Gram Panchayat/ TLB Type Name": { "action": "KEEP", "description": "Type of TLB/GP" },
+      "Block Code": { "action": "KEEP", "description": "Block LGD Code" },
+      "Block Name (In English)": { "action": "KEEP", "description": "Block Name in English" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Block", "District, Village,Block and GPs/TLB Mapping"],
     "comp": "IGNORE",
-    "ignore_reason": "Needs Review"
+    "ignore_reason": "Covered in TLB_VILLAGES"
   },
   {
-    "dropdown": [ "Download Directory", "Department/Organization", "Organization Units of a Department/Organization" ],
-    "comp": {
-      "STATE_ORG_UNITS": "State",
-      "CENTRAL_ORG_UNITS": "Central"
+    "dropdown": [ "Download Directory", "Department/Organization", "Organization Units of a Department/Organization", "State" ],
+    "comp": "STATE_ORG_UNITS",
+    "desc": "list of all state level organization units",
+    "file": "state_org_units.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Org Unit Code": { "action": "KEEP", "description": "Org Unit LGD Code" },
+      "Org Unit Name (In English)": { "action": "KEEP", "description": "Org Unit Name in English" },
+      "Org Unit Name (In Local)": { "action": "KEEP", "description": "Org Unit Name in Local language" },
+      "Entity Type": { "action": "KEEP", "description": "Associated Entity Type" },
+      "Entity Lc": { "action": "KEEP", "description": "Associated Entity LGD Code" },
+      "Parent Org Unit Code": { "action": "KEEP", "description": "Parent Org Unit LGD Code" },
+      "Parent Org Unit Name": { "action": "KEEP", "description": "Parent Org Unit Name" },
+      "Org Located Level Code": { "action": "KEEP", "description": "???" },
+      "Base Organization Name": { "action": "KEEP", "description": "Base Organization Name" },
+      "Base Organization Code": { "action": "KEEP", "description": "Base Organization LGD Code" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" }
     }
   },
   {
-    "dropdown": [ "Download Directory", "Department/Organization", "Designations of a Department/Organization" ],
-    "comp": {
-      "STATE_ORG_DESIGNATIONS": "State",
-      "CENTRAL_ORG_DESIGNATIONS": "Central"
+    "dropdown": [ "Download Directory", "Department/Organization", "Organization Units of a Department/Organization", "Central" ],
+    "comp":  "CENTRAL_ORG_UNITS",
+    "desc": "list of all central level organization units",
+    "file": "central_org_units.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Org Unit Code": { "action": "KEEP", "description": "Org Unit LGD Code" },
+      "Org Unit Name (In English)": { "action": "KEEP", "description": "Org Unit Name in English" },
+      "Org Unit Name (In Local)": { "action": "KEEP", "description": "Org Unit Name in Local language" },
+      "Entity Type": { "action": "KEEP", "description": "Associated Entity Type" },
+      "Entity Lc": { "action": "KEEP", "description": "Associated Entity LGD Code" },
+      "Parent Org Unit Code": { "action": "KEEP", "description": "Parent Org Unit LGD Code" },
+      "Parent Org Unit Name": { "action": "KEEP", "description": "Parent Org Unit Name" },
+      "Org Located Level Code": { "action": "KEEP", "description": "???" },
+      "Base Organization Name": { "action": "KEEP", "description": "Base Organization Name" },
+      "Base Organization Code": { "action": "KEEP", "description": "Base Organization LGD Code" }
     }
   },
   {
-    "dropdown": [ "Download Directory", "Department/Organization", "Ministries/Departments/Organizations Details" ],
-    "comp": {
-      "STATE_ORG_DETAILS": "State",
-      "CENTRAL_ORG_DETAILS": "Central"
+    "dropdown": [ "Download Directory", "Department/Organization", "Designations of a Department/Organization", "State" ],
+    "comp": "STATE_ORG_DESIGNATIONS",
+    "desc": "list of all state level organization designations",
+    "file": "state_org_designations.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Designation Code": { "action": "KEEP", "description": "Designation LGD Code" },
+      "Designation Name (In English)": { "action": "KEEP", "description": "Designation Name in English" },
+      "Designation Name Local (In Local)": { "action": "KEEP", "description": "Designation Name in Local language" },
+      "Org Located Level Code": { "action": "KEEP", "description": "???" },
+      "Org Level Specific Name": { "action": "KEEP", "description": "???" },
+      "Base Organization Name": { "action": "KEEP", "description": "Base Organization Name" },
+      "Base Organization Code": { "action": "KEEP", "description": "Base Organization LGD Code" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" }
     }
   },
   {
-    "dropdown": [ "Download Directory", "Department/Organization", "Administrative Unit Level Wise Administrative Unit Entity" ],
-    "comp": {
-      "CENTRAL_ADMIN_DEPTS": ["Central", "Internal Dwr Call"],
-      "CENTRAL_ADMIN_DEPT_UNITS": "Central",
-      "STATE_ADMIN_DEPTS": ["State", "Internal Dwr Call"],
-      "STATE_ADMIN_DEPT_UNITS": "State"
+    "dropdown": [ "Download Directory", "Department/Organization", "Designations of a Department/Organization", "Central" ],
+    "comp": "CENTRAL_ORG_DESIGNATIONS",
+    "desc": "list of all central level organization designations",
+    "file": "central_org_designations.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Designation Code": { "action": "KEEP", "description": "Designation LGD Code" },
+      "Designation Name (In English)": { "action": "KEEP", "description": "Designation Name in English" },
+      "Designation Name Local (In Local)": { "action": "KEEP", "description": "Designation Name in Local language" },
+      "Org Located Level Code": { "action": "KEEP", "description": "???" },
+      "Org Level Specific Name": { "action": "KEEP", "description": "???" },
+      "Base Organization Name": { "action": "KEEP", "description": "Base Organization Name" },
+      "Base Organization Code": { "action": "KEEP", "description": "Base Organization LGD Code" }
+    }
+  },
+  {
+    "dropdown": [ "Download Directory", "Department/Organization", "Ministries/Departments/Organizations Details", "State" ],
+    "comp": "STATE_ORG_DETAILS",
+    "desc": "list of all state level organizations",
+    "file": "state_orgs.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Organization Code": { "action": "KEEP", "description": "Organization LGD Code" },
+      "Organization Name": { "action": "KEEP", "description": "Organization Name" },
+      "Organization Type": { "action": "KEEP", "description": "Organization Type" },
+      "Parent Organization Code": { "action": "KEEP", "description": "Parent Organization LGD Code" },
+      "Parent Organization Name": { "action": "KEEP", "description": "Parent Organization Name" },
+      "Parent Organization Type": { "action": "KEEP", "description": "Parent Organization Type" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" }
+    }
+  },
+  {
+    "dropdown": [ "Download Directory", "Department/Organization", "Ministries/Departments/Organizations Details", "Central" ],
+    "comp": "CENTRAL_ORG_DETAILS",
+    "desc": "list of all state level organizations",
+    "file": "state_orgs.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Organization Code": { "action": "KEEP", "description": "Organization LGD Code" },
+      "Organization Name": { "action": "KEEP", "description": "Organization Name" },
+      "Organization Type": { "action": "KEEP", "description": "Organization Type" },
+      "Parent Organization Code": { "action": "KEEP", "description": "Parent Organization LGD Code" },
+      "Parent Organization Name": { "action": "KEEP", "description": "Parent Organization Name" },
+      "Parent Organization Type": { "action": "KEEP", "description": "Parent Organization Type" }
+    }
+  },
+  {
+    "dropdown": [ "Download Directory", "Department/Organization", "Administrative Unit Level Wise Administrative Unit Entity", "Central" ],
+    "comp": "CENTRAL_ADMIN_DEPT_UNITS",
+    "desc": "list of all central adminstrative department units",
+    "file": "central_admin_dept_units.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Admin Unit Entity Code": { "action": "KEEP", "description": "Admin Unit Entity LGD Code" },
+      "Admin Unit Entity Name": { "action": "KEEP", "description": "Admin Unit Entity Name in English" },
+      "Admin Unit Entity Name (Local)": { "action": "KEEP", "description": "Admin Unit Entity Name in Local Language" },
+      "Admin Department Name": { "action": "KEEP", "description": "Admin Department Name in English" },
+      "Admin Department Code": { "action": "KEEP", "description": "Admin Department LGD Code" }
+    }
+  },
+  {
+    "dropdown": [ "Download Directory", "Department/Organization", "Administrative Unit Level Wise Administrative Unit Entity", "Central", "Internal Dwr Call" ],
+    "comp": "CENTRAL_ADMIN_DEPTS",
+    "desc": "list of all central administrative departments",
+    "file": "central_admin_depts.csv",
+    "fields": {
+      "adminLevelNameEng": { "action": "KEEP", "description": "Name of Administrative Department in English" },
+      "adminUnitCode": {  "action": "KEEP", "description": "Administrative Department Code" },
+      "parentAdminCode": {  "action": "KEEP", "description": "Parent Administrative Department Code" }
+    }
+  },
+  {
+    "dropdown": [ "Download Directory", "Department/Organization", "Administrative Unit Level Wise Administrative Unit Entity", "State" ],
+    "comp": "STATE_ADMIN_DEPT_UNITS",
+    "desc": "list of all state adminstrative department units",
+    "file": "state_admin_dept_units.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Admin Unit Entity Code": { "action": "KEEP", "description": "Admin Unit Entity LGD Code" },
+      "Admin Unit Entity Name": { "action": "KEEP", "description": "Admin Unit Entity Name in English" },
+      "Admin Unit Entity Name (Local)": { "action": "KEEP", "description": "Admin Unit Entity Name in Local Language" },
+      "Admin Department Name": { "action": "KEEP", "description": "Admin Department Name in English" },
+      "Admin Department Code": { "action": "KEEP", "description": "Admin Department LGD Code" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" }
+    }
+  },
+  {
+    "dropdown": [ "Download Directory", "Department/Organization", "Administrative Unit Level Wise Administrative Unit Entity", "State", "Internal Dwr Call" ],
+    "comp": "STATE_ADMIN_DEPTS",
+    "desc": "list of all state administrative departments",
+    "file": "state_admin_depts.csv",
+    "fields": {
+      "adminLevelNameEng": { "action": "KEEP", "description": "Name of Administrative Department in English" },
+      "adminUnitCode": {  "action": "KEEP", "description": "Administrative Department Code" },
+      "parentAdminCode": {  "action": "KEEP", "description": "Parent Administrative Department Code" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" }
     }
   },
   {
@@ -241,11 +661,34 @@
   }, 
   {
     "dropdown": [ "Download Directory", "Pincode Mapping", "Pincode to Village Mapping" ],
-    "comp": "PINCODE_VILLAGES"
+    "comp": "PINCODE_VILLAGES",
+    "file": "pincode_villages.csv",
+    "desc": "Pincode to Village Mapping",
+    "fields": {
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" },
+      "District Code": { "action": "KEEP", "description": "District LGD Code" },
+      "District Name": { "action": "KEEP", "description": "District Name in English" },
+      "Subdistrict Code": { "action": "KEEP", "description": "Sub District LGD Code" },
+      "Subdistrict Name": { "action": "KEEP", "description": "Sub District Name in English" },
+      "Village Code": { "action": "KEEP", "description": "Village LGD Code" },
+      "Village Name": { "action": "KEEP", "description": "Village Name in English" },
+      "Pincode": { "action": "KEEP", "description": "Postal PIN Code" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Pincode Mapping", "Pincode to Urban Mapping" ],
-    "comp": "PINCODE_URBAN"
+    "comp": "PINCODE_URBAN",
+    "file": "pincode_urban.csv",
+    "desc": "Pincode to Urban Mapping",
+    "fields": {
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" },
+      "Localbody Code": { "action": "KEEP", "description": "Urban Localbody LGD Code" },
+      "Localbody Name": { "action": "KEEP", "description": "Urban Localbody Name in English" },
+      "Localbody Type Name": { "action": "KEEP", "description": "Type of Urban Localbody" },
+      "Pincode": { "action": "KEEP", "description": "Postal PIN Code" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Pincode Mapping", "Pincode to Village Mapping With Major/Minor Versions" ],
@@ -260,7 +703,7 @@
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of States/UTs" ],
     "comp": "IGNORE",
-    "ignore_reason": "handled in STATES, Needs Review for versioning info?"
+    "ignore_reason": "handled in STATES"
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Districts" ],
@@ -270,22 +713,22 @@
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Sub-Districts" ],
     "comp": "IGNORE",
-    "ignore_reason": "handled in SUB_DISTRICTS, Needs Review for versioning info?"
+    "ignore_reason": "handled in SUB_DISTRICTS"
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Villages" ],
     "comp": "IGNORE",
-    "ignore_reason": "handled in VILLAGES, Needs Review for versioning info?"
+    "ignore_reason": "handled in VILLAGES"
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Blocks" ],
     "comp":  "IGNORE",
-    "ignore_reason": "handled in BLOCKS, Needs Review for versioning info?"
+    "ignore_reason": "handled in BLOCKS"
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Block Wise Villages" ],
     "comp":  "IGNORE",
-    "ignore_reason": "handled in BLOCK_VILLAGES, Needs Review for versioning info?"
+    "ignore_reason": "handled in BLOCK_VILLAGES"
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Wards" ],
@@ -330,7 +773,7 @@
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on State Panchayat Set-up" ],
     "comp": "IGNORE",
-    "ignore_reason": "Needs Review, Download once?"
+    "ignore_reason": "High level onetime info"
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on State wise Unmapped Villages (Villages not mapped to any village panchayats/equivalent local body)" ],
@@ -410,12 +853,12 @@
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Nomenclature of Sub-District" ],
     "comp": "IGNORE",
-    "ignore_reason": "Needs Review, One Time"
+    "ignore_reason": "One Time"
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Designation details" ],
     "comp": "IGNORE",
-    "ignore_reason": "Needs Review, Covered elsewhere"
+    "ignore_reason": "Broken"
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Ward to Halka Mapping Report (Jharkhand State)" ],
@@ -449,11 +892,34 @@
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "NOFN Panchayat List" ],
-    "comp": "NOFN_PANCHAYATS"
+    "comp": "NOFN_PANCHAYATS",
+    "desc": "list of all panchayats with National Optic Fiber Network(NOFN)",
+    "file": "nofn_panchayats.csv",
+    "fields": {
+      "SR.NO": { "action": "IGNORE", "description": "Serial number" },
+      "District Name": { "action": "KEEP", "description": "District Name in English" },
+      "Sub District Name(In English)": { "action": "KEEP", "description": "Sub District Name in English" },
+      "Local Body Code": { "action": "KEEP", "description": "Local Body LGD Code" },
+      "Local Body Name (In English)": { "action": "KEEP", "description": "Local Body Name in English" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" }
+    }
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "List Of Modification Done In LGD" ],
-    "comp": "CHANGES"
+    "comp": "CHANGES",
+    "desc": "all changes to entities in LGD",
+    "file": "changes.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Entity Code": { "action": "KEEP", "description": "Entity LGD Code" },
+      "Entity version": { "action": "KEEP", "description": "Entity Version" },
+      "Entity Name (In English)": { "action": "KEEP", "description": "Entity Name in English" },
+      "Entity Name (In Local)": { "action": "KEEP", "description": "Sub District Name in Local language" },
+      "Census Code": { "action": "KEEP", "description": "Entity's Census 2011 Code" },
+      "Operation": { "action": "KEEP", "description": "The change operation on the entity" },
+      "date": { "action": "KEEP", "description": "The date on which the change happened" }
+    }
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "GIS Map Verification Status" ],
@@ -592,7 +1058,16 @@
   },
   {
     "dropdown": [ "Likely Erroneous/Exceptions", "Invalidated Census villages" ],
-    "comp": "INVALIDATED_VILLAGES"
+    "comp": "INVALIDATED_VILLAGES",
+    "desc": "list of all invalidated census villages",
+    "file": "invalidated_census_villages.csv",
+    "fields": {
+      "Sr No.": { "action": "IGNORE", "description": "Serial number" },
+      "State LGD Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name English": { "action": "KEEP", "description": "State Name in English" },
+      "Village LGD Code": { "action": "KEEP", "description": "Village LGD Code" },
+      "Village Name English": { "action": "KEEP", "description": "Village Name in English" }
+    }
   },
   { 
     "dropdown": [ "Likely Erroneous/Exceptions", "GPs mapped to villages of multiple blocks" ],

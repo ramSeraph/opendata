@@ -137,7 +137,7 @@ def get_known_site_map():
 def get_changes_in_site_map(known, scraped):
     known_map = {}
     for e in known:
-        k = tuple(e["dropdown"])
+        k = tuple(e["dropdown"][:3])
         known_map[k] = e
 
     old_keys = set(known_map.keys())

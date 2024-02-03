@@ -393,12 +393,12 @@
     }
   },
   {
-    "dropdown": [ "Download Directory", "Block", "All Blocks of State" ],
+    "dropdown": [ "Download Directory", "Development Block", "All Development Blocks of State" ],
     "comp": "IGNORE",
     "ignore_reason": "handled in BLOCKS"
   },
   {
-    "dropdown": [ "Download Directory", "Block", "All Blocks of India" ],
+    "dropdown": [ "Download Directory", "Development Block", "All Development Blocks of India" ],
     "comp": "BLOCKS",
     "desc": "list of all blocks",
     "file": "blocks.csv",
@@ -415,22 +415,22 @@
     }
   },
   {
-    "dropdown": [ "Download Directory", "Block", "All Block of India with Covered Villages" ],
+    "dropdown": [ "Download Directory", "Development Block", "All Development Block of India with Covered Villages" ],
     "comp": "IGNORE",
     "ignore_reason": "handled in BLOCK_VILLAGES, download broken"
   },
   { 
-    "dropdown": [ "Download Directory", "Block", "All India Subdistrict-Village-Block Mapping" ],
+    "dropdown": [ "Download Directory", "Development Block", "All India Subdistrict-Village-Development Block Mapping" ],
     "comp":  "IGNORE",
     "ignore_reason": "handled in BLOCK_VILLAGES"
   },
   {
-    "dropdown": [ "Download Directory", "Block", "Covered Villages And Gram Panchayats of a Block" ],
+    "dropdown": [ "Download Directory", "Development Block", "Covered Villages And Gram Panchayats of a Development Block" ],
     "comp": "IGNORE",
     "ignore_reason": "No Data"
   },
   {
-    "dropdown": [ "Download Directory", "Block", "Subdistrict, Village,Block and Gps Mapping" ],
+    "dropdown": [ "Download Directory", "Development Block", "Subdistrict, Village,Development Block and Gps Mapping" ],
     "comp": "BLOCK_VILLAGES",
     "desc": "list of all village to block mappings",
     "file": "villages_by_blocks.csv",
@@ -457,7 +457,7 @@
     }
   },
   {
-    "dropdown": [ "Download Directory", "Block", "Subdistrict, Village,Block and GPs/TLB Mapping" ],
+    "dropdown": [ "Download Directory", "Development Block", "Subdistrict, Village,Development Block and GPs/TLB Mapping" ],
     "comp": "TLB_VILLAGES",
     "desc": "the mapping of villages to Tradition Local Bodies and Panchayats",
     "file": "tlb_villages.csv",
@@ -485,7 +485,7 @@
     }
   },
   {
-    "dropdown": [ "Download Directory", "Block", "District, Village,Block and GPs/TLB Mapping"],
+    "dropdown": [ "Download Directory", "Development Block", "District, Village,Development Block and GPs/TLB Mapping"],
     "comp": "IGNORE",
     "ignore_reason": "Covered in TLB_VILLAGES"
   },
@@ -721,12 +721,12 @@
     "ignore_reason": "handled in VILLAGES"
   },
   {
-    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Blocks" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Development Blocks" ],
     "comp":  "IGNORE",
     "ignore_reason": "handled in BLOCKS"
   },
   {
-    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Block Wise Villages" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of Development Block Wise Villages" ],
     "comp":  "IGNORE",
     "ignore_reason": "handled in BLOCK_VILLAGES"
   },
@@ -766,7 +766,7 @@
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of District wise Blocks and Mapped Gram Panchayats/TLB" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "LGD Codes of District wise Development Blocks and Mapped Gram Panchayats/TLB" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
@@ -1037,7 +1037,7 @@
     "ignore_reason": "Needs Review"
   },
   {
-    "dropdown":  [ "Local Government Directory (LGD) Reports", "Report on Rural Inhabited Villages Mapped with Blocks and GPs" ],
+    "dropdown":  [ "Local Government Directory (LGD) Reports", "Report on Rural Inhabited Villages Mapped with Development Blocks and GPs" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, covered elsewhere"
   },
@@ -1070,7 +1070,7 @@
     }
   },
   { 
-    "dropdown": [ "Likely Erroneous/Exceptions", "GPs mapped to villages of multiple blocks" ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "GPs mapped to villages of multiple development blocks" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere, Needs Review"
   },
@@ -1080,12 +1080,12 @@
     "ignore_reason": "covered elsewhere, Needs Review"
   },
   { 
-    "dropdown": [ "Likely Erroneous/Exceptions", "Villages which are not mapped to any Block by excluding villages mapped ULBs" ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "Villages which are not mapped to any Development Block by excluding villages mapped ULBs" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere, Needs Review"
   },
   { 
-    "dropdown": [ "Likely Erroneous/Exceptions", "Blocks mapped to villages of multiple districts" ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "Development Blocks mapped to villages of multiple districts" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere, Needs Review"
   },
@@ -1100,7 +1100,7 @@
     "ignore_reason": "covered elsewhere, No Data"
   },
   { 
-    "dropdown": [ "Likely Erroneous/Exceptions", "Villages which are mapped to block but not mapped to Rural local bodies and vice versa" ],
+    "dropdown": [ "Likely Erroneous/Exceptions", "Villages which are mapped to development block but not mapped to Rural local bodies and vice versa" ],
     "comp": "IGNORE",
     "ignore_reason": "covered elsewhere"
   },

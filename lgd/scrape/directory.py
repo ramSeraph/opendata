@@ -523,6 +523,9 @@ def get_all_directory_downloaders(ctx):
                                                     desc='list of all village to block mappings',
                                                     csv_filename='villages_by_blocks.csv',
                                                     ctx=ctx,
+                                                    excel_conv_args={
+                                                        'header_row_span': 2,
+                                                    },
                                                     post_data_extra={
                                                         'rptFileName': 'subdistrictVillageBlockGpsMapping',
                                                     },

@@ -596,6 +596,16 @@ def get_all_directory_downloaders(ctx):
                                                     post_data_extra={
                                                         'rptFileName': 'constituencyReport@state'
                                                     }))
+    downloaders.append(StateWiseDirectoryDownloader(name='TLB_VILLAGES',
+                                                    desc='the mapping of villages to Tradition Local Bodies',
+                                                    csv_filename='tlb_villages.csv',
+                                                    ctx=ctx,
+                                                    excel_conv_args={
+                                                        'header_row_span': 2,
+                                                    },
+                                                    post_data_extra={
+                                                        'rptFileName': 'subdistrictVillageBlockGPsorTLBMapping'
+                                                    }))
  
     downloaders.append(StateWiseDirectoryDownloader(name='STATE_ORG_DETAILS',
                                                     desc='list of all state level organizations',

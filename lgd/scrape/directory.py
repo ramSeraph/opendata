@@ -447,27 +447,38 @@ def get_all_directory_downloaders(ctx):
                                            post_data_extra={
                                                'rptFileName': 'statewise_ulbs_coverage',
                                            }))
-    #downloaders.append(DirectoryDownloader(name='CONSTITUENCIES_PARLIAMENT',
-    #                                       desc='list of all parliament constituencies',
-    #                                       csv_filename='parliament_constituencies.csv',
-    #                                       ctx=ctx,
-    #                                       transform=['ignore_if_empty_field', 'Parliament Constituency Code'],
-    #                                       post_data_extra={
-    #                                           'rptFileName': 'assembly_parliament_constituency',
-    #                                           'stateName': 'India',
-    #                                           'entityCodes': ['35', '0'],
-    #                                           'assemblyParliamentConstituency': '#PC'
-    #                                       }))
-    #downloaders.append(DirectoryDownloader(name='CONSTITUENCIES_ASSEMBLY',
-    #                                       desc='list of all assembly constituencies',
-    #                                       csv_filename='assembly_constituencies.csv',
-    #                                       ctx=ctx,
-    #                                       post_data_extra={
-    #                                           'rptFileName': 'assembly_parliament_constituency',
-    #                                           'stateName': 'India',
-    #                                           'entityCodes': ['35', '0'],
-    #                                           'assemblyParliamentConstituency': '#AC'
-    #                                       }))
+    downloaders.append(DirectoryDownloader(name='DISTRICT_PANCHAYATS',
+                                           desc='list of all district panchayats with mappings to districts',
+                                           csv_filename='district_panchayats.csv',
+                                           ctx=ctx,
+                                           excel_conv_args={
+                                               'header_row_span': 1,
+                                           },
+                                           post_data_extra={
+                                               'rptFileName': 'allDistrictPanchayatIndia',
+                                           }))
+
+    downloaders.append(DirectoryDownloader(name='CONSTITUENCIES_PARLIAMENT',
+                                           desc='list of all parliament constituencies',
+                                           csv_filename='parliament_constituencies.csv',
+                                           ctx=ctx,
+                                           transform=['ignore_if_empty_field', 'Parliament Constituency Code'],
+                                           post_data_extra={
+                                               'rptFileName': 'assembly_parliament_constituency',
+                                               'stateName': 'India',
+                                               'entityCodes': ['35', '0'],
+                                               'assemblyParliamentConstituency': '#PC'
+                                           }))
+    downloaders.append(DirectoryDownloader(name='CONSTITUENCIES_ASSEMBLY',
+                                           desc='list of all assembly constituencies',
+                                           csv_filename='assembly_constituencies.csv',
+                                           ctx=ctx,
+                                           post_data_extra={
+                                               'rptFileName': 'assembly_parliament_constituency',
+                                               'stateName': 'India',
+                                               'entityCodes': ['35', '0'],
+                                               'assemblyParliamentConstituency': '#AC'
+                                           }))
     downloaders.append(DirectoryDownloader(name='PINCODE_VILLAGES',
                                            desc='Pincode to Village Mapping',
                                            csv_filename='pincode_villages.csv',

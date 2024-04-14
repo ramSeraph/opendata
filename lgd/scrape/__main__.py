@@ -16,7 +16,7 @@ from concurrent.futures import (wait, FIRST_COMPLETED,
 from concurrent.futures.process import BrokenProcessPool
 from graphlib import TopologicalSorter
 
-from .base import (Params, Context,
+from .base import (Params, Context, BaseDownloader,
                    get_date_str,  expand_comps_to_run,
                    NotReadyException, initialize_process,
                    download_task, setup_logging)
@@ -166,8 +166,7 @@ def get_markdown_from_comps(comps_info):
     for comp_name, comp_info in comps_info.items():
         filename = comp_info['filename']
         desc = comp_info['desc']
-        location = comp_info['lgd_location']
-        location_steps = location.split(' --> ')
+        location_steps = comp_info['lgd_location']
         step_strs = []
         for i, step in enumerate(location_steps):
             padding = '  ' * (i + 1)
@@ -180,6 +179,14 @@ def get_markdown_from_comps(comps_info):
         full_str += f"description\n: {desc}\n\n"
         full_str += "Location in LGD\n"
         full_str += f": {location_str}\n\n"
+        #full_str += f"fields:\n"
+        #for field in fields.keys():
+        #    full_str += f'| {field} '
+        #full_str += '|\n\n'
+        #for field in fields.keys():
+        #    full_str += f'| --- '
+        #full_str += '|\n\n'
+        
     return full_str
 
 
@@ -199,28 +206,12 @@ def get_license_txt():
     return license_txt
 
 def get_comps_info(downloaders):
-    known_site_map = get_known_site_map()
-    lgd_location_map = {}
-    for e in known_site_map:
-        comp = e['comp']
-        if comp == 'IGNORE':
-            continue
-        dropdown = e['dropdown']
-        comp_type = type(comp)
-        if comp_type == str:
-            lgd_location_map[comp] = dropdown
-        elif comp_type == dict:
-            for k,v in comp.items():
-                if type(v) == str:
-                    v = [v]
-                lgd_location_map[k] = dropdown + v
-        else:
-            raise Exception(f'In sitemap {comp} is of unsupported type: {comp_type}')
     return {
         d.name: {
             'desc': d.desc,
             'filename': d.csv_filename,
-            'lgd_location': ' --> '.join(lgd_location_map[d.name])
+            'lgd_location': d.dropdown[:3],
+            'fields': d.expected_fields,
        }
        for d in downloaders
     }
@@ -460,6 +451,7 @@ if __name__ == '__main__':
     params = Params()
     params.__dict__ = args_dict
 
+    known_site_map = get_known_site_map()
     if mode == Mode.MONITOR:
         site_map_file = Path(params.base_raw_dir).joinpath(get_date_str(), 'site_map.json')
         if not site_map_file.exists():
@@ -476,7 +468,6 @@ if __name__ == '__main__':
         if path.exists():
             logger.warning(f'deleting previously existing {path}')
             path.unlink()
-        known_site_map = get_known_site_map()
         changes = get_changes_in_site_map(known_site_map, site_map)
         if len(changes['added']) == 0 and len(changes['removed']) == 0:
             logger.info('No changes')
@@ -486,6 +477,7 @@ if __name__ == '__main__':
         exit(0)
 
 
+    BaseDownloader.set_known_site_map(known_site_map)
     ret = run(params, mode, set(comps_to_run), set(comps_to_not_run), num_parallel, use_procs)
     if mode == Mode.COMPS and to_markdown:
         markdown_str = get_markdown_from_comps(ret)

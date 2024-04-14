@@ -454,8 +454,6 @@ class ChangesReportDownloader(MultiDownloader, ReportDownloader):
 def get_all_report_downloaders(ctx):
     downloaders = []
     downloaders.append(ReportSimpleDownloader(name='INVALIDATED_VILLAGES',
-                                              desc='list of all invalidated census villages',
-                                              csv_filename='invalidated_census_villages.csv',
                                               sub_url='exceptionalReports.do',
                                               ctx=ctx,
                                               post_data={
@@ -464,13 +462,9 @@ def get_all_report_downloaders(ctx):
                                               }))
 
     downloaders.append(StateWiseReportDownloader(name='NOFN_PANCHAYATS',
-                                                 desc='list of all panchayats with NOFN',
-                                                 csv_filename='nofn_panchayats.csv',
                                                  sub_url='nofnStates.do',
                                                  ctx=ctx))
     downloaders.append(ChangesReportDownloader(name='CHANGES',
-                                               desc='all changes to entities in LGD',
-                                               csv_filename='changes.csv',
                                                sub_url='changedEntity.do',
                                                ctx=ctx,
                                                num_dates=4000))

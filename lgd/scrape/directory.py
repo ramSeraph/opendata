@@ -358,8 +358,6 @@ class ConstituencyWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
 def get_all_directory_downloaders(ctx):
     downloaders = []
     downloaders.append(DirectoryDownloader(name='STATES',
-                                           desc='list of all states',
-                                           csv_filename='states.csv',
                                            ctx=ctx,
                                            excel_conv_args={
                                                'header_row_span': 1,
@@ -368,8 +366,6 @@ def get_all_directory_downloaders(ctx):
                                                'rptFileName': 'allStateofIndia',
                                            }))
     downloaders.append(DirectoryDownloader(name='DISTRICTS',
-                                           desc='list of all districts',
-                                           csv_filename='districts.csv',
                                            ctx=ctx,
                                            excel_conv_args={
                                                'header_row_span': 2,
@@ -378,15 +374,11 @@ def get_all_directory_downloaders(ctx):
                                                'rptFileName': 'allDistrictofIndia',
                                            }))
     downloaders.append(DirectoryDownloader(name='SUB_DISTRICTS', 
-                                           desc='list of all subdistricts',
-                                           csv_filename='subdistricts.csv',
                                            ctx=ctx,
                                            post_data_extra={
                                                'rptFileName': 'allSubDistrictofIndia',
                                            }))
     downloaders.append(DirectoryDownloader(name='BLOCKS',
-                                           desc='list of all blocks',
-                                           csv_filename='blocks.csv',
                                            ctx=ctx,
                                            excel_conv_args={
                                                'header_row_span': 2,
@@ -418,8 +410,6 @@ def get_all_directory_downloaders(ctx):
     #                                           'downloadType': 'odt' # because the header came out unbroken in odt as opposed xls
     #                                       }))
     downloaders.append(DirectoryDownloader(name='TRADITIONAL_LOCAL_BODIES',
-                                           desc='list of all Traditional local bodies',
-                                           csv_filename='traditional_local_bodies.csv',
                                            ctx=ctx,
                                            excel_conv_args={
                                                'header_row_span': 2,
@@ -428,8 +418,6 @@ def get_all_directory_downloaders(ctx):
                                                'rptFileName': 'allTraditionalLBofInida',
                                            }))
     downloaders.append(DirectoryDownloader(name='URBAN_LOCAL_BODIES',
-                                           desc='list of all urban local bodies',
-                                           csv_filename='urban_local_bodies.csv',
                                            ctx=ctx,
                                            excel_conv_args={
                                                'header_row_span': 2,
@@ -438,8 +426,6 @@ def get_all_directory_downloaders(ctx):
                                                'rptFileName': 'urbanLocalBodyIndia',
                                            }))
     downloaders.append(DirectoryDownloader(name='URBAN_LOCAL_BODIES_COVERAGE',
-                                           desc='list of all urban local bodies with coverage',
-                                           csv_filename='statewise_ulbs_coverage.csv',
                                            ctx=ctx,
                                            excel_conv_args={
                                                'header_row_span': 2,
@@ -448,8 +434,6 @@ def get_all_directory_downloaders(ctx):
                                                'rptFileName': 'statewise_ulbs_coverage',
                                            }))
     downloaders.append(DirectoryDownloader(name='DISTRICT_PANCHAYATS',
-                                           desc='list of all district panchayats with mappings to districts',
-                                           csv_filename='district_panchayats.csv',
                                            ctx=ctx,
                                            excel_conv_args={
                                                'header_row_span': 1,
@@ -459,8 +443,6 @@ def get_all_directory_downloaders(ctx):
                                            }))
 
     downloaders.append(DirectoryDownloader(name='CONSTITUENCIES_PARLIAMENT',
-                                           desc='list of all parliament constituencies',
-                                           csv_filename='parliament_constituencies.csv',
                                            ctx=ctx,
                                            transform=['ignore_if_empty_field', 'Parliament Constituency Code'],
                                            post_data_extra={
@@ -470,8 +452,6 @@ def get_all_directory_downloaders(ctx):
                                                'assemblyParliamentConstituency': '#PC'
                                            }))
     downloaders.append(DirectoryDownloader(name='CONSTITUENCIES_ASSEMBLY',
-                                           desc='list of all assembly constituencies',
-                                           csv_filename='assembly_constituencies.csv',
                                            ctx=ctx,
                                            post_data_extra={
                                                'rptFileName': 'assembly_parliament_constituency',
@@ -480,23 +460,17 @@ def get_all_directory_downloaders(ctx):
                                                'assemblyParliamentConstituency': '#AC'
                                            }))
     downloaders.append(DirectoryDownloader(name='PINCODE_VILLAGES',
-                                           desc='Pincode to Village Mapping',
-                                           csv_filename='pincode_villages.csv',
                                            ctx=ctx,
                                            post_data_extra={
                                                'rptFileName': 'pincodetoVillageMapping',
                                            }))
     downloaders.append(DirectoryDownloader(name='PINCODE_URBAN',
-                                           desc='Pincode to Urban Mapping',
-                                           csv_filename='pincode_urban.csv',
                                            ctx=ctx,
                                            post_data_extra={
                                                'rptFileName': 'pincodetoUrbanMapping',
                                            }))
 
     downloaders.append(DirectoryDownloader(name='CENTRAL_ORG_DETAILS',
-                                           desc='list of all central organization details',
-                                           csv_filename='central_orgs.csv',
                                            ctx=ctx,
                                            transform=['ignore_if_empty_field', 'Organization Code'],
                                            post_data_extra={
@@ -506,8 +480,6 @@ def get_all_directory_downloaders(ctx):
                                            }))
 
     downloaders.append(StateWiseDirectoryDownloader(name='PANCHAYAT_MAPPINGS',
-                                                    desc='list of all panchayat mappings',
-                                                    csv_filename='gp_mapping.csv',
                                                     ctx=ctx,
                                                     download_types=['xls', 'htm'],
                                                     excel_conv_args={
@@ -517,8 +489,6 @@ def get_all_directory_downloaders(ctx):
                                                         'rptFileName': 'LocalbodyMappingtoCensusLandregionCode@state',
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='VILLAGES',
-                                                    desc='list of all villages',
-                                                    csv_filename='villages.csv',
                                                     ctx=ctx,
                                                     excel_conv_args={
                                                         'header_row_span': 2,
@@ -531,8 +501,6 @@ def get_all_directory_downloaders(ctx):
                                                         'State Name (In English)': 'State Name(In English)'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='BLOCK_VILLAGES',
-                                                    desc='list of all village to block mappings',
-                                                    csv_filename='villages_by_blocks.csv',
                                                     ctx=ctx,
                                                     excel_conv_args={
                                                         'header_row_span': 2,
@@ -542,8 +510,6 @@ def get_all_directory_downloaders(ctx):
                                                     },
                                                     enrichers={}))
     downloaders.append(StateWiseDirectoryDownloader(name='PRI_LOCAL_BODIES',
-                                                    desc='list of all PRI(Panchayati Raj India) local bodies',
-                                                    csv_filename='pri_local_bodies.csv',
                                                     ctx=ctx,
                                                     excel_conv_args={
                                                         'header_row_span': 2,
@@ -575,8 +541,6 @@ def get_all_directory_downloaders(ctx):
     #                                                    'State Code': 'State Code'
     #                                                }))
     downloaders.append(StateWiseDirectoryDownloader(name='CONSTITUENCIES_MAPPINGS_URBAN',
-                                                    desc='list of all constituencies with Urban local body coverage',
-                                                    csv_filename='constituencies_mapping_urban.csv',
                                                     ctx=ctx,
                                                     transform=['ignore_if_empty_field', 'Parliament Constituency code'],
                                                     post_data_extra={
@@ -586,30 +550,22 @@ def get_all_directory_downloaders(ctx):
                                                         'State Code': 'State Code'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='PRI_LOCAL_BODY_WARDS',
-                                                    desc='list of all PRI Local body wards',
-                                                    csv_filename='pri_local_body_wards.csv',
                                                     ctx=ctx,
                                                     post_data_extra={
                                                         'rptFileName': 'priWards@state'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='URBAN_LOCAL_BODY_WARDS',
-                                                    desc='list of all Urban Local body wards',
-                                                    csv_filename='urban_local_body_wards.csv',
                                                     ctx=ctx,
                                                     post_data_extra={
                                                         'rptFileName': 'uLBWardforState@state'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='CONSTITUENCY_COVERAGE',
-                                                    desc='list of all assembly/parliament constituencies and their coverage',
-                                                    csv_filename='constituency_coverage.csv',
                                                     ctx=ctx,
                                                     transform=['ignore_if_empty_field', 'Parliament Constituency Code'],
                                                     post_data_extra={
                                                         'rptFileName': 'constituencyReport@state'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='TLB_VILLAGES',
-                                                    desc='the mapping of villages to Tradition Local Bodies',
-                                                    csv_filename='tlb_villages.csv',
                                                     ctx=ctx,
                                                     excel_conv_args={
                                                         'header_row_span': 2,
@@ -619,8 +575,6 @@ def get_all_directory_downloaders(ctx):
                                                     }))
  
     downloaders.append(StateWiseDirectoryDownloader(name='STATE_ORG_DETAILS',
-                                                    desc='list of all state level organizations',
-                                                    csv_filename='state_orgs.csv',
                                                     ctx=ctx,
                                                     transform=['ignore_if_empty_field', 'Organization Code'],
                                                     post_data_extra={
@@ -641,8 +595,6 @@ def get_all_directory_downloaders(ctx):
 
 
     downloaders.append(OrgWiseDirectoryDownloader(name='STATE_ORG_UNITS',
-                                                  desc='list of all state level organization units',
-                                                  csv_filename='state_org_units.csv',
                                                   depends_on='STATE_ORG_DETAILS',
                                                   ctx=ctx,
                                                   excel_conv_args={
@@ -659,8 +611,6 @@ def get_all_directory_downloaders(ctx):
                                                       'State Code': 'State Code'
                                                   }))
     downloaders.append(OrgWiseDirectoryDownloader(name='CENTRAL_ORG_UNITS',
-                                                  desc='list of all central organization units',
-                                                  csv_filename='central_org_units.csv',
                                                   depends_on='CENTRAL_ORG_DETAILS',
                                                   ctx=ctx,
                                                   excel_conv_args={
@@ -675,8 +625,6 @@ def get_all_directory_downloaders(ctx):
                                                       'Base Organization Code': 'Organization Code',
                                                   }))
     downloaders.append(OrgWiseDirectoryDownloader(name='STATE_ORG_DESIGNATIONS',
-                                                  desc='list of all state level organization designations',
-                                                  csv_filename='state_org_designations.csv',
                                                   depends_on='STATE_ORG_DETAILS',
                                                   ctx=ctx,
                                                   post_data_extra={
@@ -690,8 +638,6 @@ def get_all_directory_downloaders(ctx):
                                                       'State Code': 'State Code'
                                                   }))
     downloaders.append(OrgWiseDirectoryDownloader(name='CENTRAL_ORG_DESIGNATIONS',
-                                                  desc='list of all central organization designations',
-                                                  csv_filename='central_org_designations.csv',
                                                   depends_on='CENTRAL_ORG_DETAILS',
                                                   ctx=ctx,
                                                   post_data_extra={
@@ -705,8 +651,6 @@ def get_all_directory_downloaders(ctx):
 
 
     downloaders.append(AdminDeptWiseDirectoryDownloader(name='CENTRAL_ADMIN_DEPT_UNITS',
-                                                        desc='list of all central adminstrative department units',
-                                                        csv_filename='central_admin_dept_units.csv',
                                                         depends_on='CENTRAL_ADMIN_DEPTS',
                                                         ctx=ctx,
                                                         transform=['ignore_if_empty_field', 'Admin Unit Entity Code'],
@@ -719,8 +663,6 @@ def get_all_directory_downloaders(ctx):
                                                             'Admin Department Code': 'adminUnitCode',
                                                         }))
     downloaders.append(AdminDeptWiseDirectoryDownloader(name='STATE_ADMIN_DEPT_UNITS',
-                                                        desc='list of all state adminstrative department units',
-                                                        csv_filename='state_admin_dept_units.csv',
                                                         depends_on='STATE_ADMIN_DEPTS',
                                                         ctx=ctx,
                                                         transform=['ignore_if_empty_field', 'Admin Unit Entity Code'],

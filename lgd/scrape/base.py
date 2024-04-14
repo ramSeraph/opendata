@@ -261,7 +261,10 @@ def download_task(downloader):
 
 class BaseDownloader:
     downloader_cache = {}
+    comp_map = None
     def __init__(self, **kwargs):
+        if BaseDownloader.comp_map is None:
+            raise Exception('comp_map is not set')
         kwargs = add_defaults_to_args({'name': '',
                                        'desc': '',
                                        'transform': ['identity'],
@@ -271,9 +274,14 @@ class BaseDownloader:
                                        kwargs)
 
         self.name = kwargs['name']
-        self.desc = kwargs['desc']
+        known_info = BaseDownloader.comp_map[self.name]
+
+        self.desc = known_info['desc']
+        self.csv_filename = known_info['file']
+        self.expected_fields = known_info['fields']
+        self.dropdown = known_info['dropdown']
+
         self.transform = kwargs['transform']
-        self.csv_filename = kwargs['csv_filename']
         self.deps = kwargs['deps']
         self.base_url = BASE_URL
         self.captcha_helper = CaptchaHelper(kwargs['ctx'], BASE_URL)
@@ -293,6 +301,20 @@ class BaseDownloader:
     def add_dep(self, dep):
         if dep not in self.deps:
             self.deps.append(dep)
+
+    @classmethod
+    def set_known_site_map(cls, known_site_map):
+        known_site_map = copy.copy(known_site_map)
+        comp_map = {}
+        for e in known_site_map:
+            comp = e['comp']
+            del e['comp']
+            if comp == 'IGNORE':
+                continue
+            comp_map[comp] = e
+
+        cls.comp_map = comp_map
+
 
     @classmethod
     def get_subclasses(cls):

@@ -151,7 +151,7 @@
     "dropdown": [ "Download Directory", "Local body", "Wards of Urban local bodies" ],
     "comp": "URBAN_LOCAL_BODY_WARDS",
     "file": "urban_local_body_wards.csv",
-    "desc": "list of all Traditional local bodies",
+    "desc": "list of all Urban Local body wards",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial number" },
       "Local Body Code": { "action": "KEEP", "description": "LGD Code for the local body" },
@@ -464,7 +464,7 @@
   {
     "dropdown": [ "Download Directory", "Development Block", "Subdistrict, Village,Development Block and GPs/TLB Mapping" ],
     "comp": "TLB_VILLAGES",
-    "desc": "the mapping of villages to Tradition Local Bodies and Panchayats",
+    "desc": "the mapping of villages to Traditional Local Bodies and Panchayats",
     "file": "tlb_villages.csv",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial Number" },
@@ -518,7 +518,7 @@
   {
     "dropdown": [ "Download Directory", "Department/Organization", "Organization Units of a Department/Organization", "Central" ],
     "comp":  "CENTRAL_ORG_UNITS",
-    "desc": "list of all central level organization units",
+    "desc": "list of all central organization units",
     "file": "central_org_units.csv",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial number" },
@@ -555,7 +555,7 @@
   {
     "dropdown": [ "Download Directory", "Department/Organization", "Designations of a Department/Organization", "Central" ],
     "comp": "CENTRAL_ORG_DESIGNATIONS",
-    "desc": "list of all central level organization designations",
+    "desc": "list of all central organization designations",
     "file": "central_org_designations.csv",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial number" },
@@ -588,8 +588,8 @@
   {
     "dropdown": [ "Download Directory", "Department/Organization", "Ministries/Departments/Organizations Details", "Central" ],
     "comp": "CENTRAL_ORG_DETAILS",
-    "desc": "list of all state level organizations",
-    "file": "state_orgs.csv",
+    "desc": "list of all central organization details",
+    "file": "central_orgs.csv",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial number" },
       "Organization Code": { "action": "KEEP", "description": "Organization LGD Code" },

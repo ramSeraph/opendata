@@ -279,6 +279,11 @@
     "ignore_reason": "Covered in PANCHAYAT_MAPPINGS but has Block and District Panchayat mappings as well.. reconsider?"
   },
   {
+    "dropdown": [ "Download Directory", "Local body", "All India District , Subdistrict ,Village and GPs/TLB Mapping" ],
+    "comp": "IGNORE",
+    "ignore_reason": "Covered in TLB_VILLAGES"
+  },
+  {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Parliament Wise Local Body Mapping" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, Confusing"

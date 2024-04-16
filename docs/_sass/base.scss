@@ -71,6 +71,16 @@ input[type=submit]:hover { color: var(--background-color); background-color: var
 textarea { vertical-align: top; }
 
 /**
+ * Table
+ */
+
+table { border-collapse: collapse; border-spacing: 0; border:2px solid var(--text-color); }
+
+th { border:2px solid var(--text-color); }
+
+td { border:1px solid var(--text-color); }
+
+/**
  * Code and syntax highlighting
  */
 .lineno { color: var(--code-color-1); margin-right: 15px; }

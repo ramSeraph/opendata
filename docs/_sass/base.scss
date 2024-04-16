@@ -74,11 +74,11 @@ textarea { vertical-align: top; }
  * Table
  */
 
-table { border-collapse: collapse; border-spacing: 0; border:2px solid var(--text-color); }
+table { border-collapse: collapse; border-spacing: 0; border:1px dashed var(--text-color); }
 
-th { border:2px solid var(--text-color); }
+th { border:2px dashed var(--text-color); }
 
-td { border:1px solid var(--text-color); }
+td { border:1px dashed var(--text-color); }
 
 /**
  * Code and syntax highlighting

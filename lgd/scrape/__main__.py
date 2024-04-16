@@ -176,16 +176,17 @@ def get_markdown_from_comps(comps_info):
         location_str = '\n'.join(step_strs)
         full_str += "---\n\n"
         full_str += f"## {filename}\n\n"
-        full_str += f"description\n: {desc}\n\n"
-        full_str += "Location in LGD\n"
+        full_str += f"description:\n: {desc}\n\n"
+        full_str += "Location in LGD:\n"
         full_str += f": {location_str}\n\n"
-        #full_str += f"fields:\n"
-        #for field in fields.keys():
-        #    full_str += f'| {field} '
-        #full_str += '|\n\n'
-        #for field in fields.keys():
-        #    full_str += f'| --- '
-        #full_str += '|\n\n'
+        fields = comp_info['fields']
+        full_str += "Expected fields:\n: "
+        full_str += '| Name | Description |\n'
+        full_str += '| :---: | :---: |\n'
+        for field in fields.keys():
+            fdesc = fields[field]['description']
+            full_str += f'| {field} | {fdesc} |\n'
+        full_str += '\n'
         
     return full_str
 

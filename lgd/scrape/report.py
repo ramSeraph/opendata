@@ -352,6 +352,7 @@ class StateWiseReportDownloader(MultiDownloader, ReportDownloader):
             csv_path = Path(self.csv_filename)
             csv_filename_s = '{}_{}{}'.format(csv_path.stem, state_code, csv_path.suffix)
             downloader = ReportDownloader(name='{}_{}'.format(self.name, state_code),
+                                          base_name=self.name,
                                           desc='{} for state {}({})'.format(self.desc, state_name, state_code),
                                           csv_filename=csv_filename_s,
                                           sub_url=self.sub_url,
@@ -407,6 +408,7 @@ class ChangesReportDownloader(MultiDownloader, ReportDownloader):
             csv_path = Path(self.csv_filename)
             csv_filename_s = '{}_{}{}'.format(csv_path.stem, old_date_str, csv_path.suffix)
             downloader = ReportDownloader(name='{}_{}'.format(self.name, old_date_str),
+                                          base_name=self.name,
                                           desc='{} for date {}'.format(self.desc, old_date_str),
                                           sub_url=self.sub_url,
                                           csv_filename=csv_filename_s,

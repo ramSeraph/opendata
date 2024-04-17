@@ -265,19 +265,21 @@ class BaseDownloader:
     def __init__(self, **kwargs):
         if BaseDownloader.comp_map is None:
             raise Exception('comp_map is not set')
-        kwargs = add_defaults_to_args({'name': '',
-                                       'desc': '',
+        kwargs = add_defaults_to_args({'name': None,
+                                       'base_name': None,
+                                       'desc': None,
+                                       'csv_filename': None,
                                        'transform': ['identity'],
-                                       'csv_filename': '',
                                        'deps': [],
                                        'ctx': Context(Params())},
                                        kwargs)
 
         self.name = kwargs['name']
-        known_info = BaseDownloader.comp_map[self.name]
+        lookup_name = kwargs['base_name'] or kwargs['name']
+        known_info = BaseDownloader.comp_map[lookup_name]
 
-        self.desc = known_info['desc']
-        self.csv_filename = known_info['file']
+        self.desc = kwargs['desc'] or known_info['desc']
+        self.csv_filename = kwargs['csv_filename'] or known_info['file']
         self.expected_fields = known_info['fields']
         self.dropdown = known_info['dropdown']
 

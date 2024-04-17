@@ -216,6 +216,7 @@ class StateWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
             post_data_extra.update({ 'stateName': state_name,
                                      'entityCodes': state_code })
             downloader = DirectoryDownloader(name='{}_{}'.format(self.name, state_code),
+                                             base_name=self.name,
                                              desc='{} for state {}({})'.format(self.desc, state_name, state_code),
                                              csv_filename=csv_filename_s,
                                              ctx=self.ctx,
@@ -257,6 +258,7 @@ class OrgWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
             post_data_extra = copy.copy(self.post_data_extra)
             post_data_extra.update({ 'entityCodes': ['35', state_code, org_code] })
             downloader = DirectoryDownloader(name='{}_{}'.format(self.name, org_code),
+                                             base_name=self.name,
                                              desc='{} for organization {}({}) of {}({})'\
                                                   .format(self.desc, org_name, org_code, state_name, state_code),
                                              csv_filename=csv_filename_s,
@@ -306,6 +308,7 @@ class AdminDeptWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
                                     'fromDate2': from_str,
                                     'toDate2': to_str})
             downloader = DirectoryDownloader(name='{}_{}'.format(self.name, admin_dept_code),
+                                             base_name=self.name,
                                              desc='{} for admin dept {}({}) of {}({})'\
                                                   .format(self.desc, admin_dept_name, admin_dept_code,
                                                           state_name, state_code),
@@ -347,6 +350,7 @@ class ConstituencyWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
             post_data_extra.update({'stateName': state_name,
                                     'entityCodes': [state_code, const_code]})
             downloader = DirectoryDownloader(name='{}_{}_{}'.format(self.name, state_code, const_code),
+                                             base_name=self.name,
                                              desc='{} for constituency {}({}) of state {}({})'.format(self.desc, const_name, const_code, state_name, state_code),
                                              csv_filename=csv_filename_s,
                                              ctx=self.ctx,

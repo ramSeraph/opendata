@@ -207,6 +207,7 @@ class StateWiseDwrDownloader(MultiDownloader, DwrDownloader):
             csv_path = Path(self.csv_filename)
             csv_filename_s = '{}_{}{}'.format(csv_path.stem, state_code, csv_path.suffix)
             downloader = DwrDownloader(name='{}_{}'.format(self.name, state_code),
+                                       base_name=self.name,
                                        desc='{} for state {}({})'.format(self.desc, state_name, state_code),
                                        csv_filename=csv_filename_s,
                                        ctx=self.ctx,

@@ -39,8 +39,8 @@ The archives use a zip format which is not understood by the standard unix `unzi
 <div id="archive_date" class="flatpickr"></div>
 <br>
 <span id='form_status'></span>
----
 
+---
 # Wikidata Syncing
 
 Some of the entities have been synced into [Wikidata](https://www.wikidata.org/wiki/Wikidata:Main_Page).

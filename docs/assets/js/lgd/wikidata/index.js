@@ -66,7 +66,7 @@ function addLinks(entities) {
   div.insertAdjacentHTML('beforeend', '<h1>Reports:</h1>');
   div.insertAdjacentHTML('beforeend', '<ul id="linklist"></ul>');
   const list = document.getElementById('linklist');
-  entities.forEach((e) => list.insertAdjacentHTML('beforeend', `<li><h2><a href="javascript:location.search+='&entity=${e}';">${e}s</a></h2></li>`));
+  entities.forEach((e) => list.insertAdjacentHTML('beforeend', `<li><a href="javascript:location.search+='&entity=${e}';">${e}s</a></li>`));
 }
 
 function getMainDiv() {

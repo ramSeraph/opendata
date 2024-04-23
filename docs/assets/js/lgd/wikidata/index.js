@@ -29,7 +29,7 @@ function renderSections(list, data) {
     if (v.length === 0) {
       continue;
     }
-    list.insertAdjacentHTML('beforeend', `<li id=${k}><h2>${k}</h2></li>`);
+    list.insertAdjacentHTML('beforeend', `<li id=${k}>${k}:</li>`);
     const le = document.getElementById(k);
     renderSection(k, v, le);
     count += 1;
@@ -66,7 +66,8 @@ function addLinks(entities) {
   div.insertAdjacentHTML('beforeend', '<h1>Reports:</h1>');
   div.insertAdjacentHTML('beforeend', '<ul id="linklist"></ul>');
   const list = document.getElementById('linklist');
-  entities.forEach((e) => list.insertAdjacentHTML('beforeend', `<li><a href="javascript:location.search+='&entity=${e}';">${e}s</a></li>`));
+  const baseUrl = window.location.toString();
+  entities.forEach((e) => list.insertAdjacentHTML('beforeend', `<li><a href=`${baseUrl}?entity=${e}';">${e}s</a></li>`));
 }
 
 function getMainDiv() {

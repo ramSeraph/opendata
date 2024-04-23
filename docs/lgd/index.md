@@ -15,6 +15,12 @@ Collection of Data from [Local Government Directory](https://lgdirectory.gov.in)
 
 [Code](https://github.com/ramSeraph/opendata//tree/master/lgd) used to extract this data.
 
+# Wikidata Syncing
+
+Some of the entities have been synced into [wikidata](https://www.wikidata.org/wiki/Wikidata:Main_Page).
+
+[Wikidata Syncing Report](wikidata)
+
 
 # Notes
 
@@ -30,6 +36,7 @@ The archives use a zip format which is not understood by the standard unix `unzi
 [List Of All Daily Archives](archives)
 
 [Description](anatomy) of data in the archive
+
 
 
 # Get Archive for date

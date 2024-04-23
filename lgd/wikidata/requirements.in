@@ -1,0 +1,9 @@
+unidecode
+pywikibot
+pbr
+six
+future
+cython
+numpy
+scipy
+git+https://github.com/libindic/indic-trans.git

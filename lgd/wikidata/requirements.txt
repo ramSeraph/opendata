@@ -1,0 +1,16 @@
+certifi==2024.2.2
+charset-normalizer==3.3.2
+Cython==3.0.10
+future==1.0.0
+idna==3.7
+indictrans @ git+https://github.com/libindic/indic-trans.git@0287fa62289968f0ce06cbe2df61cfadf4088c75
+mwparserfromhell==0.6.6
+numpy==1.26.4
+packaging==24.0
+pbr==6.0.0
+pywikibot==9.1.0
+requests==2.31.0
+scipy==1.13.0
+six==1.16.0
+Unidecode==1.3.8
+urllib3==2.2.1

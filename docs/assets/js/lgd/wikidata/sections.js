@@ -18,7 +18,7 @@ function renderLgdEntry(lgdEntry) {
     }
     out += `<li>${k}: ${v}</li>`;
   }
-  out += '</ul>;
+  out += '</ul>';
   return out;
 }
 

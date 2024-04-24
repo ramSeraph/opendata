@@ -208,9 +208,46 @@ class WrongHierarchy {
   }
 }
 
+class WrongSuffix {
+  constructor(data) {
+    this.data = data;
+  }
+  getHTML() {
+    const link = wd_link(this.data['wikidata_id'], this.data['wikidata_label']);
+    const expected_suffix = this.data['expected_suffix'];
+    return `<span>${link}</span><ul><li>Expected Suffix: ${expected_suffix}</li></ul>`;
+  }
+  /* TODO: add corrections */
+  getQSRow() {
+    return null;
+  }
+  static getQSHeader() {
+    return null;
+  }
+}
 
-
-
+class WrongInstOf {
+  constructor(data) {
+    this.data = data;
+  }
+  getHTML() {
+    const link = wd_link(this.data['wikidata_id'], this.data['wikidata_label']);
+    const expected_inst_of_entries = this.data['expected_inst_ofs'];
+    const expected_inst_of_links = [];
+    for (const e of expected_inst_of_entries) {
+      expected_inst_of_links.push(wd_link(e['id'], e['label']));
+    }
+    const expected_links_str = expected_inst_of_links.join(' or ');
+    return `<span>${link}</span><ul><li>Expected Instance Of: ${expected_inst_of_links}</li></ul>`;
+  }
+  /* TODO: add corrections */
+  getQSRow() {
+    return null;
+  }
+  static getQSHeader() {
+    return null;
+  }
+}
 
 function getInstance(k, data) {
   var inst = null;
@@ -234,6 +271,10 @@ function getInstance(k, data) {
     inst = new NameMismatch(data);
   } else if (k === 'wrong_hierarchy') {
     inst = new WrongHierarchy(data);
+  } else if (k === 'wrong_suffix') {
+    inst = new WrongSuffix(data);
+  } else if (k === 'wrong_inst_of') {
+    inst = new WrongInstOf(data);
   }
   return inst;
 }

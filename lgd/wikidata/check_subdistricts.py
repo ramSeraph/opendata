@@ -5,8 +5,9 @@ from pprint import pprint
 
 from common import (
     base_entity_checks, write_report,
-    get_label, get_lgd_codes,
-    get_located_in_ids, get_wd_entity_lgd_mapping,
+    get_label, get_lgd_codes, state_info,
+    get_located_in_ids, get_instance_of_ids,
+    get_wd_entity_lgd_mapping,
     get_wd_data, get_lgd_data, get_entry_from_wd_id
 )
 
@@ -67,7 +68,72 @@ def hierarchy_check():
                                               'expected': [ get_entry_from_wd_id(expected_dist_id) ]})
     return report
 
+def suffix_check():
+    report = { 'wrong_suffix': [] }
+    by_wid = {}
+    for s_code, e in state_info.items():
+        e['state_code'] = s_code
+        wid = e['wd_id']
+        by_wid[wid] = e
+        if 'alts' not in e:
+            continue
+        for e1 in e['alts']:
+            e1['state_code'] = s_code
+            wid1 = e1['wd_id']
+            by_wid[wid1] = e1
 
+    filtered = get_wd_data(wd_fname, filter_subdistrict)
+    for k,v in filtered.items():
+        inst_of_ids = get_instance_of_ids(v)
+        if len(inst_of_ids) != 1:
+            continue
+        inst_of_wid = f'Q{inst_of_ids[0]}'
+        if inst_of_wid not in by_wid:
+            continue
+        info = by_wid[inst_of_wid]
+        expected_suffix = info.get('label_suffix', None)
+        if expected_suffix is None:
+            expected_suffix = info['suffix']
+        label = get_label(v)
+        if label.upper().endswith(f' {expected_suffix.upper()}'):
+            continue
+        report['wrong_suffix'].append({'wikidata_id': k,
+                                       'wikidata_label': label,
+                                       'expected_suffix': expected_suffix})
+    return report
+
+def inst_of_check():
+    report = { 'wrong_inst_of': [] }
+    lgd_subdist_data = get_lgd_data(lgd_fname, lgd_id_key)
+
+    filtered = get_wd_data(wd_fname, filter_subdistrict)
+    for k,v in filtered.items():
+        lgd_codes = get_lgd_codes(v)
+        if len(lgd_codes) != 1:
+            continue
+        lgd_code = lgd_codes[0]
+        if lgd_code not in lgd_subdist_data:
+            continue
+        lgd_entry = lgd_subdist_data[lgd_code]
+        state_code = lgd_entry['State Code']
+        info = state_info[state_code]
+        expected_inst_of_wd_ids = [ info['wd_id'] ]
+        if 'alts' in info:
+            for alt in info['alts']:
+                expected_inst_of_wd_ids.append(alt['wd_id'])
+        expected_inst_of_ids = [ int(e[1:]) for e in expected_inst_of_wd_ids ]
+        inst_of_ids = get_instance_of_ids(v)
+        if len(inst_of_ids) != 1:
+            continue
+        inst_of_id = inst_of_ids[0]
+        if inst_of_id in expected_inst_of_ids:
+            continue
+        label = get_label(v)
+        report['wrong_inst_of'].append({'wikidata_id': k,
+                                        'wikidata_label': label,
+                                        'expected_inst_ofs': [ get_entry_from_wd_id(e) for e in expected_inst_of_ids ],
+                                        'current_inst_of': get_entry_from_wd_id(inst_of_id)})
+    return report
 if __name__ == '__main__':
     report = base_entity_checks(entity_type='subdistrict',
                                 lgd_fname=lgd_fname,
@@ -85,6 +151,8 @@ if __name__ == '__main__':
                                                    ' P.S.', ' P.S', 'P.S.'],
                                 name_match_threshold=0.99)
     report.update(hierarchy_check())
+    report.update(suffix_check())
+    report.update(inst_of_check())
     pprint(report)
     write_report(report, 'subdistricts.json')
 

@@ -68,11 +68,26 @@ def hierarchy_check():
         return report
 
 
+def suffix_check():
+    report = { 'wrong_suffix': [] }
+    filtered = get_wd_data(wd_fname, filter_district)
+
+    for k,v in filtered.items():
+        label = get_label(v)
+        if label.upper().endswith(' DISTRICT'):
+            continue
+        report['wrong_suffix'].append({'wikidata_id': k,
+                                       'wikidata_label': label,
+                                       'expected_suffix': ' district'})
+    return report
+
+
 if __name__ == '__main__':
     report = base_entity_checks(entity_type='district',
                                 lgd_fname=lgd_fname, lgd_id_key=lgd_id_key, lgd_name_key=lgd_name_key,
                                 wd_fname=wd_fname, wd_filter_fn=filter_district,
                                 name_prefix_drops=['THE '], name_suffix_drops=['DISTRICT'], name_match_threshold=0.0)
     report.update(hierarchy_check())
+    report.update(suffix_check())
     pprint(report)
     write_report(report, 'districts.json')

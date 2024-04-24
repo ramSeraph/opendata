@@ -10,6 +10,8 @@ from indictrans import Transliterator
 
 from lev import masala_levenshtein
 
+st_himachal = { "name": "Himachal pradesh", "suffix": "Subtehsil", "type": "Subtehsil", "wd_id": "Q123264643" }
+st_haryana = { "name": "Haryana", "suffix": "Subtehsil", "type": "Subtehsil", "wd_id": "Q123264644" }
 state_info = {
     "35": { "name": "Andaman And Nicobar Islands", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987709" },
     "28": { "name": "Andhra Pradesh", "suffix": "Mandal", "type": "Tehsil", "wd_id": "Q122987710"  },
@@ -21,8 +23,8 @@ state_info = {
     "7": { "name": "Delhi", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987716"  }, # TODO: check 
     "30": { "name": "Goa", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987717"  },
     "24": { "name": "Gujarat", "suffix": "Taluka", "type": "Tehsil", "wd_id": "Q122987718"  }, # TODO: check 
-    "6": { "name": "Haryana", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987719"  }, # TODO: check 
-    "2": { "name": "Himachal Pradesh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987720"  },
+    "6": { "name": "Haryana", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987719", "alts": [ st_haryana ]  }, # TODO: check 
+    "2": { "name": "Himachal Pradesh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987720", "alts": [ st_himachal ]  },
     "1": { "name": "Jammu And Kashmir", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987721"  }, # TODO: check 
     "20": { "name": "Jharkhand", "suffix": "Block", "type": "Block", "wd_id": "Q122987723"  }, # TODO: check 
     "29": { "name": "Karnataka", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987724"  }, # TODO: check 
@@ -35,7 +37,7 @@ state_info = {
     "17": { "name": "Meghalaya", "suffix": "Block", "type": "Block", "wd_id": "Q122987730"  }, # C. & R. D. Block R is for Rural?
     "15": { "name": "Mizoram", "suffix": "Block", "type": "Block", "long": "Rural Development Block", "wd_id": "Q122987731"  }, # Rural Development Block
     "13": { "name": "Nagaland", "suffix": "Circle", "type": "Tehsil", "wd_id": "Q122987732"  },
-    "21": { "name": "Odisha", "suffix": "Police Station", "type": "Police Station", "wd_id": "Q122986857", "wd_block_id": "Q61863384" }, # Tehsils exist, Police station maps are available in the Census Atlas
+    "21": { "name": "Odisha", "suffix": "Police Station", "label_suffix": "P.S.", "type": "Police Station", "wd_id": "Q122986857", "wd_block_id": "Q61863384" }, # Tehsils exist, Police station maps are available in the Census Atlas
     "34": { "name": "Puducherry", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987733"  },
     "3": { "name": "Punjab", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987734", "wd_block_id": "Q123200469" }, # TODO: check 
     "8": { "name": "Rajasthan", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987735", "wd_block_id": "Q123009239"  }, # TODO: check 

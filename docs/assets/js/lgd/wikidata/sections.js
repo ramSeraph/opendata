@@ -10,6 +10,18 @@ function wd_link(wd_id, wd_name) {
   return `<a href="${url}" target="_blank">${wd_name}</a>`;
 }
 
+function renderLgdEntry(lgdEntry) {
+  var out = '<ul>';
+  for (const [k, v] of Object.entries(lgdEntry) {
+    if (k === 'lgd_code' || k === 'lgd_name') {
+      continue;
+    }
+    out += `<li>${k}: ${v}</li>`;
+  }
+  out += '</ul>;
+  return out;
+}
+
 class NotInIndia {
   constructor(data) {
     this.data = data;
@@ -66,7 +78,9 @@ class DuplicateLGDId {
   getHTML() {
     const currLink = wd_link(this.data['curr'], this.data['curr_label']);
     const prevLink = wd_link(this.data['prev'], this.data['prev_label']);
-    return `LGD id: ${this.data['lgd_code']}, Curr: ${currLink}, Prev: ${prevLink}`;
+    const lgdEntry = this.data['lgd_entry'];
+    const lgdStr = renderLgdEntry(lgd_entry);
+    return `<ul><li>LGD id: ${lgd_entry['lgd_code']}, LGD Name: ${lgd_entry['lgd_name']}${lgdStr}</li><li> Curr: ${currLink}</li><li>Prev: ${prevLink}</li>`;
   }
   getQSRow() {
     return null;
@@ -126,8 +140,8 @@ class MultipleLGDIds {
     const link = wd_link(this.data['wikidata_id'],this.data['wikidata_label']);
     var liHTMLs = '';
     for (const lgdEntry of this.data['lgd_entries']) {
-        /* TODO: add the remaining fields */
-        liHTMLs += `<li>${lgdEntry['lgd_name']} - ${lgdEntry['lgd_code']}</li>`;
+      const lgdStr = renderLgdEntry(lgdEntry);
+      liHTMLs += `<li>LGD Name: ${lgdEntry['lgd_name']}, LGD Code: ${lgdEntry['lgd_code']}${lgdStr}</li>`;
     }
     return `<span>${link}</span><ul>${liHTMLs}</ul>`;
   }
@@ -146,7 +160,8 @@ class Missing {
   getHTML() {
     const lgdEntry = this.data['lgd_entry'];
     /* TODO: add extra fields */
-    return `${lgdEntry['lgd_name']} - ${lgdEntry['lgd_code']}`;
+    const lgdStr = renderLgdEntry(lgdEntry);
+    return `LGD Name: ${lgdEntry['lgd_name']}, LGD Code: ${lgdEntry['lgd_code']}${lgdStr}`;
   }
   /* TODO: add corrections */
   getQSRow() {
@@ -164,8 +179,9 @@ class NameMismatch {
   getHTML() {
     const link = wd_link(this.data['wikidata_id'], this.data['wikidata_label']);
     const lgdEntry = this.data['lgd_entry'];
+    const lgdStr = renderLgdEntry(lgdEntry);
     /* TODO: add extra fields */
-    return `${lgdEntry['lgd_name']} - ${lgdEntry['lgd_code']}, ${link}`;
+    return `${link}, LGD Name: ${lgdEntry['lgd_name']}, LGD Code: ${lgdEntry['lgd_code']}${lgdStr}`;
   }
   /* TODO: add corrections */
   getQSRow() {

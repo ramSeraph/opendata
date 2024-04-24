@@ -238,7 +238,9 @@ class WrongInstOf {
       expected_inst_of_links.push(wd_link(e['id'], e['label']));
     }
     const expected_links_str = expected_inst_of_links.join(' or ');
-    return `<span>${link}</span><ul><li>Expected Instance Of: ${expected_inst_of_links}</li></ul>`;
+    const curr = this.data['current_inst_of'];
+    const curr_inst_of_link = wd_link(curr['id'], curr['label']);
+    return `<span>${link}</span><ul><li>Expected Instance Of: ${expected_inst_of_links}</li><li>Current Instance Of: ${curr_inst_of_link}</ul>`;
   }
   /* TODO: add corrections */
   getQSRow() {

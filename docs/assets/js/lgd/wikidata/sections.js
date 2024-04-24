@@ -12,7 +12,7 @@ function wd_link(wd_id, wd_name) {
 
 function renderLgdEntry(lgdEntry) {
   var out = '<ul>';
-  for (const [k, v] of Object.entries(lgdEntry) {
+  for (const [k, v] of Object.entries(lgdEntry)){
     if (k === 'lgd_code' || k === 'lgd_name') {
       continue;
     }

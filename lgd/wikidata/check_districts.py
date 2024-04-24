@@ -15,15 +15,15 @@ from filters import filter_district, filter_state, filter_division
 lgd_fname = 'data/lgd/districts.csv'
 lgd_id_key = 'District Code'
 lgd_name_key = 'District Name (In English)'
-wd_fname = 'data/districts.json'
+wd_fname = 'data/districts.jsonl'
 
 def hierarchy_check():
     report = { 'wrong_hierarchy': [] }
 
-    wd_state_map = get_wd_entity_lgd_mapping('data/states.json', filter_state)
+    wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
     wd_state_map_rev = {v:k for k,v in wd_state_map.items() }
 
-    filtered_divisions = get_wd_data('data/divisions.json', filter_division)
+    filtered_divisions = get_wd_data('data/divisions.jsonl', filter_division)
     for k,v in filtered_divisions.items():
         located_in_ids = get_located_in_ids(v)
         if len(located_in_ids) != 1:

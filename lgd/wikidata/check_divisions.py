@@ -13,10 +13,10 @@ from common import (
 from filters import filter_state, filter_division
 
 
-wd_fname = 'data/divisions.json'
+wd_fname = 'data/divisions.jsonl'
 def hierarchy_check():
     report = { 'wrong_hierarchy': [] }
-    state_mapping = get_wd_entity_lgd_mapping('data/states.json', filter_state)
+    state_mapping = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
 
     filtered = get_wd_data(wd_fname, filter_division)
     for k,v in filtered.items():

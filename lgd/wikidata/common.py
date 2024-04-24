@@ -276,12 +276,17 @@ def get_lgd_data(fname, key):
 
 def get_wd_data(fname, filter_fn):
     filtered = {}
-    entity_data = json.loads(Path(fname).read_text())
-    for k,v in entity_data.items():
-        if not filter_fn(v):
-            print("filtering:", k, get_label(v))
-            continue
-        filtered[k] = v
+    with open(fname, 'r') as f:
+        for line in f:
+            if line.strip() == '':
+                continue
+            item = json.loads(line)
+            k = item['id']
+            v = item['data']
+            if not filter_fn(v):
+                print("filtering:", k, get_label(v))
+                continue
+            filtered[k] = v
     return filtered
 
 

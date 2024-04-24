@@ -28,7 +28,7 @@ def hierarchy_check(wd_fname=None, wd_filter_fn=None):
     return report
 
 if __name__ == '__main__':
-    wd_fname = 'data/states.json'
+    wd_fname = 'data/states.jsonl'
     report = base_entity_checks(entity_type='state',
                                 lgd_fname='data/lgd/states.csv', lgd_id_key='State Code', lgd_name_key='State Name(In English)',
                                 wd_fname=wd_fname, wd_filter_fn=filter_state,

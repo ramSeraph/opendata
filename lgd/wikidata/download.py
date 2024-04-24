@@ -5,26 +5,34 @@ from pprint import pprint
 from pathlib import Path
 from pywikibot import pagegenerators
 
-def get_entities(repo, qid):
+def get_data(repo, qid, fname):
+    p = Path(fname)
+    already_seen = set()
+    if p.exists():
+        with open(p, 'r') as f:
+            for line in f:
+                if line.strip() == '':
+                    continue
+                item = json.loads(line)
+                k = item['id']
+                already_seen.add(k)
+
     QUERY = f"SELECT ?item WHERE {{ ?item wdt:P31/wdt:P279* wd:{qid}. }}"
     
     generator = pagegenerators.PreloadingEntityGenerator(pagegenerators.WikidataSPARQLPageGenerator(QUERY,site=repo))
     
     count = 0
-    dicts = {}
-    for item in generator:
-        d = item.toJSON()
-        dicts[item.id] = d
-        count += 1
-        print(f'handled {count} entries')
-    return dicts
+    with open(p, 'a') as f:
+        for item in generator:
+            if item.id in already_seen:
+                count += 1
+                continue
+            d = item.toJSON()
+            f.write(json.dumps({'id': item.id, 'data': d}))
+            f.write('\n')
+            count += 1
+            print(f'handled {count} entries')
 
-def get_data(repo, qid, fname):
-    p = Path(fname)
-    if p.exists():
-        return
-    data = get_entities(repo, qid)
-    p.write_text(json.dumps(data, indent=2))
 
 if __name__ == '__main__':
     entity = sys.argv[1]
@@ -32,22 +40,22 @@ if __name__ == '__main__':
     repo = site.data_repository()
     if entity == 'state':
         print('getting states')
-        get_data(repo, 'Q131541', 'data/states.json')
+        get_data(repo, 'Q131541', 'data/states.jsonl')
     elif entity == 'division':
         print('getting divisions')
-        get_data(repo, 'Q1230708', 'data/divisions.json')
+        get_data(repo, 'Q1230708', 'data/divisions.jsonl')
     elif entity == 'district':
         print('getting districts')
-        get_data(repo, 'Q1149652', 'data/districts.json')
+        get_data(repo, 'Q1149652', 'data/districts.jsonl')
     elif entity == 'subdivision':
         print('getting sub divisions')
-        get_data(repo, 'Q7631016', 'data/subdivisions.json')
+        get_data(repo, 'Q7631016', 'data/subdivisions.jsonl')
     elif entity == 'subdistrict':
         print('getting sub districts')
         #get_data(repo, 'Q7694920', 'data/subdistricts.json')
-        get_data(repo, 'Q105626471', 'data/subdistricts.json')
+        get_data(repo, 'Q105626471', 'data/subdistricts.jsonl')
     elif entity == 'block':
         print('getting blocks')
-        get_data(repo, 'Q2775236', 'data/blocks.json')
+        get_data(repo, 'Q2775236', 'data/blocks.jsonl')
     elif entity == 'village':
         print('getting villages')

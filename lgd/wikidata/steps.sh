@@ -1,8 +1,38 @@
 #!/bin/bash
 set -aux
 
+script_dir=$(dirname "$0")
+unameOut="$(uname -s)"
 
-date=16Apr2024
+conv_date() {
+  if [[ $unameOut == "Darwin" ]]; then
+    date -j -f "%d%b%Y" "$1" +"%s"
+  else
+    date date -d"$1" +"%s"
+  fi
+}
+
+get_lgd_latest_date() {
+  max_date="01Jan1970"
+  max_date_conv=$(conv_date $max_date)
+  cd data
+  wget -q https://storage.googleapis.com/lgd_data_archive/listing_archives.txt
+  all_dates="$(cat listing_archives.txt| cut -d' ' -f2)"
+  for d in $all_dates
+  do
+    d_conv=$(conv_date $d)
+    echo "date: $d_conv"
+    if [[ $d_conv -gt $max_date_conv ]]; then
+      max_date=$d
+      max_date_conv=$d_conv
+    fi
+  done
+  cd -
+  echo ${max_date}
+}
+
+date=$(get_lgd_latest_date)
+
 lgd_files=(
   'blocks.csv'
   'districts.csv'
@@ -34,38 +64,38 @@ get_lgd_files() {
 }
 
 verify_states() {
-    python download.py state
-    python check_states.py
+    python ${script_dir}/download.py state
+    python ${script_dir}/check_states.py
   
 }
 
 verify_divisions() {
-    python download.py state
-    python download.py division
-    python check_districts.py
+    python ${script_dir}/download.py state
+    python ${script_dir}/download.py division
+    python ${script_dir}/check_districts.py
 }
 
 verify_districts() {
-    python download.py state
-    python download.py division
-    python download.py district
-    python check_districts.py
+    python ${script_dir}/download.py state
+    python ${script_dir}/download.py division
+    python ${script_dir}/download.py district
+    python ${script_dir}/check_districts.py
 }
 
 verify_subdivisions() {
-    python download.py district
-    python download.py subdivision
-    python check_subdivisions.py
+    python ${script_dir}/download.py district
+    python ${script_dir}/download.py subdivision
+    python ${script_dir}/check_subdivisions.py
 }
 
 verify_subdistricts() {
-    python download.py district
-    python download.py subdivision
-    python download.py subdistrict
-    python check_subdistricts.py
+    python ${script_dir}/download.py district
+    python ${script_dir}/download.py subdivision
+    python ${script_dir}/download.py subdistrict
+    python ${script_dir}/check_subdistricts.py
 }
 
-#get_lgd_files
+get_lgd_files
 
 verify_states
 verify_divisions

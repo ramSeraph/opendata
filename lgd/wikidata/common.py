@@ -363,6 +363,7 @@ def base_entity_checks(entity_type=None,
             continue
 
         if len(lgd_codes) == 0:
+            # TODO: locate best match?
             report['no_lgd_id'].append({
                 'wikidata_id': k, 
                 'wikidata_label': label
@@ -391,8 +392,9 @@ def base_entity_checks(entity_type=None,
         lgd_entry = lgd_data[lgd_code]
         lgd_name = lgd_entry[lgd_name_key]
         if lgd_code in seen:
+            lgd_entry_out = create_ext_lgd_entry(lgd_entry)
             report['duplicate_lgd_id'].append({
-                'lgd_code': lgd_code,
+                'lgd_entry': lgd_entry_out,
                 'curr': k,
                 'curr_label': label,
                 'prev': seen[lgd_code][0],
@@ -424,6 +426,7 @@ def base_entity_checks(entity_type=None,
         for lgd_id in missing_in_wikidata:
             lgd_entry = lgd_data[lgd_id]
             lgd_entry_out = create_ext_lgd_entry(lgd_entry)
+            #TODO: locate and add best matches?
             report['missing'].append({'lgd_entry': lgd_entry_out})
     return report
 

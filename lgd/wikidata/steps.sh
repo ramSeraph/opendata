@@ -21,7 +21,6 @@ get_lgd_latest_date() {
   for d in $all_dates
   do
     d_conv=$(conv_date $d)
-    echo "date: $d_conv"
     if [[ $d_conv -gt $max_date_conv ]]; then
       max_date=$d
       max_date_conv=$d_conv

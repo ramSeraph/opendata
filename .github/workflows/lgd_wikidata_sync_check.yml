@@ -52,8 +52,8 @@ jobs:
             data/
           key:  data-raw-lgd-wikidata-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            data-raw-rfcoverage-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            data-raw-rfcoverage-${{ steps.date.outputs.date }}-
+            data-raw-lgd-wikidata-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            data-raw-lgd-wikidata-${{ steps.date.outputs.date }}-
 
       - name: Authenticate with GCP
         run: |

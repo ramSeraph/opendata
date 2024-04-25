@@ -1,5 +1,5 @@
 #!/bin/bash
-set -aux
+set -aeux
 
 script_dir=$(dirname "$0")
 unameOut="$(uname -s)"
@@ -31,7 +31,6 @@ get_lgd_latest_date() {
   echo ${max_date}
 }
 
-date=$(get_lgd_latest_date)
 
 lgd_files=(
   'blocks.csv'
@@ -45,21 +44,22 @@ lgd_files=(
   'villages_by_blocks.csv'
 )
 
-mkdir -p data/lgd
 
 get_lgd_files() {
-
+  mkdir -p data/lgd
+  date_str=$(get_lgd_latest_date)
   cd data
+  echo "getting lgd_archive for $date_str"
   # download the lgd archive
-  wget https://storage.googleapis.com/lgd_data_archive/${date}.zip
+  $wget https://storage.googleapis.com/lgd_data_archive/${date_str}.zip
   # unzip files
-  7z x ${date}.zip
+  7z x ${date_str}.zip
   # move files to lgd dir
   for file in ${lgd_files[*]}
   do
-    mv "${date}/$file" lgd/
+    mv "${date_str}/$file" lgd/
   done
-  rm -rf ${date}
+  rm -rf ${date_str}
   cd -
 }
 

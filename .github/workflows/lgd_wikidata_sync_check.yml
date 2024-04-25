@@ -10,13 +10,9 @@ on:
   workflow_dispatch:
 
 
-env:
-  ISSUE_TITLE: "LGD Wikidata Sync"
-  ISSUE_BODY_FILE: "issue_body.md"
-
 jobs:
   Run-LGD-Wikidata-Sync-Check:
-    timeout-minutes: 30
+    timeout-minutes: 70
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
@@ -28,8 +24,7 @@ jobs:
           python-version: '3.10'
 
       - name: Restore pip data from cache
-        uses: ramSeraph/cache-always@v0.0.1
-        #uses: actions/cache@v3
+        uses: actions/cache@v3
         with:
           path: ./.venv/
           key: $venv-${{ hashFiles('lgd/wikidata/requirements.txt') }}
@@ -64,7 +59,7 @@ jobs:
         run: |
           export PATH=".venv/bin:${PATH}"
           bash lgd/wikidata/steps.sh
-        timeout-minutes: 20
+        timeout-minutes: 60
 
       - name: Upload Reports
         run: |

@@ -8,7 +8,7 @@ conv_date() {
   if [[ $unameOut == "Darwin" ]]; then
     date -j -f "%d%b%Y" "$1" +"%s"
   else
-    date date -d"$1" +"%s"
+    date -d"$1" +"%s"
   fi
 }
 

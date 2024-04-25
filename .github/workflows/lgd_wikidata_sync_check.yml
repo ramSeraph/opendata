@@ -28,7 +28,8 @@ jobs:
           python-version: '3.10'
 
       - name: Restore pip data from cache
-        uses: actions/cache@v3
+        uses: ramSeraph/cache-always@v0.0.1
+        #uses: actions/cache@v3
         with:
           path: ./.venv/
           key: $venv-${{ hashFiles('lgd/wikidata/requirements.txt') }}

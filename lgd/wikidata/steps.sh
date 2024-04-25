@@ -49,6 +49,7 @@ get_lgd_files() {
   date_str=$(get_lgd_latest_date)
   cd data
   echo "getting lgd_archive for $date_str"
+  echo "$date_str" > lgd_date.txt
   # download the lgd archive
   wget https://storage.googleapis.com/lgd_data_archive/${date_str}.zip
   # unzip files
@@ -63,35 +64,35 @@ get_lgd_files() {
 }
 
 verify_states() {
-    python ${script_dir}/download.py state
-    python ${script_dir}/check_states.py
+  python ${script_dir}/download.py state
+  python ${script_dir}/check_states.py
   
 }
 
 verify_divisions() {
-    python ${script_dir}/download.py state
-    python ${script_dir}/download.py division
-    python ${script_dir}/check_divisions.py
+  python ${script_dir}/download.py state
+  python ${script_dir}/download.py division
+  python ${script_dir}/check_divisions.py
 }
 
 verify_districts() {
-    python ${script_dir}/download.py state
-    python ${script_dir}/download.py division
-    python ${script_dir}/download.py district
-    python ${script_dir}/check_districts.py
+  python ${script_dir}/download.py state
+  python ${script_dir}/download.py division
+  python ${script_dir}/download.py district
+  python ${script_dir}/check_districts.py
 }
 
 verify_subdivisions() {
-    python ${script_dir}/download.py district
-    python ${script_dir}/download.py subdivision
-    python ${script_dir}/check_subdivisions.py
+  python ${script_dir}/download.py district
+  python ${script_dir}/download.py subdivision
+  python ${script_dir}/check_subdivisions.py
 }
 
 verify_subdistricts() {
-    python ${script_dir}/download.py district
-    python ${script_dir}/download.py subdivision
-    python ${script_dir}/download.py subdistrict
-    python ${script_dir}/check_subdistricts.py
+  python ${script_dir}/download.py district
+  python ${script_dir}/download.py subdivision
+  python ${script_dir}/download.py subdistrict
+  python ${script_dir}/check_subdistricts.py
 }
 
 get_lgd_files

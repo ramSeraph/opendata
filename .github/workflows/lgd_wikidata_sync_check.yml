@@ -59,6 +59,9 @@ jobs:
         run: |
           export PATH=".venv/bin:${PATH}"
           bash lgd/wikidata/steps.sh
+          wd_date=${{ steps.date.outputs.date }}
+          lgd_date=$(cat data/lgd_date.txt)
+          echo "{ \"lgd_date\": \"$lgd_date\", \"wd_date\": \"$wd_date\" }" > data/dates.json
         timeout-minutes: 60
 
       - name: Upload Reports

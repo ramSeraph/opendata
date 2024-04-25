@@ -15,7 +15,7 @@ conv_date() {
 get_lgd_latest_date() {
   max_date="01Jan1970"
   max_date_conv=$(conv_date $max_date)
-  cd data
+  cd data > /dev/null
   wget -q https://storage.googleapis.com/lgd_data_archive/listing_archives.txt
   all_dates="$(cat listing_archives.txt| cut -d' ' -f2)"
   for d in $all_dates
@@ -26,7 +26,7 @@ get_lgd_latest_date() {
       max_date_conv=$d_conv
     fi
   done
-  cd -
+  cd - > /dev/null
   echo ${max_date}
 }
 
@@ -34,13 +34,13 @@ get_lgd_latest_date() {
 lgd_files=(
   'blocks.csv'
   'districts.csv'
-  'gp_mapping.csv'
-  'pri_local_bodies.csv'
+  #'gp_mapping.csv'
+  #'pri_local_bodies.csv'
   'states.csv'
   'subdistricts.csv'
-  'urban_local_bodies.csv'
-  'villages.csv'
-  'villages_by_blocks.csv'
+  #'urban_local_bodies.csv'
+  #'villages.csv'
+  #'villages_by_blocks.csv'
 )
 
 
@@ -50,7 +50,7 @@ get_lgd_files() {
   cd data
   echo "getting lgd_archive for $date_str"
   # download the lgd archive
-  $wget https://storage.googleapis.com/lgd_data_archive/${date_str}.zip
+  wget https://storage.googleapis.com/lgd_data_archive/${date_str}.zip
   # unzip files
   7z x ${date_str}.zip
   # move files to lgd dir
@@ -58,7 +58,7 @@ get_lgd_files() {
   do
     mv "${date_str}/$file" lgd/
   done
-  rm -rf ${date_str}
+  rm -rf ${date_str} ${date_str}.zip
   cd -
 }
 

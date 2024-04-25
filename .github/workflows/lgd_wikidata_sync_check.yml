@@ -72,7 +72,7 @@ jobs:
 
       - name: Cleanup data
         run: |
-          rm -rf data/
+          rm -rf data/*
           rm -rf reports/
 
 

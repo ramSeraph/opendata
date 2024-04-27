@@ -292,20 +292,35 @@ def get_wd_data(fname, filter_fn):
     return filtered
 
 
-page_cache = {}
+page_cache = None
 repo = None
 
 def get_entry_from_wd_id(wd_num_id):
     global repo
+    global page_cache
+
+    pcache_fname = 'data/cache.jsonl'
+    if page_cache is None:
+        page_cache = {}
+        if Path(pcache_fname).exists():
+            with open(pcache_fname, 'r') as f:
+                for line in f:
+                    e = json.loads(line)
+                    page_cache[e['id']] = e['data']
+
+    if wd_num_id in page_cache:
+        return page_cache[wd_num_id]
+
     if repo is None:
         site = pywikibot.Site("wikidata", "wikidata")
         repo = site.data_repository()
-
-    if wd_num_id  in page_cache:
-        return page_cache[wd_num_id]
     item = pywikibot.ItemPage(repo, f'Q{wd_num_id}')
     label = item.get()['labels'].get('en', 'NA')
-    page_cache[wd_num_id] = { 'id': f'Q{wd_num_id}', 'label': label }
+    data = { 'id': f'Q{wd_num_id}', 'label': label }
+    page_cache[wd_num_id] = data
+    with open(pcache_fname, 'a') as f:
+        f.write(json.dumps({ 'id': wd_num_id, 'data': data }))
+        f.write('\n')
     return page_cache[wd_num_id]
 
 

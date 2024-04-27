@@ -45,7 +45,7 @@ function renderSections(list, data) {
       corrections += row;
       corrections += '\n';
     }
-    cle.insertAdjacentHTML('beforeend', `<ul><textArea readonly>${corrections}</textArea></ul>`);
+    cle.insertAdjacentHTML('beforeend', `<ul><span role="textbox">${corrections}</span></ul>`);
   }
   if (count === 0) {
     const div = getMainDiv();

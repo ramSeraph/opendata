@@ -80,7 +80,7 @@ class DuplicateLGDId {
     const prevLink = wd_link(this.data['prev'], this.data['prev_label']);
     const lgdEntry = this.data['lgd_entry'];
     const lgdStr = renderLgdEntry(lgdEntry);
-    return `<ul><li>LGD id: ${lgdEntry['lgd_code']}, LGD Name: ${lgdEntry['lgd_name']}${lgdStr}</li><li> Curr: ${currLink}</li><li>Prev: ${prevLink}</li>`;
+    return `<li>LGD id: ${lgdEntry['lgd_code']}, LGD Name: ${lgdEntry['lgd_name']}${lgdStr}</li><li> Curr: ${currLink}</li><li>Prev: ${prevLink}</li>`;
   }
   getQSRow() {
     return null;
@@ -161,7 +161,7 @@ class Missing {
     const lgdEntry = this.data['lgd_entry'];
     /* TODO: add extra fields */
     const lgdStr = renderLgdEntry(lgdEntry);
-    return `LGD Name: ${lgdEntry['lgd_name']}, LGD Code: <a href="${lgdEntry['lgd_url']}">${lgdEntry['lgd_code']}</a>${lgdStr}`;
+    return `LGD Name: ${lgdEntry['lgd_name']}, LGD Code: <a href="${lgdEntry['lgd_url']}" target="_blank">${lgdEntry['lgd_code']}</a>${lgdStr}`;
   }
   getQSRow() {
     const w = this.data['correction_info'];

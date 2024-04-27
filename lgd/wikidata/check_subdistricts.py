@@ -139,7 +139,7 @@ if __name__ == '__main__':
     report = base_entity_checks(entity_type='subdistrict',
                                 lgd_fname=lgd_fname,
                                 lgd_id_key=lgd_id_key, lgd_name_key=lgd_name_key,
-                                lgd_url_fn=lambda x: f'https://lgdirectory.gov.in/globalviewSubDistrictDetail.do?globalsubdistrictId={x}',
+                                lgd_url_fn=lambda x: { 'base': 'https://lgdirectory.gov.in/globalviewSubDistrictDetail.do', 'params': { 'globalsubdistrictId': str(x) }},
                                 wd_fname=wd_fname, wd_filter_fn=filter_subdistrict,
                                 name_prefix_drops=['THE '], 
                                 name_suffix_drops=[' SUBDISTRICT',

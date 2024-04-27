@@ -31,7 +31,7 @@ if __name__ == '__main__':
     wd_fname = 'data/states.jsonl'
     report = base_entity_checks(entity_type='state',
                                 lgd_fname='data/lgd/states.csv', lgd_id_key='State Code', lgd_name_key='State Name(In English)',
-                                lgd_url_fn=lambda x: f'https://lgdirectory.gov.in/globalviewStateDetail.do?globalstateId={x}',
+                                lgd_url_fn=lambda x: { 'base': 'https://lgdirectory.gov.in/globalviewStateDetail.do', 'params': {'globalstateId': str(x) }},
                                 wd_fname=wd_fname, wd_filter_fn=filter_state,
                                 name_prefix_drops=['THE ', 'STATE OF ', 'UNION TERRITORY OF '], name_suffix_drops=['STATE'])
 

@@ -3,10 +3,14 @@ import csv
 import copy
 import json
 from pathlib import Path
+from datetime import datetime
 
+import requests
+from requests.models import PreparedRequest
 import unidecode
 import pywikibot
 from indictrans import Transliterator
+from bs4 import BeautifulSoup
 
 from lev import masala_levenshtein
 
@@ -441,7 +445,12 @@ def base_entity_checks(entity_type=None,
         for lgd_id in missing_in_wikidata:
             lgd_entry = lgd_data[lgd_id]
             lgd_entry_out = create_ext_lgd_entry(lgd_entry)
-            lgd_entry_out['lgd_url'] = lgd_url_fn(lgd_id)
+            url_info = lgd_url_fn(lgd_id)
+            req = PreparedRequest()
+            req.prepare_url(url_info['base'], url_info['params'])
+            lgd_entry_out['lgd_url'] = req.url
+            print(req.url)
+            lgd_entry_out['Effective Date'] = get_effective_date(url_info['base'], url_info['params'])
             #TODO: locate and add best matches?
             report['missing'].append({'lgd_entry': lgd_entry_out})
     return report
@@ -469,3 +478,16 @@ def write_report(report, fname):
     report_file.write_text(json.dumps(report, indent=2))
 
 
+def get_effective_date(url, params):
+    print(url, params)
+    resp = requests.get(url, params)
+    if not resp.ok:
+        raise Exception('unable to retrieve url')
+    html = resp.text
+    soup = BeautifulSoup(html, 'html.parser')
+    trs = soup.find_all('tr')
+    for tr in trs:
+        if 'Effective Date' in tr.text:
+            tds = tr.find_all('td')
+            date_str = tds[1].text
+            return datetime.strftime(datetime.strptime(date_str, '%d/%m/%Y'), '%d%b%Y')

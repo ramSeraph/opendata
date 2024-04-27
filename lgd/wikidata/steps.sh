@@ -95,6 +95,13 @@ verify_subdistricts() {
   python ${script_dir}/check_subdistricts.py
 }
 
+verify_blocks() {
+  python ${script_dir}/download.py district
+  python ${script_dir}/download.py subdivision
+  python ${script_dir}/download.py block
+  python ${script_dir}/check_blocks.py
+}
+
 get_lgd_files
 
 verify_states
@@ -102,6 +109,9 @@ verify_divisions
 verify_districts
 verify_subdivisions
 verify_subdistricts
+#verify_blocks
+
+python ${script_dir}/collect_status.py
 
 
 

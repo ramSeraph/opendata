@@ -39,7 +39,7 @@ function renderSections(list, data) {
     list.insertAdjacentHTML('beforeend', `<li id=${k}_corrections>${k}_corrections:</li>`);
     const cle = document.getElementById(`${k}_corrections`);
     var corrections = header + '\n';
-    for (const entry of entries) {
+    for (const entry of v) {
       const inst = getInstance(k, entry);
       const row = inst.getQSRow();
       corrections += row;

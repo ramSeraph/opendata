@@ -326,7 +326,7 @@ def get_entry_from_wd_id(wd_num_id):
 
 
 def base_entity_checks(entity_type=None,
-                       has_lgd=True, lgd_fname=None, lgd_id_key=None, lgd_name_key=None,
+                       has_lgd=True, lgd_fname=None, lgd_id_key=None, lgd_name_key=None, lgd_url_fn=None,
                        wd_fname=None, wd_filter_fn=lambda x:True,
                        name_prefix_drops=[], name_suffix_drops=[], name_match_threshold=0.0):
 
@@ -441,6 +441,7 @@ def base_entity_checks(entity_type=None,
         for lgd_id in missing_in_wikidata:
             lgd_entry = lgd_data[lgd_id]
             lgd_entry_out = create_ext_lgd_entry(lgd_entry)
+            lgd_entry_out['lgd_url'] = lgd_url_fn(lgd_id)
             #TODO: locate and add best matches?
             report['missing'].append({'lgd_entry': lgd_entry_out})
     return report

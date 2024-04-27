@@ -134,10 +134,12 @@ def inst_of_check():
                                         'expected_inst_ofs': [ get_entry_from_wd_id(e) for e in expected_inst_of_ids ],
                                         'current_inst_of': get_entry_from_wd_id(inst_of_id)})
     return report
+
 if __name__ == '__main__':
     report = base_entity_checks(entity_type='subdistrict',
                                 lgd_fname=lgd_fname,
                                 lgd_id_key=lgd_id_key, lgd_name_key=lgd_name_key,
+                                lgd_url_fn=lambda x: f'https://lgdirectory.gov.in/globalviewSubDistrictDetail.do?globalsubdistrictId={x}',
                                 wd_fname=wd_fname, wd_filter_fn=filter_subdistrict,
                                 name_prefix_drops=['THE '], 
                                 name_suffix_drops=[' SUBDISTRICT',

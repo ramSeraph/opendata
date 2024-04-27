@@ -85,6 +85,7 @@ def suffix_check():
 if __name__ == '__main__':
     report = base_entity_checks(entity_type='district',
                                 lgd_fname=lgd_fname, lgd_id_key=lgd_id_key, lgd_name_key=lgd_name_key,
+                                lgd_url_fn=lambda x: f'https://lgdirectory.gov.in/globalviewDistrictDetail.do?globaldistrictId={x}',
                                 wd_fname=wd_fname, wd_filter_fn=filter_district,
                                 name_prefix_drops=['THE '], name_suffix_drops=['DISTRICT'], name_match_threshold=0.0)
     report.update(hierarchy_check())

@@ -79,8 +79,8 @@ class DuplicateLGDId {
     const currLink = wd_link(this.data['curr'], this.data['curr_label']);
     const prevLink = wd_link(this.data['prev'], this.data['prev_label']);
     const lgdEntry = this.data['lgd_entry'];
-    const lgdStr = renderLgdEntry(lgd_entry);
-    return `<ul><li>LGD id: ${lgd_entry['lgd_code']}, LGD Name: ${lgd_entry['lgd_name']}${lgdStr}</li><li> Curr: ${currLink}</li><li>Prev: ${prevLink}</li>`;
+    const lgdStr = renderLgdEntry(lgdEntry);
+    return `<ul><li>LGD id: ${lgdEntry['lgd_code']}, LGD Name: ${lgdEntry['lgd_name']}${lgdStr}</li><li> Curr: ${currLink}</li><li>Prev: ${prevLink}</li>`;
   }
   getQSRow() {
     return null;

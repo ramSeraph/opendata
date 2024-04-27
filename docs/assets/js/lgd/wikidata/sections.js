@@ -13,7 +13,7 @@ function wd_link(wd_id, wd_name) {
 function renderLgdEntry(lgdEntry) {
   var out = '<ul>';
   for (const [k, v] of Object.entries(lgdEntry)){
-    if (k === 'lgd_code' || k === 'lgd_name') {
+    if (k === 'lgd_code' || k === 'lgd_name' || k === 'lgd_url') {
       continue;
     }
     out += `<li>${k}: ${v}</li>`;
@@ -161,7 +161,7 @@ class Missing {
     const lgdEntry = this.data['lgd_entry'];
     /* TODO: add extra fields */
     const lgdStr = renderLgdEntry(lgdEntry);
-    return `LGD Name: ${lgdEntry['lgd_name']}, LGD Code: ${lgdEntry['lgd_code']}${lgdStr}`;
+    return `LGD Name: ${lgdEntry['lgd_name']}, LGD Code: <a href="${lgdEntry['lgd_url']}">${lgdEntry['lgd_code']}</a>${lgdStr}`;
   }
   /* TODO: add corrections */
   getQSRow() {
@@ -180,7 +180,6 @@ class NameMismatch {
     const link = wd_link(this.data['wikidata_id'], this.data['wikidata_label']);
     const lgdEntry = this.data['lgd_entry'];
     const lgdStr = renderLgdEntry(lgdEntry);
-    /* TODO: add extra fields */
     return `${link}, LGD Name: ${lgdEntry['lgd_name']}, LGD Code: ${lgdEntry['lgd_code']}${lgdStr}`;
   }
   /* TODO: add corrections */

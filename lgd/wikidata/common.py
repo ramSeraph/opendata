@@ -330,7 +330,8 @@ def get_entry_from_wd_id(wd_num_id):
 
 
 def base_entity_checks(entity_type=None,
-                       has_lgd=True, lgd_fname=None, lgd_id_key=None, lgd_name_key=None, lgd_url_fn=None,
+                       has_lgd=True, lgd_fname=None, lgd_id_key=None, lgd_name_key=None,
+                       lgd_url_fn=None, lgd_correction_fn=None,
                        wd_fname=None, wd_filter_fn=lambda x:True,
                        name_prefix_drops=[], name_suffix_drops=[], name_match_threshold=0.0):
 
@@ -451,8 +452,9 @@ def base_entity_checks(entity_type=None,
             lgd_entry_out['lgd_url'] = req.url
             print(req.url)
             lgd_entry_out['Effective Date'] = get_effective_date(url_info['base'], url_info['params'])
+            correction_info = lgd_correction_fn(lgd_entry_out)
             #TODO: locate and add best matches?
-            report['missing'].append({'lgd_entry': lgd_entry_out})
+            report['missing'].append({'lgd_entry': lgd_entry_out, 'correction_info': correction_info})
     return report
 
 

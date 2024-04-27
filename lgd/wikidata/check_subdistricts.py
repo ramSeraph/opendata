@@ -2,6 +2,7 @@ import json
 import csv
 from pathlib import Path
 from pprint import pprint
+from datetime import datetime
 
 from common import (
     base_entity_checks, write_report,
@@ -135,11 +136,49 @@ def inst_of_check():
                                         'current_inst_of': get_entry_from_wd_id(inst_of_id)})
     return report
 
+g_wd_dist_map_rev = None
+
+def get_correction_info(lgd_entry):
+    global g_wd_dist_map_rev 
+    scode = lgd_entry['State Code']
+    info = state_info[scode]
+
+    name = lgd_entry['lgd_name']
+    label_suffix = info['label_suffix'] if 'label_suffix' in info else info['suffix']
+    label = f'{name} {label_suffix}'
+
+    suffix = info['suffix']
+    sname = lgd_entry['State Name']
+    dname = lgd_entry['District Name']
+    desc = f'{suffix}(sub-district) in {dname} district, {sname}, India'
+
+    inst_of = info['wd_id']
+
+    dcode = lgd_entry['District Code']
+    if g_wd_dist_map_rev is None:
+        wd_dist_map = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district)
+        g_wd_dist_map_rev = {v:k for k,v in wd_dist_map.items()}
+    loc_in = g_wd_dist_map_rev[dcode]
+
+    i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
+    inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
+    correction_info = {
+        'label': label,
+        'desc': desc,
+        'inst_of': inst_of,
+        'loc_in': loc_in,
+        'inception': inception,
+        'lgd_code': lgd_entry['lgd_code'],
+    }
+    return correction_info
+
+
 if __name__ == '__main__':
     report = base_entity_checks(entity_type='subdistrict',
                                 lgd_fname=lgd_fname,
                                 lgd_id_key=lgd_id_key, lgd_name_key=lgd_name_key,
                                 lgd_url_fn=lambda x: { 'base': 'https://lgdirectory.gov.in/globalviewSubDistrictDetail.do', 'params': { 'globalsubdistrictId': str(x) }},
+                                lgd_correction_fn=get_correction_info,
                                 wd_fname=wd_fname, wd_filter_fn=filter_subdistrict,
                                 name_prefix_drops=['THE '], 
                                 name_suffix_drops=[' SUBDISTRICT',

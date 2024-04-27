@@ -7,7 +7,8 @@ from common import (
     base_entity_checks, write_report,
     get_label, get_lgd_codes,
     get_located_in_ids, get_wd_entity_lgd_mapping,
-    get_wd_data, get_lgd_data, get_entry_from_wd_id
+    get_wd_data, get_lgd_data, get_entry_from_wd_id,
+    DIST_ID
 )
 
 from filters import filter_district, filter_state, filter_division
@@ -81,11 +82,48 @@ def suffix_check():
                                        'expected_suffix': ' district'})
     return report
 
+g_wd_state_map_rev = None
+
+def get_correction_info(lgd_entry):
+    global g_wd_state_map_rev 
+    scode = lgd_entry['State Code']
+    #info = state_info[scode]
+
+    name = lgd_entry['lgd_name']
+    label_suffix = info['label_suffix'] if 'label_suffix' in info else info['suffix']
+    label = f'{name} district'
+
+    suffix = info['suffix']
+    sname = lgd_entry['State Name (In English)']
+    desc = f'district in {sname}, India'
+
+    inst_of = 'Q{DIST_ID}'
+
+    dcode = lgd_entry['District Code']
+    if g_wd_state_map_rev is None:
+        wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
+        g_wd_state_map_rev = {v:k for k,v in wd_state_map.items()}
+    loc_in = g_wd_state_map_rev[dcode]
+
+    i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
+    inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
+    correction_info = {
+        'label': label,
+        'desc': desc,
+        'inst_of': inst_of,
+        'loc_in': loc_in,
+        'inception': inception,
+        'lgd_code': lgd_entry['lgd_code'],
+    }
+    return correction_info
+
+
 
 if __name__ == '__main__':
     report = base_entity_checks(entity_type='district',
                                 lgd_fname=lgd_fname, lgd_id_key=lgd_id_key, lgd_name_key=lgd_name_key,
                                 lgd_url_fn=lambda x: { 'base': 'https://lgdirectory.gov.in/globalviewDistrictDetail.do', 'params': {'globaldistrictId':str(x)}},
+                                lgd_correction_fn=get_correction_info,
                                 wd_fname=wd_fname, wd_filter_fn=filter_district,
                                 name_prefix_drops=['THE '], name_suffix_drops=['DISTRICT'], name_match_threshold=0.0)
     report.update(hierarchy_check())

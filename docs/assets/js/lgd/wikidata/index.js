@@ -11,9 +11,6 @@ function showError(txt) {
 }
 
 function renderSection(k, entries, el) {
-  if (entries.length == 0) {
-    return
-  }
   el.insertAdjacentHTML('beforeend', `<ul id="entrylist_${k}"></ul>`);
   const l = document.getElementById(`entrylist_${k}`);
   for (const entry of entries) {
@@ -33,6 +30,22 @@ function renderSections(list, data) {
     const le = document.getElementById(k);
     renderSection(k, v, le);
     count += 1;
+    // add corrections
+    const header_inst = getInstance(k, v[0]);
+    const header = header_inst.getQSHeader(); 
+    if (header === null) {
+      continue;
+    }
+    list.insertAdjacentHTML('beforeend', `<li id=${k}_corrections>${k}_corrections:</li>`);
+    const cle = document.getElementById(`${k}_corrections`);
+    var corrections = header + '\n';
+    for (const entry of entries) {
+      const inst = getInstance(k, entry);
+      const row = inst.getQSRow();
+      corrections += row;
+      corrections += '\n';
+    }
+    cle.insertAdjacentHTML('beforeend', `<textArea>${corrections}</textArea>`);
   }
   if (count === 0) {
     const div = getMainDiv();

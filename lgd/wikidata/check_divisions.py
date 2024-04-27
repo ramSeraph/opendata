@@ -34,11 +34,26 @@ def hierarchy_check():
 
     return report
 
+def suffix_check():
+    report = { 'wrong_suffix': [] }
+    filtered = get_wd_data(wd_fname, filter_division)
+
+    for k,v in filtered.items():
+        label = get_label(v)
+        if label.upper().endswith(' DIVISION'):
+            continue
+        report['wrong_suffix'].append({'wikidata_id': k,
+                                       'wikidata_label': label,
+                                       'expected_suffix': ' division'})
+    return report
+
+
 
 if __name__ == '__main__':
     report = base_entity_checks(entity_type='division',
                                 has_lgd=False,
                                 wd_fname=wd_fname, wd_filter_fn=filter_division)
     report.update(hierarchy_check())
+    report.update(suffix_check())
     pprint(report)
     write_report(report, 'divisions.json')

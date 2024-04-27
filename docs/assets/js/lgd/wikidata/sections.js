@@ -165,7 +165,7 @@ class Missing {
   }
   getQSRow() {
     const w = this.data['correction_info'];
-    return `,${w['label']},${w['desc']},Q668,${w['inst_of']},${w['loc_in']},${w['inception']},${w['lgd_code']},"""https://lgdirectory.gov.in/downloadDirectory.do?"""`
+    return `,"${w['label']}","${w['desc']}",Q668,${w['inst_of']},${w['loc_in']},${w['inception']},${w['lgd_code']},"""https://lgdirectory.gov.in/downloadDirectory.do?"""`
   }
   getQSHeader() {
     return 'qid,Len,Den,P17,P31,P131,P571,P6425,S854';

@@ -34,7 +34,7 @@ class NotInIndia {
   getQSRow() {
     return `${this.data['wikidata_id']},Q668`;
   }
-  static getQSHeader() {
+  getQSHeader() {
     return 'qid,P17';
   }
 }
@@ -50,7 +50,7 @@ class NoLGDId {
   getQSRow() {
     return null;
   }
-  static getQSHeader() {
+  getQSHeader() {
     return null;
   }
 }
@@ -66,7 +66,7 @@ class UnknownLGDId {
   getQSRow() {
     return null;
   }
-  static getQSHeader() {
+  getQSHeader() {
     return null;
   }
 }
@@ -85,7 +85,7 @@ class DuplicateLGDId {
   getQSRow() {
     return null;
   }
-  static getQSHeader() {
+  getQSHeader() {
     return null;
   }
 }
@@ -106,7 +106,7 @@ class MultipleInstanceOf {
   getQSRow() {
     return null;
   }
-  static getQSHeader() {
+  getQSHeader() {
     return null;
   }
 }
@@ -127,7 +127,7 @@ class MultipleLocatedIn {
   getQSRow() {
     return null;
   }
-  static getQSHeader() {
+  getQSHeader() {
     return null;
   }
 }
@@ -148,7 +148,7 @@ class MultipleLGDIds {
   getQSRow() {
     return null;
   }
-  static getQSHeader() {
+  getQSHeader() {
     return null;
   }
 }
@@ -167,7 +167,7 @@ class Missing {
     const w = this.data['correction_info'];
     return `,${w['label']},${w['desc']},Q668,${w['inst_of']},${w['loc_in']},${w['inception']},${w['lgd_code']},"""https://lgdirectory.gov.in/downloadDirectory.do?"""`
   }
-  static getQSHeader() {
+  getQSHeader() {
     return 'qid,Len,Den,P17,P31,P131,P571,P6425,S854';
   }
 }
@@ -186,7 +186,7 @@ class NameMismatch {
   getQSRow() {
     return null;
   }
-  static getQSHeader() {
+  getQSHeader() {
     return null;
   }
 }
@@ -218,7 +218,7 @@ class WrongHierarchy {
   getQSRow() {
     return null;
   }
-  static getQSHeader() {
+  getQSHeader() {
     return null;
   }
 }
@@ -236,7 +236,7 @@ class WrongSuffix {
   getQSRow() {
     return null;
   }
-  static getQSHeader() {
+  getQSHeader() {
     return null;
   }
 }
@@ -261,7 +261,7 @@ class WrongInstOf {
   getQSRow() {
     return null;
   }
-  static getQSHeader() {
+  getQSHeader() {
     return null;
   }
 }

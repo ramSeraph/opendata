@@ -13,7 +13,7 @@ function wd_link(wd_id, wd_name) {
 function renderLgdEntry(lgdEntry) {
   var out = '<ul>';
   for (const [k, v] of Object.entries(lgdEntry)){
-    if (k === 'lgd_code' || k === 'lgd_name' || k === 'lgd_url') {
+    if (k.startsWith('lgd_')) {
       continue;
     }
     out += `<li>${k}: ${v}</li>`;
@@ -163,12 +163,12 @@ class Missing {
     const lgdStr = renderLgdEntry(lgdEntry);
     return `LGD Name: ${lgdEntry['lgd_name']}, LGD Code: <a href="${lgdEntry['lgd_url']}">${lgdEntry['lgd_code']}</a>${lgdStr}`;
   }
-  /* TODO: add corrections */
   getQSRow() {
-    return null;
+    const w = this.data['correction_info'];
+    return `,${w['label']},${w['desc']},Q668,${w['inst_of']},${w['loc_in']},${w['inception']},${w['lgd_code']},"""https://lgdirectory.gov.in/downloadDirectory.do?"""`
   }
   static getQSHeader() {
-    return null;
+    return 'qid,Len,Den,P17,P31,P131,P571,P6425,S854';
   }
 }
 

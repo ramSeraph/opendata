@@ -38,14 +38,14 @@ function renderSections(list, data) {
     }
     list.insertAdjacentHTML('beforeend', `<li id=${k}_corrections>${k}_corrections:</li>`);
     const cle = document.getElementById(`${k}_corrections`);
-    var corrections = header + '\n';
+    var corrections = header + '<br/>';
     for (const entry of v) {
       const inst = getInstance(k, entry);
       const row = inst.getQSRow();
       corrections += row;
-      corrections += '\n';
+      corrections += '<br/>';
     }
-    cle.insertAdjacentHTML('beforeend', `<ul><span role="textbox" style="display: inline-block;">${corrections}</span></ul>`);
+    cle.insertAdjacentHTML('beforeend', `<ul><span role="textbox">${corrections}</span></ul>`);
   }
   if (count === 0) {
     const div = getMainDiv();

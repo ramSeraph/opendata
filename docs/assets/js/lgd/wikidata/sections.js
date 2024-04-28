@@ -332,7 +332,7 @@ function getInstance(k, data) {
     inst = new WrongInstOf(data);
   } else if (k === 'wrong_kind_of_located_in') {
     inst = new WrongKindOfLocatedIn(data);
-  } else if (k === 'no_single_preferred_rank') {
+  } else if (k === 'no_single_preferred_rank_for_located_in') {
     inst = new NoSinglePreferredRank(data);
   }
   return inst;

@@ -354,7 +354,7 @@ def base_entity_checks(entity_type=None,
         'multiple_located_in': [],
         'multiple_instance_of': [],
         'wrong_kind_of_located_in': [],
-        'no_single_preferred_rank': [],
+        'no_single_preferred_rank_for_located_in': [],
     }
     if has_lgd:
         report.update({
@@ -399,7 +399,7 @@ def base_entity_checks(entity_type=None,
             num_preferred = len([ r for r in all_located_in_id_ranks if r == 'preferred' ])
             if num_located_in > 1:
                 if num_preferred != 1:
-                    report['no_single_preferred_rank'].append({'wikidata_id': k, 'wikidata_label': label, 'num_preferred': num_preferred})
+                    report['no_single_preferred_rank_for_located_in'].append({'wikidata_id': k, 'wikidata_label': label, 'num_preferred': num_preferred})
 
 
         inst_of_ids = get_instance_of_ids(v)

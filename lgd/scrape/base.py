@@ -57,6 +57,31 @@ class Params:
         return params
 
 
+def get_csrf_token_from_base_page(soup):
+    lgd_features_section = soup.find('section', { "id" : "hero" })
+    link_fragments = lgd_features_section.find_all('a')
+    link_url = None
+    for link_fragment in link_fragments:
+        if link_fragment.text.strip() == 'Download Directory':
+            link_url = link_fragment.attrs['href']
+    if link_url is None:
+        raise Exception('Download directory link not found')
+    return link_url.split('?')[1].replace('OWASP_CSRFTOKEN=', '')
+
+
+def get_reports_csrf_token_from_base_page(soup):
+    lgd_reports_div = soup.find('div', { "id" : "reports-model" })
+    links = lgd_reports_div.find_all('a')
+    link_url = None
+    #TODO: individual links to reports can probably be extracted
+    #      exceptional reports are probably a common url with different params
+    for link in links:
+        link_url = link.attrs['href']
+        break
+    if link_url is None:
+        raise Exception('No Reports link not found')
+    return link_url.split('?')[1].replace('OWASP_CSRFTOKEN=', '')
+
 
 class Context:
     def __init__(self, params=Params()):
@@ -76,31 +101,13 @@ class Context:
             raise ValueError('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
         
         page_html = web_data.text
-        
         soup = BeautifulSoup(page_html, 'html.parser')
-        lgd_features_section = soup.find('section', { "id" : "hero" })
-        link_fragments = lgd_features_section.find_all('a')
-        link_url = None
-        for link_fragment in link_fragments:
-            if link_fragment.text.strip() == 'Download Directory':
-                link_url = link_fragment.attrs['href']
-        if link_url is None:
-            raise Exception('Download directory link not found')
-
-        self._csrf_token = link_url.split('?')[1].replace('OWASP_CSRFTOKEN=', '')
-
-        lgd_reports_div = soup.find('div', { "id" : "reports-model" })
-        links = lgd_reports_div.find_all('a')
-        link_url = None
-        #TODO: individual links to reports can probably be extracted
-        #      exceptional reports are probably a common url with different params
-        for link in links:
-            link_url = link.attrs['href']
-            break
-        if link_url is None:
-            raise Exception('No Reports link not found')
-
-        self._csrf_token_reports = link_url.split('?')[1].replace('OWASP_CSRFTOKEN=', '')
+        try:
+            self._csrf_token = get_csrf_token_from_base_page(soup)
+            self._csrf_token_reports = get_reports_csrf_token_from_base_page(soup)
+        except:
+            print(page_html)
+            raise
 
 
     def set_session(self):

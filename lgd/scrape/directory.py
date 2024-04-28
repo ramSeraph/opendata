@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from .base import (INCORRECT_CAPTCHA_MESSAGE,
                    DownloaderItem, BaseDownloader,
+                   IntermittentFailureException,
                    MultiDownloader, add_defaults_to_args)
 from .conversion_helper import (records_from_excel, records_from_xslx,
                                 unzip_single, records_from_odt,
@@ -149,6 +150,8 @@ class DirectoryDownloader(BaseDownloader):
                         if count > 5:
                             raise Exception('captcha failed for 5 tries')
                         time.sleep(1)
+            except IntermittentFailureException as ex:
+                raise ex
             except Exception as ex:
                 if len(download_types) == 0:
                     raise ex

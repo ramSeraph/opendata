@@ -100,6 +100,22 @@ class Context:
         self.script_batch_id = 0
         self._session = None
 
+    def set_csrf_tokens_wrap(self):
+        try_count = 0
+        while True:
+            try:
+                self.set_csrf_tokens()
+                return
+            except IntermittentFailureException:
+                if try_count > 2:
+                    raise
+                try_count += 1
+                jitter = random.randint(0,5)
+                delay = 5 + jitter
+                logger.warning(f'got intermittent exception while downloading base page.. retrying in {delay} secs')
+                time.sleep(delay)
+
+
     def set_csrf_tokens(self):
         global BASE_URL
         logger.info('retrieving csrf token')
@@ -109,20 +125,8 @@ class Context:
         
         page_html = web_data.text
         soup = BeautifulSoup(page_html, 'html.parser')
-        try_count = 0
-        while True:
-            try:
-                self._csrf_token = get_csrf_token_from_base_page(soup)
-                self._csrf_token_reports = get_reports_csrf_token_from_base_page(soup)
-                break
-            except IntermittentFailureException:
-                if try_count > 2:
-                    raise
-                try_count += 1
-                jitter = random.randint(0,5)
-                delay = 5 + jitter
-                logger.warning(f'got intermittent exception while downloading base page.. retrying in {delay} secs')
-                time.sleep(delay)
+        self._csrf_token = get_csrf_token_from_base_page(soup)
+        self._csrf_token_reports = get_reports_csrf_token_from_base_page(soup)
 
 
     def set_session(self):
@@ -148,14 +152,14 @@ class Context:
     @property
     def csrf_token(self):
         if self._csrf_token is None:
-            self.set_csrf_tokens()
+            self.set_csrf_tokens_wrap()
         return self._csrf_token
 
 
     @property
     def csrf_token_reports(self):
         if self._csrf_token_reports is None:
-            self.set_csrf_tokens()
+            self.set_csrf_tokens_wrap()
         return self._csrf_token_reports
 
 

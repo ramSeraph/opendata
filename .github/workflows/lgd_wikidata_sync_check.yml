@@ -75,5 +75,15 @@ jobs:
           rm -rf data/*
           rm -rf reports/
 
+  LGD-Wikidata-Sync-Check-Failure:
+    needs: 
+      - Run-LGD-Wikidata-Sync-Check
+    if: |
+      always() && needs.Run-LGD-Wikidata-Sync-Check.result == 'failure'
+    uses: ./.github/workflows/common-pb-alert.yml
+    secrets: inherit
+    with:
+      title: "LGD Wikidata Sync Check Run Failed"
+      which-run: "self"
 
 

@@ -91,7 +91,7 @@ function addLinks(entities, entity_info) {
   div.insertAdjacentHTML('beforeend', '<ul id="linklist"></ul>');
   const list = document.getElementById('linklist');
   const baseUrl = window.location.toString();
-  for (const e of entries) {
+  for (const e of entities) {
     const entityLink = `<a href='${baseUrl}?entity=${e}'>${e}s</a>`;
     const queryLink = `<a href='${entity_info[e]["query"]}' target="_blank">query</a>`;
     list.insertAdjacentHTML('beforeend', `<li><span id="${e}">${entityLink} - ${queryLink}</span></li>`);

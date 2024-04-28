@@ -77,7 +77,7 @@ function showPage(entity) {
 function addStatus(status) {
   for (const [k,v] in Object.entries(status)) {
     const span = document.getElementById(k);
-    var statusText = 'CLEAR";
+    var statusText = 'CLEAR';
     if (v !== 0) {
       statusText = '!! HAS PROBLEMS !!';
     }

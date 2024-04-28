@@ -105,14 +105,16 @@ class Context:
         while True:
             try:
                 self.set_csrf_tokens()
+                logger.info('csrf token set')
                 return
             except IntermittentFailureException:
                 if try_count > 2:
                     raise
                 try_count += 1
-                jitter = random.randint(0,5)
-                delay = 5 + jitter
-                logger.warning(f'got intermittent exception while downloading base page.. retrying in {delay} secs')
+                base_sleep = 10
+                jitter = random.randint(0,base_sleep)
+                delay = base_sleep + jitter
+                logger.warning(f'got intermittent exception while downloading base page.. attempt {try_count}/3.. retrying in {delay} secs')
                 time.sleep(delay)
 
 

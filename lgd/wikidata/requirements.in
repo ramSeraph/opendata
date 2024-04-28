@@ -7,3 +7,5 @@ cython
 numpy
 scipy
 git+https://github.com/libindic/indic-trans.git
+requests
+bs4

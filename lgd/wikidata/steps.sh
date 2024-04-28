@@ -1,5 +1,5 @@
 #!/bin/bash
-set -aeux
+set -aeu
 
 script_dir=$(dirname "$0")
 unameOut="$(uname -s)"

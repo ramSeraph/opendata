@@ -118,12 +118,27 @@ def get_correction_info(lgd_entry):
     return correction_info
 
 
+wd_state_data = None
+wd_div_data = None
+def check_if_located_in_state_or_division(wid):
+    global wd_state_data
+    global wd_div_data
+    if wd_state_data is None:
+        wd_state_data = get_wd_data('data/states.jsonl', filter_state)
+        wd_div_data = get_wd_data('data/divisions.jsonl', filter_division)
+    qid = f'Q{wid}'
+    if qid in wd_state_data or qid in wd_div_data:
+        return {'ok': True}
+    return {'ok': False, 'expected': 'located in a State or a Division'}
+
+
 
 if __name__ == '__main__':
     report = base_entity_checks(entity_type='district',
                                 lgd_fname=lgd_fname, lgd_id_key=lgd_id_key, lgd_name_key=lgd_name_key,
                                 lgd_url_fn=lambda x: { 'base': 'https://lgdirectory.gov.in/globalviewDistrictDetail.do', 'params': {'globaldistrictId':str(x)}},
                                 lgd_correction_fn=get_correction_info,
+                                check_expected_located_in_fn=check_if_located_in_state_or_division,
                                 wd_fname=wd_fname, wd_filter_fn=filter_district,
                                 name_prefix_drops=['THE '], name_suffix_drops=['DISTRICT'], name_match_threshold=0.0)
     report.update(hierarchy_check())

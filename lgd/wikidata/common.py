@@ -260,6 +260,16 @@ def get_instance_of_ids(v):
         ids.append(inst_of)
     return ids
 
+def get_all_located_id_ranks(v):
+    if is_inactive(v):
+        return False
+    loc_claims = v['claims'].get(P_LOCATED_IN, [])
+    ranks = []
+    for c in loc_claims:
+        rank = c['rank']
+        ranks.append(rank)
+    return ranks
+
 
 def get_located_in_ids(v):
     if is_inactive(v):
@@ -335,6 +345,7 @@ def get_entry_from_wd_id(wd_num_id):
 def base_entity_checks(entity_type=None,
                        has_lgd=True, lgd_fname=None, lgd_id_key=None, lgd_name_key=None,
                        lgd_url_fn=None, lgd_correction_fn=None,
+                       check_expected_located_in_fn=None,
                        wd_fname=None, wd_filter_fn=lambda x:True,
                        name_prefix_drops=[], name_suffix_drops=[], name_match_threshold=0.0):
 
@@ -342,6 +353,8 @@ def base_entity_checks(entity_type=None,
         'not_in_india': [],
         'multiple_located_in': [],
         'multiple_instance_of': [],
+        'wrong_kind_of_located_in': [],
+        'no_single_preferred_rank': [],
     }
     if has_lgd:
         report.update({
@@ -377,6 +390,18 @@ def base_entity_checks(entity_type=None,
         if len(located_in_ids) != 1:
             print(f'multiple located_in {label}({k}): {located_in_ids}')
             report['multiple_located_in'].append({'wikidata_id': k, 'wikidata_label': label, 'located_in_entries': [ get_entry_from_wd_id(i) for i in located_in_ids ]})
+        else:
+            res = check_expected_located_in_fn(located_in_ids[0])
+            if not res['ok']:
+                report['wrong_kind_of_located_in'].append({'wikidata_id': k, 'wikidata_label': label, 'located_in': get_entry_from_wd_id(located_in_ids[0]), 'expected': res['expected']})
+            all_located_in_id_ranks = get_all_located_id_ranks(v)
+            num_located_in = len(all_located_in_id_ranks)
+            num_preferred = len([ r for r in all_located_in_id_ranks if r == 'preferred' ])
+            if num_located_in > 1:
+                if num_preferred != 1:
+                    report['no_single_preferred_rank'].append({'wikidata_id': k, 'wikidata_label': label, 'num_preferred': num_preferred})
+
+
         inst_of_ids = get_instance_of_ids(v)
         if len(inst_of_ids) != 1:
             print(f'multiple instance of {label}({k}): {inst_of_ids}')

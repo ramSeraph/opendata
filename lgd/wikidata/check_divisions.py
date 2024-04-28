@@ -44,11 +44,22 @@ def suffix_check():
                                        'expected_suffix': ' division'})
     return report
 
+wd_state_data = None
+def check_if_located_in_state(wid):
+    global wd_state_data
+    if wd_state_data is None:
+        wd_state_data = get_wd_data('data/states.jsonl', filter_state)
+    qid = f'Q{wid}'
+    if qid in wd_state_data:
+        return {'ok': True}
+    return {'ok': False, 'expected': 'located in a State'}
+
 
 
 if __name__ == '__main__':
     report = base_entity_checks(entity_type='division',
                                 has_lgd=False,
+                                check_expected_located_in_fn=check_if_located_in_state,
                                 wd_fname=wd_fname, wd_filter_fn=filter_division)
     report.update(hierarchy_check())
     report.update(suffix_check())

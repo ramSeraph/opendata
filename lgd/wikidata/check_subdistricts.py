@@ -172,6 +172,20 @@ def get_correction_info(lgd_entry):
     }
     return correction_info
 
+wd_dist_data = None
+wd_subdiv_data = None
+def check_if_located_in_district_or_subdivision(wid):
+    global wd_dist_data
+    global wd_subdiv_data
+    if wd_dist_data is None:
+        wd_dist_data = get_wd_data('data/districts.jsonl', filter_district)
+        wd_subdiv_data = get_wd_data('data/subdivisions.jsonl', filter_subdivision)
+    qid = f'Q{wid}'
+    if qid in wd_dist_data or qid in wd_subdiv_data:
+        return {'ok': True}
+    return {'ok': False, 'expected': 'located in a District or a Subdivision'}
+
+
 
 if __name__ == '__main__':
     report = base_entity_checks(entity_type='subdistrict',
@@ -179,6 +193,7 @@ if __name__ == '__main__':
                                 lgd_id_key=lgd_id_key, lgd_name_key=lgd_name_key,
                                 lgd_url_fn=lambda x: { 'base': 'https://lgdirectory.gov.in/globalviewSubDistrictDetail.do', 'params': { 'globalsubdistrictId': str(x) }},
                                 lgd_correction_fn=get_correction_info,
+                                check_expected_located_in_fn=check_if_located_in_district_or_subdivision,
                                 wd_fname=wd_fname, wd_filter_fn=filter_subdistrict,
                                 name_prefix_drops=['THE '], 
                                 name_suffix_drops=[' SUBDISTRICT',

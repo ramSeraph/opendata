@@ -1,7 +1,4 @@
-import csv
-import json
 from pprint import pprint
-from pathlib import Path
 
 from common import (
     base_entity_checks, write_report,
@@ -34,11 +31,24 @@ def hierarchy_check():
 
     return report
 
+wd_dist_data = None
+def check_if_located_in_district(wid):
+    global wd_dist_data
+    if wd_dist_data is None:
+        wd_dist_data = get_wd_data('data/districts.jsonl', filter_district)
+    qid = f'Q{wid}'
+    if qid in wd_dist_data:
+        return {'ok': True}
+    return {'ok': False, 'expected': 'located in a District'}
+
+
 
 if __name__ == '__main__':
     report = base_entity_checks(entity_type='subdivision',
                                 has_lgd=False,
+                                check_expected_located_in_fn=check_if_located_in_district,
                                 wd_fname=wd_fname, wd_filter_fn=filter_subdivision)
     report.update(hierarchy_check())
+    #report.update(suffix_check())
     pprint(report)
     write_report(report, 'subdivisions.json')

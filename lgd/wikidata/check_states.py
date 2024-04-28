@@ -60,6 +60,7 @@ if __name__ == '__main__':
                                 lgd_fname='data/lgd/states.csv', lgd_id_key='State Code', lgd_name_key='State Name(In English)',
                                 lgd_url_fn=lambda x: { 'base': 'https://lgdirectory.gov.in/globalviewStateDetail.do', 'params': {'globalstateId': str(x) }},
                                 lgd_correction_fn=get_correction_info,
+                                check_expected_located_in_fn=lambda x: { 'ok': True },
                                 wd_fname=wd_fname, wd_filter_fn=filter_state,
                                 name_prefix_drops=['THE ', 'STATE OF ', 'UNION TERRITORY OF '], name_suffix_drops=['STATE'])
 

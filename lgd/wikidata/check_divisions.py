@@ -1,7 +1,4 @@
-import csv
-import json
 from pprint import pprint
-from pathlib import Path
 
 from common import (
     base_entity_checks, write_report,

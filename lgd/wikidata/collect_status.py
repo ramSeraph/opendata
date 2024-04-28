@@ -10,3 +10,4 @@ for p in Path('reports/').glob('*.json'):
         l += len(v)
     status[entity] = l
 print(status)
+Path('reports/status.json').write_text(json.dumps(status))

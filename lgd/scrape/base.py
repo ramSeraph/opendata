@@ -116,6 +116,7 @@ class Context:
                 delay = base_sleep + jitter
                 logger.warning(f'got intermittent exception while downloading base page.. attempt {try_count}/3.. retrying in {delay} secs')
                 time.sleep(delay)
+                self._session = None
 
 
     def set_csrf_tokens(self):

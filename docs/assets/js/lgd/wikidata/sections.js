@@ -266,6 +266,44 @@ class WrongInstOf {
   }
 }
 
+
+class WrongKindOfLocatedIn {
+  constructor(data) {
+    this.data = data;
+  }
+  getHTML() {
+    const link = wd_link(this.data['wikidata_id'], this.data['wikidata_label']);
+    const curr = this.data['located_in'];
+    const curr_loc_in_link = wd_link(curr['id'], curr['label']);
+    return `<span>${link}</span><ul><li>Expected located in: ${this.data['expected']}</li><li>Current located in: ${curr_loc_in_link}</li></ul>`;
+  }
+
+  getQSRow() {
+    return null;
+  }
+  getQSHeader() {
+    return null;
+  }
+}
+
+class NoSinglePreferredRank {
+  constructor(data) {
+    this.data = data;
+  }
+  getHTML() {
+    const link = wd_link(this.data['wikidata_id'], this.data['wikidata_label']);
+    return `<span>${link}</span><ul><li>Num with preferred rank: ${this.data['num_preferred']}</li></ul>`;
+  }
+
+  getQSRow() {
+    return null;
+  }
+  getQSHeader() {
+    return null;
+  }
+}
+
+
 function getInstance(k, data) {
   var inst = null;
   if (k === 'multiple_lgd_ids') {
@@ -292,6 +330,10 @@ function getInstance(k, data) {
     inst = new WrongSuffix(data);
   } else if (k === 'wrong_inst_of') {
     inst = new WrongInstOf(data);
+  } else if (k === 'wrong_kind_of_located_in') {
+    inst = new WrongKindOfLocatedIn(data);
+  } else if (k === 'no_single_preferred_rank') {
+    inst = new NoSinglePreferredRank(data);
   }
   return inst;
 }

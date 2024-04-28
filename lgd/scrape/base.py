@@ -7,6 +7,8 @@ import logging
 import collections
 import requests
 import functools
+import random
+import time
 
 from threading import local
 from datetime import datetime, timedelta
@@ -56,9 +58,14 @@ class Params:
         params.__dict__.update(dikt)
         return params
 
+class IntermittentFailureException(Exception):
+    pass
+
 
 def get_csrf_token_from_base_page(soup):
     lgd_features_section = soup.find('section', { "id" : "hero" })
+    if lgd_features_section is None:
+        raise IntermittentFailureException()
     link_fragments = lgd_features_section.find_all('a')
     link_url = None
     for link_fragment in link_fragments:
@@ -102,12 +109,20 @@ class Context:
         
         page_html = web_data.text
         soup = BeautifulSoup(page_html, 'html.parser')
-        try:
-            self._csrf_token = get_csrf_token_from_base_page(soup)
-            self._csrf_token_reports = get_reports_csrf_token_from_base_page(soup)
-        except:
-            print(page_html)
-            raise
+        try_count = 0
+        while True:
+            try:
+                self._csrf_token = get_csrf_token_from_base_page(soup)
+                self._csrf_token_reports = get_reports_csrf_token_from_base_page(soup)
+                break
+            except IntermittentFailureException:
+                if try_count > 2:
+                    raise
+                try_count += 1
+                jitter = random.randint(0,5)
+                delay = 5 + jitter
+                logger.warning(f'got intermittent exception while downloading base page.. retrying in {delay} secs')
+                time.sleep(delay)
 
 
     def set_session(self):

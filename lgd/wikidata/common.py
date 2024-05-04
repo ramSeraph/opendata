@@ -17,42 +17,42 @@ from lev import masala_levenshtein
 st_himachal = { "name": "Himachal pradesh", "suffix": "Subtehsil", "type": "Subtehsil", "wd_id": "Q123264643" }
 st_haryana = { "name": "Haryana", "suffix": "Subtehsil", "type": "Subtehsil", "wd_id": "Q123264644" }
 state_info = {
-    "35": { "name": "Andaman And Nicobar Islands", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987709" },
-    "28": { "name": "Andhra Pradesh", "suffix": "Mandal", "type": "Tehsil", "wd_id": "Q122987710"  },
-    "12": { "name": "Arunachal Pradesh", "suffix": "Circle", "type": "Tehsil", "long": "Circle", "wd_id": "Q122987711"  },
-    "18": { "name": "Assam", "suffix": "Circle", "type": "Tehsil", "long": "Circle", "wd_id": "Q122987712", "wd_block_id": "Q123009185" },
-    "10": { "name": "Bihar", "suffix": "Block", "type": "Block", "wd_id": "Q122987713"  }, # tehsils exist and are called aanchals
-    "4": { "name": "Chandigarh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987714"  }, # TODO: check 
-    "22": { "name": "Chhattisgarh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987715", "wd_block_id": "Q123009223"  }, # TODO: check 
+    "35": { "name": "Andaman And Nicobar Islands", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987709", "dp_suffix": "Zilla Parishad" },
+    "28": { "name": "Andhra Pradesh", "suffix": "Mandal", "type": "Tehsil", "wd_id": "Q122987710", "wd_subdiv_id": "Q125626445", "dp_sufix": "Zilla Parishad" },
+    "12": { "name": "Arunachal Pradesh", "suffix": "Circle", "type": "Tehsil", "long": "Circle", "wd_id": "Q122987711", "dp_suffix": "Zilla Parishad" },
+    "18": { "name": "Assam", "suffix": "Circle", "type": "Tehsil", "long": "Circle", "wd_id": "Q122987712", "wd_block_id": "Q123009185", "dp_suffix": "Zilla Parishad"  },
+    "10": { "name": "Bihar", "suffix": "Block", "type": "Block", "wd_id": "Q122987713", "wd_sd_id": "Q125631936", "dp_suffix": "Zilla Parishad" }, # tehsils exist and are called aanchals
+    "4": { "name": "Chandigarh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987714", "dp_suffix": "Zilla Parishad" }, # TODO: check 
+    "22": { "name": "Chhattisgarh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987715", "wd_block_id": "Q123009223", "dp_suffix": "Zilla Panchayat"   }, # TODO: check 
     "7": { "name": "Delhi", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987716"  }, # TODO: check 
-    "30": { "name": "Goa", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987717"  },
-    "24": { "name": "Gujarat", "suffix": "Taluka", "type": "Tehsil", "wd_id": "Q122987718"  }, # TODO: check 
-    "6": { "name": "Haryana", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987719", "alts": [ st_haryana ]  }, # TODO: check 
-    "2": { "name": "Himachal Pradesh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987720", "alts": [ st_himachal ]  },
-    "1": { "name": "Jammu And Kashmir", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987721"  }, # TODO: check 
-    "20": { "name": "Jharkhand", "suffix": "Block", "type": "Block", "wd_id": "Q122987723"  }, # TODO: check 
-    "29": { "name": "Karnataka", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987724"  }, # TODO: check 
-    "32": { "name": "Kerala", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q7680362" }, # TODO: check 
-    "37": { "name": "Ladakh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987726"  }, # TODO: check 
-    "31": { "name": "Lakshadweep", "suffix": "Subdivision", "type": "Subdivision", "wd_id": "Q122987727"  },
-    "23": { "name": "Madhya Pradesh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987728"  }, # TODO: check 
-    "27": { "name": "Maharashtra", "suffix": "Taluka", "type": "Tehsil", "wd_id": "Q13119795" }, # TODO: check 
-    "14": { "name": "Manipur", "suffix": "Subdivision", "type": "Subdivision", "wd_id": "Q122987729"  },
+    "30": { "name": "Goa", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987717", "dp_suffix": "Zilla Panchayat" },
+    "24": { "name": "Gujarat", "suffix": "Taluka", "type": "Tehsil", "wd_id": "Q122987718", "dp_suffix": "District Panchayat" }, # TODO: check 
+    "6": { "name": "Haryana", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987719", "alts": [ st_haryana ], "dp_suffix": "Zilla Panchayat"}, # TODO: check 
+    "2": { "name": "Himachal Pradesh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987720", "alts": [ st_himachal ], "dp_suffix": "Zilla Panchayat" },
+    "1": { "name": "Jammu And Kashmir", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987721", "dp_suffix": "District Planning and Development Board" }, # TODO: check 
+    "20": { "name": "Jharkhand", "suffix": "Block", "type": "Block", "wd_id": "Q122987723", "dp_suffix": "Zilla Panchayat"  }, # TODO: check 
+    "29": { "name": "Karnataka", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987724", "dp_suffix": "Zilla Panchayat"  }, # TODO: check 
+    "32": { "name": "Kerala", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q7680362", "wd_sd_id": "Q125627541", "dp_suffix": "District Panchayat"  }, # TODO: check 
+    "37": { "name": "Ladakh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987726", "dp_suffix": "District Planning and Development Board"   }, # TODO: check 
+    "31": { "name": "Lakshadweep", "suffix": "Subdivision", "type": "Subdivision", "wd_id": "Q122987727", "dp_suffix": "Zilla Panchayat"    },
+    "23": { "name": "Madhya Pradesh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987728", "wd_block_id": "Q125750771", "dp_suffix": "Zilla Panchayat" }, # TODO: check 
+    "27": { "name": "Maharashtra", "suffix": "Taluka", "type": "Tehsil", "wd_id": "Q13119795", "dp_suffix": "Zilla Parishad"  }, # TODO: check 
+    "14": { "name": "Manipur", "suffix": "Subdivision", "type": "Subdivision", "wd_id": "Q122987729", "dp_suffix": "Zilla Parishad"   },
     "17": { "name": "Meghalaya", "suffix": "Block", "type": "Block", "wd_id": "Q122987730"  }, # C. & R. D. Block R is for Rural?
     "15": { "name": "Mizoram", "suffix": "Block", "type": "Block", "long": "Rural Development Block", "wd_id": "Q122987731"  }, # Rural Development Block
     "13": { "name": "Nagaland", "suffix": "Circle", "type": "Tehsil", "wd_id": "Q122987732"  },
-    "21": { "name": "Odisha", "suffix": "Police Station", "label_suffix": "P.S.", "type": "Police Station", "wd_id": "Q122986857", "wd_block_id": "Q61863384" }, # Tehsils exist, Police station maps are available in the Census Atlas
+    "21": { "name": "Odisha", "suffix": "Police Station", "label_suffix": "P.S.", "type": "Police Station", "wd_id": "Q122986857", "wd_block_id": "Q61863384", "wd_subdiv_id": "Q60843390", "dp_suffix": "Zilla Parishad"  }, # Tehsils exist, Police station maps are available in the Census Atlas
     "34": { "name": "Puducherry", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987733"  },
-    "3": { "name": "Punjab", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987734", "wd_block_id": "Q123200469" }, # TODO: check 
-    "8": { "name": "Rajasthan", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987735", "wd_block_id": "Q123009239"  }, # TODO: check 
-    "11": { "name": "Sikkim", "suffix": "Subdivision", "type": "Subdivision", "wd_id": "Q122956696" }, # revenue circles exist
-    "33": { "name": "Tamil Nadu", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987736", "wd_block_id": "Q123009250"  }, # TODO: check
-    "36": { "name": "Telangana", "suffix": "Mandal", "type": "Tehsil", "wd_id": "Q122987738" }, # TODO: check 
-    "38": { "name": "The Dadra And Nagar Haveli And Daman And Diu", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987739"  }, # TODO: check 
-    "16": { "name": "Tripura", "suffix": "Block", "type": "Block", "long": "Development Block", "wd_id": "Q122987740"  }, # Development Block
-    "5": { "name": "Uttarakhand", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987741", "wd_block_id": "Q123009294"  },
-    "9": { "name": "Uttar Pradesh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987742", "wd_block_id": "Q123009286" },
-    "19": { "name": "West Bengal", "suffix": "Block", "type": "Block", "wd_id": "Q122987743"  },
+    "3": { "name": "Punjab", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987734", "wd_block_id": "Q123200469", "dp_suffix": "Zilla Parishad"  }, # TODO: check 
+    "8": { "name": "Rajasthan", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987735", "wd_block_id": "Q123009239", "dp_suffix": "Zilla Panchayat"   }, # TODO: check 
+    "11": { "name": "Sikkim", "suffix": "Subdivision", "type": "Subdivision", "wd_id": "Q122956696", "dp_suffix": "Zilla Panchayat"  }, # revenue circles exist
+    "33": { "name": "Tamil Nadu", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987736", "wd_block_id": "Q123009250", "wd_subdiv_id": "Q125626392", "dp_suffix": "Zilla Panchayat"  }, # TODO: check
+    "36": { "name": "Telangana", "suffix": "Mandal", "type": "Tehsil", "wd_id": "Q122987738", "wd_subdiv_id": "Q125626476", "dp_suffix": "Zilla Parishad"   }, # TODO: check 
+    "38": { "name": "The Dadra And Nagar Haveli And Daman And Diu", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987739", "dp_suffix": "Zilla Parishad"    }, # TODO: check 
+    "16": { "name": "Tripura", "suffix": "Block", "type": "Block", "long": "Development Block", "wd_id": "Q122987740", "dp_suffix": "Zilla Panchayat"   }, # Development Block
+    "5": { "name": "Uttarakhand", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987741", "wd_block_id": "Q123009294", "dp_suffix": "Zilla Panchayat"   },
+    "9": { "name": "Uttar Pradesh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987742", "wd_block_id": "Q123009286", "wd_sd_id": "Q125631953", "dp_suffix": "Zilla Panchayat"  },
+    "19": { "name": "West Bengal", "suffix": "Block", "type": "Block", "wd_id": "Q122987743", "wd_subdiv_id": "Q13058507", "dp_suffix": "Zilla Panchayat"  },
 }
 
 SUBDIST_ID = 105626471
@@ -61,10 +61,10 @@ TEHSIL_INDIA_ID = 7694920
 CD_BLOCK_INDIA_ID = 2775236
 
 SUBDIV_ID = 7631016
-SUBDIV_WESTBENGAL = 13058507
 SUBDIV_REVENUE = 24943410
-SUBDIV_ODISHA = 60843390
-ALL_SUBDIV_IDS = [ SUBDIV_ID, SUBDIV_WESTBENGAL, SUBDIV_REVENUE, SUBDIV_ODISHA ]
+ALL_SUBDIV_IDS = [ SUBDIV_ID, SUBDIV_REVENUE ] +\
+        [ int(v['wd_subdiv_id'][1:]) for v in state_info.values() if 'wd_subdiv_id' in v ] +\
+        [ int(v['wd_id'][1:]) for v in state_info.values() if v['type'] == 'Subdivision' ]
 
 SUBDIST_IDS = [ int(v['wd_id'][1:]) for v in state_info.values() ]
 
@@ -75,6 +75,12 @@ ALL_SUBDIST_IDS = [ SUBDIST_ID, TEHSIL_ID, TEHSIL_INDIA_ID ] + SUBDIST_IDS + SUB
 ALL_TEHSIL_IDS = [  SUBDIST_ID, TEHSIL_ID, TEHSIL_INDIA_ID ] + [ int(v['wd_id'][1:]) for v in state_info.values() if v['type'] == 'Tehsil' ] 
 
 ALL_BLOCK_IDS = [ CD_BLOCK_INDIA_ID ] + [ int(v['wd_id'][1:]) for v in state_info.values() if v['type'] == 'Block' ] +  [ int(v['wd_block_id'][1:]) for v in state_info.values() if 'wd_block_id' in v ] 
+
+DIST_COUNCIL_OF_INDIA_ID = 2758248
+
+VILLAGE_IN_INDIA_ID = 56436498
+CENSUS_TOWN_IN_INDIA_ID = 16830604
+ALL_VILLAGE_IDS = [ VILLAGE_IN_INDIA_ID, CENSUS_TOWN_IN_INDIA_ID ]
 
 P_INSTANCE_OF = 'P31'
 P_REPLACED_BY = 'P1366'
@@ -96,6 +102,7 @@ DIV_WEST_BENGAL_ID = 5284624
 DIV_MADHYA_PRADESH_ID = 124669069
 ALL_DIV_IDS = [ DIV_ID, DIV_WEST_BENGAL_ID, DIV_MADHYA_PRADESH_ID ]
 PROPOSED_ENTITY = 64728694
+FORMER_ENTITY = 15893266
 
 LGD_URL="https://lgdirectory.gov.in/downloadDirectory.do?"
 
@@ -135,7 +142,7 @@ def get_label(v):
     if 'en' in labels:
         label = labels['en']['value']
     else:
-        print('labels:', labels)
+        #print('labels:', labels)
         label = 'NA'
     return label
 
@@ -148,6 +155,16 @@ def get_census_code(v):
     for c in claims:
         census_code = c['mainsnak']['datavalue']['value']
     return census_code
+
+def get_census_codes(v):
+    census_codes = []
+    claims = v['claims'].get(P_CENSUS_CODE, None)
+    if claims is None:
+        return census_codes
+    for c in claims:
+        census_codes.append(c['mainsnak']['datavalue']['value'])
+    return census_codes
+
 
 
 def get_lgd_codes(v):
@@ -249,8 +266,8 @@ def is_in_india(v):
 
 
 def get_instance_of_ids(v):
-    if is_inactive(v):
-        return False
+    #if is_inactive(v):
+    #    return []
     inst_claims = v['claims'][P_INSTANCE_OF]
     ids = []
     for c in inst_claims:
@@ -262,7 +279,7 @@ def get_instance_of_ids(v):
 
 def get_all_located_id_ranks(v):
     if is_inactive(v):
-        return False
+        return []
     loc_claims = v['claims'].get(P_LOCATED_IN, [])
     ranks = []
     for c in loc_claims:
@@ -273,7 +290,7 @@ def get_all_located_id_ranks(v):
 
 def get_located_in_ids(v):
     if is_inactive(v):
-        return False
+        return []
     loc_claims = v['claims'].get(P_LOCATED_IN, [])
     ids = []
     for c in loc_claims:
@@ -342,6 +359,17 @@ def get_entry_from_wd_id(wd_num_id):
 
 
 
+#TODO: all subclasses of division/subdivision/subdistrict/block should be picked up automatically and not from config?
+#TODO: subdivisions need a suffix check
+#TODO: subdivisions need seperate classes per state
+#TODO: subdivisions should have all their subdistricts as children directly
+#TODO: subdivisions should be moved out of the main hierarchy
+#TODO: divisions need seperate classes per state
+#TODO: divisions should have all their districts as children directly
+#TODO: divisions should be moved out of the main hierarchy
+#TODO: frontend: add corrections for other sections as well
+#TODO: frontend: add missing queries
+
 def base_entity_checks(entity_type=None,
                        has_lgd=True, lgd_fname=None, lgd_id_key=None, lgd_name_key=None,
                        lgd_url_fn=None, lgd_correction_fn=None,
@@ -389,23 +417,33 @@ def base_entity_checks(entity_type=None,
         located_in_ids = get_located_in_ids(v)
         if len(located_in_ids) != 1:
             print(f'multiple located_in {label}({k}): {located_in_ids}')
-            report['multiple_located_in'].append({'wikidata_id': k, 'wikidata_label': label, 'located_in_entries': [ get_entry_from_wd_id(i) for i in located_in_ids ]})
+            report['multiple_located_in'].append({'wikidata_id': k,
+                                                  'wikidata_label': label,
+                                                  'located_in_entries': [ get_entry_from_wd_id(i) for i in located_in_ids ]})
         else:
             res = check_expected_located_in_fn(located_in_ids[0])
             if not res['ok']:
-                report['wrong_kind_of_located_in'].append({'wikidata_id': k, 'wikidata_label': label, 'located_in': get_entry_from_wd_id(located_in_ids[0]), 'expected': res['expected']})
+                report['wrong_kind_of_located_in'].append({'wikidata_id': k,
+                                                           'wikidata_label': label,
+                                                           'located_in': get_entry_from_wd_id(located_in_ids[0]),
+                                                           'expected': res['expected']})
             all_located_in_id_ranks = get_all_located_id_ranks(v)
             num_located_in = len(all_located_in_id_ranks)
             num_preferred = len([ r for r in all_located_in_id_ranks if r == 'preferred' ])
             if num_located_in > 1:
                 if num_preferred != 1:
-                    report['no_single_preferred_rank_for_located_in'].append({'wikidata_id': k, 'wikidata_label': label, 'num_preferred': num_preferred})
+                    report['no_single_preferred_rank_for_located_in'].append({'wikidata_id': k,
+                                                                              'wikidata_label': label,
+                                                                              'num_preferred': num_preferred,
+                                                                              'expected_preferred': get_entry_from_wd_id(located_in_ids[0])})
 
 
         inst_of_ids = get_instance_of_ids(v)
         if len(inst_of_ids) != 1:
             print(f'multiple instance of {label}({k}): {inst_of_ids}')
-            report['multiple_instance_of'].append({'wikidata_id': k, 'wikidata_label': label, 'inst_of_entries': [ get_entry_from_wd_id(i) for i in inst_of_ids ]})
+            report['multiple_instance_of'].append({'wikidata_id': k,
+                                                   'wikidata_label': label, 
+                                                   'inst_of_entries': [ get_entry_from_wd_id(i) for i in inst_of_ids ]})
 
         if not has_lgd:
             continue
@@ -421,7 +459,9 @@ def base_entity_checks(entity_type=None,
             lgd_entries = [ create_ext_lgd_entry(lgd_data[l]) if l in lgd_data else { 'lgd_code': l, 'lgd_name': 'NA' } for l in lgd_codes ]
             for e in lgd_entries:
                 if len(e) == 2:
-                    report['unknown_lgd_id'].append({'wikidata_id': k, 'wikidata_label': label, 'lgd_code': e['lgd_code']})
+                    report['unknown_lgd_id'].append({'wikidata_id': k,
+                                                     'wikidata_label': label,
+                                                     'lgd_code': e['lgd_code']})
 
                 
             report['multiple_lgd_ids'].append({
@@ -433,7 +473,9 @@ def base_entity_checks(entity_type=None,
 
         lgd_code = lgd_codes[0]
         if lgd_code not in lgd_data:
-            report['unknown_lgd_id'].append({'wikidata_id': k, 'wikidata_label': label, 'lgd_code': lgd_code})
+            report['unknown_lgd_id'].append({'wikidata_id': k,
+                                             'wikidata_label': label,
+                                             'lgd_code': lgd_code})
             print(f'{k} {label}, unknown {lgd_code=}')
             continue
 

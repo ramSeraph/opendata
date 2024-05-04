@@ -1,5 +1,5 @@
 #!/bin/bash
-set -aeu
+set -aeux
 
 script_dir=$(dirname "$0")
 unameOut="$(uname -s)"
@@ -18,6 +18,7 @@ get_lgd_latest_date() {
   cd data > /dev/null
   wget -q https://storage.googleapis.com/lgd_data_archive/listing_archives.txt
   all_dates="$(cat listing_archives.txt| cut -d' ' -f2)"
+  rm listing_archives.txt
   for d in $all_dates
   do
     d_conv=$(conv_date $d)
@@ -33,10 +34,12 @@ get_lgd_latest_date() {
 
 lgd_files=(
   'blocks.csv'
+  #'district_panchayats.csv'
   'districts.csv'
   #'gp_mapping.csv'
-  #'pri_local_bodies.csv'
+  'pri_local_bodies.csv'
   'states.csv'
+  #'statewise_ulbs_coverage.csv'
   'subdistricts.csv'
   #'urban_local_bodies.csv'
   #'villages.csv'
@@ -46,8 +49,8 @@ lgd_files=(
 
 get_lgd_files() {
   mkdir -p data/lgd
-  date_str=$(get_lgd_latest_date)
   cd data
+  date_str=$(get_lgd_latest_date)
   echo "getting lgd_archive for $date_str"
   echo "$date_str" > lgd_date.txt
   # download the lgd archive
@@ -102,6 +105,12 @@ verify_blocks() {
   python ${script_dir}/check_blocks.py
 }
 
+verify_district_panchayats() {
+  python ${script_dir}/download.py district
+  python ${script_dir}/download.py district_panchayat
+  python ${script_dir}/check_district_panchayats.py
+}
+
 get_lgd_files
 
 verify_states
@@ -110,6 +119,7 @@ verify_districts
 verify_subdivisions
 verify_subdistricts
 #verify_blocks
+verify_district_panchayats
 
 python ${script_dir}/collect_status.py
 

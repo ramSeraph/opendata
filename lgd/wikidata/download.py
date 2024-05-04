@@ -57,5 +57,8 @@ if __name__ == '__main__':
     elif entity == 'block':
         print('getting blocks')
         get_data(repo, 'Q2775236', 'data/blocks.jsonl')
+    elif entity == 'district_panchayat':
+        print('getting district panchayats')
+        get_data(repo, 'Q2758248', 'data/district_panchayats.jsonl')
     elif entity == 'village':
         print('getting villages')

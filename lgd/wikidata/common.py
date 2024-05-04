@@ -301,11 +301,13 @@ def get_located_in_ids(v):
     return ids
 
 
-def get_lgd_data(fname, key):
+def get_lgd_data(fname, key, filter_fn=None):
     lgd_data = {}
     with open(fname, 'r') as f:
         reader = csv.DictReader(f)
         for r in reader:
+            if filter_fn is not None and not filter_fn(r):
+                continue
             code = r[key]
             lgd_data[code] = r
     return lgd_data
@@ -372,7 +374,8 @@ def get_entry_from_wd_id(wd_num_id):
 
 def base_entity_checks(entity_type=None,
                        has_lgd=True, lgd_fname=None, lgd_id_key=None, lgd_name_key=None,
-                       lgd_url_fn=None, lgd_correction_fn=None,
+                       lgd_url_fn=None, lgd_correction_fn=None, lgd_filter_fn=None,
+                       lgd_get_effective_date=True,
                        check_expected_located_in_fn=None,
                        wd_fname=None, wd_filter_fn=lambda x:True,
                        name_prefix_drops=[], name_suffix_drops=[], name_match_threshold=0.0):
@@ -395,7 +398,7 @@ def base_entity_checks(entity_type=None,
         })
 
     if has_lgd:
-        lgd_data = get_lgd_data(lgd_fname, lgd_id_key)
+        lgd_data = get_lgd_data(lgd_fname, lgd_id_key, filter_fn=lgd_filter_fn)
 
     filtered = get_wd_data(wd_fname, wd_filter_fn)
     def create_ext_lgd_entry(lgd_entry):
@@ -520,8 +523,8 @@ def base_entity_checks(entity_type=None,
             req = PreparedRequest()
             req.prepare_url(url_info['base'], url_info['params'])
             lgd_entry_out['lgd_url'] = req.url
-            print(req.url)
-            lgd_entry_out['Effective Date'] = get_effective_date(url_info['base'], url_info['params'])
+            if lgd_get_effective_date:
+                lgd_entry_out['Effective Date'] = get_effective_date(url_info['base'], url_info['params'])
             correction_info = lgd_correction_fn(lgd_entry_out)
             #TODO: locate and add best matches?
             report['missing'].append({'lgd_entry': lgd_entry_out, 'correction_info': correction_info})

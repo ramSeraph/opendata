@@ -103,14 +103,14 @@ def get_correction_info(lgd_entry):
     info = state_info[scode]
 
     name = lgd_entry['lgd_name']
-    label_suffix = info.get('dp_suffix', '')
+    label_suffix = info.get['dp_suffix']
     label = f'{name} {label_suffix}' if label_suffix != '' else name
 
-    suffix = info['suffix']
+    suffix = info.get('dp_suffix', ' District Panchayat')
     sname = lgd_entry['State Name']
     desc = f'{suffix} in {sname}, India'
 
-    inst_of = DIST_COUNCIL_OF_INDIA_ID
+    inst_of = f'Q{DIST_COUNCIL_OF_INDIA_ID}'
 
     if g_wd_state_map_rev is None:
         wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
@@ -124,7 +124,7 @@ def get_correction_info(lgd_entry):
         'desc': desc,
         'inst_of': inst_of,
         'loc_in': loc_in,
-        #'inception': inception,
+        'inception': '',
         'lgd_code': lgd_entry['lgd_code'],
     }
     return correction_info

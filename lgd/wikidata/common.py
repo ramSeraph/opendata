@@ -18,7 +18,7 @@ st_himachal = { "name": "Himachal pradesh", "suffix": "Subtehsil", "type": "Subt
 st_haryana = { "name": "Haryana", "suffix": "Subtehsil", "type": "Subtehsil", "wd_id": "Q123264644" }
 state_info = {
     "35": { "name": "Andaman And Nicobar Islands", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987709", "dp_suffix": "Zilla Parishad" },
-    "28": { "name": "Andhra Pradesh", "suffix": "Mandal", "type": "Tehsil", "wd_id": "Q122987710", "wd_subdiv_id": "Q125626445", "dp_sufix": "Zilla Parishad" },
+    "28": { "name": "Andhra Pradesh", "suffix": "Mandal", "type": "Tehsil", "wd_id": "Q122987710", "wd_subdiv_id": "Q125626445", "dp_suffix": "Zilla Parishad" },
     "12": { "name": "Arunachal Pradesh", "suffix": "Circle", "type": "Tehsil", "long": "Circle", "wd_id": "Q122987711", "dp_suffix": "Zilla Parishad" },
     "18": { "name": "Assam", "suffix": "Circle", "type": "Tehsil", "long": "Circle", "wd_id": "Q122987712", "wd_block_id": "Q123009185", "dp_suffix": "Zilla Parishad"  },
     "10": { "name": "Bihar", "suffix": "Block", "type": "Block", "wd_id": "Q122987713", "wd_sd_id": "Q125631936", "dp_suffix": "Zilla Parishad" }, # tehsils exist and are called aanchals

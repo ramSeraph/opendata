@@ -151,9 +151,9 @@ if __name__ == '__main__':
                                 check_expected_located_in_fn=check_if_located_in_state,
                                 wd_fname=wd_fname, wd_filter_fn=filter_district_panchayat,
                                 name_prefix_drops=[], 
-                                name_suffix_drops=[' DISTRICT PANCHAYAT',
-                                                   ' ZILLA PARISHAD', ' ZILLA PANCHAYAT',
-                                                   ' DISTRICT PLANNING AND DEVOLEPMENT BOARD'],
+                                name_suffix_drops=[' DISTRICT PANCHAYAT', ' DISTRICT'
+                                                   ' ZILLA PARISHAD', ' ZILLA PANCHAYAT', ' ZiLA PARISHAD',
+                                                   ' DISTRICT PLANNING AND DEVELOPMENT BOARD'],
                                 name_match_threshold=0.99)
     report.update(hierarchy_check())
     report.update(suffix_check())

@@ -103,7 +103,7 @@ def get_correction_info(lgd_entry):
     info = state_info[scode]
 
     name = lgd_entry['lgd_name']
-    label_suffix = info.get['dp_suffix']
+    label_suffix = info['dp_suffix']
     label = f'{name} {label_suffix}' if label_suffix != '' else name
 
     suffix = info.get('dp_suffix', ' District Panchayat')
@@ -150,9 +150,9 @@ if __name__ == '__main__':
                                 lgd_get_effective_date=False,
                                 check_expected_located_in_fn=check_if_located_in_state,
                                 wd_fname=wd_fname, wd_filter_fn=filter_district_panchayat,
-                                name_prefix_drops=[], 
-                                name_suffix_drops=[' DISTRICT PANCHAYAT', ' DISTRICT'
-                                                   ' ZILLA PARISHAD', ' ZILLA PANCHAYAT', ' ZiLA PARISHAD',
+                                name_prefix_drops=[ 'DISTRICT PANCHAYAT OF' ], 
+                                name_suffix_drops=[' DISTRICT PANCHAYAT', ' DISTRICT',
+                                                   ' ZILLA PARISHAD', ' ZILLA PANCHAYAT', ' ZILA PARISHAD',
                                                    ' DISTRICT PLANNING AND DEVELOPMENT BOARD'],
                                 name_match_threshold=0.99)
     report.update(hierarchy_check())

@@ -10,7 +10,7 @@ pair_1to1 = set(['YE', 'EY', 'UW', 'WU', 'DT', 'TD', 'AE', 'AI', 'AO', 'AU', 'EA
 pair_2to2 = set(['EV', 'EO', 'CK', 'KC', 'KQ', 'QK', 'PF', 'FP', 'GJ', 'JG', 'BV', 'VB', 'VW', 'WV', 'BW', 'WB', 'JZ', 'ZJ', 'XZ', 'ZX', 'XS', 'SX', 'ZS', 'SZ', 'SC', 'CS', 'YU', 'UY', 'AU', 'UA', 'EU', 'UE', 'IU', 'UI', 'IO', 'OI'])
 
 # 2to1
-pair_2to1_list = ['O-OW', 'U-UW', 'U-OO', 'E-IY', 'I-IY', 'X-KS', 'E-EE' , 'O-OO', 'S-SC' , 'X-XC', 'I-EE', 'A-YA']
+pair_2to1_list = ['O-OW', 'U-UW', 'U-OO', 'E-IY', 'I-IY', 'X-KS', 'E-EE' , 'O-OO', 'S-SC' , 'X-XC', 'I-EE', 'A-YA', 'L-ZH']
 
 # dictionary for cheap single letter omissions. spaces are free, but non-zero to avoid duplication problems.
 pair_1to0 = {'A':0.2, 'H':0.2, 'U':0.3, 'N':0.45, ' ': 0.01, '(': 0.01, ')': 0.01, '.': 0.01, '-': 0.01, '*': 0.01 }

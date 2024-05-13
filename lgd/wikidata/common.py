@@ -17,42 +17,324 @@ from lev import masala_levenshtein
 st_himachal = { "name": "Himachal pradesh", "suffix": "Subtehsil", "type": "Subtehsil", "wd_id": "Q123264643" }
 st_haryana = { "name": "Haryana", "suffix": "Subtehsil", "type": "Subtehsil", "wd_id": "Q123264644" }
 state_info = {
-    "35": { "name": "Andaman And Nicobar Islands", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987709", "dp_suffix": "Zilla Parishad" },
-    "28": { "name": "Andhra Pradesh", "suffix": "Mandal", "type": "Tehsil", "wd_id": "Q122987710", "wd_subdiv_id": "Q125626445", "dp_suffix": "Zilla Parishad" },
-    "12": { "name": "Arunachal Pradesh", "suffix": "Circle", "type": "Tehsil", "long": "Circle", "wd_id": "Q122987711", "dp_suffix": "Zilla Parishad" },
-    "18": { "name": "Assam", "suffix": "Circle", "type": "Tehsil", "long": "Circle", "wd_id": "Q122987712", "wd_block_id": "Q123009185", "dp_suffix": "Zilla Parishad"  },
-    "10": { "name": "Bihar", "suffix": "Block", "type": "Block", "wd_id": "Q122987713", "wd_sd_id": "Q125631936", "dp_suffix": "Zilla Parishad" }, # tehsils exist and are called aanchals
-    "4": { "name": "Chandigarh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987714", "dp_suffix": "Zilla Parishad" }, # TODO: check 
-    "22": { "name": "Chhattisgarh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987715", "wd_block_id": "Q123009223", "dp_suffix": "Zilla Panchayat"   }, # TODO: check 
-    "7": { "name": "Delhi", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987716"  }, # TODO: check 
-    "30": { "name": "Goa", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987717", "dp_suffix": "Zilla Panchayat" },
-    "24": { "name": "Gujarat", "suffix": "Taluka", "type": "Tehsil", "wd_id": "Q122987718", "dp_suffix": "District Panchayat" }, # TODO: check 
-    "6": { "name": "Haryana", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987719", "alts": [ st_haryana ], "dp_suffix": "Zilla Panchayat"}, # TODO: check 
-    "2": { "name": "Himachal Pradesh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987720", "alts": [ st_himachal ], "dp_suffix": "Zilla Panchayat" },
-    "1": { "name": "Jammu And Kashmir", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987721", "dp_suffix": "District Planning and Development Board" }, # TODO: check 
-    "20": { "name": "Jharkhand", "suffix": "Block", "type": "Block", "wd_id": "Q122987723", "dp_suffix": "Zilla Panchayat"  }, # TODO: check 
-    "29": { "name": "Karnataka", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987724", "dp_suffix": "Zilla Panchayat"  }, # TODO: check 
-    "32": { "name": "Kerala", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q7680362", "wd_sd_id": "Q125627541", "dp_suffix": "District Panchayat"  }, # TODO: check 
-    "37": { "name": "Ladakh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987726", "dp_suffix": "District Planning and Development Board"   }, # TODO: check 
-    "31": { "name": "Lakshadweep", "suffix": "Subdivision", "type": "Subdivision", "wd_id": "Q122987727", "dp_suffix": "Zilla Panchayat"    },
-    "23": { "name": "Madhya Pradesh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987728", "wd_block_id": "Q125750771", "dp_suffix": "Zilla Panchayat" }, # TODO: check 
-    "27": { "name": "Maharashtra", "suffix": "Taluka", "type": "Tehsil", "wd_id": "Q13119795", "dp_suffix": "Zilla Parishad"  }, # TODO: check 
-    "14": { "name": "Manipur", "suffix": "Subdivision", "type": "Subdivision", "wd_id": "Q122987729", "dp_suffix": "Zilla Parishad"   },
-    "17": { "name": "Meghalaya", "suffix": "Block", "type": "Block", "wd_id": "Q122987730"  }, # C. & R. D. Block R is for Rural?
-    "15": { "name": "Mizoram", "suffix": "Block", "type": "Block", "long": "Rural Development Block", "wd_id": "Q122987731"  }, # Rural Development Block
-    "13": { "name": "Nagaland", "suffix": "Circle", "type": "Tehsil", "wd_id": "Q122987732"  },
-    "21": { "name": "Odisha", "suffix": "Police Station", "label_suffix": "P.S.", "type": "Police Station", "wd_id": "Q122986857", "wd_block_id": "Q61863384", "wd_subdiv_id": "Q60843390", "dp_suffix": "Zilla Parishad"  }, # Tehsils exist, Police station maps are available in the Census Atlas
-    "34": { "name": "Puducherry", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987733"  },
-    "3": { "name": "Punjab", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987734", "wd_block_id": "Q123200469", "dp_suffix": "Zilla Parishad"  }, # TODO: check 
-    "8": { "name": "Rajasthan", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987735", "wd_block_id": "Q123009239", "dp_suffix": "Zilla Panchayat"   }, # TODO: check 
-    "11": { "name": "Sikkim", "suffix": "Subdivision", "type": "Subdivision", "wd_id": "Q122956696", "dp_suffix": "Zilla Panchayat"  }, # revenue circles exist
-    "33": { "name": "Tamil Nadu", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987736", "wd_block_id": "Q123009250", "wd_subdiv_id": "Q125626392", "dp_suffix": "Zilla Panchayat"  }, # TODO: check
-    "36": { "name": "Telangana", "suffix": "Mandal", "type": "Tehsil", "wd_id": "Q122987738", "wd_subdiv_id": "Q125626476", "dp_suffix": "Zilla Parishad"   }, # TODO: check 
-    "38": { "name": "The Dadra And Nagar Haveli And Daman And Diu", "suffix": "Taluk", "type": "Tehsil", "wd_id": "Q122987739", "dp_suffix": "Zilla Parishad"    }, # TODO: check 
-    "16": { "name": "Tripura", "suffix": "Block", "type": "Block", "long": "Development Block", "wd_id": "Q122987740", "dp_suffix": "Zilla Panchayat"   }, # Development Block
-    "5": { "name": "Uttarakhand", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987741", "wd_block_id": "Q123009294", "dp_suffix": "Zilla Panchayat"   },
-    "9": { "name": "Uttar Pradesh", "suffix": "Tehsil", "type": "Tehsil", "wd_id": "Q122987742", "wd_block_id": "Q123009286", "wd_sd_id": "Q125631953", "dp_suffix": "Zilla Panchayat"  },
-    "19": { "name": "West Bengal", "suffix": "Block", "type": "Block", "wd_id": "Q122987743", "wd_subdiv_id": "Q13058507", "dp_suffix": "Zilla Panchayat"  },
+    "35": {
+        "name": "Andaman And Nicobar Islands",
+        "suffix": "Tehsil",
+        "type": "Tehsil", 
+        "wd_id": "Q122987709", 
+        "dp_suffix": "Zilla Parishad",
+        "bp_suffix": "Panchayat Samiti",
+    },
+    "28": {
+        "name": "Andhra Pradesh",
+        "suffix": "Mandal",
+        "type": "Tehsil",
+        "wd_id": "Q122987710",
+        "wd_subdiv_id": "Q125626445",
+        "dp_suffix": "Zilla Parishad",
+        "bp_suffix": "Mandal Panchayat",
+    },
+    "12": {
+        "name": "Arunachal Pradesh",
+        "suffix": "Circle",
+        "type": "Tehsil", 
+        "long": "Circle",
+        "wd_id": "Q122987711",
+        "wd_div_id": "Q125907363",
+        "dp_suffix": "Zilla Parishad",
+    },
+    "18": {
+        "name": "Assam",
+        "suffix": "Circle",
+        "type": "Tehsil",
+        "long": "Circle",
+        "wd_id": "Q122987712",
+        "wd_div_id": "Q125907354",
+        "wd_block_id": "Q123009185",
+        "dp_suffix": "Zilla Parishad",
+        "bp_suffix": "Anchalik Panchayat",
+    },
+    "10": {
+        "name": "Bihar",
+        "suffix": "Block",
+        "type": "Block",
+        "wd_id": "Q122987713",
+        "wd_div_id": "Q125907353",
+        "wd_sd_id": "Q125631936",
+        "dp_suffix": "Zilla Parishad",
+        "bp_suffix": "Panchayat Samiti",
+    }, # tehsils exist and are called aanchals
+    "4": { 
+        "name": "Chandigarh",
+        "suffix": "Tehsil",
+        "type": "Tehsil",
+        "wd_id": "Q122987714",
+        "dp_suffix": "Zilla Parishad",
+        "bp_suffix": "Panchayat Samiti",
+    }, # TODO: check 
+    "22": {
+        "name": "Chhattisgarh",
+        "suffix": "Tehsil",
+        "type": "Tehsil",
+        "wd_id": "Q122987715", 
+        "wd_div_id": "Q125907349",
+        "wd_block_id": "Q123009223",
+        "dp_suffix": "Zilla Panchayat",
+        "bp_suffix": "Janpad Panchayat",
+     }, # TODO: check 
+    "7": {
+        "name": "Delhi",
+        "suffix": "Tehsil",
+        "type": "Tehsil",
+        "wd_id": "Q122987716",
+        "wd_div_id": "Q125907356",
+    }, # TODO: check 
+    "30": {
+        "name": "Goa",
+        "suffix": "Taluk",
+        "type": "Tehsil",
+        "wd_id": "Q122987717",
+        "dp_suffix": "Zilla Panchayat",
+     },
+    "24": {
+        "name": "Gujarat",
+        "suffix": "Taluka",
+        "type": "Tehsil",
+        "wd_id": "Q122987718",
+        "dp_suffix": "District Panchayat",
+        "bp_suffix": "Taluk Panchayat",
+    }, # TODO: check 
+    "6": {
+        "name": "Haryana",
+        "suffix": "Tehsil",
+        "type": "Tehsil",
+        "wd_id": "Q122987719",
+        "wd_div_id": "Q125907351",
+        "alts": [ st_haryana ],
+        "dp_suffix": "Zilla Panchayat",
+        "bp_suffix": "Panchayat Samiti",
+    }, # TODO: check 
+    "2": {
+        "name": "Himachal Pradesh",
+        "suffix": "Tehsil",
+        "type": "Tehsil",
+        "wd_id": "Q122987720",
+        "wd_div_id": "Q125907359",
+        "alts": [ st_himachal ],
+        "dp_suffix": "Zilla Panchayat",
+        "bp_suffix": "Panchayat Samiti",
+    },
+    "1": {
+        "name": "Jammu And Kashmir",
+        "suffix": "Tehsil",
+        "type": "Tehsil",
+        "wd_id": "Q122987721",
+        "wd_div_id": "Q125907352",
+        "dp_suffix": "District Planning and Development Board",
+        "bp_suffix": "Block Development Council",
+    }, # TODO: check 
+    "20": {
+        "name": "Jharkhand",
+        "suffix": "Block",
+        "type": "Block",
+        "wd_id": "Q122987723",
+        "wd_div_id": "Q125907347",
+        "dp_suffix": "Zilla Panchayat",
+        "bp_suffix": "Panchayat Samiti",
+    }, # TODO: check 
+    "29": {
+        "name": "Karnataka",
+        "suffix": "Taluk",
+        "type": "Tehsil",
+        "wd_id": "Q122987724",
+        "wd_div_id": "Q125907360",
+        "dp_suffix": "Zilla Panchayat",
+        "bp_suffix": "Taluka Panchayat",
+    }, # TODO: check 
+    "32": {
+        "name": "Kerala",
+        "suffix": "Taluk",
+        "type": "Tehsil",
+        "wd_id": "Q7680362",
+        "wd_sd_id": "Q125627541",
+        "dp_suffix": "District Panchayat",
+        "bp_suffix": "Block Panchayat",
+    }, # TODO: check 
+    "37": {
+        "name": "Ladakh",
+        "suffix": "Tehsil",
+        "type": "Tehsil",
+        "wd_id": "Q122987726",
+        "wd_div_id": "Q125907364",
+        "dp_suffix": "District Planning and Development Board",
+        "bp_suffix": "Block Development Council",
+    }, # TODO: check 
+    "31": { 
+        "name": "Lakshadweep",
+        "suffix": "Subdivision",
+        "type": "Subdivision",
+        "wd_id": "Q122987727",
+        "dp_suffix": "Zilla Panchayat",
+    },
+    "23": {
+        "name": "Madhya Pradesh",
+        "suffix": "Tehsil",
+        "type": "Tehsil",
+        "wd_id": "Q122987728",
+        "wd_div_id": "Q124669069",
+        "wd_block_id": "Q125750771",
+        "dp_suffix": "Zilla Panchayat",
+        "bp_suffix": "Janpad Panchayat",
+    }, # TODO: check 
+    "27": {
+        "name": "Maharashtra",
+        "suffix": "Taluka",
+        "type": "Tehsil",
+        "wd_id": "Q13119795",
+        "wd_div_id": "Q125907357",
+        "dp_suffix": "Zilla Parishad",
+        "bp_suffix": "Block Panchayat",
+    }, # TODO: check 
+    "14": {
+        "name": "Manipur",
+        "suffix": "Subdivision",
+        "type": "Subdivision",
+        "wd_id": "Q122987729",
+        "dp_suffix": "Zilla Parishad",
+    },
+    "17": {
+        "name": "Meghalaya",
+        "suffix": "Block",
+        "type": "Block",
+        "wd_id": "Q122987730",
+        "wd_div_id": "Q125907362",
+    }, # C. & R. D. Block R is for Rural?
+    "15": {
+        "name": "Mizoram",
+        "suffix": "Block",
+        "type": "Block",
+        "long": "Rural Development Block",
+        "wd_id": "Q122987731",
+    }, # Rural Development Block
+    "13": {
+        "name": "Nagaland",
+        "suffix": "Circle",
+        "type": "Tehsil",
+        "wd_id": "Q122987732",
+        "wd_div_id": "Q125907369",
+    },
+    "21": {
+        "name": "Odisha",
+        "suffix": "Police Station",
+        "label_suffix": "P.S.",
+        "type": "Police Station",
+        "wd_id": "Q122986857",
+        "wd_div_id": "Q125907355",
+        "wd_block_id": "Q61863384",
+        "wd_subdiv_id": "Q60843390",
+        "dp_suffix": "Zilla Parishad",
+        "bp_suffix": "Panchayat Samiti",
+    }, # Tehsils exist, Police station maps are available in the Census Atlas
+    "34": {
+        "name": "Puducherry",
+        "suffix": "Taluk",
+        "type": "Tehsil",
+        "wd_id": "Q122987733",
+        "bp_suffix": "Commune Panchayat",
+    },
+    "3": {
+        "name": "Punjab",
+        "suffix": "Tehsil",
+        "type": "Tehsil",
+        "wd_id": "Q122987734",
+        "wd_div_id": "Q125907365",
+        "wd_block_id": "Q123200469",
+        "dp_suffix": "Zilla Parishad",
+        "bp_suffix": "Panchayat Samiti",
+    }, # TODO: check 
+    "8": {
+        "name": "Rajasthan",
+        "suffix": "Tehsil",
+        "type": "Tehsil",
+        "wd_id": "Q122987735",
+        "wd_div_id": "Q125907350",
+        "wd_block_id": "Q123009239",
+        "dp_suffix": "Zilla Panchayat",
+        "bp_suffix": "Block Panchayat",
+    }, # TODO: check 
+    "11": {
+        "name": "Sikkim",
+        "suffix": "Subdivision",
+        "type": "Subdivision",
+        "wd_id": "Q122956696",
+        "dp_suffix": "Zilla Panchayat",
+    }, # revenue circles exist
+    "33": {
+        "name": "Tamil Nadu",
+        "suffix": "Taluk",
+        "type": "Tehsil",
+        "wd_id": "Q122987736",
+        "wd_block_id": "Q123009250",
+        "wd_subdiv_id": "Q125626392",
+        "dp_suffix": "Zilla Panchayat",
+        "bp_suffix": "Panchayat Samiti",
+    }, # TODO: check
+    "36": {
+        "name": "Telangana",
+        "suffix": "Mandal",
+        "type": "Tehsil",
+        "wd_id": "Q122987738",
+        "wd_subdiv_id": "Q125626476",
+        "dp_suffix": "Zilla Parishad",
+        "bp_suffix": "Mandal Panchayat",
+    }, # TODO: check 
+    "38": {
+        "name": "The Dadra And Nagar Haveli And Daman And Diu",
+        "suffix": "Taluk",
+        "type": "Tehsil",
+        "wd_id": "Q122987739",
+        "dp_suffix": "Zilla Parishad",
+    }, # TODO: check 
+    "16": {
+        "name": "Tripura",
+        "suffix": "Block",
+        "type": "Block",
+        "long": "Development Block",
+        "wd_id": "Q122987740",
+        "dp_suffix": "Zilla Panchayat",
+        "bp_suffix": "Block Panchayat",
+    }, # Development Block
+    "5": {
+        "name": "Uttarakhand",
+        "suffix": "Tehsil",
+        "type": "Tehsil",
+        "wd_id": "Q122987741",
+        "wd_div_id": "Q125907368",
+        "wd_block_id": "Q123009294",
+        "dp_suffix": "Zilla Panchayat",
+        "bp_suffix": "Kshetra Panchayat",
+    },
+    "9": {
+        "name": "Uttar Pradesh",
+        "suffix": "Tehsil",
+        "type": "Tehsil",
+        "wd_id": "Q122987742",
+        "wd_div_id": "Q125907346",
+        "wd_block_id": "Q123009286",
+        "wd_sd_id": "Q125631953",
+        "dp_suffix": "Zilla Panchayat",
+        "bp_suffix": "Kshetra Panchayat",
+    },
+    "19": {
+        "name": "West Bengal",
+        "suffix": "Block",
+        "type": "Block",
+        "wd_id": "Q122987743",
+        "wd_div_id": "Q5284624",
+        "wd_subdiv_id": "Q13058507",
+        "dp_suffix": "Zilla Panchayat",
+        "bp_suffix": "Panchayat Samiti",
+    },
 }
 
 SUBDIST_ID = 105626471
@@ -87,6 +369,9 @@ P_REPLACED_BY = 'P1366'
 P_DISSOLVED = 'P576'
 P_COUNTRY = 'P17'
 P_LOCATED_IN = 'P131'
+P_COORDINATE_LOCATION = 'P625'
+P_COEXTENSIVE_WITH = 'P3403'
+
 
 P_LGD_CODE = 'P6425'
 P_CENSUS_CODE = 'P5578'
@@ -211,6 +496,16 @@ def get_aliases(v):
     en_aliases = [ e['value'] for e in v.get('aliases', {}).get('en', []) if e['language'] == 'en' ]
     return en_aliases
 
+def get_coordinates(v):
+    if is_inactive(v):
+        return []
+    coordinates = []
+    coord_claims = v['claims'].get(P_COORDINATE_LOCATION, [])
+
+    for c in coord_claims:
+        val = c['mainsnak']['datavalue']['value']
+        coordinates.append([val['longitude'], val['longitude']])
+    return coordinates
 
 def clean_string(s, prefix_drops, suffix_drops):
     s = unidecode.unidecode(s)

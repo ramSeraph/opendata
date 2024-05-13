@@ -267,6 +267,9 @@ class WrongInstOf {
         return null;
     }
     const expected_id = expected_inst_of_entries[0]['id'];
+    if (expected_id === undefined) {
+        return null;
+    }
     const curr_id = this.data['current_inst_of']['id'];
     const wd_id = this.data['wikidata_id'];
     return `${wd_id},${curr_id},${expected_id}`;

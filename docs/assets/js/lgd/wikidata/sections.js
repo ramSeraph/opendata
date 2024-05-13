@@ -258,9 +258,6 @@ class WrongInstOf {
     return `<span>${link}</span><ul><li>Expected Instance Of: ${expected_inst_of_links}</li><li>Current Instance Of: ${curr_inst_of_link}</ul>`;
   }
   getQSRow() {
-    return 'qid,-P31,P31';
-  }
-  getQSHeader() {
     const expected_inst_of_entries = this.data['expected_inst_ofs'];
     if (expected_inst_of_entries.length != 1) {
         return null;
@@ -269,6 +266,9 @@ class WrongInstOf {
     const curr_id = this.data['current_inst_of']['id'];
     const wd_id = this.data['wikidata_id'];
     return `${wd_id},${curr_id},${expected_id}`;
+  }
+  getQSHeader() {
+    return 'qid,-P31,P31';
   }
 }
 

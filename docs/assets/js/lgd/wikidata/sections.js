@@ -8,7 +8,7 @@ function wd_link(wd_id, wd_name) {
   }
   const url = wd_url(wd_id);
   var name = wd_name;
-  if (name === null) {
+  if (name === 'NA') {
       name = wd_id;
   }
   return `<a href="${url}" target="_blank">${name}</a>`;

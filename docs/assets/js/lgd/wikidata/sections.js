@@ -257,12 +257,18 @@ class WrongInstOf {
     const curr_inst_of_link = wd_link(curr['id'], curr['label']);
     return `<span>${link}</span><ul><li>Expected Instance Of: ${expected_inst_of_links}</li><li>Current Instance Of: ${curr_inst_of_link}</ul>`;
   }
-  /* TODO: add corrections */
   getQSRow() {
-    return null;
+    return 'qid,-P31,P31';
   }
   getQSHeader() {
-    return null;
+    const expected_inst_of_entries = this.data['expected_inst_ofs'];
+    if (expected_inst_of_entries.length != 1) {
+        return null;
+    }
+    const expected_id = expected_inst_of_entries[0]['id'];
+    const curr_id = this.data['current_inst_of']['id'];
+    const wd_id = this.data['wikidata_id'];
+    return `${wd_id},${curr_id},${expected_id}`;
   }
 }
 

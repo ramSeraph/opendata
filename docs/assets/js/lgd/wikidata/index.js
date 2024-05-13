@@ -42,6 +42,9 @@ function renderSections(list, data) {
     for (const entry of v) {
       const inst = getInstance(k, entry);
       const row = inst.getQSRow();
+      if (row === null) {
+        continue;
+      }
       corrections += row;
       corrections += '<br/>';
     }

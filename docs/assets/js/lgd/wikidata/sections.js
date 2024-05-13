@@ -7,7 +7,11 @@ function wd_link(wd_id, wd_name) {
     return wd_name;
   }
   const url = wd_url(wd_id);
-  return `<a href="${url}" target="_blank">${wd_name}</a>`;
+  var name = wd_name;
+  if (name === null) {
+      name = wd_id;
+  }
+  return `<a href="${url}" target="_blank">${name}</a>`;
 }
 
 function renderLgdEntry(lgdEntry) {

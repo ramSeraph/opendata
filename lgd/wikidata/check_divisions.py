@@ -64,18 +64,20 @@ def inst_of_check():
             continue
 
         info = state_info[state_mapping[parent_wid]]
-        if 'wd_div_id' not in info:
-            #TODO: this should be flagged
-            continue
+        if 'wd_div_id' in info:
+            wd_div_id = info['wd_div_id']
+            expected_inst_of_id = int(wd_div_id[1:])
+            if inst_of_id == expected_inst_of_id:
+                continue
+            expected_inst_of_entry = get_entry_from_wd_id(expected_inst_of_id)
+        else:
+            state_name = info['name']
+            expected_inst_of_entry = {'label': f'division of {state_name}'}
 
-        wd_div_id = info['wd_div_id']
-        expected_inst_of_id = int(wd_div_id[1:])
-        if inst_of_id == expected_inst_of_id:
-            continue
         label = get_label(v)
         report['wrong_inst_of'].append({'wikidata_id': k,
                                         'wikidata_label': label,
-                                        'expected_inst_ofs': [ get_entry_from_wd_id(expected_inst_of_id) ],
+                                        'expected_inst_ofs': [ expected_inst_of_entry ],
                                         'current_inst_of': get_entry_from_wd_id(inst_of_id)})
     return report
 

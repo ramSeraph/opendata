@@ -139,6 +139,7 @@ state_info = {
         "suffix": "Block",
         "type": "Block",
         "wd_id": "Q122987723",
+        "wd_subdiv_id": "Q125919353",
         "wd_div_id": "Q125907347",
         "dp_suffix": "Zilla Panchayat",
         "bp_suffix": "Panchayat Samiti",
@@ -194,6 +195,7 @@ state_info = {
         "type": "Tehsil",
         "wd_id": "Q13119795",
         "wd_div_id": "Q125907357",
+        "wd_subdiv_id": "Q125918906",
         "dp_suffix": "Zilla Parishad",
         "bp_suffix": "Block Panchayat",
     }, # TODO: check 
@@ -313,6 +315,7 @@ state_info = {
         "suffix": "Tehsil",
         "type": "Tehsil",
         "wd_id": "Q122987741",
+        "wd_subdiv_id": "Q125919325",
         "wd_div_id": "Q125907368",
         "wd_block_id": "Q123009294",
         "dp_suffix": "Zilla Panchayat",

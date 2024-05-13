@@ -57,18 +57,23 @@ def inst_of_check():
         state_lgd_id = dist_lgd_map[dist_lgd_id]['State Code']
 
         info = state_info[state_lgd_id]
-        if 'wd_subdiv_id' not in info:
-            #TODO: this should be flagged
-            continue
+        if info['type'] == 'Subdivision' or 'wd_subdiv_id' in info:
+            if info['type'] == 'Subdivision':
+                wd_subdiv_id = info['wd_id']
+            else:
+                wd_subdiv_id = info['wd_subdiv_id']
+            expected_inst_of_id = int(wd_subdiv_id[1:])
+            if inst_of_id == expected_inst_of_id:
+                continue
+            expected_inst_of_entry = get_entry_from_wd_id(expected_inst_of_id)
+        else:
+            state_name = info['name']
+            expected_inst_of_entry = {'label': f'Subdivision of {state_name}'}
 
-        wd_subdiv_id = info['wd_subdiv_id']
-        expected_inst_of_id = int(wd_subdiv_id[1:])
-        if inst_of_id == expected_inst_of_id:
-            continue
         label = get_label(v)
         report['wrong_inst_of'].append({'wikidata_id': k,
                                         'wikidata_label': label,
-                                        'expected_inst_ofs': [ get_entry_from_wd_id(expected_inst_of_id) ],
+                                        'expected_inst_ofs': [ expected_inst_of_entry ],
                                         'current_inst_of': get_entry_from_wd_id(inst_of_id)})
     return report
 

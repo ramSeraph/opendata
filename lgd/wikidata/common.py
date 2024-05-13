@@ -60,7 +60,7 @@ state_info = {
         "type": "Block",
         "wd_id": "Q122987713",
         "wd_div_id": "Q125907353",
-        "wd_sd_id": "Q125631936",
+        "wd_subdiv_id": "Q125631936",
         "dp_suffix": "Zilla Parishad",
         "bp_suffix": "Panchayat Samiti",
     }, # tehsils exist and are called aanchals
@@ -156,7 +156,7 @@ state_info = {
         "suffix": "Taluk",
         "type": "Tehsil",
         "wd_id": "Q7680362",
-        "wd_sd_id": "Q125627541",
+        "wd_subdiv_id": "Q125627541",
         "dp_suffix": "District Panchayat",
         "bp_suffix": "Block Panchayat",
     }, # TODO: check 
@@ -371,6 +371,7 @@ P_COUNTRY = 'P17'
 P_LOCATED_IN = 'P131'
 P_COORDINATE_LOCATION = 'P625'
 P_COEXTENSIVE_WITH = 'P3403'
+P_CONTAINS = 'P150'
 
 
 P_LGD_CODE = 'P6425'

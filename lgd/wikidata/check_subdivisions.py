@@ -72,6 +72,34 @@ def inst_of_check():
                                         'current_inst_of': get_entry_from_wd_id(inst_of_id)})
     return report
 
+def suffix_check():
+    report = { 'wrong_suffix': [] }
+    by_wid = {}
+    for s_code, e in state_info.items():
+        e['state_code'] = s_code
+        if 'wd_subdiv_id' not in e:
+            continue
+        wid = e['wd_subdiv_id']
+        by_wid[wid] = e
+
+    filtered = get_wd_data(wd_fname, filter_subdivision)
+    for k,v in filtered.items():
+        inst_of_ids = get_instance_of_ids(v)
+        if len(inst_of_ids) != 1:
+            continue
+        inst_of_wid = f'Q{inst_of_ids[0]}'
+        if inst_of_wid not in by_wid:
+            continue
+        info = by_wid[inst_of_wid]
+        expected_suffix = info.get('subdiv_label_suffix', 'subdivision')
+        label = get_label(v)
+        if label.upper().endswith(f' {expected_suffix.upper()}'):
+            continue
+        report['wrong_suffix'].append({'wikidata_id': k,
+                                       'wikidata_label': label,
+                                       'expected_suffix': expected_suffix})
+    return report
+
 
 wd_dist_data = None
 def check_if_located_in_district(wid):
@@ -92,6 +120,6 @@ if __name__ == '__main__':
                                 wd_fname=wd_fname, wd_filter_fn=filter_subdivision)
     report.update(hierarchy_check())
     report.update(inst_of_check())
-    #report.update(suffix_check())
+    report.update(suffix_check())
     pprint(report)
     write_report(report, 'subdivisions.json')

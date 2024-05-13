@@ -31,6 +31,7 @@ state_info = {
         "type": "Tehsil",
         "wd_id": "Q122987710",
         "wd_subdiv_id": "Q125626445",
+        "subdiv_label_suffix": "revenue division",
         "dp_suffix": "Zilla Parishad",
         "bp_suffix": "Mandal Panchayat",
     },
@@ -157,6 +158,7 @@ state_info = {
         "type": "Tehsil",
         "wd_id": "Q7680362",
         "wd_subdiv_id": "Q125627541",
+        "subdiv_label_suffix": "revenue division",
         "dp_suffix": "District Panchayat",
         "bp_suffix": "Block Panchayat",
     }, # TODO: check 
@@ -276,6 +278,7 @@ state_info = {
         "wd_id": "Q122987736",
         "wd_block_id": "Q123009250",
         "wd_subdiv_id": "Q125626392",
+        "subdiv_label_suffix": "division",
         "dp_suffix": "Zilla Panchayat",
         "bp_suffix": "Panchayat Samiti",
     }, # TODO: check
@@ -285,6 +288,7 @@ state_info = {
         "type": "Tehsil",
         "wd_id": "Q122987738",
         "wd_subdiv_id": "Q125626476",
+        "subdiv_label_suffix": "revenue division",
         "dp_suffix": "Zilla Parishad",
         "bp_suffix": "Mandal Panchayat",
     }, # TODO: check 

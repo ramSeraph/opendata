@@ -2,6 +2,10 @@ import json
 import io
 import copy
 import shutil
+import urllib.parse
+import random
+
+from pprint import pprint
 
 from multiprocessing import Pool
 from pathlib import Path
@@ -10,27 +14,57 @@ import requests
 from bs4 import BeautifulSoup
 
 
-dist_url = 'https://ejalshakti.gov.in/imisreports/Reports/Physical/rpt_RWS_FHTCCoverage_D.aspx?Rep=0'
-list_url = 'https://ejalshakti.gov.in/imisreports/Reports/Physical/rpt_RWS_FHTCCoverage_List.aspx?Rep=0'
+random.seed()
+
+base_url = 'https://ejalshakti.gov.in'
+list_url = 'https://ejalshakti.gov.in/JJM/JJMReports/Physical/JJMRep_FHTCCoverage.aspx'
+
 
 data_dir = Path('data/habitations')
 data_dir.mkdir(parents=True, exist_ok=True)
 
 base_headers = {
-    'Accept': '*/*',
+  'Upgrade-Insecure-Requests': '1',
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+  'sec-ch-ua': '"Google Chrome";v="119", "Chromium";v="119", "Not?A_Brand";v="24"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"macOS"'
+}
+
+post_headers = {
+  'Accept': '*/*',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Cache-Control': 'no-cache',
+  'Connection': 'keep-alive',
+  'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+  'Origin': base_url,
+  'Pragma': 'no-cache',
+  'Referer': list_url,
+  'Sec-Fetch-Dest': 'empty',
+  'Sec-Fetch-Mode': 'cors',
+  'Sec-Fetch-Site': 'same-origin',
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+  'X-MicrosoftAjax': 'Delta=true',
+  'X-Requested-With': 'XMLHttpRequest',
+  'sec-ch-ua': '"Google Chrome";v="119", "Chromium";v="119", "Not?A_Brand";v="24"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"macOS"',
+}
+
+new_get_headers = {
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     'Accept-Language': 'en-US,en;q=0.9',
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
-    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-    'Origin': 'https://ejalshakti.gov.in',
     'Pragma': 'no-cache',
-    'Sec-Fetch-Dest': 'empty',
-    'Sec-Fetch-Mode': 'cors',
+    'Referer': list_url,
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
     'Sec-Fetch-Site': 'same-origin',
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36',
-    'X-MicrosoftAjax': 'Delta=true',
-    'X-Requested-With': 'XMLHttpRequest',
-    'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="101", "Google Chrome";v="101"',
+    'Sec-Fetch-User': '?1',
+    'Upgrade-Insecure-Requests': '1',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+    'sec-ch-ua': '"Google Chrome";v="119", "Chromium";v="119", "Not?A_Brand";v="24"',
     'sec-ch-ua-mobile': '?0',
     'sec-ch-ua-platform': '"macOS"',
 }
@@ -90,15 +124,31 @@ def extract_habitation_list(soup):
     for tr in trs:
         tds = tr.find_all('td', recursive=False)
         #print(tds)
+        state_name = tds[1].text.strip()
+        dist_name = tds[2].text.strip()
         block_name = tds[3].text.strip()
         gp_name = tds[4].text.strip()
-        village = tds[5].text.strip()
-        hb_id = tds[7].text.strip()
+        village_id = tds[5].text.strip()
+        village = tds[6].text.strip()
+        hb_name = tds[7].text.strip()
+        hb_id = tds[8].text.strip()
+        num_hh = tds[9].text.strip()
+        num_hh_tap = tds[10].text.strip()
         link = tds[6].find('a')
-        hb_name = link.text.strip()
         url = link.attrs['href']
-        url_id = '='.join(url.split('&')[-1].split('=')[1:])
-        hab_list.append({'name': hb_name, 'village': village, 'gp': gp_name, 'id': hb_id, 'url_id': url_id, 'block': block_name})
+        hab_list.append({
+            'state_name': state_name,
+            'dist_name': dist_name,
+            'block_name': block_name,
+            'gp_name': gp_name,
+            'village': village,
+            'village_id': village_id,
+            'hab_name': hb_name,
+            'hab_id': hb_id,
+            'url': url,
+            'num_hh': num_hh,
+            'num_hh_tap': num_hh_tap
+        })
     return hab_list
 
 
@@ -106,15 +156,15 @@ def extract_habitation_list(soup):
 def get_data(inp=None):
     print('getting main page')
     session = requests.session()
-    resp = session.get(dist_url)
+    resp = session.get(list_url, headers=base_headers)
     if not resp.ok:
-        raise Exception(f'failed to get data from {dist_url}')
-    
+        raise Exception(f'failed to get data from {list_url}')
+
     soup = BeautifulSoup(resp.text, 'html.parser')
     base_form_data = get_base_form_data(soup)
-    table = soup.find('table', {'class': 'SelectData'})
+    table = soup.find('table', {'class': 'tableReportTable'})
     try:
-        state_select = table.find('select', {'id': 'ContentPlaceHolder_ddState'})
+        state_select = soup.find('select', {'id': 'CPHPage_ddState'})
     except Exception as ex:
         print(soup)
         raise ex
@@ -140,21 +190,17 @@ def get_data(inp=None):
         form_data = {}
         form_data.update(base_form_data)
         form_data.update({
-            'ctl00$ScriptManager1': 'ctl00$upPnl|ctl00$ContentPlaceHolder$ddState',
-            '__EVENTTARGET': 'ctl00$ContentPlaceHolder$ddState',
+            'ctl00$ScriptManager1': 'ctl00$upPnl|ctl00$CPHPage$ddState',
+            '__EVENTTARGET': 'ctl00$CPHPage$ddState',
             '__EVENTARGUMENT': '',
             '__LASTFOCUS': '',
-            'ctl00$ddLanguage': '',
-            'ctl00$ContentPlaceHolder$ddFinyear': '2022-2023',
-            'ctl00$ContentPlaceHolder$ddState': val,
-            'ctl00$ContentPlaceHolder$dddistrict': '-1',
-            'ctl00$ContentPlaceHolder$ddType': '1',
+            'ctl00$CPHPage$ddFinyear': '2024-2025',
+            'ctl00$CPHPage$ddState': val,
+            'ctl00$CPHPage$ddDistrict': '-1',
+            'ctl00$CPHPage$ddtype': '1',
             '__ASYNCPOST': 'true'
         })
-        headers = {}
-        headers.update(base_headers)
-        headers['Referer'] = dist_url
-        resp = session.post(dist_url, data=form_data, headers=headers)
+        resp = session.post(list_url, data=form_data, headers=post_headers)
         if not resp.ok:
             raise Exception('post to get district list failed')
         html, base_form_data = get_data_from_post(resp.text)
@@ -163,22 +209,18 @@ def get_data(inp=None):
         form_data = {}
         form_data.update(base_form_data)
         form_data.update({
-            'ctl00$ScriptManager1': 'ctl00$upPnl|ctl00$ContentPlaceHolder$btnGO',
-            'ctl00$ddLanguage': '',
-            'ctl00$ContentPlaceHolder$ddFinyear': '2022-2023',
-            'ctl00$ContentPlaceHolder$ddState': val,
-            'ctl00$ContentPlaceHolder$dddistrict': '-1',
-            'ctl00$ContentPlaceHolder$ddType': '1',
+            'ctl00$ScriptManager1': 'ctl00$upPnl|ctl00$CPHPage$btnShow',
+            'ctl00$CPHPage$ddFinyear': '2024-2025',
+            'ctl00$CPHPage$ddState': val,
+            'ctl00$CPHPage$ddDistrict': '-1',
+            'ctl00$CPHPage$ddtype': '1',
             '__EVENTTARGET': '',
             '__EVENTARGUMENT': '',
             '__LASTFOCUS': '',
             '__ASYNCPOST': 'true',
-            'ctl00$ContentPlaceHolder$btnGO': 'Show'
+            'ctl00$CPHPage$btnShow': 'Show'
         })
-        headers = {}
-        headers.update(base_headers)
-        headers['Referer'] = dist_url
-        resp = session.post(dist_url, data=form_data, headers=headers)
+        resp = session.post(list_url, data=form_data, headers=post_headers)
         if not resp.ok:
             raise Exception('post to get district info failed')
         html, base_form_data = get_data_from_post(resp.text)
@@ -215,66 +257,58 @@ def get_data(inp=None):
             hab_form_data.update(base_form_data)
             hab_form_data.update({
                 'ctl00$ScriptManager1': 'ctl00$upPnl|' + hab_ctl,
-                'ctl00$ddLanguage': '',
-                'ctl00$ContentPlaceHolder$ddFinyear': '2022-2023',
-                'ctl00$ContentPlaceHolder$ddState': val,
-                'ctl00$ContentPlaceHolder$dddistrict': '-1',
-                'ctl00$ContentPlaceHolder$ddType': '1',
+                'ctl00$CPHPage$ddFinyear': '2024-2025',
+                'ctl00$CPHPage$ddState': val,
+                'ctl00$CPHPage$ddDistrict': '-1',
+                'ctl00$CPHPage$ddtype': '1',
                 '__EVENTTARGET': hab_ctl,
                 '__EVENTARGUMENT': '',
                 '__LASTFOCUS': '',
                 '__ASYNCPOST': 'true',
             })
-            h_headers = {}
-            h_headers.update(base_headers)
-            h_headers['Referer'] = dist_url
-            resp = session.post(dist_url, data=hab_form_data, headers=h_headers)
+            resp = session.post(list_url, data=hab_form_data, headers=post_headers)
             if not resp.ok:
                 raise Exception('post to get district info failed')
-            #print(resp.text)
-            resp = session.get(list_url)
+            hab_list_url = base_url + get_hab_url(resp.text)
+            resp = session.get(hab_list_url, headers=new_get_headers)
             if not resp.ok:
-                raise Exception('getting habitation list failed')
-            #print(resp.text)
+                raise Exception(f'getting habitation list failed for {hab_list_url}')
             h_soup = BeautifulSoup(resp.text, 'html.parser')
             base_form_data = get_base_form_data(h_soup)
-            page_links = h_soup.find_all('a', {'class': 'lnkPages'})
-            page_map = {}
-            for link in page_links:
-                pno = link.text.strip()
-                href = link.attrs['href']
-                ctl = href.split("'")[1]
-                page_map[pno] = ctl
-
-            num_pages = len(page_map.keys())
+            select = h_soup.find('select', { 'id': 'CPHPage_ddPagrno' })
+            if select is None:
+                options = []
+            else:
+                options = select.find_all('option')
+            option_vals = [ o.get('value') for o in options ]
+            num_pages = len(option_vals) - 1
             page_file = dist_dir_wip / '1.json'
             if not page_file.exists():
                 print(f'{name}/{dist_name} handling page 1/{num_pages}')
                 hab_list = extract_habitation_list(h_soup)
                 with open(page_file, 'w') as f:
                     json.dump(hab_list, f)
-            for pno in page_map.keys():
-                if pno == '1':
+            for pno in option_vals:
+                if pno in ['0', '1']:
                     continue
                 page_file = dist_dir_wip / f'{pno}.json'
                 if page_file.exists():
                     continue
                 print(f'{name}/{dist_name} handling page {pno}/{num_pages}')
-                ctl = page_map[pno]
                 form_data = {}
                 form_data.update(base_form_data)
                 form_data.update({
-                    'ctl00$ScriptManager1': 'ctl00$upPnl|' + ctl,
-                    'ctl00$ddLanguage': '',
-                    '__EVENTTARGET': ctl,
+                    'ctl00$ScriptManager1': 'ctl00$upPnl|ctl00$CPHPage$ddPagrno',
+                    'ctl00$CPHPage$ddPagrno': pno,
+                    '__EVENTTARGET': 'ctl00$CPHPage$ddPagrno',
                     '__EVENTARGUMENT': '',
                     '__LASTFOCUS': '',
                     '__ASYNCPOST': 'true'
                 })
                 h_headers = {}
-                h_headers.update(base_headers)
-                h_headers['Referer'] = list_url
-                resp = session.post(list_url, data=form_data, headers=h_headers)
+                h_headers.update(post_headers)
+                h_headers['Referer'] = hab_list_url
+                resp = session.post(hab_list_url, data=form_data, headers=h_headers)
                 if not resp.ok:
                     raise Exception('post to get habitation list failed')
 
@@ -316,8 +350,17 @@ def is_state_done(state_map, s_name):
     return len(leftover) == 0
 
 
+def get_hab_url(resp_text):
+    pieces = resp_text.split('|')
+    return urllib.parse.unquote(pieces[-2].replace('./', '/'))
+    
+
 
 if __name__ == '__main__':
+    #resp_text = '1|#||4|265|pageRedirect||%2fJJM%2fJJMReports%2fPhysical%2fJJMRep_FHTCCoverage_list.aspx%3fft%3dgM%252bgaDUgSoCIzwchG9%252bXOQ%253d%253d%26dt%3dcMpX3xtH%252bqA%253d%26bk%3dgMqMutIC0u0%253d%26ctype%3d3SF6adRVTpM%253d%26ctypeN%3dEvG%252bhHvl786YRNrKx3fgPQ%253d%253d%26filter%3dLDYbzGaoFKw%253d|'
+    #hab_url = get_hab_url(resp_text)
+    #print(hab_url)
+    #exit(0)
     state_map_file = data_dir / 'state_map.json'
     if state_map_file.exists():
         with open(state_map_file) as f:
@@ -330,7 +373,18 @@ if __name__ == '__main__':
     dist_list = []
     for s_name, dists in state_map.items():
         for d_name in dists.keys():
+            state_dir = data_dir / f'{s_name}'
+            if state_dir.exists():
+                continue
+            state_dir_wip = data_dir / f'{s_name}.wip'
+            dist_dir = state_dir_wip / f'{d_name}'
+            if dist_dir.exists():
+                continue
             dist_list.append((s_name, d_name, state_map))
+
+
+    random.shuffle(dist_list)
+    #nb_processes = 8
     nb_processes = 8
     chunksize = max(1, min(128, len(dist_list) // nb_processes))
     done = 0

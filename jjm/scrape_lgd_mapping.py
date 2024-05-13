@@ -214,13 +214,13 @@ def parse_main_table(html):
 
         count = int(cells[3].text)
         data['mapped_blocks_count'] = count
-        if count != 0:
+        if count > 0:
             var = cells[3].find('a').attrs['href'].split("'")[1]
             data['mapped_blocks_var'] = var
 
         count = int(cells[4].text)
         data['unmapped_blocks_count'] = count
-        if count != 0:
+        if count > 0:
             var = cells[4].find('a').attrs['href'].split("'")[1]
             data['unmapped_blocks_var'] = var
 
@@ -229,13 +229,13 @@ def parse_main_table(html):
 
         count = int(cells[6].text)
         data['mapped_gps_count'] = count
-        if count != 0:
+        if count > 0:
             var = cells[6].find('a').attrs['href'].split("'")[1]
             data['mapped_gps_var'] = var
 
         count = int(cells[7].text)
         data['unmapped_gps_count'] = count
-        if count != 0:
+        if count > 0:
             var = cells[7].find('a').attrs['href'].split("'")[1]
             data['unmapped_gps_var'] = var
 
@@ -244,15 +244,35 @@ def parse_main_table(html):
 
         count = int(cells[9].text)
         data['mapped_vills_count'] = count
-        if count != 0:
+        if count > 0:
             var = cells[9].find('a').attrs['href'].split("'")[1]
             data['mapped_vills_var'] = var
 
         count = int(cells[10].text)
         data['unmapped_vills_count'] = count
-        if count != 0:
+        if count > 0:
             var = cells[10].find('a').attrs['href'].split("'")[1]
             data['unmapped_vills_var'] = var
+
+
+        count = int(cells[11].text)
+        data['urbanised_to_be_deleted_vills_count'] = count
+        if count > 0:
+            var = cells[10].find('a').attrs['href'].split("'")[1]
+            data['urbanised_to_be_deleted_vills_var'] = var
+
+        count = int(cells[12].text)
+        data['wrong_entry_to_be_deleted_vills_count'] = count
+        if count > 0:
+            var = cells[10].find('a').attrs['href'].split("'")[1]
+            data['wrong_entry_to_be_deleted_vills_var'] = var
+
+        count = int(cells[13].text)
+        data['urbanized_not_to_be_deleted_vills_count'] = count
+        if count > 0:
+            var = cells[10].find('a').attrs['href'].split("'")[1]
+            data['urbanized_not_to_be_deleted_vills_var'] = var
+
         summary.append(data)
     return summary
 
@@ -265,6 +285,8 @@ def get_data():
         raise Exception(f'failed to get data from {list_url}')
     return parse_main_table(resp.text)
 
+def get_block_info(state_name, state_name_var, dist_name, dist_name_var, dist_folder):
+    pass
 
 def get_dist_info(state_name, state_name_var, key_folder):
     print('getting dist_info')
@@ -413,7 +435,6 @@ def get_mapping_data_by_district(state_name, state_name_var, key_folder, key):
         get_dist_mappping_data(state_name_var, dist_var, dist_dir_wip)
         shutil.move(dist_dir_wip, dist_dir)
 
-
 if __name__ == '__main__':
 
     print('getting data skeleton')
@@ -425,7 +446,7 @@ if __name__ == '__main__':
         state_map = get_data()
         with open(state_map_file, 'w') as f:
             json.dump(state_map, f, indent=4)
-    
+
     for entry in state_map:
         state_name = entry["EntityName"]
         state_name_var = entry["EntityName_var"]
@@ -438,10 +459,13 @@ if __name__ == '__main__':
         
         for key in [ 'mapped_blocks', 'unmapped_blocks',
                      'mapped_gps',    'unmapped_gps',
-                     'mapped_vills',  'unmapped_vills' ]:
+                     'mapped_vills',  'unmapped_vills',
+                     'urbanised_to_be_deleted_vills',
+                     'wrong_entry_to_be_deleted_vills',
+                     'urbanized_not_to_be_deleted_vills']:
             print(f'handling {key=}')
             count = entry[f'{key}_count']
-            if count == 0:
+            if count <= 0:
                 continue
             key_folder = state_dir_wip / f'{key}' 
             key_folder_wip = state_dir_wip / f'{key}.wip'

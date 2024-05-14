@@ -324,7 +324,7 @@ async def run_wrap(i, r_q, locs_done):
         print(f'RUUNER {i} FAILED')
 
 async def writer(q, locs_done):
-    locs_file = 'data/facilities/water_sources.csv'
+    locs_file = 'data/facilities/water_sources_raw.csv'
     async with aiofiles.open(locs_file, mode='a') as f:
         writer = aiocsv.AsyncWriter(f)
         while True:
@@ -392,7 +392,7 @@ def get_data_from_page(html):
 
 if __name__ == '__main__':
     locs_done = set()
-    locs_file = Path('data/facilities/water_sources.csv')
+    locs_file = Path('data/facilities/water_sources_raw.csv')
     print('processing locs file')
     if locs_file.exists():
         with open(locs_file, 'r') as f:

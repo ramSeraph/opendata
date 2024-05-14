@@ -200,7 +200,7 @@ if __name__ == '__main__':
                                                    ' TEHSIL', ' TAHSIL',
                                                    ' TALUKA', ' TALUK', 
                                                    ' MANDAL', ' MANDALAM', ' MANDALA', 
-                                                   ' COMMUNITY DEVELOPMENT BLOCK', ' BLOCK',
+                                                   ' COMMUNITY DEVELOPMENT BLOCK', ' BLOCK', ' C.D.BLOCK',
                                                    ' REVENUE CIRCLE', ' CIRCLE', ' CICLE', ' EAC', ' SDO', ' ADC', ' HQ',
                                                    ' SUBTEHSIL', ' ST',
                                                    ' SUBDIVISION',

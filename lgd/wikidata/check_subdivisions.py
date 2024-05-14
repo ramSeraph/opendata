@@ -4,10 +4,10 @@ from common import (
     base_entity_checks, write_report,
     get_label, get_located_in_ids, get_instance_of_ids,
     get_wd_entity_lgd_mapping, get_wd_data,
-    get_entry_from_wd_id, get_lgd_data, state_info
+    get_entry_from_wd_id, get_lgd_data, state_info, get_contains_ids
 )
 
-from filters import filter_district, filter_subdivision
+from filters import filter_district, filter_subdivision, filter_subdistrict
 
 
 wd_fname = 'data/subdivisions.jsonl'
@@ -105,6 +105,24 @@ def suffix_check():
                                        'expected_suffix': expected_suffix})
     return report
 
+def expected_contains_check():
+    report = { 'wrong_kind_of_contains': [] }
+    filtered_subdists = get_wd_data('data/subdistricts.jsonl', filter_subdistrict)
+    filtered = get_wd_data(wd_fname, filter_subdivision)
+    for k,v in filtered.items():
+        contains_ids = get_contains_ids(v)
+        not_subdistricts = []
+        for i in contains_ids:
+            wid = f'Q{i}'
+            if wid not in filtered_subdists:
+                not_subdistricts.append(i)
+        if len(not_subdistricts) > 0:
+            label = get_label(v)
+            report['wrong_kind_of_contains'].append({'wikidata_id': k,
+                                                     'wikidata_label': label,
+                                                     'contains': [ { 'expected': 'Subdistrict of India', 'curr': get_entry_from_wd_id(e) } for e in not_subdistricts ]})
+    return report
+
 
 wd_dist_data = None
 def check_if_located_in_district(wid):
@@ -126,5 +144,6 @@ if __name__ == '__main__':
     report.update(hierarchy_check())
     report.update(inst_of_check())
     report.update(suffix_check())
+    report.update(expected_contains_check())
     pprint(report)
     write_report(report, 'subdivisions.json')

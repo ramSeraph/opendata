@@ -4,10 +4,10 @@ from common import (
     base_entity_checks, write_report,
     get_label, get_located_in_ids, get_instance_of_ids,
     get_wd_entity_lgd_mapping, get_wd_data,
-    get_entry_from_wd_id, state_info
+    get_entry_from_wd_id, state_info, get_contains_ids
 )
 
-from filters import filter_state, filter_division
+from filters import filter_state, filter_division, filter_district
 
 
 wd_fname = 'data/divisions.jsonl'
@@ -81,6 +81,28 @@ def inst_of_check():
                                         'current_inst_of': get_entry_from_wd_id(inst_of_id)})
     return report
 
+def expected_contains_check():
+    report = { 'wrong_kind_of_contains': [] }
+    filtered_dists = get_wd_data('data/districts.jsonl', filter_district)
+    filtered = get_wd_data(wd_fname, filter_division)
+    for k,v in filtered.items():
+        contains_ids = get_contains_ids(v)
+        not_districts = []
+        for i in contains_ids:
+            wid = f'Q{i}'
+            if wid not in filtered_dists:
+                not_districts.append(i)
+        if len(not_districts) > 0:
+            label = get_label(v)
+            report['wrong_kind_of_contains'].append({'wikidata_id': k,
+                                                     'wikidata_label': label,
+                                                     'contains': [ { 'expected': 'District of India', 'curr': get_entry_from_wd_id(e) } for e in not_districts ]})
+
+
+
+            
+    return report
+
 wd_state_data = None
 def check_if_located_in_state(wid):
     global wd_state_data
@@ -101,5 +123,6 @@ if __name__ == '__main__':
     report.update(hierarchy_check())
     report.update(suffix_check())
     report.update(inst_of_check())
+    report.update(expected_contains_check())
     pprint(report)
     write_report(report, 'divisions.json')

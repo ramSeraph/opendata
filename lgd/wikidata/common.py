@@ -102,6 +102,7 @@ state_info = {
         "suffix": "Taluka",
         "type": "Tehsil",
         "wd_id": "Q122987718",
+        "wd_subdiv_id": "Q125923559",
         "dp_suffix": "District Panchayat",
         "bp_suffix": "Taluk Panchayat",
     }, # TODO: check 
@@ -565,11 +566,23 @@ def is_in_india(v):
             return True
     return False
 
+def get_contains_ids(v):
+    if is_inactive(v):
+        return []
+    inst_claims = v['claims'].get(P_CONTAINS, [])
+    ids = []
+    for c in inst_claims:
+        if not is_claim_current(c):
+            continue
+        inst_of = c['mainsnak']['datavalue']['value']['numeric-id'] 
+        ids.append(inst_of)
+    return ids
+
 
 def get_instance_of_ids(v):
-    #if is_inactive(v):
-    #    return []
-    inst_claims = v['claims'][P_INSTANCE_OF]
+    if is_inactive(v):
+        return []
+    inst_claims = v['claims'].get(P_INSTANCE_OF, [])
     ids = []
     for c in inst_claims:
         if not is_claim_current(c):

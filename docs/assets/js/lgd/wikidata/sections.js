@@ -351,8 +351,8 @@ class MismatchInContains {
 
     var html = `<span>${link}</span>`;
     html += '<ul>';
-    html += `<li>children:<ul>${child_lis}</ul></li>`;
     if (missing_lis !== '') {
+      html += `<li>children:<ul>${child_lis}</ul></li>`;
       html += `<li>missing_subchildren:<ul>${missing_lis}</ul></li>`;
     }
     if (extra_lis !== '') {

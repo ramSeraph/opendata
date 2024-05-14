@@ -323,6 +323,34 @@ class WrongKindOfContains {
   }
 }
 
+class MissingInContains {
+  constructor(data) {
+    this.data = data;
+  }
+  getHTML() {
+    const parent = this.data['parent'];
+    const link = wd_link(parent['id'], parent['label']);
+    var child_lis = '';
+    for (const c of this.data['children']) {
+      const cLink = wd_link(c['id'], c['label']);
+      child_lis += `<li>${cLink}</li>`;
+    }
+    var missing_lis = '';
+    for (const c of this.data['missing']) {
+      const cLink = wd_link(c['id'], c['label']);
+      missing_lis += `<li>${cLink}</li>`;
+    }
+    return `<span>${link}</span><ul><li>children:<ul>${child_lis}</ul></li><li>missing_subchildren:<ul>${missing_lis}</ul></li></ul>`;
+  }
+
+  getQSRow() {
+    return null;
+  }
+  getQSHeader() {
+    return null;
+  }
+}
+
 class NoSinglePreferredRank {
   constructor(data) {
     this.data = data;
@@ -371,6 +399,8 @@ function getInstance(k, data) {
     inst = new WrongKindOfLocatedIn(data);
   } else if (k === 'wrong_kind_of_contains') {
     inst = new WrongKindOfContains(data);
+  } else if (k === 'missing_in_contains') {
+    inst = new MissingInContains(data);
   } else if (k === 'no_single_preferred_rank_for_located_in') {
     inst = new NoSinglePreferredRank(data);
   }

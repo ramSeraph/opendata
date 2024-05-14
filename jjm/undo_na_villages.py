@@ -1,8 +1,8 @@
 import csv
 import os
 
-fname = 'data/facilities/water_sources.csv'
-fname_new = 'data/facilities/water_sources.csv.new'
+fname = 'data/facilities/water_sources_raw.csv'
+fname_new = 'data/facilities/water_sources_raw.csv.new'
 
 states_to_undo = set()
 dists_to_undo = set()

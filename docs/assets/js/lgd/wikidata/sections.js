@@ -299,6 +299,30 @@ class WrongKindOfLocatedIn {
   }
 }
 
+class WrongKindOfContains {
+  constructor(data) {
+    this.data = data;
+  }
+  getHTML() {
+    const link = wd_link(this.data['wikidata_id'], this.data['wikidata_label']);
+    const contains = this.data['contains'];
+    var lis = '';
+    for (const c of contains) {
+      const cLink = wd_link(c['curr']['id'], c['curr']['label']);
+      const expected = c['expected'];
+      lis += `<li>Curr: ${cLink}, Expected: ${expected}</li>`;
+    }
+    return `<span>${link}</span><ul>${lis}</ul>`;
+  }
+
+  getQSRow() {
+    return null;
+  }
+  getQSHeader() {
+    return null;
+  }
+}
+
 class NoSinglePreferredRank {
   constructor(data) {
     this.data = data;
@@ -345,6 +369,8 @@ function getInstance(k, data) {
     inst = new WrongInstOf(data);
   } else if (k === 'wrong_kind_of_located_in') {
     inst = new WrongKindOfLocatedIn(data);
+  } else if (k === 'wrong_kind_of_contains') {
+    inst = new WrongKindOfContains(data);
   } else if (k === 'no_single_preferred_rank_for_located_in') {
     inst = new NoSinglePreferredRank(data);
   }

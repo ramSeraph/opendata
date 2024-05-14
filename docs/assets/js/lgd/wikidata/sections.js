@@ -323,7 +323,7 @@ class WrongKindOfContains {
   }
 }
 
-class MissingInContains {
+class MismatchInContains {
   constructor(data) {
     this.data = data;
   }
@@ -340,7 +340,26 @@ class MissingInContains {
       const cLink = wd_link(c['id'], c['label']);
       missing_lis += `<li>${cLink}</li>`;
     }
-    return `<span>${link}</span><ul><li>children:<ul>${child_lis}</ul></li><li>missing_subchildren:<ul>${missing_lis}</ul></li></ul>`;
+    var extra_lis = '';
+    for (const c of this.data['extra']) {
+      const elem = c['element'];
+      const from = c['child'];
+      const eLink = wd_link(element['id'], element['label']);
+      const fLink = wd_link(from['id'], from['label']);
+      extra_lis += `<li>${eLink} from ${fLink}</li>`;
+    }
+
+    var html = `<span>${link}</span>`;
+    html += '<ul>';
+    html += `<li>children:<ul>${child_lis}</ul></li>`;
+    if (missing_lis !== '') {
+      html += `<li>missing_subchildren:<ul>${missing_lis}</ul></li>`;
+    }
+    if (extra_lis !== '') {
+      html += `<li>extra_subchildren:<ul>${extra_lis}</ul></li>`;
+    }
+    html += '</ul>';
+    return html;;
   }
 
   getQSRow() {
@@ -399,8 +418,8 @@ function getInstance(k, data) {
     inst = new WrongKindOfLocatedIn(data);
   } else if (k === 'wrong_kind_of_contains') {
     inst = new WrongKindOfContains(data);
-  } else if (k === 'missing_in_contains') {
-    inst = new MissingInContains(data);
+  } else if (k === 'mismatch_in_contains') {
+    inst = new MismatchInContains(data);
   } else if (k === 'no_single_preferred_rank_for_located_in') {
     inst = new NoSinglePreferredRank(data);
   }

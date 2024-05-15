@@ -344,7 +344,7 @@ class MismatchInContains {
     for (const c of this.data['extra']) {
       const elem = c['element'];
       const from = c['child'];
-      const eLink = wd_link(element['id'], element['label']);
+      const eLink = wd_link(elem['id'], elem['label']);
       const fLink = wd_link(from['id'], from['label']);
       extra_lis += `<li>${eLink} from ${fLink}</li>`;
     }

@@ -406,8 +406,8 @@ class MissingContainedIn {
 
   getQSRow() {
     const item = this['data']['item'];
-    const expected_in = this['data']['expected_contained_in'];
-    return `${item['id']},${expected_contained_in}`;
+    const expected_contained_in = this['data']['expected_contained_in'];
+    return `${item['id']},${expected_contained_in['id']}`;
   }
   getQSHeader() {
     return 'qid,P131';

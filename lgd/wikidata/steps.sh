@@ -89,6 +89,7 @@ verify_districts() {
 verify_subdivisions() {
   python ${script_dir}/download.py district
   python ${script_dir}/download.py subdivision
+  python ${script_dir}/download.py subdistrict
   python ${script_dir}/check_subdivisions.py
 }
 
@@ -107,6 +108,7 @@ verify_blocks() {
 }
 
 verify_district_panchayats() {
+  python ${script_dir}/download.py state
   python ${script_dir}/download.py district
   python ${script_dir}/download.py district_panchayat
   python ${script_dir}/check_district_panchayats.py

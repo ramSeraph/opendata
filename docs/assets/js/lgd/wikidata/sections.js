@@ -370,6 +370,74 @@ class MismatchInContains {
   }
 }
 
+class MissingInContains {
+  constructor(data) {
+    this.data = data;
+  }
+  getHTML() {
+    const item = this['data']['item'];
+    const expected_in = this['data']['expected_in'];
+    const link = wd_link(item['id'], item['label']);
+    const expected_in_link = wd_link(expected_in['id'], expected_in['label']);
+    return `${link} - expected in: ${expected_in_link}`;
+  }
+
+  getQSRow() {
+    const item = this['data']['item'];
+    const expected_in = this['data']['expected_in'];
+    return `${expected_in['id']},${item['id']}`;
+  }
+  getQSHeader() {
+    return 'qid,P150';
+  }
+}
+
+class MissingContainedIn {
+  constructor(data) {
+    this.data = data;
+  }
+  getHTML() {
+    const item = this['data']['item'];
+    const expected_contained_in = this['data']['expected_contained_in'];
+    const link = wd_link(item['id'], item['label']);
+    const expected_contained_in_link = wd_link(expected_contained_in['id'], expected_contained_in['label']);
+    return `${link} - expected contained in: ${expected_contained_in_link}`;
+  }
+
+  getQSRow() {
+    const item = this['data']['item'];
+    const expected_in = this['data']['expected_contained_in'];
+    return `${item['id']},${expected_contained_in}`;
+  }
+  getQSHeader() {
+    return 'qid,P131';
+  }
+}
+
+class InMultipleContains {
+  constructor(data) {
+    this.data = data;
+  }
+  getHTML() {
+    const item = this['data']['item'];
+    const parents = this['data']['parents'];
+    const link = wd_link(item['id'], item['label']);
+    var parent_lis = '';
+    for (const p of parents) {
+      const plink = wd_link(p['id'], p['label']);
+      parent_lis += `<li>${plink}</li>`;
+    }
+    return `<span>${link}</span><ul>${parent_lis}</ul>`;
+  }
+
+  getQSRow() {
+    return null;
+  }
+  getQSHeader() {
+    return null;
+  }
+}
+
 class NoSinglePreferredRank {
   constructor(data) {
     this.data = data;
@@ -420,6 +488,12 @@ function getInstance(k, data) {
     inst = new WrongKindOfContains(data);
   } else if (k === 'mismatch_in_contains') {
     inst = new MismatchInContains(data);
+  } else if (k === 'missing_in_contains') {
+    inst = new MissingInContains(data);
+  } else if (k === 'missing_contained_in') {
+    inst = new MissingContainedIn(data);
+  } else if (k === 'in_multiple_contains') {
+    inst = new InMultipleContains(data);
   } else if (k === 'no_single_preferred_rank_for_located_in') {
     inst = new NoSinglePreferredRank(data);
   }

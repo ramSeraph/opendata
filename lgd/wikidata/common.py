@@ -205,6 +205,7 @@ state_info = {
         "suffix": "Subdivision",
         "type": "Subdivision",
         "wd_id": "Q122987729",
+        # no divisions?
         "dp_suffix": "Zilla Parishad",
     },
     "17": {
@@ -665,7 +666,7 @@ def get_entry_from_wd_id(wd_num_id):
         site = pywikibot.Site("wikidata", "wikidata")
         repo = site.data_repository()
     item = pywikibot.ItemPage(repo, f'Q{wd_num_id}')
-    label = item.get()['labels'].get('en', 'NA')
+    label = item.get(get_redirect=True)['labels'].get('en', 'NA')
     data = { 'id': f'Q{wd_num_id}', 'label': label }
     page_cache[wd_num_id] = data
     with open(pcache_fname, 'a') as f:

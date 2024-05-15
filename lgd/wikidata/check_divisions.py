@@ -102,7 +102,7 @@ def expected_contains_check():
 
 def contains_inverse_check():
     report = {'in_multiple_contains': [],
-              'missing_in_contained': [],
+              'missing_contained_in': [],
               'missing_in_contains': []}
 
     dist_mapping = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district)
@@ -149,12 +149,12 @@ def contains_inverse_check():
         expected_in_main_hierarchy = sinfo.get('divs_in_main_hierarchy', True)
         if not expected_in_main_hierarchy:
             continue
-        report['missing_in_contained'].append({'item': get_entry_from_wd_id(d_wid[1:]),
-                                               'expected_to_be_in': get_entry_from_wd_id(dists_to_divisions_from_divisions[d_wid][0][1:])})
+        report['missing_contained_in'].append({'item': get_entry_from_wd_id(d_wid[1:]),
+                                               'expected_contained_in': get_entry_from_wd_id(dists_to_divisions_from_divisions[d_wid][0][1:])})
 
     for d_wid in missing_in_contains:
         report['missing_in_contains'].append({'item': get_entry_from_wd_id(d_wid[1:]),
-                                              'expected_to_be_in': get_entry_from_wd_id(dists_to_divisions[d_wid][1:])})
+                                              'expected_in': get_entry_from_wd_id(dists_to_divisions[d_wid][1:])})
     return report
 
 def contains_completeness_check():

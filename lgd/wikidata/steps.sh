@@ -75,6 +75,7 @@ verify_states() {
 verify_divisions() {
   python ${script_dir}/download.py state
   python ${script_dir}/download.py division
+  python ${script_dir}/download.py district
   python ${script_dir}/check_divisions.py
 }
 

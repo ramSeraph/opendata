@@ -100,6 +100,63 @@ def expected_contains_check():
                                                      'contains': [ { 'expected': 'District of India', 'curr': get_entry_from_wd_id(e) } for e in not_districts ]})
     return report
 
+def contains_inverse_check():
+    report = {'in_multiple_contains': [],
+              'missing_in_contained': [],
+              'missing_in_contains': []}
+
+    dist_mapping = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district)
+    lgd_dist_data = get_lgd_data('data/lgd/districts.csv', 'District Code')
+
+    dists_to_divisions = {}
+    dists_to_divisions_from_divisions = {}
+    filtered = get_wd_data('data/divisions.jsonl', filter_division)
+    filtered_dists = get_wd_data('data/districts.jsonl', filter_district)
+    for k,v in filtered_dists.items():
+        located_in_ids = get_located_in_ids(v)
+        if len(located_in_ids) != 1:
+            continue
+        parent_id = located_in_ids[0]
+        parent_wid = f'Q{parent_id}'
+        if parent_wid in filtered:
+            dists_to_divisions[k] = parent_wid
+
+    for k,v in filtered.items():
+        contains_ids = get_contains_ids(v)
+        for c in contains_ids:
+            cwid = f'Q{c}'
+            if cwid not in filtered_dists:
+                continue
+            if cwid not in dists_to_divisions_from_divisions:
+                dists_to_divisions_from_divisions[cwid] = []
+            dists_to_divisions_from_divisions[cwid].append(k)
+
+    seen_in_contains = set(dists_to_divisions_from_divisions.keys())
+    for d_wid, div_wids in dists_to_divisions_from_divisions.items():
+        if len(div_wids) != 1:
+            report['in_multiple_contains'].append({'item': get_entry_from_wd_id(d_wid[1:]),
+                                                   'parents': [ get_entry_from_wd_id(p[1:]) for p in div_wids ]}) 
+
+    dists_located_in_divs = set(dists_to_divisions.keys())
+    missing_in_contained = seen_in_contains - dists_located_in_divs
+    missing_in_contains = dists_located_in_divs - seen_in_contains
+
+    for d_wid in missing_in_contained:
+        d_lgd_code = dist_mapping[d_wid]
+        d_lgd_entry = lgd_dist_data[d_lgd_code]
+        scode = d_lgd_entry['State Code']
+        sinfo = state_info[scode]
+        expected_in_main_hierarchy = sinfo.get('divs_in_main_hierarchy', True)
+        if not expected_in_main_hierarchy:
+            continue
+        report['missing_in_contained'].append({'item': get_entry_from_wd_id(d_wid[1:]),
+                                               'expected_to_be_in': get_entry_from_wd_id(dists_to_divisions_from_divisions[d_wid][0][1:])})
+
+    for d_wid in missing_in_contains:
+        report['missing_in_contains'].append({'item': get_entry_from_wd_id(d_wid[1:]),
+                                              'expected_to_be_in': get_entry_from_wd_id(dists_to_divisions[d_wid][1:])})
+    return report
+
 def contains_completeness_check():
     report = { 'mismatch_in_contains': [] }
     dists_by_state = {}
@@ -148,10 +205,14 @@ def contains_completeness_check():
         missing_in_divs = all_state_dists - dists_in_divs
         extra_in_divs = dists_in_divs - all_state_dists
         if len(missing_in_divs) > 0 or len(extra_in_divs) > 0:
+            extras = []
+            for wid in extra_in_divs:
+                child = get_entry_from_wd_id(divs_by_dist[wid]) if wid in divs_by_dist else { 'label': 'Not in any Division' }
+                extras.append({ 'element': get_entry_from_wd_id(wid[1:]), 'child': child })
             report['mismatch_in_contains'].append({'parent': get_entry_from_wd_id(info['state_wid'][1:]),
                                                    'children': divs_by_state[scode],
                                                    'missing': [ get_entry_from_wd_id(wid[1:]) for wid in missing_in_divs ],
-                                                   'extra': [ {'element': get_entry_from_wd_id(wid[1:]), 'child': get_entry_from_wd_id(divs_by_dist[wid])} for wid in extra_in_divs ]})
+                                                   'extra': extras})
     return report
 
 wd_state_data = None
@@ -176,5 +237,6 @@ if __name__ == '__main__':
     report.update(inst_of_check())
     report.update(expected_contains_check())
     report.update(contains_completeness_check())
+    report.update(contains_inverse_check())
     pprint(report)
     write_report(report, 'divisions.json')

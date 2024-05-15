@@ -42,6 +42,7 @@ state_info = {
         "long": "Circle",
         "wd_id": "Q122987711",
         "wd_div_id": "Q125907363",
+        "divs_in_main_hierarchy": False,
         "dp_suffix": "Zilla Parishad",
     },
     "18": {
@@ -122,6 +123,7 @@ state_info = {
         "type": "Tehsil",
         "wd_id": "Q122987720",
         "wd_div_id": "Q125907359",
+        "divs_in_main_hierarchy": False,
         "alts": [ st_himachal ],
         "dp_suffix": "Zilla Panchayat",
         "bp_suffix": "Panchayat Samiti",
@@ -170,6 +172,7 @@ state_info = {
         "type": "Tehsil",
         "wd_id": "Q122987726",
         "wd_div_id": "Q125907364",
+        "divs_in_main_hierarchy": False,
         "dp_suffix": "District Planning and Development Board",
         "bp_suffix": "Block Development Council",
     }, # TODO: check 
@@ -214,6 +217,7 @@ state_info = {
         "type": "Block",
         "wd_id": "Q122987730",
         "wd_div_id": "Q125907362",
+        "divs_in_main_hierarchy": False,
     }, # C. & R. D. Block R is for Rural?
     "15": {
         "name": "Mizoram",
@@ -228,6 +232,7 @@ state_info = {
         "type": "Tehsil",
         "wd_id": "Q122987732",
         "wd_div_id": "Q125907369",
+        "divs_in_main_hierarchy": False,
     },
     "21": {
         "name": "Odisha",

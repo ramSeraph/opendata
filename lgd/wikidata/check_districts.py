@@ -87,7 +87,6 @@ g_wd_state_map_rev = None
 def get_correction_info(lgd_entry):
     global g_wd_state_map_rev 
     scode = lgd_entry['State Code']
-    #info = state_info[scode]
 
     name = lgd_entry['lgd_name']
     label_suffix = info['label_suffix'] if 'label_suffix' in info else info['suffix']
@@ -99,11 +98,10 @@ def get_correction_info(lgd_entry):
 
     inst_of = 'Q{DIST_ID}'
 
-    dcode = lgd_entry['District Code']
     if g_wd_state_map_rev is None:
         wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
         g_wd_state_map_rev = {v:k for k,v in wd_state_map.items()}
-    loc_in = g_wd_state_map_rev[dcode]
+    loc_in = g_wd_state_map_rev[scode]
 
     i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
     inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
@@ -127,9 +125,9 @@ def check_if_located_in_state_or_division(wid):
         wd_state_data = get_wd_data('data/states.jsonl', filter_state)
         wd_div_data = get_wd_data('data/divisions.jsonl', filter_division)
     qid = f'Q{wid}'
-    if qid in wd_state_data or qid in wd_div_data:
-        return {'ok': True}
-    return {'ok': False, 'expected': 'located in a State or a Division'}
+    if qid not in wd_state_data and qid not in wd_div_data:
+        return {'ok': False, 'expected': 'located in a State or a Division'}
+    return {'ok': True}
 
 
 

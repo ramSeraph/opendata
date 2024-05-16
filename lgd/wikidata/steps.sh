@@ -34,7 +34,7 @@ get_lgd_latest_date() {
 
 lgd_files=(
   'blocks.csv'
-  #'district_panchayats.csv'
+  'district_panchayats.csv'
   'districts.csv'
   #'gp_mapping.csv'
   'pri_local_bodies.csv'

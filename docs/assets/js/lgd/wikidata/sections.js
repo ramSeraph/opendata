@@ -438,6 +438,44 @@ class InMultipleContains {
   }
 }
 
+class MismatchTerritoryOverlaps {
+  constructor(data) {
+    this.data = data;
+  }
+  getHTML() {
+    const link = wd_link(this.data['wikidata_id'], this.data['wikidata_label']);
+    var missing_lis = '';
+    var missing_lis = '';
+    for (const c of this.data['missing']) {
+      const cLink = wd_link(c['id'], c['label']);
+      missing_lis += `<li>${cLink}</li>`;
+    }
+    var extra_lis = '';
+    for (const c of this.data['extra']) {
+      const eLink = wd_link(c['id'], c['label']);
+      extra_lis += `<li>${eLink}</li>`;
+    }
+
+    var html = `<span>${link}</span>`;
+    html += '<ul>';
+    if (missing_lis !== '') {
+      html += `<li>missing:<ul>${missing_lis}</ul></li>`;
+    }
+    if (extra_lis !== '') {
+      html += `<li>extra:<ul>${extra_lis}</ul></li>`;
+    }
+    html += '</ul>';
+    return html;;
+  }
+
+  getQSRow() {
+    return null;
+  }
+  getQSHeader() {
+    return null;
+  }
+}
+
 class NoSinglePreferredRank {
   constructor(data) {
     this.data = data;
@@ -494,6 +532,8 @@ function getInstance(k, data) {
     inst = new MissingContainedIn(data);
   } else if (k === 'in_multiple_contains') {
     inst = new InMultipleContains(data);
+  } else if (k === 'mismatch_territory_overlaps') {
+    inst = new MismatchTerritoryOverlaps(data);
   } else if (k === 'no_single_preferred_rank_for_located_in') {
     inst = new NoSinglePreferredRank(data);
   }

@@ -12,6 +12,7 @@ from common import (
 )
 
 from filters import filter_district, filter_state, filter_division
+from suffixes import DISTRICT_PREFIXES, DISTRICT_SUFFIXES
 
 lgd_fname = 'data/lgd/districts.csv'
 lgd_id_key = 'District Code'
@@ -138,7 +139,7 @@ if __name__ == '__main__':
                                 lgd_correction_fn=get_correction_info,
                                 check_expected_located_in_fn=check_if_located_in_state_or_division,
                                 wd_fname=wd_fname, wd_filter_fn=filter_district,
-                                name_prefix_drops=['THE '], name_suffix_drops=['DISTRICT'], name_match_threshold=0.0)
+                                name_prefix_drops=DISTRICT_PREFIXES, name_suffix_drops=DISTRICT_SUFFIXES, name_match_threshold=0.0)
     report.update(hierarchy_check())
     report.update(suffix_check())
     pprint(report)

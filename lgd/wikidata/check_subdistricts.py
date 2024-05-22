@@ -14,6 +14,8 @@ from common import (
 
 from filters import filter_subdistrict, filter_district, filter_subdivision
 
+from suffixes import SUBDISTRICT_PREFIXES, SUBDISTRICT_SUFFIXES
+
 
 lgd_fname = 'data/lgd/subdistricts.csv'
 lgd_id_key = 'Sub-district Code'
@@ -195,16 +197,8 @@ if __name__ == '__main__':
                                 lgd_correction_fn=get_correction_info,
                                 check_expected_located_in_fn=check_if_located_in_district_or_subdivision,
                                 wd_fname=wd_fname, wd_filter_fn=filter_subdistrict,
-                                name_prefix_drops=['THE '], 
-                                name_suffix_drops=[' SUBDISTRICT',
-                                                   ' TEHSIL', ' TAHSIL',
-                                                   ' TALUKA', ' TALUK', 
-                                                   ' MANDAL', ' MANDALAM', ' MANDALA', 
-                                                   ' COMMUNITY DEVELOPMENT BLOCK', ' BLOCK', ' C.D.BLOCK',
-                                                   ' REVENUE CIRCLE', ' CIRCLE', ' CICLE', ' EAC', ' SDO', ' ADC', ' HQ',
-                                                   ' SUBTEHSIL', ' ST',
-                                                   ' SUBDIVISION',
-                                                   ' P.S.', ' P.S', 'P.S.'],
+                                name_prefix_drops=SUBDISTRICT_PREFIXES,
+                                name_suffix_drops=SUBDISTRICT_SUFFIXES,
                                 name_match_threshold=0.99)
     report.update(hierarchy_check())
     report.update(suffix_check())

@@ -385,6 +385,7 @@ P_COUNTRY = 'P17'
 P_LOCATED_IN = 'P131'
 P_COORDINATE_LOCATION = 'P625'
 P_COEXTENSIVE_WITH = 'P3403'
+P_TERRITORY_OVERLAPS = 'P3179'
 P_CONTAINS = 'P150'
 
 
@@ -620,6 +621,30 @@ def get_located_in_ids(v):
         ids.append(loc_in)
     return ids
 
+def get_coextensive_ids(v):
+    if is_inactive(v):
+        return []
+    coex_claims = v['claims'].get(P_COEXTENSIVE_WITH, [])
+    ids = []
+    for c in coex_claims:
+        if not is_claim_current(c):
+            continue
+        coex_with = c['mainsnak']['datavalue']['value']['numeric-id'] 
+        ids.append(coex_with)
+    return ids
+
+
+def get_overlap_ids(v):
+    if is_inactive(v):
+        return []
+    overlap_claims = v['claims'].get(P_TERRITORY_OVERLAPS, [])
+    ids = []
+    for c in overlap_claims:
+        if not is_claim_current(c):
+            continue
+        overlap = c['mainsnak']['datavalue']['value']['numeric-id'] 
+        ids.append(overlap)
+    return ids
 
 def get_lgd_data(fname, key, filter_fn=None):
     lgd_data = {}
@@ -682,15 +707,9 @@ def get_entry_from_wd_id(wd_num_id):
 
 
 #TODO: all subclasses of division/subdivision/subdistrict/block should be picked up automatically and not from config?
-#TODO: subdivisions need a suffix check
-#TODO: subdivisions need seperate classes per state
-#TODO: subdivisions should have all their subdistricts as children directly
 #TODO: subdivisions should be moved out of the main hierarchy
-#TODO: divisions need seperate classes per state
-#TODO: divisions should have all their districts as children directly
 #TODO: divisions should be moved out of the main hierarchy
 #TODO: frontend: add corrections for other sections as well
-#TODO: frontend: add missing queries
 
 def base_entity_checks(entity_type=None,
                        has_lgd=True, lgd_fname=None, lgd_id_key=None, lgd_name_key=None,
@@ -719,6 +738,8 @@ def base_entity_checks(entity_type=None,
 
     if has_lgd:
         lgd_data = get_lgd_data(lgd_fname, lgd_id_key, filter_fn=lgd_filter_fn)
+    else:
+        lgd_data = None
 
     filtered = get_wd_data(wd_fname, wd_filter_fn)
     def create_ext_lgd_entry(lgd_entry):
@@ -734,6 +755,8 @@ def base_entity_checks(entity_type=None,
         #census_code = get_census_code(v)
         if has_lgd:
             lgd_codes = get_lgd_codes(v)
+        else:
+            lgd_codes = None
         label = get_label(v) 
         if not is_in_india(v):
             report['not_in_india'].append({'wikidata_id': k, 'wikidata_label': label})

@@ -8,7 +8,7 @@ from common import (
 )
 
 from filters import filter_district, filter_subdivision, filter_subdistrict
-
+from suffixes import SUBDIVISION_PREFIXES, SUBDIVISION_SUFFIXES
 
 wd_fname = 'data/subdivisions.jsonl'
 def hierarchy_check():
@@ -140,6 +140,7 @@ if __name__ == '__main__':
     report = base_entity_checks(entity_type='subdivision',
                                 has_lgd=False,
                                 check_expected_located_in_fn=check_if_located_in_district,
+                                name_prefix_drops=SUBDIVISION_PREFIXES, name_suffix_drops=SUBDIVISION_SUFFIXES,
                                 wd_fname=wd_fname, wd_filter_fn=filter_subdivision)
     report.update(hierarchy_check())
     report.update(inst_of_check())

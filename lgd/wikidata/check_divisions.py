@@ -10,6 +10,8 @@ from common import (
 
 from filters import filter_state, filter_division, filter_district
 
+from suffixes import DIVISION_PREFIXES, DIVISION_SUFFIXES
+
 
 wd_fname = 'data/divisions.jsonl'
 def hierarchy_check():
@@ -231,6 +233,7 @@ if __name__ == '__main__':
     report = base_entity_checks(entity_type='division',
                                 has_lgd=False,
                                 check_expected_located_in_fn=check_if_located_in_state,
+                                name_suffix_drops=DIVISION_PREFIXES, name_prefix_drops=DIVISION_SUFFIXES,
                                 wd_fname=wd_fname, wd_filter_fn=filter_division)
     report.update(hierarchy_check())
     report.update(suffix_check())

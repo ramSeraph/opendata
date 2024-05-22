@@ -8,6 +8,7 @@ from common import base_entity_checks, get_wd_data, get_located_in_ids, write_re
 from common import INDIA_ID, STATE_ID, UT_ID
 
 from filters import filter_state
+from suffixes import STATE_PREFIXES, STATE_SUFFIXES
 
 
 def hierarchy_check(wd_fname=None, wd_filter_fn=None):
@@ -62,7 +63,7 @@ if __name__ == '__main__':
                                 lgd_correction_fn=get_correction_info,
                                 check_expected_located_in_fn=lambda x: { 'ok': True },
                                 wd_fname=wd_fname, wd_filter_fn=filter_state,
-                                name_prefix_drops=['THE ', 'STATE OF ', 'UNION TERRITORY OF '], name_suffix_drops=['STATE'])
+                                name_prefix_drops=STATE_PREFIXES, name_suffix_drops=STATE_SUFFIXES)
 
     report.update(hierarchy_check(wd_fname=wd_fname, wd_filter_fn=filter_state))
     pprint(report)

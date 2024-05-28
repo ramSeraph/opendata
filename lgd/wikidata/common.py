@@ -390,6 +390,11 @@ P_CONTAINS = 'P150'
 
 
 P_LGD_CODE = 'P6425'
+P_LGD_STATE_CODE = 'P12747'
+P_LGD_DIST_CODE = 'P12746'
+P_LGD_SUBDIST_CODE = 'P12748'
+P_LGD_BLOCK_CODE = 'P12717'
+P_LGD_VILLAGE_CODE = 'P12745'
 P_CENSUS_CODE = 'P5578'
 P_END_TIME = 'P582'
 
@@ -404,6 +409,8 @@ PROPOSED_ENTITY = 64728694
 FORMER_ENTITY = 15893266
 
 LGD_URL="https://lgdirectory.gov.in/downloadDirectory.do?"
+LGD_REF_ITEM = 'Q125923171'
+P_STATED_IN = 'P248'
 
 te_to_en_translit = Transliterator(source='tel', target='eng', build_lookup=True)
 hi_to_en_translit = Transliterator(source='hin', target='eng', build_lookup=True)
@@ -466,9 +473,23 @@ def get_census_codes(v):
 
 
 
-def get_lgd_codes(v):
+def get_lgd_codes(v, code_type='localbody'):
+    if code_type == 'localbody':
+        LGD_CODE_PROP = P_LGD_CODE
+    elif code_type == 'state':
+        LGD_CODE_PROP = P_LGD_STATE_CODE
+    elif code_type == 'district':
+        LGD_CODE_PROP = P_LGD_DIST_CODE
+    elif code_type == 'subdistrict':
+        LGD_CODE_PROP = P_LGD_SUBDIST_CODE
+    elif code_type == 'block':
+        LGD_CODE_PROP = P_LGD_BLOCK_CODE
+    elif code_type == 'village':
+        LGD_CODE_PROP = P_LGD_VILLAGE_CODE
+    else:
+        raise Exception('unknown lgd type ' + code_type)
     lgd_codes = []
-    claims = v['claims'].get(P_LGD_CODE, None)
+    claims = v['claims'].get(LGD_CODE_PROP, None)
     if claims is None:
         return lgd_codes
     for c in claims:
@@ -714,7 +735,7 @@ def get_entry_from_wd_id(wd_num_id):
 def base_entity_checks(entity_type=None,
                        has_lgd=True, lgd_fname=None, lgd_id_key=None, lgd_name_key=None,
                        lgd_url_fn=None, lgd_correction_fn=None, lgd_filter_fn=None,
-                       lgd_get_effective_date=True,
+                       lgd_get_effective_date=True, lgd_code_type=None,
                        check_expected_located_in_fn=None,
                        wd_fname=None, wd_filter_fn=lambda x:True,
                        name_prefix_drops=[], name_suffix_drops=[], name_match_threshold=0.0):
@@ -754,7 +775,7 @@ def base_entity_checks(entity_type=None,
     for k,v in filtered.items():
         #census_code = get_census_code(v)
         if has_lgd:
-            lgd_codes = get_lgd_codes(v)
+            lgd_codes = get_lgd_codes(v, code_type=lgd_code_type)
         else:
             lgd_codes = None
         label = get_label(v) 
@@ -874,11 +895,11 @@ def base_entity_checks(entity_type=None,
     return report
 
 
-def get_wd_entity_lgd_mapping(wd_fname, wd_filter_fn):
+def get_wd_entity_lgd_mapping(wd_fname, wd_filter_fn, lgd_code_type):
     filtered = get_wd_data(wd_fname, wd_filter_fn)
     mapping = {}
     for k,v in filtered.items():
-        lgd_codes = get_lgd_codes(v)
+        lgd_codes = get_lgd_codes(v, code_type=lgd_code_type)
         if len(lgd_codes) != 1:
             # TODO: rethink
             mapping[k] = 'NA'

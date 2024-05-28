@@ -13,7 +13,7 @@ from suffixes import SUBDIVISION_PREFIXES, SUBDIVISION_SUFFIXES
 wd_fname = 'data/subdivisions.jsonl'
 def hierarchy_check():
     report = { 'wrong_hierarchy': [] }
-    dist_mapping = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district)
+    dist_mapping = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district, 'district')
 
     filtered = get_wd_data(wd_fname, filter_subdivision)
     for k,v in filtered.items():
@@ -35,7 +35,7 @@ def inst_of_check():
     report = { 'wrong_inst_of': [] }
 
     dist_lgd_map = get_lgd_data('data/lgd/districts.csv', 'District Code')
-    dist_mapping = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district)
+    dist_mapping = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district, 'district')
     filtered = get_wd_data(wd_fname, filter_subdivision)
     for k,v in filtered.items():
         inst_of_ids = get_instance_of_ids(v)

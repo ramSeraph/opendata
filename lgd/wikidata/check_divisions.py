@@ -16,7 +16,7 @@ from suffixes import DIVISION_PREFIXES, DIVISION_SUFFIXES
 wd_fname = 'data/divisions.jsonl'
 def hierarchy_check():
     report = { 'wrong_hierarchy': [] }
-    state_mapping = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
+    state_mapping = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
 
     filtered = get_wd_data(wd_fname, filter_division)
     for k,v in filtered.items():
@@ -50,7 +50,7 @@ def suffix_check():
 def inst_of_check():
     report = { 'wrong_inst_of': [] }
 
-    state_mapping = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
+    state_mapping = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
     filtered = get_wd_data(wd_fname, filter_division)
     for k,v in filtered.items():
         inst_of_ids = get_instance_of_ids(v)
@@ -107,7 +107,7 @@ def contains_inverse_check():
               'missing_contained_in': [],
               'missing_in_contains': []}
 
-    dist_mapping = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district)
+    dist_mapping = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district, 'district')
     lgd_dist_data = get_lgd_data('data/lgd/districts.csv', 'District Code')
 
     dists_to_divisions = {}
@@ -162,7 +162,7 @@ def contains_inverse_check():
 def contains_completeness_check():
     report = { 'mismatch_in_contains': [] }
     dists_by_state = {}
-    dist_mapping = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district)
+    dist_mapping = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district, 'district')
     lgd_dist_data = get_lgd_data('data/lgd/districts.csv', 'District Code')
     filtered_dists = get_wd_data('data/districts.jsonl', filter_district)
     for k,v in filtered_dists.items():
@@ -175,7 +175,7 @@ def contains_completeness_check():
             dists_by_state[state_code] = {'state_name': state_name, 'entries': []}
         dists_by_state[state_code]['entries'].append({'id': k, 'label': get_label(v)})
 
-    state_mapping = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
+    state_mapping = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
     lgd_state_data = get_lgd_data('data/lgd/states.csv', 'State Code')
     filtered = get_wd_data('data/divisions.jsonl', filter_division)
     dists_by_state_from_divs = {}

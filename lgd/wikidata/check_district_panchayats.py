@@ -68,7 +68,7 @@ def is_lgd_dist_panchayat(lgd_entry):
 def hierarchy_check():
     report = { 'wrong_hierarchy': [] }
     
-    wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
+    wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
     wd_state_map_rev = {v:k for k,v in wd_state_map.items() }
 
     lgd_dist_panchayat_data = get_lgd_data(lgd_fname, lgd_id_key, filter_fn=is_lgd_dist_panchayat)
@@ -110,7 +110,7 @@ def suffix_check():
         wid = e['wd_id']
         by_wid[wid] = e
 
-    wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
+    wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
     filtered = get_wd_data(wd_fname, filter_district_panchayat)
     for k,v in filtered.items():
         inst_of_ids = get_instance_of_ids(v)
@@ -151,7 +151,7 @@ def get_correction_info(lgd_entry):
     inst_of = f'Q{DIST_COUNCIL_OF_INDIA_ID}'
 
     if g_wd_state_map_rev is None:
-        wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
+        wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
         g_wd_state_map_rev = {v:k for k,v in wd_state_map.items()}
     loc_in = g_wd_state_map_rev[scode]
 
@@ -169,7 +169,7 @@ def get_correction_info(lgd_entry):
 
 def territory_overlaps_check():
     report = { 'mismatch_territory_overlaps': [] }
-    wd_dist_map = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district)
+    wd_dist_map = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district, 'district')
     wd_dist_map_rev = {v:k for k,v in wd_dist_map.items()}
     dp_to_d, d_to_dp = get_district_panchayat_and_district_lgd_mappings()
     filtered = get_wd_data(wd_fname, filter_district_panchayat)
@@ -197,7 +197,7 @@ def coextensiveness_check():
               'wrong_coextensive_with': [],
               'missing_rev_coextensive_with': []}
 
-    wd_dist_map = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district)
+    wd_dist_map = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district, 'district')
     wd_dist_map_rev = {v:k for k,v in wd_dist_map.items()}
     filtered_dists = get_wd_data('data/districts.jsonl', filter_district)
     filtered = get_wd_data(wd_fname, filter_district_panchayat)
@@ -260,6 +260,7 @@ if __name__ == '__main__':
                                 lgd_url_fn=lambda x: { 'base': 'https://lgdirectory.gov.in/viewEntityDetail.do', 'params': { 'code': str(x), 'isState': "'N'" }},
                                 lgd_correction_fn=get_correction_info,
                                 lgd_get_effective_date=False,
+                                lgd_code_type='localbody',
                                 check_expected_located_in_fn=check_if_located_in_state,
                                 wd_fname=wd_fname, wd_filter_fn=filter_district_panchayat,
                                 name_prefix_drops=DISTRICT_PANCHAYAT_PREFIXES,

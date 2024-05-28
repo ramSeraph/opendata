@@ -22,7 +22,7 @@ wd_fname = 'data/districts.jsonl'
 def hierarchy_check():
     report = { 'wrong_hierarchy': [] }
 
-    wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
+    wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
     wd_state_map_rev = {v:k for k,v in wd_state_map.items() }
 
     filtered_divisions = get_wd_data('data/divisions.jsonl', filter_division)
@@ -100,7 +100,7 @@ def get_correction_info(lgd_entry):
     inst_of = 'Q{DIST_ID}'
 
     if g_wd_state_map_rev is None:
-        wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state)
+        wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
         g_wd_state_map_rev = {v:k for k,v in wd_state_map.items()}
     loc_in = g_wd_state_map_rev[scode]
 
@@ -137,6 +137,7 @@ if __name__ == '__main__':
                                 lgd_fname=lgd_fname, lgd_id_key=lgd_id_key, lgd_name_key=lgd_name_key,
                                 lgd_url_fn=lambda x: { 'base': 'https://lgdirectory.gov.in/globalviewDistrictDetail.do', 'params': {'globaldistrictId':str(x)}},
                                 lgd_correction_fn=get_correction_info,
+                                lgd_code_type='district',
                                 check_expected_located_in_fn=check_if_located_in_state_or_division,
                                 wd_fname=wd_fname, wd_filter_fn=filter_district,
                                 name_prefix_drops=DISTRICT_PREFIXES, name_suffix_drops=DISTRICT_SUFFIXES, name_match_threshold=0.0)

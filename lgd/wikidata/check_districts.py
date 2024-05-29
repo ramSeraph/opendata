@@ -67,7 +67,7 @@ def hierarchy_check():
                                               'current': [ get_entry_from_wd_id(e) for e in hierarchy ],
                                               'expected': [ get_entry_from_wd_id(expected_state_id) ]})
 
-        return report
+    return report
 
 
 def suffix_check():

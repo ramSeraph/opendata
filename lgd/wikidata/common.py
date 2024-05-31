@@ -113,6 +113,7 @@ state_info = {
         "type": "Tehsil",
         "wd_id": "Q122987719",
         "wd_div_id": "Q125907351",
+        "wd_block_id": "Q126118370",
         "alts": [ st_haryana ],
         "dp_suffix": "Zilla Panchayat",
         "bp_suffix": "Panchayat Samiti",
@@ -310,10 +311,11 @@ state_info = {
     }, # TODO: check 
     "16": {
         "name": "Tripura",
-        "suffix": "Block",
-        "type": "Block",
-        "long": "Development Block",
-        "wd_id": "Q122987740",
+        "suffix": "Subdivision",
+        "type": "Subdivision",
+        #"long": "Development Block",
+        "wd_id": "Q126201439",
+        "wd_block_id": "Q122987740",
         "dp_suffix": "Zilla Panchayat",
         "bp_suffix": "Block Panchayat",
     }, # Development Block

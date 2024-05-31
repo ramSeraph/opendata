@@ -374,6 +374,7 @@ ALL_TEHSIL_IDS = [  SUBDIST_ID, TEHSIL_ID, TEHSIL_INDIA_ID ] + [ int(v['wd_id'][
 ALL_BLOCK_IDS = [ CD_BLOCK_INDIA_ID ] + [ int(v['wd_id'][1:]) for v in state_info.values() if v['type'] == 'Block' ] +  [ int(v['wd_block_id'][1:]) for v in state_info.values() if 'wd_block_id' in v ] 
 
 DIST_COUNCIL_OF_INDIA_ID = 2758248
+BLOCK_PANCHAYAT_ID = 4927168
 
 VILLAGE_IN_INDIA_ID = 56436498
 CENSUS_TOWN_IN_INDIA_ID = 16830604

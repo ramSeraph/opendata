@@ -2,7 +2,8 @@ from common import is_current_instance_of
 from common import (
    STATE_ID, UT_ID,
    ALL_DIV_IDS, DIST_ID, DIST_COUNCIL_OF_INDIA_ID,
-   ALL_SUBDIV_IDS, ALL_SUBDIST_IDS, ALL_BLOCK_IDS
+   ALL_SUBDIV_IDS, ALL_SUBDIST_IDS, ALL_BLOCK_IDS,
+   BLOCK_PANCHAYAT_ID
 )
 
 
@@ -27,5 +28,7 @@ def filter_block(v):
 def filter_district_panchayat(v):
     return is_current_instance_of(v, [ DIST_COUNCIL_OF_INDIA_ID ])
 
+def filter_block_panchayat(v):
+    return is_current_instance_of(v, [ BLOCK_PANCHAYAT_ID ])
 
 

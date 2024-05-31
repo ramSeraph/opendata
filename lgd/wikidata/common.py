@@ -9,7 +9,6 @@ import requests
 from requests.models import PreparedRequest
 import unidecode
 import pywikibot
-from indictrans import Transliterator
 from bs4 import BeautifulSoup
 
 from lev import masala_levenshtein
@@ -414,41 +413,41 @@ LGD_URL="https://lgdirectory.gov.in/downloadDirectory.do?"
 LGD_REF_ITEM = 'Q125923171'
 P_STATED_IN = 'P248'
 
-te_to_en_translit = Transliterator(source='tel', target='eng', build_lookup=True)
-hi_to_en_translit = Transliterator(source='hin', target='eng', build_lookup=True)
-mr_to_en_translit = Transliterator(source='mar', target='eng', build_lookup=True)
-
-
+transilterator = None
 def get_label_translit(v):
+    global transilterator
+    from transliterate import CachedTransliterator 
     labels = v.get('labels', {})
     if 'en' in labels:
         label = labels['en']['value']
-    else:
-        if 'te' in labels:
-            te_label = labels['te']['value']
-            label = te_to_en_translit.transform(te_label)
-        elif 'hi' in labels:
-            hi_label = labels['hi']['value']
-            label = hi_to_en_translit.transform(hi_label)
-        elif 'mr' in labels:
-            mr_label = labels['mr']['value']
-            label = mr_to_en_translit.transform(mr_label)
-        elif 'new' in labels:
-            new_label = labels['new']['value']
-            label = hi_to_en_translit.transform(new_label)
-        elif 'de' in labels:
-            de_label = labels['de']['value']
-            label = de_label
+        return label
+    en_label = None
+    unsup_langs = []
+    all_langs = list(labels.keys())
+    all_langs = sorted(all_langs)
+    for k in all_langs:
+        label = labels[k]['value']
+        if k in ['vi', 'nl', 'ca', 'ceb', 'it', 'es', 'hif', 'ms', 'de', 'fr', 'pl', 'sv', 'da', 'cs']:
+            en_label = unidecode.unidecode(label)
+            continue
+        if transilterator is None:
+            transilterator = CachedTransliterator()
+        if not transilterator.is_lang_supported(k):
+            unsup_langs.append(k)
         else:
-            print('labels:', labels)
-            label = 'NA'
-    return label
+            en_label = transilterator.transliterate(k, label)
+            #print(f'transilterated {label=} to {en_label=}')
+            break
+    if en_label is None:
+        print(f'unsupported langs found: {unsup_langs}')
+        return 'NA'
+    return en_label
 
 
-def get_label(v):
+def get_label(v, lang='en'):
     labels = v.get('labels', {})
-    if 'en' in labels:
-        label = labels['en']['value']
+    if lang in labels:
+        label = labels[lang]['value']
     else:
         #print('labels:', labels)
         label = 'NA'

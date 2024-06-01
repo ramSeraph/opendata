@@ -29,6 +29,7 @@ state_info = {
         "suffix": "Mandal",
         "type": "Tehsil",
         "wd_id": "Q122987710",
+        "wd_block_id": "Q122987710",
         "wd_subdiv_id": "Q125626445",
         "subdiv_label_suffix": "revenue division",
         "dp_suffix": "Zilla Parishad",
@@ -296,6 +297,7 @@ state_info = {
         "suffix": "Mandal",
         "type": "Tehsil",
         "wd_id": "Q122987738",
+        "wd_block_id": "Q122987738",
         "wd_subdiv_id": "Q125626476",
         "subdiv_label_suffix": "revenue division",
         "dp_suffix": "Zilla Parishad",
@@ -865,7 +867,7 @@ def base_entity_checks(entity_type=None,
             match, match_dist = get_best_match(lgd_name, v,
                                                prefix_drops=name_prefix_drops,
                                                suffix_drops=name_suffix_drops,
-                                               translit=True)
+                                               translit=False)
             if match_dist > name_match_threshold:
                 print(f'{match=} {match_dist=}')
                 print('')

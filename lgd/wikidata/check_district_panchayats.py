@@ -11,7 +11,7 @@ from common import (
     get_wd_entity_lgd_mapping, get_coextensive_ids,
     get_overlap_ids,
     get_wd_data, get_lgd_data, get_entry_from_wd_id,
-    DIST_COUNCIL_OF_INDIA_ID
+    DIST_COUNCIL_OF_INDIA_ID, P_LGD_LOCAL_BODY_CODE
 )
 
 from filters import filter_state, filter_district_panchayat, filter_district
@@ -164,6 +164,7 @@ def get_correction_info(lgd_entry):
         'loc_in': loc_in,
         'inception': '',
         'lgd_code': lgd_entry['lgd_code'],
+        'lgd_code_prop': P_LGD_LOCAL_BODY_CODE,
     }
     return correction_info
 

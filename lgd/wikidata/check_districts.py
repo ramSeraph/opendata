@@ -8,7 +8,7 @@ from common import (
     get_label, get_lgd_codes,
     get_located_in_ids, get_wd_entity_lgd_mapping,
     get_wd_data, get_lgd_data, get_entry_from_wd_id,
-    DIST_ID
+    DIST_ID, P_LGD_DIST_CODE
 )
 
 from filters import filter_district, filter_state, filter_division
@@ -113,6 +113,7 @@ def get_correction_info(lgd_entry):
         'loc_in': loc_in,
         'inception': inception,
         'lgd_code': lgd_entry['lgd_code'],
+        'lgd_code_prop': P_LGD_DIST_CODE,
     }
     return correction_info
 

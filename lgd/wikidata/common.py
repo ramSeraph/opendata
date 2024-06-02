@@ -393,7 +393,7 @@ P_TERRITORY_OVERLAPS = 'P3179'
 P_CONTAINS = 'P150'
 
 
-P_LGD_CODE = 'P6425'
+P_LGD_LOCAL_BODY_CODE = 'P6425'
 P_LGD_STATE_CODE = 'P12747'
 P_LGD_DIST_CODE = 'P12746'
 P_LGD_SUBDIST_CODE = 'P12748'
@@ -479,7 +479,7 @@ def get_census_codes(v):
 
 def get_lgd_codes(v, code_type='localbody'):
     if code_type == 'localbody':
-        LGD_CODE_PROP = P_LGD_CODE
+        LGD_CODE_PROP = P_LGD_LOCAL_BODY_CODE
     elif code_type == 'state':
         LGD_CODE_PROP = P_LGD_STATE_CODE
     elif code_type == 'district':

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from common import base_entity_checks, get_wd_data, get_located_in_ids, write_report, get_entry_from_wd_id, get_label
 
-from common import INDIA_ID, STATE_ID, UT_ID
+from common import INDIA_ID, STATE_ID, UT_ID, P_LGD_STATE_CODE
 
 from filters import filter_state
 from suffixes import STATE_PREFIXES, STATE_SUFFIXES
@@ -51,6 +51,7 @@ def get_correction_info(lgd_entry):
         'loc_in': loc_in,
         'inception': inception,
         'lgd_code': lgd_entry['lgd_code'],
+        'lgd_code_prop': P_LGD_STATE_CODE,
     }
     return correction_info
 

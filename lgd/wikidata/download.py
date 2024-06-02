@@ -4,6 +4,7 @@ import pywikibot
 from pprint import pprint
 from pathlib import Path
 from pywikibot import pagegenerators
+from pywikibot.data.sparql import SparqlQuery
 
 def get_data(repo, qid, fname):
     p = Path(fname)
@@ -18,15 +19,18 @@ def get_data(repo, qid, fname):
                 already_seen.add(k)
 
     QUERY = f"SELECT ?item WHERE {{ ?item wdt:P31/wdt:P279* wd:{qid}. }}"
+
+    sparql = SparqlQuery(repo=repo)
+    qids = sparql.get_items(QUERY, item_name='item')
+    qids = list(qids - already_seen)
     
-    generator = pagegenerators.PreloadingEntityGenerator(pagegenerators.WikidataSPARQLPageGenerator(QUERY,site=repo))
+    generator = pagegenerators.PreloadingEntityGenerator(pagegenerators.PagesFromTitlesGenerator(qids,site=repo))
+
+    #generator = pagegenerators.PreloadingEntityGenerator(pagegenerators.WikidataSPARQLPageGenerator(QUERY,site=repo))
     
     count = 0
     with open(p, 'a') as f:
         for item in generator:
-            if item.id in already_seen:
-                count += 1
-                continue
             d = item.toJSON()
             f.write(json.dumps({'id': item.id, 'data': d}))
             f.write('\n')

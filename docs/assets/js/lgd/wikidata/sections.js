@@ -172,7 +172,9 @@ class Missing {
     return `,"${w['label']}","${w['desc']}",Q668,${w['inst_of']},${w['loc_in']},${w['inception']},"""${w['lgd_code']}""",Q125923171`
   }
   getQSHeader() {
-    return 'qid,Len,Den,P17,P31,P131,P571,P6425,S248';
+    const w = this.data['correction_info'];
+    const lgd_code_prop = w['lgd_code_prop'];
+    return `qid,Len,Den,P17,P31,P131,P571,${lgd_code_prop},S248`;
   }
 }
 

@@ -13,7 +13,7 @@ jobs:
   Cache-Janitor:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.1.7
       - run: |
           source .github/scripts/cfuncs.sh
           get_cache_info | jq .

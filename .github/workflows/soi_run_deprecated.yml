@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4.1.7
 
       - name: Install Extra packages
         run: |
@@ -23,13 +23,13 @@ jobs:
           sudo apt-get install -y --no-install-recommends tesseract-ocr libgl1-mesa-glx libgdal-dev gdal-bin
 
       - name: Setup python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5.1.0
         with:
           python-version: '3.9.4'
 
       - name: Restore pip data from cache
         uses: TerrenceHo/cache-always@v0.0.1
-        #uses: actions/cache@v2
+        #uses: actions/cache@v4.0.2
         with:
           path: ./.venv/
           key: SOI-venv-${{ hashFiles('maps/SOI/requirements.txt') }}
@@ -42,7 +42,7 @@ jobs:
           . ./.venv/bin/activate
           pip install -r maps/SOI/requirements.txt
       - name: Restore tesseract models from cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4.0.2
         with:
           path: 'data/captcha/models/'
           key:  'SOI-tesseract-models-gcs-v2'

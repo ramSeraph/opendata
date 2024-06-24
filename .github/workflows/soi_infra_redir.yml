@@ -14,8 +14,8 @@ jobs:
     name: Deploy 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: actions/checkout@v4.1.7
+      - uses: superfly/flyctl-actions/setup-flyctl@1.5
       - run: |
          cd infra/fly_soi_redir
          flyctl deploy --remote-only

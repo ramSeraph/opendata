@@ -15,10 +15,10 @@ jobs:
     timeout-minutes: 600
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: docker/setup-buildx-action@v2
+      - uses: actions/checkout@v4.1.7
+      - uses: docker/setup-buildx-action@v3.3.0
       - name: Build Image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6.1.0
         with:
           context: maps/SOI
           load: true
@@ -29,7 +29,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Restore tesseract models from cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4.0.2
         with:
           path: 'data/captcha/models/'
           key:  'SOI-tesseract-models-gcs-v2'

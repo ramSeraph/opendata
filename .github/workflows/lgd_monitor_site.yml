@@ -27,9 +27,9 @@ jobs:
       changes: ${{ steps.monitor-changes.outputs.changes }}
     steps:
       - uses: actions/checkout@v4.1.7
-      - uses: docker/setup-buildx-action@v3.3.0
+      - uses: docker/setup-buildx-action@v3.4.0
       - name: Build Image
-        uses: docker/build-push-action@v6.2.0
+        uses: docker/build-push-action@v6.3.0
         with:
           context: lgd
           load: true

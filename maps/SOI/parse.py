@@ -397,6 +397,7 @@ class Converter:
         self.poly_approx_factor = extra.get('poly_approx_factor', 0.001)
         self.cwidth = extra.get('cwidth', 1)
         self.collar_erode = extra.get('collar_erode', 0)
+        self.process_only_maparea = extra.get('process_only_maparea', False)
 
 
 
@@ -1005,11 +1006,12 @@ class Converter:
         print('splitting shrunk image')
         main_splits = self.get_shrunk_splits()
 
-        print('processing legend area')
-        self.process_legend_area(main_splits['legend'])
-        print('processing sidebar rest area')
-        self.process_rest_area(main_splits['rest'])
-        print('processing map area to locate corners')
+        if not self.process_only_maparea:
+            print('processing legend area')
+            self.process_legend_area(main_splits['legend'])
+            print('processing sidebar rest area')
+            self.process_rest_area(main_splits['rest'])
+            print('processing map area to locate corners')
         self.process_map_area(main_splits['map'], main_splits['map_poly_points'])
 
 

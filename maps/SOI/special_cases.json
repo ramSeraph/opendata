@@ -53,6 +53,33 @@
     "data/raw/44J_3.pdf": {
         "band_color": ["red1", "red2"]
     },
+    "data/raw/78J_1.pdf": {
+        "band_color": ["red1", "red2"],
+        "sb_color": "pinkish",
+        "process_only_maparea": true
+    },
+    "data/raw/78J_2.pdf": {
+        "band_color": "red2"
+    },
+    "data/raw/78J_5.pdf": {
+        "band_color": "red2",
+        "corner_overrides": [[3569,887], null, null, [16708,712]]
+    },
+    "data/raw/78J_9.pdf": {
+        "band_color": "red2",
+        "ext_thresh_ratio": 0.000611111
+    },
+    "data/raw/78J_13.pdf": {
+        "band_color": "red2"
+    },
+    "data/raw/78F_14.pdf": {
+        "band_color": "red2",
+        "corner_overrides": [null, null, [16206,15957], null]
+    },
+    "data/raw/78F_16.pdf": {
+        "band_color": "red2",
+        "corner_overrides": [[3553,864], [3486,15619], null, null]
+    },
     "data/raw/44I_14.pdf": {
         "band_color": ["red1", "red2"]
     },

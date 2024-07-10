@@ -92,8 +92,8 @@ jobs:
             echo "exit_code: $exit_code"
             exit 1
           fi
-          gsutil rm gs://soi_data/to_parse.txt
           gsutil -m cp -r export/gtiffs/*.tif gs://soi_data/export/gtiffs/
+          gsutil rm gs://soi_data/to_parse.txt
           ls export/gtiffs/*.tif | cut -d"/" -f3 | cut -d"." -f1 > data/to_retile.txt
           gsutil cp data/to_retile.txt gs://soi_data/to_retile.txt
           rm -rf data/raw/* || true
@@ -162,6 +162,7 @@ jobs:
             echo "exit_code: $exit_code"
             exit 1
           fi
+          rm -rf staging/gtiffs/* || true
           touch staging/retiling_done
         timeout-minutes: 600
 
@@ -173,6 +174,7 @@ jobs:
             exit 0
           fi
           df -h .
+          du -h .
           docker run -d --name partitioner -v $(pwd):/code -w /code soi-parse maps/SOI/partition.py
           docker logs -f partitioner
           exit_code=$(docker inspect partitioner --format='{{.State.ExitCode}}')

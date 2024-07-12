@@ -80,6 +80,9 @@
         "band_color": "red2",
         "corner_overrides": [[3553,864], [3486,15619], null, null]
     },
+    "data/raw/78K_4.pdf": {
+        "process_only_maparea": true
+    },
     "data/raw/44I_14.pdf": {
         "band_color": ["red1", "red2"]
     },
@@ -504,7 +507,6 @@
             "47G_8": [[73.25, 17.25], [73.25, 17.00], [73.50, 17.00], [73.50, 17.25], [73.25, 17.25]]
         } 
     },
- 
     "data/raw/41L_10.pdf": {
         "jpeg_export_quality": 100,
         "warp_jpeg_export_quality": 100

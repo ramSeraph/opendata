@@ -163,6 +163,7 @@ jobs:
             exit 1
           fi
           rm -rf staging/gtiffs/* || true
+          rm -rf export/gtiffs/* || true
           touch staging/retiling_done
         timeout-minutes: 600
 

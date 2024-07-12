@@ -120,6 +120,9 @@ def get_color_mask(img_hsv, color):
     else:
         colors = color
 
+    # https://colorizer.org/ for what the HSV values look like..
+    # N.B: the scale there is H:0-359 S:0-99 V:0-99
+    #      in opencv it is H:0-179 S:0-255 V:0-255
     img_masks = []
     for color in colors:
         if color == 'pink':

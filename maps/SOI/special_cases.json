@@ -84,7 +84,8 @@
         "process_only_maparea": true
     },
     "data/raw/78O_12.pdf": {
-        "process_only_maparea": true
+        "process_only_maparea": true,
+        "shrunk_map_area_corners": [[323, 16], [323, 1652], [1693, 1649], [1690, 19]]
     },
     "data/raw/44I_14.pdf": {
         "band_color": ["red1", "red2"]

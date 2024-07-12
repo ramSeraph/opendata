@@ -83,6 +83,9 @@
     "data/raw/78K_4.pdf": {
         "process_only_maparea": true
     },
+    "data/raw/78O_12.pdf": {
+        "process_only_maparea": true
+    },
     "data/raw/44I_14.pdf": {
         "band_color": ["red1", "red2"]
     },

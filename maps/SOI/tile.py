@@ -1,3 +1,4 @@
+import re
 import os
 import glob
 import json
@@ -93,6 +94,16 @@ def get_affected_tile_set(file_list):
         affected_tiles.update(file_to_tiles(filename))
     return affected_tiles
 
+def convert_paths_in_vrt(vrt_file):
+    vrt_dirname = str(vrt_file.resolve().parent)
+    vrt_text = vrt_file.read_text()
+    replaced = re.sub(
+        r'<SourceFilename relativeToVRT="1">(.*)</SourceFilename>',
+        rf'<SourceFilename relativeToVRT="0">{vrt_dirname}/\1</SourceFilename>',
+        vrt_text
+    )
+    vrt_file.write_text(replaced)
+
 
 if __name__ == '__main__':
     tiles_dir = Path('export/tiles')
@@ -150,6 +161,7 @@ if __name__ == '__main__':
 
     # create vrt file
     run_external(f'gdalbuildvrt -input_file_list {str(file_list_file)} {str(vrt_file)}')
+    convert_paths_in_vrt(vrt_file)
     print('start tiling')
     os.environ['GDAL_CACHEMAX'] = '2048'
     os.environ['GDAL_MAX_DATASET_POOL_SIZE'] = '5000'
@@ -163,7 +175,7 @@ if __name__ == '__main__':
                      '--resume', 
                      '--xyz', 
                      '--processes=8', 
-                     '-z', '2-15',
+                     '-z', '0-14',
                      '--tiledriver', 'WEBP',
                      '--webp-quality', '50',
                      str(vrt_file), str(tiles_dir)])

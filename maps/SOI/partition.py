@@ -1,3 +1,4 @@
+import os
 import json
 import copy
 from pathlib import Path
@@ -13,6 +14,8 @@ from tile_sources import (
     MissingTileError
 )
 
+ONLY_DISK = os.environ.get('ONLY_DISK', '0') == '1'
+
 # account for some directory overhead
 # TODO: this should be dependant on the file size
 DELTA = 5 * 1024 * 1024
@@ -23,7 +26,7 @@ size_limit_bytes = (2 * 1024 * 1024 * 1024) - DELTA
 # cloudflare cache size limit
 #size_limit_bytes = (512 * 1024 * 1024) - DELTA
 max_level = 14
-min_level = 2
+min_level = 0
 
 SOI_ATTRIBUTION = '<a href="https://onlinemaps.surveyofindia.gov.in/FreeMapSpecification.aspx" target="_blank">1:50000 Open Series Maps</a> © <a href="https://www.surveyofindia.gov.in/pages/copyright-policy" target="_blank">Survey Of India</a>'
 
@@ -281,8 +284,10 @@ def create_pmtiles(partition_info, reader):
 if __name__ == '__main__':
 
     to_partition_file = Path('staging/pmtiles/partition_info.json')
-    #reader = DiskSource('export/tiles')
-    reader = DiskAndPartitionedPMTilesSource('staging/tiles', 'export/pmtiles/soi-', 'export/pmtiles/partition_info.json')
+    if ONLY_DISK:
+        reader = DiskSource('export/tiles')
+    else:
+        reader = DiskAndPartitionedPMTilesSource('staging/tiles', 'export/pmtiles/soi-', 'export/pmtiles/partition_info.json')
 
     print('getting partition info')
     partition_info = get_partition_info(reader)

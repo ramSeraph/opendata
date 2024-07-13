@@ -6,7 +6,7 @@
 // TODO: legend/popup should block click events.. 
 // TODO: adjust viewport on fullscreen.. show what was being shown before
 
-INDEX_URL = 'https://soi.fly.dev/index.geojson';
+INDEX_URL = 'https://indianopenmaps.fly.dev/soi/osm/index.geojson';
 // STATES_URL = 'https://raw.githubusercontent.com/datameet/maps/master/website/docs/data/geojson/states.geojson';
 
 INDEX_ATTRIBUTION = makeLink("https://onlinemaps.surveyofindia.gov.in/FreeOtherMaps.aspx", "SOI OSM Index(simplified)");

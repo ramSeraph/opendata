@@ -35,15 +35,17 @@ The process requires a disk space of around 20GB and will download around 10GB f
 
 # Web
 * Tile URL
-  * `https://soi.fly.dev/export/tiles/{z}/{x}/{y}.webp`
+  * `https://indianopenmaps.fly.dev/soi/osm/raster/{z}/{x}/{y}.webp`
 * Demo Page
   * [DEMO of the tilemap](compare)
 
 # JOSM
 * Plugins needed to use the above tile url with JOSM
-  * [ramSeraph/josm-webp-plugin](https://github.com/ramSeraph/josm-webp-plugin)
+  * Imageio plugin
+    * After enabling the plugin enable webp in Imagery Preferences -> ImageIO tab
 * A locally downloaded `soi.mbtiles` file can also be used by installing the following plugins and opening the file in JOSM.
-  * [ramSeraph/josm-webp-plugin](https://github.com/ramSeraph/josm-webp-plugin)
+  * Imageio plugin
+    * After enabling the plugin enable webp in Imagery Preferences -> ImageIO tab
   * [iandees/josm-mbtiles](https://github.com/iandees/josm-mbtiles)
 
 # Appendix

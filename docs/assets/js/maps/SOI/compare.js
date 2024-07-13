@@ -39,7 +39,7 @@ const soi_attribution = makeLink('https://onlinemaps.surveyofindia.gov.in/FreeMa
                     makeLink('https://www.surveyofindia.gov.in/pages/copyright-policy', 'Survey Of India');
 function getSOILayer() {
     const src = new ol.source.XYZ({
-        url: 'https://indianopenmaps.fly.dev/soi/osm/raster/{z}/{x}/{y}.webp',
+        url: 'https://indianopenmaps.fly.dev/soi/osm/{z}/{x}/{y}.webp',
         attributions: [soi_attribution],
     });
     return new ol.layer.Tile({
@@ -62,7 +62,7 @@ function getGridSource() {
 }
 
 function getIndiaOutlineSource(map1, map2, container, statusFn) {
-    const url = 'https://indianopenmaps.fly.dev/soi/osm/polymap15m_area.geojson';
+    const url = 'https://indianopenmaps.fly.dev/soi/india_boundary.geojson';
     const src = new ol.source.Vector({
         format: new ol.format.GeoJSON(),
         url: url,

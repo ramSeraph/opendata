@@ -137,11 +137,17 @@ def sanitize_tag(v):
     v = " ".join(v.split())
     return v
  
+name_fields = [ 'VILLAGE', 'VillNam', 'VT_NAME', 'SOI_NAME' ]
+
+field_name_set = set()
 
 def convert_tags(props):
     out = {}
     for k,v in props.items():
-        if k != 'VILLAGE':
+        field_name_set.add(k)
+        if k not in name_fields:
+            continue
+        if 'name' in out:
             continue
         v = fix_soi_string(v)
         v = sanitize_tag(v)
@@ -149,6 +155,8 @@ def convert_tags(props):
     out['admin_level'] = '9'
     out['boundary'] = 'administrative'
     out['type'] = 'boundary'
+    if 'name' not in out:
+        print(f'missing name tag: {props}')
     return out
 
 def split_by_taluka(data):
@@ -187,7 +195,8 @@ if __name__ == '__main__':
             print(f'!!! ERROR: got exception: {ex}')
             traceback.print_exc()
 
-        Path(geojson_fname).unlink()
+        #Path(geojson_fname).unlink()
+    pprint(field_name_set)
 
 
 

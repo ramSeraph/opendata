@@ -27,7 +27,7 @@ function getMap(target, layers) {
         interactions: getInteractions(),
         target: target,
         view: new ol.View({
-            zoom: 2,
+            zoom: 0,
             maxZoom: 14,
             center: [0, 0]
         }),
@@ -39,7 +39,7 @@ const soi_attribution = makeLink('https://onlinemaps.surveyofindia.gov.in/FreeMa
                     makeLink('https://www.surveyofindia.gov.in/pages/copyright-policy', 'Survey Of India');
 function getSOILayer() {
     const src = new ol.source.XYZ({
-        url: 'https://soi.fly.dev/export/tiles/{z}/{x}/{y}.webp',
+        url: 'https://indianopenmaps.fly.dev/raster/soi/osm/{z}/{x}/{y}.webp',
         attributions: [soi_attribution],
     });
     return new ol.layer.Tile({

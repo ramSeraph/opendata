@@ -123,10 +123,10 @@ jobs:
             staging/
             export/
             !export/pmtiles/*
-          key:  soi-gcs-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  soi-gcs-v6-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            soi-gcs-v5-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            soi-gcs-v5-${{ steps.date.outputs.date }}-
+            soi-gcs-v6-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            soi-gcs-v6-${{ steps.date.outputs.date }}-
 
       - name: Download pmtiles
         id: download-pmtiles
@@ -162,8 +162,7 @@ jobs:
             echo "exit_code: $exit_code"
             exit 1
           fi
-          rm -rf staging/gtiffs/* || true
-          rm -rf export/gtiffs/* || true
+          docker run --name cleaner1 -v $(pwd):/code -w /code --entrypoint "/bin/sh" soi-parse -c "rm -rf export/gtiffs/; rm -rf export/tiles/; rm -rf staging/gtiffs/"
           touch staging/retiling_done
         timeout-minutes: 600
 
@@ -182,8 +181,7 @@ jobs:
             echo "exit_code: $exit_code"
             exit 1
           fi
-          rm -rf export/*
-          rm -rf staging/tiles/*
+          docker run --name cleaner2 -v $(pwd):/code -w /code --entrypoint "/bin/sh" soi-parse -c "rm -rf export/; rm -rf staging/tiles/"
           staging_files=$(find staging/pmtiles -type f)
           echo "staging_files: $staging_files"
           echo "release_files<<EOF" >> $GITHUB_OUTPUT
@@ -208,6 +206,7 @@ jobs:
       - name: Cleanup
         if: steps.retile_work.outputs.AVAILABLE == 'true'
         run: |
+          docker run --name cleaner3 -v $(pwd):/code -w /code --entrypoint "/bin/sh" soi-parse -c "rm -rf staging/"
           rm -rf staging/*
           gsutil rm gs://soi_data/to_retile.txt
 

@@ -312,7 +312,7 @@ if __name__ == '__main__':
     vrt_file = create_vrt_file(sheets_to_pull)
 
     print('creating tiles for base zoom with a vrt')
-    create_base_tiles(f'{vrt_file}', str(tiles_dir), f'{z_max}')
+    create_base_tiles(f'{vrt_file}', str(tiles_dir), f'{zmax}')
 
     print('deleting unwanted base tiles')
     delete_unwanted_tiles(affected_base_tiles, zmax)

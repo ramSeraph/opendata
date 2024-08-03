@@ -34,7 +34,7 @@ echo "zone=$zone" >> info.sh
 
 
 # maybe wait till you get ip address
-ip_address=$(gcloud compute instances describe $instance_name --project $project --format='json' | jq -r '.networkInterfaces[0].accessConfigs[0].natIP')
+ip_address=$(gcloud compute instances describe $instance_name --project $project --zone $zone --format='json' | jq -r '.networkInterfaces[0].accessConfigs[0].natIP')
 echo $ip_address > ip_address.txt
 
 if [[ $ip_address == "" ]]; then

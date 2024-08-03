@@ -53,7 +53,7 @@ while true; do
     exit 0
   else
     echo "Maybe later? $counter"
-    ((counter++))
+    counter=$((counter + 1))
     sleep 5
   fi
 done

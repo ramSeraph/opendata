@@ -68,7 +68,7 @@ jobs:
             SOI-data-ua-raw-v2-
 
       - name: Bring up the proxy
-        runs: |
+        run: |
           ./infra/create.sh
 
       # scrape things
@@ -89,7 +89,7 @@ jobs:
 
       - name: Bring down the proxy
         if: ${{ always() }}
-        runs: |
+        run: |
           if [[ -e info.sh ]]; then
             ./infra/destroy.sh 
           fi

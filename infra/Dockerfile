@@ -7,4 +7,4 @@ RUN chmod a+x /simple-proxy/simple-proxy
 
 FROM scratch
 COPY --from=builder /simple-proxy/simple-proxy .
-CMD ["/simple-proxy", "-logtostderr", "-v", "2", "-port", "8080"]
+CMD ["/simple-proxy", "-logtostderr", "-v", "2", "-port", "1080"]

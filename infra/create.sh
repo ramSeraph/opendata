@@ -2,6 +2,8 @@
 
 set -ex
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 date_str=$(date +%s)
 instance_name="proxy-instance-$date_str"
 project="lgd-data"
@@ -24,7 +26,7 @@ gcloud compute instances create $instance_name\
     --shielded-integrity-monitoring \
     --labels=goog-ec-src=vm_add-gcloud \
     --reservation-affinity=any \
-    --metadata-from-file startup-script=startup.sh
+    --metadata-from-file startup-script=${SCRIPT_DIR}/startup.sh
 
 echo "instance_name=$instance_name" > info.sh
 echo "project=$project" >> info.sh

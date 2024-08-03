@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 as builder
+FROM ubuntu:24.04 AS builder
 RUN apt-get update
 RUN apt-get install -y wget unzip
 RUN wget https://github.com/jthomperoo/simple-proxy/releases/download/v1.2.0/simple-proxy_linux_amd64.zip

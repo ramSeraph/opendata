@@ -42,7 +42,7 @@ if [[ $ip_address == "" ]]; then
 fi
 
 counter=0
-maxRetry=5
+maxRetry=50
 while true; do
   if (( $counter == $maxRetry )) ; then
     echo "Reach the retry upper limit $counter"
@@ -52,7 +52,7 @@ while true; do
     echo "The machine is UP !!!"
     exit 0
   else
-    echo "Maybe later? $counter"
+    echo "sleeping to check again $counter"
     counter=$((counter + 1))
     sleep 5
   fi

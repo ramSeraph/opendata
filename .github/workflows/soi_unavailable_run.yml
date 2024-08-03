@@ -74,7 +74,7 @@ jobs:
       # scrape things
       - name: Download SOI data
         run: |
-          docker run -d --name runner -v $(pwd):/code -w /code soi:latest maps/SOI/scrape.py -u -r 15
+          docker run -d --name runner -v $(pwd):/code -w /code -e PROXY_URL="http://$(cat ip_address.txt):80" soi:latest maps/SOI/scrape.py -u -r 15
           docker logs -f runner
           exit_code=$(docker inspect runner --format='{{.State.ExitCode}}')
           exit $((exit_code))

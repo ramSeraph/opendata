@@ -1,3 +1,4 @@
+import os
 import logging
 
 from pathlib import Path
@@ -9,6 +10,9 @@ from bs4 import BeautifulSoup
 base_url = 'https://onlinemaps.surveyofindia.gov.in/'
 
 session = requests.session()
+PROXY_URL = os.environ.get('PROXY_URL', None)
+if PROXY_URL is not None:
+    session.proxies = {'https': PROXY_URL, 'http': PROXY_URL}
 
 def setup_logging(log_level):
     from colorlog import ColoredFormatter

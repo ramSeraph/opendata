@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 data_dir = 'data/'
 raw_data_dir = data_dir + 'raw/'
-MAX_CAPTCHA_ATTEMPTS = 6
+MAX_CAPTCHA_ATTEMPTS = 20
 
 
 def get_secrets():

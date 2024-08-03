@@ -2,7 +2,7 @@ name: SOI Monitor Monthly Unavailable Pull Run
 on:
   workflow_run:
     workflows:
-      - SOI Weekly Unavailable Pull Run
+      - SOI Monthly Unavailable Pull Run
     types: [completed]
 
 jobs:

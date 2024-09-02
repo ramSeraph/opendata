@@ -50,6 +50,5 @@ The process requires a disk space of around 20GB and will download around 10GB f
 
 # Appendix
 * [Notes](notes) on the what was done to get the data in the present form and possible problems.
-* [Original sheet grid shapefile](https://storage.googleapis.com/soi_data/raw/OSM_SHEET_INDEX.zip)
-* [Modified Index geojson for the sheet grid](https://storage.googleapis.com/soi_data/index.geojson)
-
+* [Original sheet grid shapefile](https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/OSM_SHEET_INDEX.zip)
+* [Modified Index geojson for the sheet grid](https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson)

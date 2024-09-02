@@ -67,6 +67,11 @@ jobs:
             SOI-data-ua-raw-v2-${{ github.run_number }}-
             SOI-data-ua-raw-v2-
 
+      - name: Download index file
+        run: |
+          cd data/
+          [[ -f index.geojson ]] || wget https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
+
       - name: Bring up the proxy
         run: |
           ./infra/create.sh

@@ -43,6 +43,14 @@ def get_login_form_data(soup, phone_num, password):
     form_data['__EVENTTARGET'] = 'ctl00$ContentPlaceHolder1$btnLoginMTR'
     return form_data
 
+def get_login_otp_form_data(soup, otp):
+    captcha = get_captcha_from_page(soup)
+    form_data = {}
+    form_data['ctl00$ContentPlaceHolder1$txtOTP'] = otp
+    form_data['ctl00$ContentPlaceHolder1$txtCaptchaMtr'] = captcha
+    form_data['ctl00$ContentPlaceHolder1$btnOTP'] = 'Verify OTP'
+    return form_data
+
 
 def login(phone_num, password):
     login_url = base_url + 'Login.aspx'
@@ -63,6 +71,30 @@ def login(phone_num, password):
         raise Exception('login failed')
     soup = BeautifulSoup(resp.text, 'html.parser')
     span = soup.find('span', { 'id': 'ContentPlaceHolder1_lblMsg' })
+    if span is not None:
+        raise Exception(f'{span.text}')
+    return resp
+
+
+def login_otp(otp):
+    login_otp_url = base_url + 'LoginOTP.aspx'
+    web_data = session.get(login_otp_url)
+    if not web_data.ok:
+        raise Exception('failed to get login otp page')
+    html_text = web_data.text
+    soup = BeautifulSoup(html_text, 'html.parser')
+    form_data = get_form_data(soup)
+    form_data.update(get_login_otp_form_data(soup, otp))
+    logger.debug(f'login otp form data:\n{pformat(form_data)}')
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    resp = session.post(login_otp_url, data=form_data, headers=headers)
+    logger.debug(f'status_code = {resp.status_code}\n headers:\n{pformat(resp.headers)}')
+    if not resp.ok:
+        raise Exception('login otp failed')
+    soup = BeautifulSoup(resp.text, 'html.parser')
+    span = soup.find('span', { 'id': 'ContentPlaceHolder1_lblMsgOTPAttempt' })
     if span is not None:
         raise Exception(f'{span.text}')
     return resp

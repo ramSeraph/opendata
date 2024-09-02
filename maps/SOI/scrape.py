@@ -21,7 +21,7 @@ from captcha_helper import (
      CAPTCHA_MANUAL,
      captcha_model_dir
 )
-from login import login, get_form_data
+from login import login, login_otp, get_form_data
 from common import (
     base_url,
     setup_logging,
@@ -29,6 +29,8 @@ from common import (
     ensure_dir,
     session
 )
+
+from otp import setup_otp_listener, get_otp_pb, get_otp_manual
 
 
 logger = logging.getLogger(__name__)
@@ -70,7 +72,7 @@ def update_tried_users(tried_users):
     shutil.move(tried_users_file_new, tried_users_file)
     
 
-def login_wrap(phone_num, password):
+def login_wrap(phone_num, password, otp_from_pb):
     global session
     FAILED_CAPTCHA = 'Please enter valid Captcha'
     saved_cookie_file = f'data/cookies/saved_cookies.{phone_num}.pkl'
@@ -99,17 +101,47 @@ def login_wrap(phone_num, password):
         logger.warning('deleting old cookie file')
 
     count = 0
-    success = False
+    success_phase_1 = False
+    if otp_from_pb:
+        otp_listener = setup_otp_listener()
     while count < MAX_CAPTCHA_ATTEMPTS:
         try:
             logger.info('attempting a login')
             login(phone_num, password)
+            success_phase_1 = True
+            logger.info('login password phase done')
+            break
+        except Exception as ex:
+            if str(ex) != FAILED_CAPTCHA:
+                if otp_from_pb:
+                    otp_listener.close()
+                raise ex
+            logger.warning('captcha failed..')
+            count += 1
+
+    if not success_phase_1:
+        if otp_from_pb:
+            otp_listener.close()
+        raise Exception('login failed because of captcha errors')
+
+    if otp_from_pb:
+        otp = get_otp_pb(otp_listener)
+    else:
+        otp = get_otp_manual()
+    if otp is None:
+        raise Exception('Unable to get OTP')
+
+    success = False
+    while count < MAX_CAPTCHA_ATTEMPTS:
+        try:
+            logger.info('entering the login otp')
+            login_otp(otp)
             ensure_dir(saved_cookie_file)
             logger.info('saving cookies to file')
             with open(saved_cookie_file, 'wb') as f:
                 pickle.dump(session.cookies, f)
             success = True
-            logger.info('logged in')
+            logger.info('login password phase done')
             break
         except Exception as ex:
             if str(ex) != FAILED_CAPTCHA:
@@ -119,6 +151,7 @@ def login_wrap(phone_num, password):
 
     if not success:
         raise Exception('login failed because of captcha errors')
+
 
             
 def get_map_index_form_data(soup):
@@ -396,8 +429,8 @@ def is_sheet_done(sheet_no, done, only_unavailable):
     return False
 
 
-def scrape(phone_num, password, only_unavailable):
-    login_wrap(phone_num, password)
+def scrape(phone_num, password, only_unavailable, otp_from_pb):
+    login_wrap(phone_num, password, otp_from_pb)
     map_index_file = get_map_index()
 
     tile_infos = get_tile_infos(map_index_file)
@@ -434,7 +467,7 @@ def scrape(phone_num, password, only_unavailable):
         logger.info(f'Done: {done}/{len(tile_infos_to_download)}')
 
 
-def scrape_wrap(only_unavailable):
+def scrape_wrap(only_unavailable, otp_from_pb):
     global session
     secrets_map = get_secrets()
     p_idx = 0
@@ -445,7 +478,7 @@ def scrape_wrap(only_unavailable):
         p_idx += 1
         try:
             logger.info(f'scraping with phone number: {p_idx}/{total_count}')
-            scrape(phone_num, password, only_unavailable)
+            scrape(phone_num, password, only_unavailable, otp_from_pb)
             logger.warning('No more Sheets')
             if Path(tried_users_file).exists():
                 Path(tried_users_file).unlink()
@@ -501,6 +534,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--max-captcha-retries', help='max number of times a captcha is retried', type=int, default=MAX_CAPTCHA_ATTEMPTS)
     parser.add_argument('-u', '--unavailable', help='try getting the unavailable files', action='store_true')
+    parser.add_argument('-p', '--otp-from-pushbullet', help='get login otp from pushbullet(provide token using the PB_TOKEN env variable)', action='store_true')
     args = parser.parse_args()
     MAX_CAPTCHA_ATTEMPTS = args.max_captcha_retries
 
@@ -510,4 +544,4 @@ if __name__ == '__main__':
         check_captcha_models(captcha_model_dir)
 
     get_fonts()
-    scrape_wrap(args.unavailable)
+    scrape_wrap(args.unavailable, args.otp_from_pushbullet)

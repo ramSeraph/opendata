@@ -1,4 +1,4 @@
-name: SOI Monthly Unavailable Pull Run
+name: SOI Weekly Unavailable Pull Run
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -6,7 +6,7 @@ concurrency:
 
 on: 
   schedule:
-    - cron: '0 0 1 * *'
+    - cron: '0 0 1 * 0'
   workflow_dispatch:
 
 
@@ -74,7 +74,7 @@ jobs:
       # scrape things
       - name: Download SOI data
         run: |
-          docker run -d --name runner -v $(pwd):/code -w /code -e PROXY_URL="http://$(cat ip_address.txt):80" soi:latest maps/SOI/scrape.py -u -r 25
+          docker run -d --name runner -v $(pwd):/code -w /code -e PROXY_URL="http://$(cat ip_address.txt):80" -e PB_TOKEN="${{ secrets.PB_TOKEN }} soi:latest maps/SOI/scrape.py -u -p -r 25
           docker logs -f runner
           exit_code=$(docker inspect runner --format='{{.State.ExitCode}}')
           exit $((exit_code))

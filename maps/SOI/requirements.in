@@ -6,3 +6,5 @@ colorlog
 numpy
 opencv-python
 pytesseract
+websocket-client
+pushbullet.py

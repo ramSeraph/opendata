@@ -168,6 +168,9 @@ def contains_completeness_check():
     for k,v in filtered_dists.items():
         if dist_mapping[k] == 'NA':
             continue
+        if dist_mapping[k] not in lgd_dist_data:
+            print(f'missing lgd entry for {k}')
+            continue
         lgd_entry = lgd_dist_data[dist_mapping[k]]
         state_code = lgd_entry['State Code']
         state_name = lgd_entry['State Name (In English)']

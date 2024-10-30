@@ -2,6 +2,7 @@ import csv
 import json
 from pprint import pprint
 from pathlib import Path
+from datetime import datetime
 
 from common import base_entity_checks, get_wd_data, get_located_in_ids, write_report, get_entry_from_wd_id, get_label
 
@@ -30,11 +31,11 @@ def hierarchy_check(wd_fname=None, wd_filter_fn=None):
 
 # very unlikely to be hit
 def get_correction_info(lgd_entry):
+    pprint(lgd_entry)
 
     name = lgd_entry['lgd_name']
     label = f'{name}'
 
-    sname = lgd_entry['State Name']
     desc = f'state in India'
 
     state_or_ut = lgd_entry['State or UT']

@@ -1,19 +1,20 @@
 # Source: https://github.com/devdatalab/masala-merge
 # Modified to include some extra pairings
 
+import string
 
 # specify single-letter pairs that have a low cost match.
 # specify each one twice, i.e. both directions so can be a fast lookup
-pair_1to1 = set(['YE', 'EY', 'UW', 'WU', 'DT', 'TD', 'AE', 'AI', 'AO', 'AU', 'EA', 'EI', 'EO', 'EU', 'IA', 'IE', 'IO', 'IU', 'OA', 'OE', 'OI', 'OU', 'UA', 'UE', 'UI', 'UO', 'SZ', 'ZS', 'BV', 'VB', 'OW', 'WO', 'YI', 'IY', 'RD', 'DR', 'CK', 'KC', 'CS', 'SC', 'GJ', 'JG', 'ZJ', 'JZ', 'XZ', 'ZX', 'XS', 'SX', 'XJ', 'JS', 'SZ', 'ZS', 'KQ', 'QK', 'WV', 'VW', 'BV', 'VB', 'PF', 'FP'])
+pair_1to1 = set(['YE', 'EY', 'UW', 'WU', 'DT', 'TD', 'AE', 'AI', 'AO', 'AU', 'EA', 'EI', 'EO', 'EU', 'IA', 'IE', 'IO', 'IU', 'OA', 'OE', 'OI', 'OU', 'UA', 'UE', 'UI', 'UO', 'SZ', 'ZS', 'BV', 'VB', 'OW', 'WO', 'YI', 'IY', 'RD', 'DR', 'CK', 'KC', 'CS', 'SC', 'GJ', 'JG', 'ZJ', 'JZ', 'XZ', 'ZX', 'XS', 'SX', 'XJ', 'JS', 'SZ', 'ZS', 'KQ', 'QK', 'WV', 'VW', 'BV', 'VB', 'PF', 'FP', 'KG', 'GK'])
 
 # 2to2 lists mean cheap processing of character transposition
 pair_2to2 = set(['EV', 'EO', 'CK', 'KC', 'KQ', 'QK', 'PF', 'FP', 'GJ', 'JG', 'BV', 'VB', 'VW', 'WV', 'BW', 'WB', 'JZ', 'ZJ', 'XZ', 'ZX', 'XS', 'SX', 'ZS', 'SZ', 'SC', 'CS', 'YU', 'UY', 'AU', 'UA', 'EU', 'UE', 'IU', 'UI', 'IO', 'OI'])
 
 # 2to1
-pair_2to1_list = ['O-OW', 'U-UW', 'U-OO', 'E-IY', 'I-IY', 'X-KS', 'E-EE' , 'O-OO', 'S-SC' , 'X-XC', 'I-EE', 'A-YA', 'L-ZH']
+pair_2to1_list = ['O-OW', 'U-UW', 'U-OO', 'E-IY', 'I-IY', 'X-KS', 'E-EE' , 'O-OO', 'S-SC' , 'X-XC', 'X-KS', 'I-EE', 'A-YA', 'L-ZH']
 
 # dictionary for cheap single letter omissions. spaces are free, but non-zero to avoid duplication problems.
-pair_1to0 = {'A':0.2, 'H':0.2, 'U':0.3, 'N':0.45, ' ': 0.01, '(': 0.01, ')': 0.01, '.': 0.01, '-': 0.01, '*': 0.01 }
+pair_1to0 = {'A':0.2, 'E': 0.2, 'H':0.2, 'U':0.3, 'N':0.45, ' ': 0.01, '(': 0.01, ')': 0.01, '[': 0.01, ']': 0.01, '.': 0.01, '-': 0.01, '*': 0.01 }
 
 cost_swap = 0.45
 cost_1to1 = 0.45

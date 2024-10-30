@@ -9,6 +9,8 @@ import requests
 from requests.models import PreparedRequest
 import unidecode
 import pywikibot
+from pywikibot import pagegenerators
+from pywikibot.data.sparql import SparqlQuery
 from bs4 import BeautifulSoup
 
 from lev import masala_levenshtein
@@ -380,9 +382,11 @@ BLOCK_PANCHAYAT_ID = 4927168
 
 VILLAGE_IN_INDIA_ID = 56436498
 CENSUS_TOWN_IN_INDIA_ID = 16830604
+CENSUS_TOWN = 587144
 ALL_VILLAGE_IDS = [ VILLAGE_IN_INDIA_ID, CENSUS_TOWN_IN_INDIA_ID ]
 
 P_INSTANCE_OF = 'P31'
+P_SUBCLASS_OF = 'P279'
 P_REPLACED_BY = 'P1366'
 P_DISSOLVED = 'P576'
 P_COUNTRY = 'P17'
@@ -510,7 +514,8 @@ def is_claim_current(c):
 
 
 def is_inactive(v):
-    return P_REPLACED_BY in v['claims'] or P_DISSOLVED in v['claims']
+    claims = v.get('claims', {})
+    return P_REPLACED_BY in claims or P_DISSOLVED in claims
 
 
 def is_current_instance_of(v, inst_types):
@@ -614,7 +619,8 @@ def get_contains_ids(v):
 def get_instance_of_ids(v):
     if is_inactive(v):
         return []
-    inst_claims = v['claims'].get(P_INSTANCE_OF, [])
+    claims = v.get('claims', {})
+    inst_claims = claims.get(P_INSTANCE_OF, [])
     ids = []
     for c in inst_claims:
         if not is_claim_current(c):
@@ -934,3 +940,35 @@ def get_effective_date(url, params):
             tds = tr.find_all('td')
             date_str = tds[1].text
             return datetime.strftime(datetime.strptime(date_str, '%d/%m/%Y'), '%d%b%Y')
+
+def get_data_for_query(query, fname):
+    site = pywikibot.Site("wikidata", "wikidata")
+    repo = site.data_repository()
+    p = Path(fname)
+    already_seen = set()
+    if p.exists():
+        with open(p, 'r') as f:
+            for line in f:
+                if line.strip() == '':
+                    continue
+                item = json.loads(line)
+                k = item['id']
+                already_seen.add(k)
+
+    sparql = SparqlQuery(repo=repo)
+    qids = sparql.get_items(query, item_name='item')
+    qids = list(qids - already_seen)
+    generator = pagegenerators.PreloadingEntityGenerator(pagegenerators.PagesFromTitlesGenerator(qids,site=repo))
+    
+    count = 0
+    with open(p, 'a') as f:
+        for item in generator:
+            if item.id in already_seen:
+                count += 1
+                continue
+            d = item.toJSON()
+            f.write(json.dumps({'id': item.id, 'data': d}))
+            f.write('\n')
+            count += 1
+            print(f'handled {count} entries')
+

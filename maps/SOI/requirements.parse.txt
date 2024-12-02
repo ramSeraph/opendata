@@ -62,7 +62,7 @@ imutils==0.5.4
     # via -r requirements.parse.in
 mercantile==1.2.1
     # via -r requirements.parse.in
-numpy==1.25.1
+numpy==1.26.4
     # via
     #   -r requirements.parse.in
     #   opencv-python-headless

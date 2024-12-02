@@ -35,7 +35,7 @@ RUN apt-get update && \
     apt-get install --no-install-recommends -y $util_pkgs && \
     GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2) && \
     sed -i "s/gdal==.*/gdal==${GDAL_VERSION}/g" /requirements.txt && \
-    /venv/bin/pip install --no-cache-dir setuptools && \
+    /venv/bin/pip install --no-cache-dir --upgrade setuptools && \
     /venv/bin/pip install --no-cache-dir -r /requirements.txt && \
     apt-get -y --purge remove $util_pkgs && \
     apt-get -y autoremove && \

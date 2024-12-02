@@ -1,7 +1,7 @@
 numpy
 Pillow
 imgcat
-opencv-python
+opencv-python-headless
 pdfminer.six
 pypdf
 rasterio

@@ -100,10 +100,15 @@
     "ignore_reason": "handled in VILLAGES"
   },
   {
-    "dropdown": [ "Download Directory", "VILLAGE", "All Villages of India With Village Category" ],
+    "dropdown": [ "Download Directory", "VILLAGE", "All Villages of India category-wise and Urban villages mapped with Urban local bodies" ],
     "comp": "IGNORE",
     "ignore_reason": "handled in VILLAGES, has extra info, needs review"
-  },
+  },           
+  {
+    "dropdown": [ "Download Directory", "VILLAGE", "All Villages of State category-wise and Urban villages mapped with urban local bodies" ],
+    "comp": "IGNORE",
+    "ignore_reason": "handled in VILLAGES, has extra info, needs review"
+  }, 
   {
     "dropdown": [ "Download Directory", "Local body", "PRI Local Body of a State" ],
     "comp": "PRI_LOCAL_BODIES",
@@ -421,8 +426,22 @@
   },
   {
     "dropdown": [ "Download Directory", "Development Block", "All Development Block of India with Covered Villages" ],
-    "comp": "IGNORE",
-    "ignore_reason": "handled in BLOCK_VILLAGES, download broken"
+    "comp": "BLOCK_VILLAGES_SIMPLE",
+    "file": "villages_by_block_simple.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name (In English)": { "action": "KEEP", "description": "State Name in English" },
+      "District Code": { "action": "KEEP", "description": "District LGD Code" },
+      "District Name (In English)": { "action": "KEEP", "description": "District Name in English" },
+      "District census 2011 code": { "action": "KEEP", "description": "District Census 2011 Code" },
+      "Development Block Code": { "action": "KEEP", "description": "Block LGD Code" },
+      "Development Block Name (In English)": { "action": "KEEP", "description": "Block Name in English" },
+      "Village Code": { "action": "KEEP", "description": "Village LGD Code" },
+      "Village Name (In English)": { "action": "KEEP", "description": "Village Name in English" },
+      "Village Census 2011 Code": { "action": "KEEP", "description": "Village Census 2011 Code" },
+      "Census 2011 Code": { "action": "KEEP", "description": "State Census 2011 Code" }
+    }
   },
   { 
     "dropdown": [ "Download Directory", "Development Block", "All India Subdistrict-Village-Development Block Mapping" ],

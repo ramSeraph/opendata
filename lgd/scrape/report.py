@@ -463,9 +463,9 @@ def get_all_report_downloaders(ctx):
                                                   'fileName': ''
                                               }))
 
-    downloaders.append(StateWiseReportDownloader(name='NOFN_PANCHAYATS',
-                                                 sub_url='nofnStates.do',
-                                                 ctx=ctx))
+    #downloaders.append(StateWiseReportDownloader(name='NOFN_PANCHAYATS',
+    #                                             sub_url='nofnStates.do',
+    #                                             ctx=ctx))
     downloaders.append(ChangesReportDownloader(name='CHANGES',
                                                sub_url='changedEntity.do',
                                                ctx=ctx,

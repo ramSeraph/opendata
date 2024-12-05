@@ -831,28 +831,6 @@ Expected fields:
 
 ---
 
-## nofn_panchayats.csv
-
-description:
-: list of all panchayats with National Optic Fiber Network(NOFN)
-
-Location in LGD:
-: - Local Government Directory (LGD) Reports
-    - NOFN Panchayat List
-
-Expected fields:
-: | Name | Description |
-| :---: | :---: |
-| SR.NO | Serial number |
-| District Name | District Name in English |
-| Sub District Name(In English) | Sub District Name in English |
-| Local Body Code | Local Body LGD Code |
-| Local Body Name (In English) | Local Body Name in English |
-| State Code | State LGD Code |
-| State Name | State Name in English |
-
----
-
 ## changes.csv
 
 description:

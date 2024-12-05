@@ -917,17 +917,8 @@
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "NOFN Panchayat List" ],
     "comp": "NOFN_PANCHAYATS",
-    "desc": "list of all panchayats with National Optic Fiber Network(NOFN)",
-    "file": "nofn_panchayats.csv",
-    "fields": {
-      "SR.NO": { "action": "IGNORE", "description": "Serial number" },
-      "District Name": { "action": "KEEP", "description": "District Name in English" },
-      "Sub District Name(In English)": { "action": "KEEP", "description": "Sub District Name in English" },
-      "Local Body Code": { "action": "KEEP", "description": "Local Body LGD Code" },
-      "Local Body Name (In English)": { "action": "KEEP", "description": "Local Body Name in English" },
-      "State Code": { "action": "KEEP", "description": "State LGD Code" },
-      "State Name": { "action": "KEEP", "description": "State Name in English" }
-    }
+    "comp":  "IGNORE",
+    "ignore_reason": "broken"
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "List Of Modification Done In LGD" ],

@@ -163,8 +163,11 @@ def get_correction_info(lgd_entry):
         g_wd_dist_map_rev = {v:k for k,v in wd_dist_map.items()}
     loc_in = g_wd_dist_map_rev[dcode]
 
-    i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
-    inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
+    if 'Effective Date' in lgd_entry:
+        i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
+        inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
+    else:
+        inception = None
     correction_info = {
         'label': label,
         'desc': desc,

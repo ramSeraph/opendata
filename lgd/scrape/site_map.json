@@ -905,6 +905,22 @@
     "ignore_reason": "Covered Elsewhere"
   },
   {
+    "dropdown": [ "Local Government Directory (LGD) Reports", "View State Wise Freezed Status" ],
+    "comp": "IGNORE",
+    "ignore_reason": "Needs Review"
+  },
+  {
+    "dropdown": [ "Local Government Directory (LGD) Reports", "State Wise Population" ],
+    "comp":  "IGNORE",
+    "ignore_reason": "Dont care"
+  },
+  {
+    "dropdown": [ "Local Government Directory (LGD) Reports", "NOFN Panchayat List" ],
+    "comp": "NOFN_PANCHAYATS",
+    "comp":  "IGNORE",
+    "ignore_reason": "broken"
+  },
+  {
     "dropdown": [ "Local Government Directory (LGD) Reports", "List Of Modification Done In LGD" ],
     "comp": "CHANGES",
     "desc": "all changes to entities in LGD",
@@ -994,6 +1010,11 @@
     "dropdown":  [ "Local Government Directory (LGD) Reports", "Mapped List Of PC/AC With Any Land Region" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
+  },
+  {
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Aspirational District Wise Village Level Localbodies" ],
+    "comp": "IGNORE",
+    "ignore_reason": "Dont care"
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Datewise Active Entities (Local Bodies/Land Region)" ],

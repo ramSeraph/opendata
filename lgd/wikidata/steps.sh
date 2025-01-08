@@ -3,6 +3,7 @@ set -aeux
 
 script_dir=$(dirname "$0")
 unameOut="$(uname -s)"
+RUNNER="uv run"
 
 conv_date() {
   if [[ $unameOut == "Darwin" ]]; then
@@ -67,51 +68,58 @@ get_lgd_files() {
 }
 
 verify_states() {
-  python ${script_dir}/download.py state
-  python ${script_dir}/check_states.py
+  $RUNNER ${script_dir}/download.py state
+  $RUNNER ${script_dir}/check_states.py
   
 }
 
 verify_divisions() {
-  python ${script_dir}/download.py state
-  python ${script_dir}/download.py division
-  python ${script_dir}/download.py district
-  python ${script_dir}/check_divisions.py
+  $RUNNER ${script_dir}/download.py state
+  $RUNNER ${script_dir}/download.py division
+  $RUNNER ${script_dir}/download.py district
+  $RUNNER ${script_dir}/check_divisions.py
 }
 
 verify_districts() {
-  python ${script_dir}/download.py state
-  python ${script_dir}/download.py division
-  python ${script_dir}/download.py district
-  python ${script_dir}/check_districts.py
+  $RUNNER ${script_dir}/download.py state
+  $RUNNER ${script_dir}/download.py division
+  $RUNNER ${script_dir}/download.py district
+  $RUNNER ${script_dir}/check_districts.py
 }
 
 verify_subdivisions() {
-  python ${script_dir}/download.py district
-  python ${script_dir}/download.py subdivision
-  python ${script_dir}/download.py subdistrict
-  python ${script_dir}/check_subdivisions.py
+  $RUNNER ${script_dir}/download.py district
+  $RUNNER ${script_dir}/download.py subdivision
+  $RUNNER ${script_dir}/download.py subdistrict
+  $RUNNER ${script_dir}/check_subdivisions.py
 }
 
 verify_subdistricts() {
-  python ${script_dir}/download.py district
-  python ${script_dir}/download.py subdivision
-  python ${script_dir}/download.py subdistrict
-  python ${script_dir}/check_subdistricts.py
+  $RUNNER ${script_dir}/download.py district
+  $RUNNER ${script_dir}/download.py subdivision
+  $RUNNER ${script_dir}/download.py subdistrict
+  $RUNNER ${script_dir}/check_subdistricts.py
 }
 
 verify_blocks() {
-  python ${script_dir}/download.py district
-  python ${script_dir}/download.py subdivision
-  python ${script_dir}/download.py block
-  python ${script_dir}/check_blocks.py
+  $RUNNER ${script_dir}/download.py district
+  $RUNNER ${script_dir}/download.py subdivision
+  $RUNNER ${script_dir}/download.py block
+  $RUNNER ${script_dir}/check_blocks.py
 }
 
 verify_district_panchayats() {
-  python ${script_dir}/download.py state
-  python ${script_dir}/download.py district
-  python ${script_dir}/download.py district_panchayat
-  python ${script_dir}/check_district_panchayats.py
+  $RUNNER ${script_dir}/download.py state
+  $RUNNER ${script_dir}/download.py district
+  $RUNNER ${script_dir}/download.py district_panchayat
+  $RUNNER ${script_dir}/check_district_panchayats.py
+}
+
+verify_block_panchayats() {
+  $RUNNER ${script_dir}/download.py state
+  $RUNNER ${script_dir}/download.py district_panchayat
+  $RUNNER ${script_dir}/download.py block_panchayat
+  $RUNNER ${script_dir}/check_block_panchayats.py
 }
 
 get_lgd_files
@@ -123,8 +131,9 @@ verify_subdivisions
 verify_subdistricts
 #verify_blocks
 verify_district_panchayats
+#verify_block_panchayats
 
-python ${script_dir}/collect_status.py
+$RUNNER ${script_dir}/collect_status.py
 
 
 

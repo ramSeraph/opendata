@@ -18,24 +18,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.1.7
 
-      - name: Setup python
-        uses: actions/setup-python@v5.1.1
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: '3.10'
-
-      - name: Restore pip data from cache
-        uses: actions/cache@v4.0.2
-        with:
-          path: ./.venv/
-          key: $venv-${{ hashFiles('lgd/wikidata/requirements.txt') }}
-        id: cache-venv
-
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: 'lgd/wikidata/requirements.check.txt'
+          cache-suffix: 'lgd-wikidata-check'
+        id: setup-uv
+              
       - name: Setup python requirements
-        if: steps.cache-venv.outputs.cache-hit != 'true'
         run: |
-          python -m venv ./.venv 
-          . ./.venv/bin/activate
-          pip install -r lgd/wikidata/requirements.txt
+          cd lgd/wikidata
+          uv venv
+          uv pip install -r requirements.check.txt
 
       - name: Get current date
         run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
@@ -45,7 +41,7 @@ jobs:
         uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
-            data/
+            lgd/wikidata/data/
           key:  data-raw-lgd-wikidata-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
             data-raw-lgd-wikidata-${{ steps.date.outputs.date }}-${{ github.run_number }}-
@@ -57,8 +53,8 @@ jobs:
 
       - name: Make Sync Reports
         run: |
-          export PATH=".venv/bin:${PATH}"
-          bash lgd/wikidata/steps.sh
+          cd lgd/wikidata
+          bash steps.sh
           wd_date=${{ steps.date.outputs.date }}
           lgd_date=$(cat data/lgd_date.txt)
           echo "{ \"lgd_date\": \"$lgd_date\", \"wd_date\": \"$wd_date\" }" > data/dates.json
@@ -66,12 +62,14 @@ jobs:
 
       - name: Upload Reports
         run: |
+          cd lgd/wikidata
           gsutil -m cp reports/*.json gs://lgd_wikidata_reports/
           gsutil -m acl ch -u AllUsers:R gs://lgd_wikidata_reports/*
         timeout-minutes: 5
 
       - name: Cleanup data
         run: |
+          cd lgd/wikidata
           rm -rf data/*
           rm -rf reports/
 

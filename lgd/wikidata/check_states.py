@@ -1,7 +1,4 @@
-import csv
-import json
 from pprint import pprint
-from pathlib import Path
 from datetime import datetime
 
 from common import base_entity_checks, get_wd_data, get_located_in_ids, write_report, get_entry_from_wd_id, get_label
@@ -36,7 +33,7 @@ def get_correction_info(lgd_entry):
     name = lgd_entry['lgd_name']
     label = f'{name}'
 
-    desc = f'state in India'
+    desc = 'state in India'
 
     state_or_ut = lgd_entry['State or UT']
     inst_of = f'Q{STATE_ID}' if state_or_ut == 'S' else f'Q{UT_ID}'

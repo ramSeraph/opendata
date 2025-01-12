@@ -1,8 +1,5 @@
-import json
 import csv
-from pathlib import Path
 from pprint import pprint
-from datetime import datetime
 
 from common import (
     base_entity_checks, write_report,
@@ -90,7 +87,6 @@ def hierarchy_check():
         if len(located_in_ids) != 1:
             continue
         state_id = located_in_ids[0]
-        state_wd_id = f'Q{state_id}'
         hierarchy = [ state_id ]
         if f'Q{state_id}' not in wd_state_map or state_id != expected_state_id:
             

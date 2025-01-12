@@ -1,14 +1,12 @@
-import csv
-import json
 from pprint import pprint
-from pathlib import Path
+from datetime import datetime
 
 from common import (
     base_entity_checks, write_report,
     get_label, get_lgd_codes,
     get_located_in_ids, get_wd_entity_lgd_mapping,
     get_wd_data, get_lgd_data, get_entry_from_wd_id,
-    DIST_ID, P_LGD_DIST_CODE
+    P_LGD_DIST_CODE
 )
 
 from filters import filter_district, filter_state, filter_division
@@ -90,10 +88,8 @@ def get_correction_info(lgd_entry):
     scode = lgd_entry['State Code']
 
     name = lgd_entry['lgd_name']
-    label_suffix = info['label_suffix'] if 'label_suffix' in info else info['suffix']
     label = f'{name} district'
 
-    suffix = info['suffix']
     sname = lgd_entry['State Name (In English)']
     desc = f'district in {sname}, India'
 

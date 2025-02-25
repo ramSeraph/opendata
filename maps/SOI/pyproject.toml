@@ -1,0 +1,28 @@
+[project]
+name = "soi"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "bs4>=0.0.2",
+    "colorlog>=6.9.0",
+    "imgcat>=0.6.0",
+    "numpy>=2.2.3",
+    "opencv-python-headless>=4.11.0.86",
+    "pillow>=11.1.0",
+    "pushbullet-py>=0.12.0",
+    "pytesseract>=0.3.13",
+    "requests>=2.32.3",
+    "websocket-client>=1.8.0",
+]
+
+[project.optional-dependencies]
+parse = [
+    "imutils>=0.5.4",
+    "pdfminer-six>=20240706",
+    "pypdf>=5.3.0",
+    "pyproj>=3.7.1",
+    "rasterio>=1.4.3",
+    "shapely>=2.0.7",
+]

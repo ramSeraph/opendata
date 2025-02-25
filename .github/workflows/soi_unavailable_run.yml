@@ -16,17 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.7
-      - uses: docker/setup-buildx-action@v3.4.0
-      - name: Build Image
-        uses: docker/build-push-action@v6.3.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          context: maps/SOI
-          load: true
-          build-args: |
-            build_type=final
-          tags: soi:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          enable-cache: true
+          cache-dependency-glob: maps/SOI/uv.lock
+          version: ">=0.5.29"
 
       - name: Restore tesseract models from cache
         uses: actions/cache@v4.0.2
@@ -35,6 +31,12 @@ jobs:
           key:  'SOI-tesseract-models-gcs-v2'
         id: models-cache
 
+      - name: Install packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr gdal-bin
+
+
       - name: Authenticate with GCP
         run: |
           gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
@@ -42,26 +44,29 @@ jobs:
       - name: Download tesseract models from gcs
         if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
         run: |
+          cd maps/SOI
           mkdir -p data/captcha/models/
           gsutil -m cp -r gs://lgd_captcha_tesseract_models/* data/captcha/models/
 
       - name: Download users lists
         run: |
+          cd maps/SOI
           gsutil -m cp gs://soi_private/users.json data/users.json
           gsutil -m cp gs://soi_private/users_extra.json data/users_extra.json
 
       - name: Prepare done list
         run: |
+          cd maps/SOI
           gsutil ls gs://soi_data/raw/* | sed 's/^gs:\/\/soi_data\/raw\///g' > data/files_done.txt
 
       - name: Restore prev workspace
         uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
-            data/raw/
-            data/index.geojson
-            data/cookies/
-            data/tried_users.txt
+            maps/SOI/data/raw/
+            maps/SOI/data/index.geojson
+            maps/SOI/data/cookies/
+            maps/SOI/data/tried_users.txt
           key:  SOI-data-ua-raw-v2-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
             SOI-data-ua-raw-v2-${{ github.run_number }}-
@@ -69,7 +74,7 @@ jobs:
 
       - name: Download index file
         run: |
-          cd data/
+          cd maps/SOI/data/
           [[ -f index.geojson ]] || wget https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
 
       - name: Bring up the proxy
@@ -79,18 +84,11 @@ jobs:
       # scrape things
       - name: Download SOI data
         run: |
-          docker run -d --name runner -v $(pwd):/code -w /code -e PROXY_URL="http://$(cat ip_address.txt):80" -e PB_TOKEN="${{ secrets.PB_TOKEN }}" soi:latest maps/SOI/scrape.py -u -p -r 25
-          docker logs -f runner
-          exit_code=$(docker inspect runner --format='{{.State.ExitCode}}')
-          exit $((exit_code))
+          cd maps/SOI
+          GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
+          uv add GDAL==${GDAL_VERSION}
+          PROXY_URL="http://$(cat ip_address.txt):80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -r 25
         timeout-minutes: 180
-
-      - name: Cleanup Processes
-        if: ${{ always() }}
-        run: |
-          docker stop runner || true
-          docker kill runner || true
-          docker rm runner || true
 
       - name: Bring down the proxy
         if: ${{ always() }}
@@ -101,13 +99,15 @@ jobs:
 
       - name: Upload raw files to gcs
         run: |
+          cd maps/SOI
           [[ "$(gsutil ls gs://soi_data/index.geojson 2>/dev/null)" == "" ]] && gsutil -m cp data/index.geojson gs://soi_data/index.geojson
           [[ "$(gsutil ls gs://soi_data/raw/SOI_FONTS.zip 2>/dev/null)" == "" ]] && gsutil -m cp data/raw/SOI_FONTS.zip gs://soi_data/raw/SOI_FONTS.zip
           find data/raw/* && gsutil -m cp -r data/raw/*.pdf gs://soi_data/raw/ || true
           find data/raw/* && find data/raw/*.pdf > data/to_parse.txt && gsutil -m cp data/to_parse.txt gs://soi_data/to_parse.txt || true
           find data/raw/* && sh -c "ls data/raw/*.pdf | sed 's,data,gs://soi_data,g' | sed 's/.pdf/.pdf.unavailable/g' | xargs gsutil rm " || true
-          docker run --name cleaner -v $(pwd):/code -w /code --entrypoint "/bin/sh" soi:latest -c "rm -rf data/"
+          rm -rf data/
 
       - name: Update lists
         run: |
-          maps/SOI/generate_lists.sh
+          cd maps/SOI
+          ./generate_lists.sh

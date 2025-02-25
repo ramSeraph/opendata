@@ -141,7 +141,7 @@ def login_wrap(phone_num, password, otp_from_pb):
             with open(saved_cookie_file, 'wb') as f:
                 pickle.dump(session.cookies, f)
             success = True
-            logger.info('login password phase done')
+            logger.info('login otp phase done')
             break
         except Exception as ex:
             if str(ex) != FAILED_CAPTCHA:

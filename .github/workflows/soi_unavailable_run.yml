@@ -34,7 +34,7 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y tesseract-ocr gdal-bin libgdal-dev
+          sudo apt-get install -y tesseract-ocr
 
 
       - name: Authenticate with GCP
@@ -85,9 +85,7 @@ jobs:
       - name: Download SOI data
         run: |
           cd maps/SOI
-          GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
-          uv add GDAL==${GDAL_VERSION}
-          PROXY_URL="http://$(cat ip_address.txt):80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -r 25
+          PROXY_URL="http://$(cat ../../ip_address.txt):80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -r 25
         timeout-minutes: 180
 
       - name: Bring down the proxy

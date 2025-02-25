@@ -1,18 +1,11 @@
 import os
 import re
-import time
-import json
-import datetime
-import logging
-
-from pprint import pprint
-from threading import Thread
+import queue
 
 import pushbullet
 
 from pb_listener import Listener
 
-#logging.basicConfig(level=logging.DEBUG)
 
 def get_otp_manual():
     val = input('Enter OTP: ')
@@ -31,8 +24,10 @@ def get_otp_from_msg(data):
     if not title.endswith('NAKSHE'):
         return None
     otps = []
-    for m in re.finditer(r"(\d+)\s+is\s+OTP", body):
+    for m in re.finditer(r"(\d+)\s+is\s+your\s+OTP", body):
         otps.append(m.group(1))
+    if len(otps) == 0:
+        return None
     return otps[-1]
 
 def get_pb_client():

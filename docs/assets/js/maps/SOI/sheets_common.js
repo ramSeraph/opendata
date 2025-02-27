@@ -22,8 +22,8 @@ parseListing = (listingText) => {
 
 const releasesUrlPrefix = 'https://github.com/ramSeraph/opendata/releases/download'
 
-function fetchSheetList(releaseName, callback) {
-    var url = `${releasesUrlPrefix}/${releaseName}/list.txt`
+function fetchSheetList(listFilename, callback) {
+    var url = `https://indianopenmaps.fly.dev/soi/${listFilename}`
     var httpRequest = new XMLHttpRequest()
     
     alertContents = () => {
@@ -103,13 +103,13 @@ function getStatusData(cb) {
         cb(null, statusInfo)
     }
 
-    fetchSheetList('soi-tiffs', (e, results) => {
+    fetchSheetList('tiff_list.txt', (e, results) => {
         gtiffSizeData = results
         console.log('gtiff data callback invoked')
         collate()
     })
 
-    fetchSheetList('soi-pdfs.txt', (e, results) => {
+    fetchSheetList('pdf_list.txt', (e, results) => {
         pdfSizeData = results
         console.log('pdf data callback invoked')
         collate()

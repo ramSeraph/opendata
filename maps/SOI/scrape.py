@@ -395,13 +395,13 @@ def download_tile_wrap(tile_info):
         raise Exception('download tile map because of captcha errors')
 
 
-def get_done_list():
+def get_done_set():
     filename = data_dir + 'files_done.txt'
     if not Path(filename).exists():
         return []
     with open(filename, 'r') as f:
         files_done = f.read().split('\n')
-    return [ x.strip() for x in files_done ]
+    return set([ x.strip() for x in files_done ])
 
 def get_priority_list():
     filename = data_dir + 'priority_list.txt'
@@ -438,11 +438,11 @@ def scrape(phone_num, password, only_unavailable, otp_from_pb, assume_index_file
 
     priority_list = get_priority_list()
     priority_tile_info_map = {}
-    done = get_done_list()
+    done_set = get_done_set()
     tile_infos_to_download = []
     for tile_info in tile_infos:
         sheet_no = tile_info['EVEREST_SH']
-        if is_sheet_done(sheet_no, done, only_unavailable):
+        if is_sheet_done(sheet_no, done_set, only_unavailable):
             continue
         if sheet_no in priority_list:
             priority_tile_info_map[sheet_no] = tile_info
@@ -452,7 +452,7 @@ def scrape(phone_num, password, only_unavailable, otp_from_pb, assume_index_file
     done = 0
     for sheet_no in priority_list:
         if sheet_no not in priority_tile_info_map:
-            if not is_sheet_done(sheet_no, done, only_unavailable):
+            if not is_sheet_done(sheet_no, done_set, only_unavailable):
                 logger.warning(f'priority {sheet_no} missing')
             continue
         tile_info = priority_tile_info_map[sheet_no]

@@ -46,7 +46,7 @@ jobs:
       - name: Download users lists
         run: |
           cd maps/SOI
-          echo "${{ secrets.SOI_USERS }}" | base64 --decode > data/users.json
+          echo "${{ secrets.SOI_USERS }}" | base64 -d > data/users.json
 
       - name: Restore prev workspace
         uses: ramSeraph/cache-always@v0.0.1
@@ -65,6 +65,10 @@ jobs:
         run: |
           cd maps/SOI/data/
           [[ -f index.geojson ]] || wget https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
+              
+      - name: Authenticate with GCP
+        run: |
+          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
 
       - name: Bring up the proxy
         run: |
@@ -74,6 +78,8 @@ jobs:
       - name: Download SOI data
         run: |
           cd maps/SOI
+          wget https://github.com/ramSeraph/opendata/releases/download/soi-pdf/list.txt
+          cat list.txt | cut -d" " -f2 > data/files_done.txt
           PROXY_URL="http://$(cat ../../ip_address.txt):80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -f -i -r 25
         timeout-minutes: 180
 

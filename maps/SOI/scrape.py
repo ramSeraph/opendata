@@ -45,10 +45,6 @@ def get_secrets():
         users_text = f.read()
     users_data = json.loads(users_text)
 
-    with open(data_dir + 'users_extra.json', 'r') as f:
-        users_text = f.read()
-    users_data.extend(json.loads(users_text))
-
     secrets_map = {
         u['phone_num']:u['password']
         for u in users_data
@@ -125,7 +121,7 @@ def login_wrap(phone_num, password, otp_from_pb):
         raise Exception('login failed because of captcha errors')
 
     if otp_from_pb:
-        otp = get_otp_pb(otp_listener)
+        otp = get_otp_pb(otp_listener, timeout=300)
     else:
         otp = get_otp_manual()
     if otp is None:
@@ -257,13 +253,16 @@ def convert_shp_to_geojson(unzipped_folder, out_filename):
     correct_index_file(out_filename)
 
 
-def get_map_index():
+def get_map_index(fail_on_missing):
     filename = data_dir + 'index.geojson'
 
     logger.info('getting map index')
     if Path(filename).exists():
         logger.info(f'{filename} exists.. skipping')
         return filename
+
+    if fail_on_missing:
+        raise Exception(f'{filename} is missing')
 
     raw_filename = download_index_file()
     unzipped_folder = unzip_file(raw_filename)
@@ -429,9 +428,9 @@ def is_sheet_done(sheet_no, done, only_unavailable):
     return False
 
 
-def scrape(phone_num, password, only_unavailable, otp_from_pb):
+def scrape(phone_num, password, only_unavailable, otp_from_pb, assume_index_file):
     login_wrap(phone_num, password, otp_from_pb)
-    map_index_file = get_map_index()
+    map_index_file = get_map_index(assume_index_file)
 
     tile_infos = get_tile_infos(map_index_file)
     logger.info(f'got {len(tile_infos)} tiles')
@@ -467,7 +466,7 @@ def scrape(phone_num, password, only_unavailable, otp_from_pb):
         logger.info(f'Done: {done}/{len(tile_infos_to_download)}')
 
 
-def scrape_wrap(only_unavailable, otp_from_pb):
+def scrape_wrap(only_unavailable, otp_from_pb, assume_index_file):
     global session
     secrets_map = get_secrets()
     p_idx = 0
@@ -478,7 +477,7 @@ def scrape_wrap(only_unavailable, otp_from_pb):
         p_idx += 1
         try:
             logger.info(f'scraping with phone number: {p_idx}/{total_count}')
-            scrape(phone_num, password, only_unavailable, otp_from_pb)
+            scrape(phone_num, password, only_unavailable, otp_from_pb, assume_index_file)
             logger.warning('No more Sheets')
             if Path(tried_users_file).exists():
                 Path(tried_users_file).unlink()
@@ -495,10 +494,13 @@ def scrape_wrap(only_unavailable, otp_from_pb):
         Path(tried_users_file).unlink()
 
 
-def get_fonts():
+def get_fonts(assume_fonts):
     out_file = Path('data/raw/SOI_FONTS.zip')
     if out_file.exists():
         return
+    if assume_fonts:
+        raise Exception(f'{out_file} missing')
+
     url = base_url + '/SOIFonts.aspx'
     soup = get_page_soup(url)
     form_data = get_form_data(soup)
@@ -534,6 +536,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--max-captcha-retries', help='max number of times a captcha is retried', type=int, default=MAX_CAPTCHA_ATTEMPTS)
     parser.add_argument('-u', '--unavailable', help='try getting the unavailable files', action='store_true')
+    parser.add_argument('-f', '--assume-fonts', help='assume fonts are already there', action='store_true')
+    parser.add_argument('-i', '--assume-index-file', help='assume index file is already there', action='store_true')
     parser.add_argument('-p', '--otp-from-pushbullet', help='get login otp from pushbullet(provide token using the PB_TOKEN env variable)', action='store_true')
     args = parser.parse_args()
     MAX_CAPTCHA_ATTEMPTS = args.max_captcha_retries
@@ -543,5 +547,5 @@ if __name__ == '__main__':
     if not CAPTCHA_MANUAL:
         check_captcha_models(captcha_model_dir)
 
-    get_fonts()
-    scrape_wrap(args.unavailable, args.otp_from_pushbullet)
+    get_fonts(args.assume_fonts)
+    scrape_wrap(args.unavailable, args.otp_from_pushbullet, args.assume_index_file)

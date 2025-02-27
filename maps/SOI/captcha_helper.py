@@ -5,7 +5,6 @@ import logging
 from pathlib import Path
 from PIL import Image
 from imgcat import imgcat
-#from google.cloud import storage
 
 from captcha.auto import guess, save_captcha
 from common import session, base_url
@@ -51,24 +50,6 @@ def get_captcha_from_page(soup):
     captcha = get_captcha(captcha_url)
     return captcha
 
-
-def download_folder(bucket_name, dirname, client=None):
-    # remove trailing '/'
-    dirname = str(Path(dirname))
-    logger.info(f'downloading files from  {bucket_name} into {dirname}')
-    if client is None:
-        client = storage.Client.create_anonymous_client()
-    bucket = client.get_bucket(bucket_name)
-    blobs = list(client.list_blobs(bucket))
-    for blob in blobs:
-        filename = blob.name
-        path = Path(f'{dirname}/{filename}')
-        if path.exists():
-            continue
-        directory = path.parent
-        directory.mkdir(parents=True, exist_ok=True)
-        logger.info(f'downloading file {filename}')
-        blob.download_to_filename(str(path))
 
 def check_captcha_models(models_pathname):
 

@@ -27,7 +27,7 @@ jobs:
       - name: Restore tesseract models from cache
         uses: actions/cache@v4.0.2
         with:
-          path: 'data/captcha/models/'
+          path: 'maps/SOI/data/captcha/models/'
           key:  'SOI-tesseract-models-gcs-v2'
         id: models-cache
 
@@ -36,28 +36,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y tesseract-ocr
 
-
-      - name: Authenticate with GCP
-        run: |
-          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
-
       - name: Download tesseract models from gcs
         if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
         run: |
           cd maps/SOI
           mkdir -p data/captcha/models/
-          gsutil -m cp -r gs://lgd_captcha_tesseract_models/* data/captcha/models/
+          util/download_captcha_models.sh data/captcha/models
 
       - name: Download users lists
         run: |
           cd maps/SOI
-          gsutil -m cp gs://soi_private/users.json data/users.json
-          gsutil -m cp gs://soi_private/users_extra.json data/users_extra.json
-
-      - name: Prepare done list
-        run: |
-          cd maps/SOI
-          gsutil ls gs://soi_data/raw/* | sed 's/^gs:\/\/soi_data\/raw\///g' > data/files_done.txt
+          echo "${{ secrets.SOI_USERS }}" | base64 --decode > data/users.json
 
       - name: Restore prev workspace
         uses: ramSeraph/cache-always@v0.0.1
@@ -85,7 +74,7 @@ jobs:
       - name: Download SOI data
         run: |
           cd maps/SOI
-          PROXY_URL="http://$(cat ../../ip_address.txt):80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -r 25
+          PROXY_URL="http://$(cat ../../ip_address.txt):80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -f -i -r 25
         timeout-minutes: 180
 
       - name: Bring down the proxy
@@ -98,14 +87,21 @@ jobs:
       - name: Upload raw files to gcs
         run: |
           cd maps/SOI
-          [[ "$(gsutil ls gs://soi_data/index.geojson 2>/dev/null)" == "" ]] && gsutil -m cp data/index.geojson gs://soi_data/index.geojson
-          [[ "$(gsutil ls gs://soi_data/raw/SOI_FONTS.zip 2>/dev/null)" == "" ]] && gsutil -m cp data/raw/SOI_FONTS.zip gs://soi_data/raw/SOI_FONTS.zip
-          find data/raw/* && gsutil -m cp -r data/raw/*.pdf gs://soi_data/raw/ || true
-          find data/raw/* && find data/raw/*.pdf > data/to_parse.txt && gsutil -m cp data/to_parse.txt gs://soi_data/to_parse.txt || true
-          find data/raw/* && sh -c "ls data/raw/*.pdf | sed 's,data,gs://soi_data,g' | sed 's/.pdf/.pdf.unavailable/g' | xargs gsutil rm " || true
+          ls data/raw/*.pdf > downloaded.txt || true
+          cat downloaded.txt | xargs -I {} gh release upload soi-pdfs {}
           rm -rf data/
+          rm downloaded.txt
 
       - name: Update lists
         run: |
           cd maps/SOI
-          ./generate_lists.sh
+          ./generate_lists.sh pdfs
+
+  SOI-Extraction-Failure-Notify:
+    needs: [Run-SOI-Extraction]
+    if: always() && needs.Run-SOI-Extraction.result == 'failure'
+    uses: ./.github/workflows/common-pb-alert.yml
+    secrets: inherit
+    with:
+      title: "SOI Extraction Run Failed"
+      which-run: "self"

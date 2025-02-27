@@ -36,7 +36,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y tesseract-ocr
 
-      - name: Download tesseract models from gcs
+      - name: Download tesseract models from github releases
         if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
         run: |
           cd maps/SOI
@@ -78,7 +78,7 @@ jobs:
       - name: Download SOI data
         run: |
           cd maps/SOI
-          wget https://github.com/ramSeraph/opendata/releases/download/soi-pdf/list.txt
+          wget https://github.com/ramSeraph/opendata/releases/download/soi-pdfs/list.txt
           cat list.txt | cut -d" " -f2 > data/files_done.txt
           PROXY_URL="http://$(cat ../../ip_address.txt):80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -f -i -r 25
         timeout-minutes: 180
@@ -90,7 +90,7 @@ jobs:
             ./infra/destroy.sh 
           fi
 
-      - name: Upload raw files to gcs
+      - name: Upload raw files to github releases
         run: |
           cd maps/SOI
           ls data/raw/*.pdf > downloaded.txt || true

@@ -25,7 +25,7 @@ jobs:
           version: ">=0.5.29"
 
       - name: Restore tesseract models from cache
-        uses: actions/cache@v4.0.2
+        uses: ramSeraph/cache-always@v0.0.1
         with:
           path: 'maps/SOI/data/captcha/models/'
           key:  'SOI-tesseract-models-gcs-v2'
@@ -58,8 +58,8 @@ jobs:
             maps/SOI/data/tried_users.txt
           key:  SOI-data-ua-raw-v2-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            SOI-data-ua-raw-v2-${{ github.run_number }}-
-            SOI-data-ua-raw-v2-
+            SOI-data-ua-raw-v3-${{ github.run_number }}-
+            SOI-data-ua-raw-v3-
 
       - name: Download index file
         run: |

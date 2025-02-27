@@ -26,3 +26,8 @@ parse = [
     "rasterio>=1.4.3",
     "shapely>=2.0.7",
 ]
+tile = [
+    "google-cloud-storage>=3.0.0",
+    "mercantile>=1.2.1",
+    "pmtiles>=3.4.1",
+]

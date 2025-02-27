@@ -440,6 +440,8 @@ class Converter:
             flavor = 'GSPDF'
         elif 'Adobe PDF Library' in doc_producer:
             flavor = 'Microstation'
+        elif 'ImageMill Imaging Library' in doc_producer:
+            flavor = 'ImageMill'
         else:
             print(document.info)
             raise Exception('Unknown flavor')

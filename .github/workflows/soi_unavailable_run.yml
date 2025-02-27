@@ -98,6 +98,8 @@ jobs:
           ls data/raw/*.pdf > downloaded.txt || true
           cat downloaded.txt | xargs -I {} gh release upload soi-pdfs {}
           rm -rf data/raw
+          rm -rf data/cookies
+          rm -rf data/tried_users.txt
           rm downloaded.txt
 
       - name: Update lists

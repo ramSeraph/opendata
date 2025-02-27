@@ -14,6 +14,8 @@ jobs:
   Run-SOI-Extraction:
     timeout-minutes: 600
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4.1.7
 
@@ -56,7 +58,7 @@ jobs:
             maps/SOI/data/index.geojson
             maps/SOI/data/cookies/
             maps/SOI/data/tried_users.txt
-          key:  SOI-data-ua-raw-v2-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  SOI-data-ua-raw-v3-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
             SOI-data-ua-raw-v3-${{ github.run_number }}-
             SOI-data-ua-raw-v3-
@@ -91,11 +93,10 @@ jobs:
           fi
 
       - name: Upload raw files to github releases
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           cd maps/SOI
           ls data/raw/*.pdf > downloaded.txt || true
+          cat download.txt
           cat downloaded.txt | xargs -I {} gh release upload soi-pdfs {}
           rm -rf data/raw
           rm -rf data/cookies

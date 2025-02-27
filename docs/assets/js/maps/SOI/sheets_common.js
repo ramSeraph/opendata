@@ -20,9 +20,10 @@ parseListing = (listingText) => {
     return sizeMap
 }
 
+const releasesUrlPrefix = 'https://github.com/ramSeraph/opendata/releases/download'
 
-function fetchSheetList(listFileName, callback) {
-    var url = `https://storage.googleapis.com/${bucketName}/${listFileName}`
+function fetchSheetList(releaseName, callback) {
+    var url = `${releasesUrlPrefix}/${releaseName}/list.txt`
     var httpRequest = new XMLHttpRequest()
     
     alertContents = () => {
@@ -43,7 +44,7 @@ function fetchSheetList(listFileName, callback) {
         return
     }
     httpRequest.onreadystatechange = alertContents
-    httpRequest.open('GET', `https://storage.googleapis.com/${bucketName}/${listFileName}`)
+    httpRequest.open('GET', url)
     httpRequest.send()
     console.log('call sent')
 }
@@ -71,7 +72,7 @@ function getStatusData(cb) {
                 status = 'not_found'
                 name = name.replace('.unavailable', '')
             } else {
-                url = `https://storage.googleapis.com/${bucketName}/raw/${name}`
+                url = `${releasesUrlPrefix}/soi-pdfs/${name}`
             }
 
             var sheetNoDisp = name.replace('_', '/').replace('.pdf', '')
@@ -88,7 +89,7 @@ function getStatusData(cb) {
 
         for (sheetNo in gtiffSizeData) {
             var name = `${sheetNo}.tif`
-            var url = `https://storage.googleapis.com/${bucketName}/export/gtiffs/${name}`
+            var url = `${releasesUrlPrefix}/soi-tiffs/${name}`
             var sheetNoDisp = name.replace('_', '/').replace('.tif', '')
             var fsize = fileSize(gtiffSizeData[sheetNo])
             var info = {}
@@ -102,13 +103,13 @@ function getStatusData(cb) {
         cb(null, statusInfo)
     }
 
-    fetchSheetList('listing_gtiffs.txt', (e, results) => {
+    fetchSheetList('soi-tiffs', (e, results) => {
         gtiffSizeData = results
         console.log('gtiff data callback invoked')
         collate()
     })
 
-    fetchSheetList('listing_pdfs.txt', (e, results) => {
+    fetchSheetList('soi-pdfs.txt', (e, results) => {
         pdfSizeData = results
         console.log('pdf data callback invoked')
         collate()

@@ -91,11 +91,13 @@ jobs:
           fi
 
       - name: Upload raw files to github releases
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           cd maps/SOI
           ls data/raw/*.pdf > downloaded.txt || true
           cat downloaded.txt | xargs -I {} gh release upload soi-pdfs {}
-          rm -rf data/
+          rm -rf data/raw
           rm downloaded.txt
 
       - name: Update lists

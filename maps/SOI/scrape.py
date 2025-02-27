@@ -494,12 +494,10 @@ def scrape_wrap(only_unavailable, otp_from_pb, assume_index_file):
         Path(tried_users_file).unlink()
 
 
-def get_fonts(assume_fonts):
+def get_fonts():
     out_file = Path('data/raw/SOI_FONTS.zip')
     if out_file.exists():
         return
-    if assume_fonts:
-        raise Exception(f'{out_file} missing')
 
     url = base_url + '/SOIFonts.aspx'
     soup = get_page_soup(url)
@@ -522,7 +520,7 @@ def get_fonts(assume_fonts):
             f.write(resp.text)
         logger.error(f'status_code = {resp.status_code} headers:\n{pformat(dict(resp.headers))}')
         logger.error(resp.text)
-        raise Exception(f'Expected zip got html')
+        raise Exception('Expected zip got html')
 
     logger.info('writing fonts file')
     Path(out_file).parent.mkdir(exist_ok=True, parents=True)
@@ -536,7 +534,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--max-captcha-retries', help='max number of times a captcha is retried', type=int, default=MAX_CAPTCHA_ATTEMPTS)
     parser.add_argument('-u', '--unavailable', help='try getting the unavailable files', action='store_true')
-    parser.add_argument('-f', '--assume-fonts', help='assume fonts are already there', action='store_true')
+    parser.add_argument('-f', '--get-fonts', help='pull the fonts', action='store_true')
     parser.add_argument('-i', '--assume-index-file', help='assume index file is already there', action='store_true')
     parser.add_argument('-p', '--otp-from-pushbullet', help='get login otp from pushbullet(provide token using the PB_TOKEN env variable)', action='store_true')
     args = parser.parse_args()
@@ -547,5 +545,6 @@ if __name__ == '__main__':
     if not CAPTCHA_MANUAL:
         check_captcha_models(captcha_model_dir)
 
-    get_fonts(args.assume_fonts)
+    if args.get_fonts:
+        get_fonts()
     scrape_wrap(args.unavailable, args.otp_from_pushbullet, args.assume_index_file)

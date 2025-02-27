@@ -80,7 +80,7 @@ jobs:
           cd maps/SOI
           wget https://github.com/ramSeraph/opendata/releases/download/soi-pdfs/list.txt
           cat list.txt | cut -d" " -f2 > data/files_done.txt
-          PROXY_URL="http://$(cat ../../ip_address.txt):80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -f -i -r 25
+          PROXY_URL="http://$(cat ../../ip_address.txt):80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -i -r 25
         timeout-minutes: 180
 
       - name: Bring down the proxy

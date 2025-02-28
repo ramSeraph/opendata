@@ -20,7 +20,7 @@ gcloud compute instances create $instance_name\
     --instance-termination-action=DELETE \
     --max-run-duration=86400s \
     --tags=http-server \
-    --create-disk=auto-delete=yes,boot=yes,device-name=$instance_name,image=projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20240731,mode=rw,size=10,type=pd-balanced \
+    --create-disk=auto-delete=yes,boot=yes,device-name=$instance_name,image=projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20250213,mode=rw,size=10,type=pd-balanced \
     --no-shielded-secure-boot \
     --shielded-vtpm \
     --shielded-integrity-monitoring \
@@ -31,7 +31,6 @@ gcloud compute instances create $instance_name\
 echo "instance_name=$instance_name" > info.sh
 echo "project=$project" >> info.sh
 echo "zone=$zone" >> info.sh
-
 
 # maybe wait till you get ip address
 ip_address=$(gcloud compute instances describe $instance_name --project $project --zone $zone --format='json' | jq -r '.networkInterfaces[0].accessConfigs[0].natIP')

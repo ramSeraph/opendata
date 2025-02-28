@@ -79,7 +79,9 @@ function getStyleFn(statusMap) {
                 color = found_color;
             } else if (status === 'parsed') {
                 color = parsed_color;
-            }
+            } else {
+                color = not_found_color;
+            }       
             baseStyle.getFill().setColor(color);
         }
         return baseStyle;
@@ -97,11 +99,11 @@ function getLegendCtrl(textStyle) {
         'style': getStyleFn({
             'Available':     { 'status': 'parsed' },
             'Not Available': { 'status': 'not_found' },
-            'Not Parsable':  { 'status': 'found' }
+            'Not Parsed':    { 'status': 'found' }
         })
     });
     const legendSymbolPoints = [[[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]]];
-    for (let s of ['Available', 'Not Available', 'Not Parsable', 'Info Unavailable']) {
+    for (let s of ['Available', 'Not Available', 'Not Parsed']) {
         legend.addItem(new ol.legend.Item({
             'title': s,
             'textStyle': textStyle,

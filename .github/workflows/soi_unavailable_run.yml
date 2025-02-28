@@ -95,12 +95,12 @@ jobs:
       - name: Upload raw files to github releases
         run: |
           cd maps/SOI
-          ls data/raw/*.pdf > downloaded.txt || true
+          ls data/raw/*.pdf > downloaded.txt || touch downloaded.txt
           cat download.txt
           cat downloaded.txt | xargs -I {} gh release upload soi-pdfs {}
-          rm -rf data/raw
-          rm -rf data/cookies
-          rm -rf data/tried_users.txt
+          rm -rf data/raw/* || true
+          rm -rf data/cookies || true
+          rm -rf data/tried_users.txt || true
           rm downloaded.txt
 
       - name: Update lists

@@ -50,6 +50,10 @@ jobs:
           cd maps/SOI
           echo "${{ secrets.SOI_USERS }}" | base64 -d > data/users.json
 
+      - name: Get current date
+        run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
+        id: date
+
       - name: Restore prev workspace
         uses: ramSeraph/cache-always@v0.0.1
         with:
@@ -58,10 +62,10 @@ jobs:
             maps/SOI/data/index.geojson
             maps/SOI/data/cookies/
             maps/SOI/data/tried_users.txt
-          key:  SOI-data-ua-raw-v3-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  SOI-data-ua-raw-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            SOI-data-ua-raw-v3-${{ github.run_number }}-
-            SOI-data-ua-raw-v3-
+            SOI-data-ua-raw-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            SOI-data-ua-raw-v3-${{ steps.date.outputs.date }}-
 
       - name: Download index file
         run: |

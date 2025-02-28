@@ -66,24 +66,17 @@ function getStyleFn(statusMap) {
     return (f) => {
         const sheetNo = f.get('EVEREST_SH');
         const sheetInfo = statusMap[sheetNo];
-        if (sheetInfo === undefined) {
-            baseStyle.getStroke().setColor('grey');
-            baseStyle.getFill().setColor('rgba(255,255,255,0.0)');
-        } else {
-            const status = sheetInfo['status'];
-            baseStyle.getStroke().setColor('black');
-            var color;
-            if (status === 'not_found') {
-                color = not_found_color;
-            } else if (status === 'found') {
-                color = found_color;
-            } else if (status === 'parsed') {
-                color = parsed_color;
-            } else {
-                color = not_found_color;
-            }       
-            baseStyle.getFill().setColor(color);
+        const status = ( sheetInfo === undefined ) ? 'not_found' : sheetInfo['status'];
+        baseStyle.getStroke().setColor('black');
+        var color;
+        if (status === 'not_found') {
+            color = not_found_color;
+        } else if (status === 'found') {
+            color = found_color;
+        } else if (status === 'parsed') {
+            color = parsed_color;
         }
+        baseStyle.getFill().setColor(color);
         return baseStyle;
     };
 }

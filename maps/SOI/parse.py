@@ -1529,7 +1529,7 @@ if __name__ == '__main__':
         file_list = Path(file_list_filename).read_text().split('\n')
         file_list = [ f.strip() for f in file_list ]
         file_list = [ f for f in file_list if f != '' ]
-        filenames = file_list
+        filenames = [ f'data/raw/{f}.pdf' for f in file_list ]
     else:
         filenames = glob.glob('data/raw/*.pdf')
         errors_file = Path('data/errors.txt')

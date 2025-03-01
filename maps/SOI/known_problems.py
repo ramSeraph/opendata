@@ -18,6 +18,7 @@ known_problems = [
     # 47A/16 has legend data inside map
     # 66C/5 is a small patch in 66C/1 which has been ignored
     # 66C/2 and 66C/1 are misaligned - georeferencing issue
+    # 88F_9 has a small piece outside grid which has been ignored
 
     'data/raw/74B_4.pdf', # srikakulam, combined file handled in 74B_3
     'data/raw/74B_7.pdf', # srikakulam, combined file handled in 74B_3
@@ -70,10 +71,11 @@ known_problems = [
     'data/raw/86H_1.pdf', # andaman, combined files handled in 86D_13
     'data/raw/49A_15.pdf', # lakshadweep, combined files handled in 49A_16
     'data/raw/41B_13.pdf', # gujarat, combined files handled in 41A_16
+    'data/raw/88E_10.pdf', # andaman, combined files handled in 88E_11
+    'data/raw/88F_9.pdf', # andaman, combined files handled in 88F_13
 
     # kept in for now
     #'data/raw/48J_10.pdf', # anamoly, black strip in file
-    #'data/raw/49N_14.pdf', # anamoly, black strip in file
 
     'data/raw/54N_12.pdf', # bad file
     'data/raw/46D_15.pdf', # bad file

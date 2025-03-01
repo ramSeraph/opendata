@@ -50,7 +50,7 @@ jobs:
         run: |
           cd maps/SOI
           if [[ ! -f bin/mutool ]]; then
-          ` sudo apt-get install -y llvm
+            sudo apt-get install -y llvm
             CXX=clang++ AR=llvm-ar util/build_mutool.sh
           fi
           if [[ ! -f bin/cjpeg ]]; then

@@ -732,14 +732,13 @@ class Converter:
             legend_bbox, rest_bbox = self.split_sidebar_area(sb_img)
             legend_bbox = translate_bbox(legend_bbox, sbx, sby)
             rest_bbox = translate_bbox(rest_bbox, sbx, sby)
-
-            full_img = self.get_full_img()
-            fh, fw = full_img.shape[:2]
-            rh, rw = float(fh)/float(h), float(fw)/float(w)
-
             bboxes = [ map_bbox, legend_bbox, rest_bbox ]
         else:
             bboxes = [ map_bbox ]
+
+        full_img = self.get_full_img()
+        fh, fw = full_img.shape[:2]
+        rh, rw = float(fh)/float(h), float(fw)/float(w)
 
         full_bboxes = [ scale_bbox(bbox, rw, rh) for bbox in bboxes ]
         map_poly_points_scaled = [ scale_point(p, rw, rh) for p in map_poly_points ]

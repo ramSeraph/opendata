@@ -100,7 +100,7 @@ jobs:
         run: |
           cd maps/SOI
           ls data/raw/*.pdf > downloaded.txt || touch downloaded.txt
-          cat download.txt
+          cat downloaded.txt
           cat downloaded.txt | xargs -I {} gh release upload soi-pdfs {}
           rm -rf data/raw/* || true
           rm -rf data/cookies || true

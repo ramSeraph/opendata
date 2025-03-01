@@ -5,5 +5,6 @@
 #
 
 npm i mozjpeg
+mkdir -p bin
 cp node_modules/mozjpeg/vendor/cjpeg bin/
 rm -rf node_modules

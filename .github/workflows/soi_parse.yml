@@ -41,7 +41,7 @@ jobs:
         uses: ramSeraph/cache-always@v0.0.1
         with:
           path: maps/SOI/bin/
-          key:  soi-gcs-parse-tools-v4
+          key:  soi-parse-tools-v5
         id: tools-cache
 
 
@@ -53,11 +53,6 @@ jobs:
             sudo apt-get install -y llvm
             CXX=clang++ AR=llvm-ar util/build_mutool.sh
           fi
-          if [[ ! -f bin/cjpeg ]]; then
-            set -x
-            util/build_mozjpeg.sh
-          fi
-          ls bin/
 
       - name: Get current date
         run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT

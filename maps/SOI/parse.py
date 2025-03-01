@@ -716,35 +716,45 @@ class Converter:
         print(f'{map_poly_points=}')
  
         mb = map_bbox
-        small_img = self.get_shrunk_img()
-        h, w = small_img.shape[:2]
-        if self.sb_left:
-            sbx, sby, sbw, sbh = (0, mb[1]-1,
-                                  mb[0], mb[3])
-        else:
-            sbx, sby, sbw, sbh = (mb[0] + mb[2] + 1, mb[1]-1,
-                                  w - mb[0] - mb[2], mb[3])
-        sb_bbox = (sbx, sby, sbw, sbh)
-        print(f'{sb_bbox=}')
+        if not self.process_only_maparea:
+            small_img = self.get_shrunk_img()
+            h, w = small_img.shape[:2]
+            if self.sb_left:
+                sbx, sby, sbw, sbh = (0, mb[1]-1,
+                                      mb[0], mb[3])
+            else:
+                sbx, sby, sbw, sbh = (mb[0] + mb[2] + 1, mb[1]-1,
+                                      w - mb[0] - mb[2], mb[3])
+            sb_bbox = (sbx, sby, sbw, sbh)
+            print(f'{sb_bbox=}')
     
-        sb_img = crop_img(small_img, sb_bbox)
-        legend_bbox, rest_bbox = self.split_sidebar_area(sb_img)
-        legend_bbox = translate_bbox(legend_bbox, sbx, sby)
-        rest_bbox = translate_bbox(rest_bbox, sbx, sby)
+            sb_img = crop_img(small_img, sb_bbox)
+            legend_bbox, rest_bbox = self.split_sidebar_area(sb_img)
+            legend_bbox = translate_bbox(legend_bbox, sbx, sby)
+            rest_bbox = translate_bbox(rest_bbox, sbx, sby)
 
-        full_img = self.get_full_img()
-        fh, fw = full_img.shape[:2]
-        rh, rw = float(fh)/float(h), float(fw)/float(w)
+            full_img = self.get_full_img()
+            fh, fw = full_img.shape[:2]
+            rh, rw = float(fh)/float(h), float(fw)/float(w)
 
-        bboxes = [ map_bbox, legend_bbox, rest_bbox ]
+            bboxes = [ map_bbox, legend_bbox, rest_bbox ]
+        else:
+            bboxes = [ map_bbox ]
+
         full_bboxes = [ scale_bbox(bbox, rw, rh) for bbox in bboxes ]
         map_poly_points_scaled = [ scale_point(p, rw, rh) for p in map_poly_points ]
+
         bbox_dict = {
             'map': full_bboxes[0],
             'map_poly_points': map_poly_points_scaled,
-            'legend': full_bboxes[1],
-            'rest': full_bboxes[2],
         }
+
+        if not self.process_only_maparea:
+            bbox_dict.update({
+                'legend': full_bboxes[1],
+                'rest': full_bboxes[2],
+            })
+
         with open(shrunk_splits_file, 'w') as f:
             json.dump(bbox_dict, f, indent=4)
 

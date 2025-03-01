@@ -23,7 +23,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: maps/SOI/uv.lock
+          cache-dependency-glob: maps/SOI/scrape.py.lock
           version: ">=0.5.29"
 
       - name: Restore tesseract models from cache

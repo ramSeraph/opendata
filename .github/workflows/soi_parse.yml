@@ -79,8 +79,7 @@ jobs:
           [[ -f data/index.geojson ]] || wget -P data/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
 
           util/get_work_for_parser.sh data/to_parse.txt
-          cat data/to_parse.txt | xargs -I {} bash -c "[[ -e data/raw/{}.pdf ]] || echo {}" > data/to_download.txt
-          cat data/to_download.txt | xargs -I {} gh release download soi-pdfs -p {}.pdf -O data/raw/{}.pdf
+          util/download_sheets.sh data/to_parse.txt
 
           uv run check_duplicates.py data/to_parse.txt
 

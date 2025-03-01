@@ -14,5 +14,11 @@ if [[ $1 == 'tiffs' ]]; then
   exit 0
 fi
 
-echo "ERROR: first argument should be one of 'pdfs' or 'tiffs'"
+if [[ $1 == 'jpgs' ]]; then
+  gsutil ls gs://soi_data/compressed/*.jpg | cut -d"/" -f5 | cut -d"." -f1 > list.txt
+  gsutil cp list.txt gs://soi_data/compressed/
+  rm list.txt
+fi
+
+echo "ERROR: first argument should be one of 'pdfs', 'tiffs', 'jpgs'"
 exit 1

@@ -110,7 +110,7 @@ jobs:
       - name: Update lists
         run: |
           cd maps/SOI
-          ./generate_lists.sh pdfs
+          util/generate_lists.sh pdfs
 
   SOI-Extraction-Failure-Notify:
     needs: [Run-SOI-Extraction]

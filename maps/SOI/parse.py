@@ -716,9 +716,9 @@ class Converter:
         print(f'{map_poly_points=}')
  
         mb = map_bbox
+        small_img = self.get_shrunk_img()
+        h, w = small_img.shape[:2]
         if not self.process_only_maparea:
-            small_img = self.get_shrunk_img()
-            h, w = small_img.shape[:2]
             if self.sb_left:
                 sbx, sby, sbw, sbh = (0, mb[1]-1,
                                       mb[0], mb[3])

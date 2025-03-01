@@ -30,8 +30,6 @@ from pdfminer.pdftypes import resolve_all, PDFObjRef, PDFNotImplementedError
 from pypdf import PdfReader
 
 from shapely.geometry import LineString, LinearRing, Polygon, CAP_STYLE, JOIN_STYLE
-from shapely.wkt import loads as wkt_loads
-from shapely.wkt import dumps as wkt_dumps
 from shapely.affinity import translate
 
 from rasterio.crs import CRS
@@ -330,7 +328,7 @@ def fill_tif(k, k_dir):
     kbox = [ transformer.transform(*c) for c in kbox ]
     vrt_file = k_dir.joinpath('final.vrt')
     new_final_file = k_dir.joinpath('new_final.tif')
-    run_external(f'gdalbuildvrt -tr 1 1 -te {kbox[0][0]} {kbox[1][1]} {kbox[2][0]} {kbox[0][1]} {str(vrt_file)} {str(final_file)}')
+    run_external(f'gdalbuildvrt -tr 1 1 -te {kbox[0][0]} {kbox[1][1]} {kbox[2][0]} {kbox[0][1]} {str(vrt_file)} {str(new_final_file)}')
     run_external(f'gdal_translate {str(vrt_file)} {str(new_final_file)}')
 
 
@@ -795,13 +793,13 @@ class Converter:
     def locate_corners_generic(self, img_hsv, map_poly_points, corner_overrides):
         corner_ratio = 400.0 / 9000.0
         w = img_hsv.shape[1]
-        h = img_hsv.shape[0]
+        #h = img_hsv.shape[0]
         cw = round(corner_ratio * w)
-        ch = round(corner_ratio * h)
+        #ch = round(corner_ratio * h)
 
         map_poly_points = reorder_poly_points(map_poly_points)
         print(f'{map_poly_points=}')
-        num_corners = len(map_poly_points)
+        #num_corners = len(map_poly_points)
         box = LinearRing(map_poly_points + [map_poly_points[0]])
         buffered_poly = box.buffer(-cw/2, single_sided=True, join_style=JOIN_STYLE.mitre)
         inner_ring = buffered_poly.interiors[0]
@@ -1029,7 +1027,7 @@ class Converter:
 
     def get_source_crs(self):
         if self.src_crs is not None:
-            return src_crs
+            return self.src_crs
         esri_wkt = Path('data/raw/OSM_SHEET_INDEX/OSM_SHEET_INDEX.prj').read_text()
         self.src_crs = CRS.from_wkt(esri_wkt, morph_from_esri_dialect=True)
         return self.src_crs
@@ -1045,7 +1043,6 @@ class Converter:
         return corners
 
     def create_cutline(self, ibox, file):
-        sub_geoms = []
         with open(file, 'w') as f:
             cutline_data = {
                 "type": "FeatureCollection",
@@ -1121,7 +1118,7 @@ class Converter:
             warp_quality_config = img_quality_config.copy()
             warp_quality_config.update({'TILED': 'YES'})
             warp_quality_options = ' '.join([ f'-co {k}={v}' for k,v in warp_quality_config.items() ])
-            reproj_options = f'-tps -tr 1 1 -r bilinear -t_srs "EPSG:3857"' 
+            reproj_options = '-tps -tr 1 1 -r bilinear -t_srs "EPSG:3857"' 
             #nodata_options = '-dstnodata 0'
             nodata_options = '-dstalpha'
             perf_options = '-multi -wo NUM_THREADS=ALL_CPUS --config GDAL_CACHEMAX 1024 -wm 1024' 
@@ -1253,7 +1250,6 @@ class Converter:
         return v_lines, h_lines
 
     def locate_grid_lines_using_coords(self):
-        map_img = self.get_map_img()
         corners = self.get_corners()
         geom = self.get_index_geom()
 
@@ -1313,8 +1309,8 @@ class Converter:
             rs, cs = rowcol(transformer, [p[0]], [p[1]])
             return [cs[0], rs[0]]
 
-        v_lines = [ [transform_point(l[0]), transform_point(l[1])] for l in v_g_lines ]
-        h_lines = [ [transform_point(l[0]), transform_point(l[1])] for l in h_g_lines ]
+        v_lines = [ [transform_point(li[0]), transform_point(li[1])] for li in v_g_lines ]
+        h_lines = [ [transform_point(li[0]), transform_point(li[1])] for li in h_g_lines ]
 
         return v_lines, h_lines
 
@@ -1432,7 +1428,7 @@ def handle_65A_11(filename):
     print(f'{bbox=}')
     nogrid_img = crop_img(img, bbox)
     nogrid_file = converter.file_dir.joinpath('nogrid.jpg')
-    full_file = converter.file_dir.joinpath('full.jpg')
+    #full_file = converter.file_dir.joinpath('full.jpg')
     corners_file = converter.file_dir.joinpath('corners.json')
     cv2.imwrite(str(nogrid_file), nogrid_img)
     corners_in_box = [ (c[0] - bbox[0], c[1] - bbox[1]) for c in corners ]
@@ -1475,9 +1471,9 @@ super_special_handlers = {
 def only_convert(filename, extra, extra_ancillary):
     print(f'processing {filename}')
     converter = Converter(filename, extra, extra_ancillary)
-    mapbox_file = converter.file_dir.joinpath('mapbox.jpg')
-    nogrid_file = converter.file_dir.joinpath('nogrid.jpg')
-    final_file =  converter.file_dir.joinpath('final.tif')
+    #mapbox_file = converter.file_dir.joinpath('mapbox.jpg')
+    #nogrid_file = converter.file_dir.joinpath('nogrid.jpg')
+    #final_file =  converter.file_dir.joinpath('final.tif')
     #if mapbox_file.exists() or nogrid_file.exists() or final_file.exists():
     #    print('downstream files exist.. not attempting conversion')
     #    return

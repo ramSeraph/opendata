@@ -16,39 +16,45 @@ jobs:
   Run-SOI-Parsing:
     timeout-minutes: 600
     runs-on: ubuntu-22.04
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Setup swap
         uses: pierotofy/set-swap-space@v1.0
         with:
           swap-size-gb: 12
       - uses: actions/checkout@v4.1.7
-      - uses: docker/setup-buildx-action@v3.4.0
-      - name: Build Image
-        uses: docker/build-push-action@v6.3.0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          context: maps/SOI
-          load: true
-          file: maps/SOI/Dockerfile.parse
-          build-args: |
-            build_type=final
-          tags: soi-parse:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          enable-cache: true
+          cache-dependency-glob: maps/SOI/uv.lock
+          version: ">=0.5.29"
 
-      - name: Authenticate with GCP
+      - name: Install packages
         run: |
-          echo ${{ secrets.GCP_AUTH }} | base64 -d > gauth.json
-          gcloud auth activate-service-account --key-file=gauth.json
+          sudo apt-get update
+          sudo apt-get install -y gdal-bin libgdal-dev
 
-      - name: Check for work
-        id: work
+      - name: Restore parse tools from cache
+        uses: ramSeraph/cache-always@v0.0.1
+        with:
+          path: maps/SOI/bin/
+          key:  soi-gcs-parse-tools-v4
+        id: tools-cache
+
+
+      - name: Install tools
+        #if: ${{ steps.tools-cache.outputs.cache-hit != 'true' }}
         run: |
-          if [[ "$(gsutil ls gs://soi_data/to_parse.txt 2>/dev/null)" == "" ]]; then
-            echo "AVAILABLE=false" >> $GITHUB_OUTPUT
-          else
-            mkdir -p data
-            gsutil -m cp gs://soi_data/to_parse.txt data/to_parse.txt
-            echo "AVAILABLE=true" >> $GITHUB_OUTPUT
+          cd maps/SOI
+          if [[ ! -f bin/mutool ]]; then
+            CXX=clang++ AR=llvm-ar util/build_mutool.sh
+          fi
+          if [[ ! -f bin/cjpeg ]]; then
+            set -x
+            util/build_mozjpeg.sh
           fi
 
       - name: Get current date
@@ -59,9 +65,9 @@ jobs:
         uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
-            data/index.geojson
-            data/raw/
-            export/gtiffs/
+            maps/SOI/data/index.geojson
+            maps/SOI/data/raw/
+            maps/SOI/export/gtiffs/
           key:  soi-gcs-parse-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
             soi-gcs-parse-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
@@ -69,157 +75,34 @@ jobs:
 
 
       - name: Parse SOI sheets
-        if: steps.work.outputs.AVAILABLE == 'true'
         run: |
-          gsutil -m cp gs://soi_data/raw/SOI_FONTS.zip data/raw/SOI_FONTS.zip
-          gsutil -m cp gs://soi_data/index.geojson data/index.geojson
-          find data
-          find export || true
-          cat data/to_parse.txt | xargs -I {} bash -c "[[ -e {} ]] || echo {}" > data/to_download.txt
-          cat data/to_download.txt | cut -d"/" -f2- | xargs -I {} gsutil -m cp gs://soi_data/{} data/{}
-          docker run -d --name dup-checker -v $(pwd):/code -w /code soi-parse:latest maps/SOI/check_duplicates.py data/to_parse.txt
-          docker logs -f dup-checker
-          exit_code=$(docker inspect dup-checker --format='{{.State.ExitCode}}')
-          if [[ "$exit_code" != "0" ]]; then
-            echo "exit_code: $exit_code"
-            exit 1
-          fi
+          cd maps/SOI
+
+          [[ -f data/raw/SOI_FONTS.zip ]] || wget -P data/raw/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/SOI_FONTS.zip 
+          [[ -f data/index.geojson ]] || wget -P data/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
+
+          utils/get_work_for_parser.sh data/to_parse.txt
+          cat data/to_parse.txt | xargs -I {} bash -c "[[ -e data/raw/{}.pdf ]] || echo {}" > data/to_download.txt
+          cat data/to_download.txt | xargs -I {} gh release download soi-pdfs -p {}.pdf -O data/raw/{}.pdf
+
+          uv run check_duplicates.py data/to_parse.txt
+
           mkdir -p export/gtiffs/
-          docker run -d --name parser -v $(pwd):/code -w /code -e FROM_LIST=data/to_parse.txt --memory="6g" --memory-swap="-1" soi-parse maps/SOI/parse.py
-          docker logs -f parser
-          exit_code=$(docker inspect parser --format='{{.State.ExitCode}}')
-          if [[ "$exit_code" != "0" ]]; then
-            echo "exit_code: $exit_code"
-            exit 1
-          fi
-          gsutil -m cp -r export/gtiffs/*.tif gs://soi_data/export/gtiffs/
-          gsutil rm gs://soi_data/to_parse.txt
-          ls export/gtiffs/*.tif | cut -d"/" -f3 | cut -d"." -f1 > data/to_retile.txt
-          gsutil cp data/to_retile.txt gs://soi_data/to_retile.txt
+
+          GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
+          FROM_LIST=data/to_parse.txt uv run --with GDAL==${GDAL_VERSION} parse.py
+          
+          ls export/gtiffs/*.tif > to_upload.txt || touch to_upload.txt
+          cat to_upload.txt | xargs -I {} gh release upload soi-tiffs {}
+
           rm -rf data/raw/* || true
           rm -rf export/gtiffs/* || true
         timeout-minutes: 600
  
       - name: Update lists
-        if: steps.work.outputs.AVAILABLE == 'true'
         run: |
-          maps/SOI/generate_lists.sh
-
-      - name: Check for retile work
-        id: retile_work
-        run: |
-          if [[ "$(gsutil ls gs://soi_data/to_retile.txt 2>/dev/null)" == "" ]]; then
-            echo "AVAILABLE=false" >> $GITHUB_OUTPUT
-          else
-            mkdir -p data
-            gsutil -m cp gs://soi_data/to_retile.txt data/to_retile.txt
-            gsutil -m cp gs://soi_data/index.geojson data/index.geojson
-            echo "AVAILABLE=true" >> $GITHUB_OUTPUT
-          fi
-      - name: Restore run data from cache
-        uses: ramSeraph/cache-always@v0.0.1
-        with:
-          path: |
-            staging/
-            export/
-            !export/pmtiles/*
-          key:  soi-gcs-v6-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
-          restore-keys: |
-            soi-gcs-v6-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            soi-gcs-v6-${{ steps.date.outputs.date }}-
-
-      - name: Download pmtiles
-        id: download-pmtiles
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          ls staging || true
-          if [[ -e staging/all_done ]]; then
-            echo "download already done.. shortcircuiting"
-            exit 0
-          fi
-          source .github/actions/releaser/rfuncs.sh
-          mkdir -p export/pmtiles
-          release_id="$(get_release_id soi-latest)"
-          download_release_assets $release_id export/pmtiles
-          mkdir -p staging
-
-      - name: Retile sheets
-        id: retile-sheets
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
-        run: |
-          if [[ -e staging/retiling_done ]]; then
-            exit 0
-          fi
-          mkdir -p export/tiles/
-          mkdir -p staging/tiles/
-          mkdir -p staging/pmtiles/
-          docker run -d --name retiler -v $(pwd):/code -w /code -e GOOGLE_APPLICATION_CREDENTIALS=gauth.json soi-parse maps/SOI/retile.py data/to_retile.txt
-          docker logs -f retiler
-          exit_code=$(docker inspect retiler --format='{{.State.ExitCode}}')
-          if [[ "$exit_code" != "0" ]]; then
-            echo "exit_code: $exit_code"
-            exit 1
-          fi
-          docker run --name cleaner1 -v $(pwd):/code -w /code --entrypoint "/bin/sh" soi-parse -c "rm -rf export/gtiffs/; rm -rf export/tiles/; rm -rf staging/gtiffs/"
-          touch staging/retiling_done
-        timeout-minutes: 600
-
-      - name: Partition pmtiles
-        id: partition-pmtiles
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
-        run: |
-          if [[ -e staging/all_done ]]; then
-            exit 0
-          fi
-          mkdir temp
-          docker run -d --name partitioner -e TMPDIR=/code/temp -v $(pwd):/code -w /code soi-parse maps/SOI/partition.py
-          docker logs -f partitioner
-          exit_code=$(docker inspect partitioner --format='{{.State.ExitCode}}')
-          if [[ "$exit_code" != "0" ]]; then
-            echo "exit_code: $exit_code"
-            exit 1
-          fi
-          docker run --name cleaner2 -v $(pwd):/code -w /code --entrypoint "/bin/sh" soi-parse -c "rm -rf export/; rm -rf staging/tiles/"
-          staging_files=$(find staging/pmtiles -type f)
-          echo "staging_files: $staging_files"
-          echo "release_files<<EOF" >> $GITHUB_OUTPUT
-          echo "$staging_files" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          touch staging/all_done
-          
-
-      - name: Push pmtiles
-        env:
-          GH_TOKEN: ${{ github.token }}
-        id: push-pmtiles
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
-        uses: ./.github/actions/releaser
-        with:
-          name: "SOI Open Series Maps"
-          tag_name: soi-latest
-          assets: ${{ steps.partition-pmtiles.outputs.release_files }} 
-          body: "SOI Open Series Maps as partitioned PMTiles."
-          gh_token: ${{ secrets.github_token }}
-
-      - name: Cleanup
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
-        run: |
-          docker run --name cleaner3 -v $(pwd):/code -w /code --entrypoint "/bin/sh" soi-parse -c "rm -rf staging/"
-          rm -rf staging/*
-          gsutil rm gs://soi_data/to_retile.txt
-
-      - name: Setup fly tools
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
-        uses: superfly/flyctl-actions/setup-flyctl@1.5
-
-      - name: Restart Fly Server
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
-        run: |
-          flyctl scale count 0 --app indianopenmaps -y
-          flyctl scale count 1 --app indianopenmaps -y
- 
+          cd maps/SOI
+          util/generate_lists.sh tiffs
 
   SOI-Parse-Failure-Notify:
     needs: [Run-SOI-Parsing]

@@ -49,8 +49,8 @@ jobs:
         #if: ${{ steps.tools-cache.outputs.cache-hit != 'true' }}
         run: |
           cd maps/SOI
-          sudo apt-get install -y llvm
           if [[ ! -f bin/mutool ]]; then
+          ` sudo apt-get install -y llvm
             CXX=clang++ AR=llvm-ar util/build_mutool.sh
           fi
           if [[ ! -f bin/cjpeg ]]; then

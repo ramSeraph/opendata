@@ -1,3 +1,20 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "gdal>=3.10.2",
+#     "imgcat",
+#     "imutils",
+#     "numpy",
+#     "opencv-python-headless",
+#     "pdfminer-six",
+#     "pillow",
+#     "pypdf",
+#     "pyproj",
+#     "rasterio",
+#     "shapely",
+# ]
+# ///
+
 import os
 import shutil
 import json
@@ -1602,4 +1619,5 @@ if __name__ == '__main__':
             Path(errors_file).write_text(error_txt)
             
     
+
 

@@ -1,3 +1,19 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "bs4",
+#     "colorlog",
+#     "imgcat",
+#     "numpy",
+#     "opencv-python-headless",
+#     "pillow",
+#     "pushbullet-py",
+#     "pytesseract",
+#     "requests",
+#     "websocket-client",
+# ]
+# ///
+
 import os
 import glob
 import json
@@ -548,3 +564,4 @@ if __name__ == '__main__':
     if args.get_fonts:
         get_fonts()
     scrape_wrap(args.unavailable, args.otp_from_pushbullet, args.assume_index_file)
+

@@ -7,13 +7,6 @@ from pathlib import Path
 import mercantile
 
 from pmtiles.reader import MmapSource, Reader as PMTilesReader, all_tiles
-from pmtiles.tile import (
-    zxy_to_tileid,
-    tileid_to_zxy,
-    deserialize_directory,
-    deserialize_header,
-    find_tile,
-)
 
 class MissingTileError(Exception):
     pass
@@ -36,7 +29,7 @@ class DiskSource:
     def get_tile_data(self, tile):
         fname = self.file_from_tile(tile)
         try:
-            fstats = os.stat(fname)
+            os.stat(fname)
         except FileNotFoundError:
             raise MissingTileError()
 

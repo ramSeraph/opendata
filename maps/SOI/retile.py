@@ -1,3 +1,14 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "mercantile",
+#     "numpy>=2.2.3",
+#     "pillow>=11.1.0",
+#     "pmtiles",
+#     "requests",
+# ]
+# ///
+
 import os
 import re
 import json
@@ -8,31 +19,26 @@ import os.path
 import subprocess
 
 from pathlib import Path
-from multiprocessing import Pool
-from functools import partial
 
-from pprint import pprint
 
 import mercantile
+import requests
 
 from osgeo_utils.gdal2tiles import main as gdal2tiles_main
 from osgeo_utils.gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
 #from gdal2tiles import main as gdal2tiles_main
 #from gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
 
-from google.cloud import storage
-from google.api_core.exceptions import NotFound
-from google.cloud.storage.retry import DEFAULT_RETRY
-from google.cloud.storage.constants import _DEFAULT_TIMEOUT
 
-from tile_sources import DiskSource, PartitionedPMTilesSource, MissingTileError
+from tile_sources import PartitionedPMTilesSource, MissingTileError
 
-SHEETS_FROM_GCS = os.environ.get("SHEETS_FROM_GCS", '1') == '1'
-TILES_FROM_GCS = os.environ.get("TILES_FROM_GCS", '0') == '1'
+SHEETS_FROM_GCS = os.environ.get("SHEETS_FROM_GCS", '0') == '1'
+SHEETS_FROM_GITHUB = os.environ.get("SHEETS_FROM_GITHUB", '1') == '1'
 TILES_TO_GCS = os.environ.get("TILES_TO_GCS", '0') == '1'
 TILES_FROM_PMTILES = os.environ.get('TILES_FROM_PMTILES', '1') == '1'
 TILES_TO_PMTILES = os.environ.get('TILES_TO_PMTILES', '1') == '1'
 INDEX_FILE = os.environ.get('INDEX_FILE', 'data/index.geojson')
+
 
 
 orig_pmtiles_dir = Path('export/pmtiles')
@@ -92,32 +98,27 @@ def create_base_tiles(inp_file, output_dir, zoom_levels):
                      '--webp-quality', '50',
                      inp_file, output_dir])
 
-bucket = None
-if TILES_FROM_GCS or SHEETS_FROM_GCS:
-    client = storage.Client()
-    bucket = client.get_bucket('soi_data')
-
-def get_gcs_upload_args():
-    timeout = 300
-    modified_retry = DEFAULT_RETRY.with_deadline(300)
-    modified_retry = modified_retry.with_delay(initial=1,
-                                               multiplier=2,
-                                               maximum=60)
-    return { 'retry': modified_retry, 'timeout': timeout }
-
-
 
 def pull_from_gcs(file):
-    blob = bucket.blob(str(file))
-    if not blob.exists():
-        return
     file.parent.mkdir(parents=True, exist_ok=True)
     print(f'pulling {file} from gcs')
-    blob.download_to_filename(str(file))
+    resp = requests.get(f'https://storage.googleapis.com/soi_data/{file}')
+    if not resp.ok:
+        if resp.status_code == 404 or resp.status_code == 403:
+            return
+        raise Exception(f'unable to get {file} from gcs')
+    file.write_bytes(resp.content)
 
-def push_to_gcs(file):
-    blob = bucket.blob(str(file))
-    blob.upload_from_filename(filename=str(file), **get_gcs_upload_args())
+def pull_from_github(file):
+    file.parent.mkdir(parents=True, exist_ok=True)
+    print(f'pulling {file} from github')
+    resp = requests.get(f'https://github.com/ramSeraph/opendata/releases/download/soi-tiffs/{file.name}')
+    if not resp.ok:
+        if resp.status_code == 404:
+            return
+        raise Exception(f'unable to get {file} from github')
+    file.write_bytes(resp.content)
+
 
 
 pmtiles_reader = None
@@ -158,6 +159,8 @@ def copy_sheets_over(sheets_to_pull):
             continue
         if SHEETS_FROM_GCS:
             pull_from_gcs(fro)
+        if SHEETS_FROM_GITHUB:
+            pull_from_github(fro)
         if not fro.exists():
             continue
         shutil.copy(str(fro), str(to))
@@ -170,8 +173,6 @@ def copy_tiles_over(tiles_to_pull):
         fro = Path(get_tile_file_orig(tile))
         if TILES_FROM_PMTILES:
             pull_from_pmtiles(fro)
-        if TILES_FROM_GCS:
-            pull_from_gcs(fro)
         if not fro.exists():
             continue
         to.parent.mkdir(parents=True, exist_ok=True)
@@ -276,6 +277,9 @@ def create_vrt_file(sheets):
 
 
 if __name__ == '__main__':
+    if SHEETS_FROM_GCS and SHEETS_FROM_GITHUB:
+        raise Exception('Both SHEETS_FROM_GITHUB and SHEETS_FROM_GCS can\'t be enabled together')
+
     import sys
     retile_list_file = sys.argv[1]
 
@@ -349,5 +353,6 @@ if __name__ == '__main__':
     #shutil.rmtree('staging')
 
     print('All Done!!!')
+
 
 

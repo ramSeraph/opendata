@@ -1,3 +1,11 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "mercantile",
+#     "pmtiles",
+# ]
+# ///
+
 import os
 import json
 import copy
@@ -5,7 +13,7 @@ from pathlib import Path
 
 import mercantile
 from pprint import pprint
-from pmtiles.tile import zxy_to_tileid, tileid_to_zxy, TileType, Compression
+from pmtiles.tile import zxy_to_tileid, TileType, Compression
 from pmtiles.writer import Writer as PMTilesWriter
 
 from tile_sources import (
@@ -20,21 +28,21 @@ ONLY_DISK = os.environ.get('ONLY_DISK', '0') == '1'
 # TODO: this should be dependant on the file size
 DELTA = 5 * 1024 * 1024
 # github release limit
-size_limit_bytes = (2 * 1024 * 1024 * 1024) - DELTA
+SIZE_LIMIT_BYTES = (2 * 1024 * 1024 * 1024) - DELTA
 # github git file size limit
-#size_limit_bytes = (100 * 1024 * 1024) - DELTA
+#SIZE_LIMIT_BYTES = (100 * 1024 * 1024) - DELTA
 # cloudflare cache size limit
-#size_limit_bytes = (512 * 1024 * 1024) - DELTA
-max_level = 14
-min_level = 0
+#SIZE_LIMIT_BYTES = (512 * 1024 * 1024) - DELTA
+MAX_LEVEL = 14
+MIN_LEVEL = 0
 
 SOI_ATTRIBUTION = '<a href="https://onlinemaps.surveyofindia.gov.in/FreeMapSpecification.aspx" target="_blank">1:50000 Open Series Maps</a> © <a href="https://www.surveyofindia.gov.in/pages/copyright-policy" target="_blank">Survey Of India</a>'
 
 
-def get_layer_info(l, reader):
+def get_layer_info(level, reader):
     tiles = {}
     total_size = 0
-    for tile, size in reader.for_all_z(l):
+    for tile, size in reader.for_all_z(level):
         tiles[tile] = size
         total_size += size
     return total_size, tiles
@@ -54,7 +62,7 @@ def get_buckets(sizes, tiles):
     for i in range(min_x, max_x + 1):
         if i not in sizes:
             continue
-        if cs > size_limit_bytes:
+        if cs > SIZE_LIMIT_BYTES:
             buckets.append(cb)
             bucket_tiles.append(bts)
             cb = (i,i)
@@ -70,33 +78,32 @@ def get_buckets(sizes, tiles):
 missing_tiles = set()
 
 # TODO: can do better than just vertical slices
-def get_stripes(l, reader):
+def get_stripes(level, reader):
     tiles = {}
     sizes = {}
     #max_x = min_x = max_y = min_y = None
-    missed_count = 0
-    print(f'striping from level {l}')
+    #missed_count = 0
+    print(f'striping from level {level}')
     count = 0
-    for tile, size in reader.for_all_z(l):
+    for tile, size in reader.for_all_z(level):
         count += 1
         #if count % 1000 == 0:
         #    print(f'handled {count} tiles')
         to_add = [(tile, size)]
-        for clevel in range(l + 1, max_level + 1):
+        for clevel in range(level + 1, MAX_LEVEL + 1):
             children = mercantile.children(tile, zoom=clevel)
             for ctile in children:
                 try:
                     csize = reader.get_tile_size(ctile)
-                    to_add.append((ctile, size))
+                    to_add.append((ctile, csize))
                 except MissingTileError:
                     missing_tiles.add(ctile)
                     continue
-                #size += csize
 
         for t, s in to_add:
             if tile.x not in tiles:
                 tiles[tile.x] = {}
-            tiles[tile.x][t] = size
+            tiles[tile.x][t] = s
             if tile.x not in sizes:
                 sizes[tile.x] = 0
             sizes[tile.x] += s
@@ -108,14 +115,14 @@ def get_top_slice(reader):
     print('getting top slice')
     size_till_now = 0
     tiles = {}
-    for l in range(min_level, max_level + 1):
-        lsize, ltiles = get_layer_info(l, reader)
+    for level in range(MIN_LEVEL, MAX_LEVEL + 1):
+        lsize, ltiles = get_layer_info(level, reader)
         size_till_now += lsize
-        print(f'{l=}, {lsize=}, {size_till_now=}, {size_limit_bytes=}')
+        print(f'{level=}, {lsize=}, {size_till_now=}, {SIZE_LIMIT_BYTES=}')
         tiles.update(ltiles)
-        if size_till_now > size_limit_bytes:
-            return l - 1, tiles
-    return max_level, tiles
+        if size_till_now > SIZE_LIMIT_BYTES:
+            return level - 1, tiles
+    return MAX_LEVEL, tiles
 
 def save_partition_info(inp_p_info, partition_file):
     p_info = copy.deepcopy(inp_p_info)
@@ -172,14 +179,14 @@ def get_partition_info(reader):
 
     top_slice_bounds = get_bounds(top_slice_tiles.keys())
 
-    partition_name = f'z{min_level}-{top_slice_max_level}'
+    partition_name = f'z{MIN_LEVEL}-{top_slice_max_level}'
     partition_info[partition_name] = {
         "tiles": top_slice_tiles,
-        "min_zoom": min_level,
+        "min_zoom": MIN_LEVEL,
         "max_zoom": top_slice_max_level,
         "bounds": top_slice_bounds
     }
-    if top_slice_max_level == max_level:
+    if top_slice_max_level == MAX_LEVEL:
         print('no more slicing required')
         return partition_info
 
@@ -189,11 +196,11 @@ def get_partition_info(reader):
     buckets, bucket_tiles = get_buckets(stripe_sizes, stripe_tiles)
 
     for i,bucket in enumerate(buckets):
-        partition_name = f'z{from_level}-{max_level}-part{i}'
+        partition_name = f'z{from_level}-{MAX_LEVEL}-part{i}'
         partition_info[partition_name] = {
             'tiles': bucket_tiles[i],
             "min_zoom": from_level,
-            "max_zoom": max_level,
+            "max_zoom": MAX_LEVEL,
             "bounds": get_bounds(bucket_tiles[i].keys()),
         }
     return partition_info
@@ -299,4 +306,5 @@ if __name__ == '__main__':
     mosaic_data = create_pmtiles(partition_info, reader)
     pprint(mosaic_data)
     Path('staging/pmtiles/mosaic.json').write_text(json.dumps(mosaic_data))
+
 

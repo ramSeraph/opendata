@@ -1,12 +1,10 @@
-name: SOI Monthly Parse Run
+name: SOI Tile Run
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on: 
-  schedule:
-    - cron: 0 8 1 * *
   workflow_dispatch:
 
 
@@ -19,11 +17,18 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Setup swap
+        uses: pierotofy/set-swap-space@v1.0
+        with:
+          swap-size-gb: 12
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: maps/SOI/uv.lock
+          cache-dependency-glob: |
+            maps/SOI/partition.py.lock
+            maps/SOI/retile.py.lock
           version: ">=0.5.29"
 
       - name: Install packages
@@ -31,18 +36,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gdal-bin libgdal-dev
 
+      - name: Get current date
+        run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
+        id: date
 
-      - name: Check for retile work
-        id: retile_work
-        run: |
-          if [[ "$(gsutil ls gs://soi_data/to_retile.txt 2>/dev/null)" == "" ]]; then
-            echo "AVAILABLE=false" >> $GITHUB_OUTPUT
-          else
-            mkdir -p data
-            gsutil -m cp gs://soi_data/to_retile.txt data/to_retile.txt
-            gsutil -m cp gs://soi_data/index.geojson data/index.geojson
-            echo "AVAILABLE=true" >> $GITHUB_OUTPUT
-          fi
       - name: Restore run data from cache
         uses: ramSeraph/cache-always@v0.0.1
         with:
@@ -55,89 +52,81 @@ jobs:
             soi-gcs-v6-${{ steps.date.outputs.date }}-${{ github.run_number }}-
             soi-gcs-v6-${{ steps.date.outputs.date }}-
 
-      - name: Download pmtiles
-        id: download-pmtiles
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Retile
+        id: retile
         run: |
           cd maps/SOI
-          ls staging || true
-          if [[ -e staging/all_done ]]; then
-            echo "download already done.. shortcircuiting"
+          util/get_work_for_tiler.sh data/to_retile.txt
+          num_sheets=$(wc -l data/to_retile.txt | tr -s" " | cut -d" " -f2)
+          if [[ $num_sheets == 0 ]]; then
+            echo "num_release_files=0" >> $GITHUB_OUTPUT
             exit 0
           fi
-          source .github/actions/releaser/rfuncs.sh
-          mkdir -p export/pmtiles
-          release_id="$(get_release_id soi-latest)"
-          download_release_assets $release_id export/pmtiles
-          mkdir -p staging
 
-      - name: Retile sheets
-        id: retile-sheets
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
-        run: |
-          cd maps/SOI
-          if [[ -e staging/retiling_done ]]; then
-            exit 0
+          if [[ ! -e staging/download_done ]]; then
+            echo "=== downloading pmtiles files from soi-latest ==="
+            mkdir -p export/pmtiles
+            gh release download soi-latest -D export/pmtiles
+            mkdir -p staging
+            touch staging/download_done
           fi
-          mkdir -p export/tiles/
-          mkdir -p staging/tiles/
-          mkdir -p staging/pmtiles/
-          GOOGLE_APPLICATION_CREDENTIALS=gauth.json uv run retile.py data/to_retile.txt
-          rm -rf export/gtiffs/
-          rm -rf export/tiles/
-          rm -rf staging/gtiffs/
-          touch staging/retiling_done
-        timeout-minutes: 600
 
-      - name: Partition pmtiles
-        id: partition-pmtiles
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
-        run: |
-          cd maps/SOI
-          if [[ -e staging/all_done ]]; then
-            exit 0
+          if [[ ! -e staging/retiling_done ]]; then
+            mkdir -p export/tiles/
+            mkdir -p staging/tiles/
+            mkdir -p staging/pmtiles/
+            echo "=== running retiler ==="
+            GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
+            uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt
+            rm -rf export/gtiffs/
+            rm -rf export/tiles/
+            rm -rf staging/gtiffs/
+            touch staging/retiling_done
           fi
-          mkdir temp
-          TMPDIR=./temp uv run partition.py
-          rm -rf export/
-          rm -rf staging/tiles/"
-          staging_files=$(find staging/pmtiles -type f)
+
+          if [[ ! -e staging/partitioned ]]; then
+            mkdir temp
+            TMPDIR=./temp uv run partition.py
+            rm -rf export/
+            rm -rf staging/tiles/*
+            touch staging/partitioned
+          fi
+
+          find staging/pmtiles -type f > release_files.txt || touch release_files.txt
+          staging_files=$(cat release_files.txt)
+          num_release_files=$(wc -l release_files.txt | tr -s " " | cut -d" " -f2)
+          echo "num_release_files=$num_release_files" >> $GITHUB_OUTPUT
           echo "staging_files: $staging_files"
           echo "release_files<<EOF" >> $GITHUB_OUTPUT
           echo "$staging_files" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          touch staging/all_done
-          
+          rm release_files.txt
 
       - name: Push pmtiles
-        env:
-          GH_TOKEN: ${{ github.token }}
         id: push-pmtiles
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
+        if: steps.retile.outputs.num_release_files != '0'
         uses: ./.github/actions/releaser
         with:
           name: "SOI Open Series Maps"
           tag_name: soi-latest
-          assets: ${{ steps.partition-pmtiles.outputs.release_files }} 
+          assets: ${{ steps.partition-pmtiles.outputs.release_files }}
           body: "SOI Open Series Maps as partitioned PMTiles."
           gh_token: ${{ secrets.github_token }}
 
       - name: Cleanup
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
         run: |
-          rm -rf staging/*
-          gsutil rm gs://soi_data/to_retile.txt
+          gh release download soi-tiffs list.txt
+          mv list.txt tiled_list.txt
+          gh release upload soi-tiffs tiled_list.txt --clobber
+          rm tiled_list.txt
+          rm -rf staging/* || true
 
       - name: Setup fly tools
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
+        if: steps.push-pmtiles.outcome == 'success'
         uses: superfly/flyctl-actions/setup-flyctl@1.5
 
       - name: Restart Fly Server
-        if: steps.retile_work.outputs.AVAILABLE == 'true'
+        if: steps.push-pmtiles.status == 'success'
         run: |
           flyctl scale count 0 --app indianopenmaps -y
           flyctl scale count 1 --app indianopenmaps -y
- 
-

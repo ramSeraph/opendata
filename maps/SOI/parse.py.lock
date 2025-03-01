@@ -8,7 +8,6 @@ resolution-markers = [
 
 [manifest]
 requirements = [
-    { name = "gdal", specifier = ">=3.10.2" },
     { name = "imgcat" },
     { name = "imutils" },
     { name = "numpy" },
@@ -195,12 +194,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/30/6f/4eca9e2e0f13ae459acd1ca7d9f0257ab86e68f44304847610afcb813dc9/cryptography-44.0.1-cp39-abi3-win32.whl", hash = "sha256:9b336599e2cb77b1008cb2ac264b290803ec5e8e89d618a5e978ff5eb6f715d9", size = 2772371 },
     { url = "https://files.pythonhosted.org/packages/d2/05/5533d30f53f10239616a357f080892026db2d550a40c393d0a8a7af834a9/cryptography-44.0.1-cp39-abi3-win_amd64.whl", hash = "sha256:e403f7f766ded778ecdb790da786b418a9f2394f36e8cc8b796cc056ab05f44f", size = 3207303 },
 ]
-
-[[package]]
-name = "gdal"
-version = "3.10.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/30/db/6417c83f6e9c4169ebe57cd26e02ad01d1e0dafb9476736481f536c10517/gdal-3.10.2.tar.gz", hash = "sha256:c0cffa8ce9f9c0fa287fcc20b8271c519ca054958420e5880be8bedb432753f4", size = 838054 }
 
 [[package]]
 name = "imgcat"

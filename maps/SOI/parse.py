@@ -1,7 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "gdal>=3.10.2",
 #     "imgcat",
 #     "imutils",
 #     "numpy",

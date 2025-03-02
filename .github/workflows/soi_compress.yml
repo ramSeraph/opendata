@@ -1,0 +1,108 @@
+name: SOI Weekly Compress Run
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on: 
+  schedule:
+    - cron: 0 3 * * 6
+  workflow_dispatch:
+
+
+jobs:
+  Run-SOI-Compress:
+    timeout-minutes: 600
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4.1.7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: maps/SOI/compress.py.lock
+          version: ">=0.5.29"
+
+      - name: Install packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+
+      - name: Restore ancillary files from cache
+        uses: ramSeraph/cache-always@v0.0.1
+        with:
+          path: |
+            maps/SOI/data/raw/SOI_FONTS.zip
+          key: 'SOI-compress-basefiles-v1'
+        id: base-files-cache
+
+
+      - name: Restore parse tools from cache
+        uses: ramSeraph/cache-always@v0.0.1
+        with:
+          path: maps/SOI/bin/
+          key:  soi-compress-tools-v1
+        id: tools-cache
+
+      - name: Install tools
+        run: |
+          cd maps/SOI
+          if [[ ! -f bin/mutool ]]; then
+            sudo apt-get install -y llvm
+            CXX=clang++ AR=llvm-ar util/build_mutool.sh
+          fi
+          if [[ ! -f bin/cjpeg ]]; then
+            util/build_mozjpeg.sh
+          fi
+
+      - name: Authenticate with GCP
+        run: |
+          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
+
+      - name: Get current date
+        run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
+        id: date
+
+      - name: Restore compress run data from cache
+        uses: ramSeraph/cache-always@v0.0.1
+        with:
+          path: |
+            maps/SOI/data/raw/*
+            maps/SOI/data/inter/*
+            maps/SOI/export/compressed/*
+          key:  soi-gcs-compress-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          restore-keys: |
+            soi-gcs-compress-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            soi-gcs-compress-v4-${{ steps.date.outputs.date }}-
+
+      - name: Compress SOI sheets
+        run: |
+          cd maps/SOI
+
+          [[ -f data/raw/SOI_FONTS.zip ]] || wget -P data/raw/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/SOI_FONTS.zip 
+
+          util/get_work_for_compresser.sh data/to_compress.txt
+          util/download_sheets.sh data/to_compress.txt
+
+          uv run compress.py data/to_compress.txt
+
+          rm -rf data/raw/* || true
+          rm -rf export/compressed/* || true
+          rm -rf data/inter/* || true
+
+
+  SOI-Compress-Failure-Notify:
+    needs: 
+      - Run-SOI-Compress
+      - Check-For-Work
+    if: always() && ( needs.Check-For-Work.result == 'failure' || needs.Run-SOI-Compress.result == 'failure' )
+    uses: ./.github/workflows/common-pb-alert.yml
+    secrets: inherit
+    with:
+      title: "SOI Compress Run Failed"
+      which-run: "self"
+
+
+
+

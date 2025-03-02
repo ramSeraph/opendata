@@ -62,6 +62,10 @@ jobs:
           key: 'SOI-tile-basefiles-v1'
         id: base-files-cache
 
+      - name: Authenticate with GCP
+        run: |
+          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
+
       - name: Install packages
         run: |
           sudo apt-get update
@@ -123,38 +127,34 @@ jobs:
 
           TMPDIR=./temp uv run partition.py
 
-          rm -rf export/
           rm -rf staging/tiles/*
 
-          find staging/pmtiles -type f > release_files.txt || touch release_files.txt
-          staging_files=$(cat release_files.txt)
-          num_release_files=$(wc -l release_files.txt | tr -s " " | cut -d" " -f1)
-          echo "num_release_files=$num_release_files"
-          echo "num_release_files=$num_release_files" >> $GITHUB_OUTPUT
-          echo "staging_files: $staging_files"
-          echo "release_files<<EOF" >> $GITHUB_OUTPUT
-          echo "$staging_files" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          rm release_files.txt
+          echo "=== backing up existing pmtiles files to GCS ==="
+          gsutil -m cp export/pmtiles/* gs://soi_data/pmtiles_backup/
+          rm -rf export/
 
-      - name: Push pmtiles
-        id: push-pmtiles
-        if: steps.retile.outputs.num_release_files != '0'
-        uses: ./.github/actions/releaser
-        with:
-          name: "SOI Open Series Maps"
-          tag_name: soi-latest
-          assets: ${{ steps.partition-pmtiles.outputs.release_files }}
-          body: "SOI Open Series Maps as partitioned PMTiles."
-          gh_token: ${{ secrets.github_token }}
+          gh release view soi-latest --json assets -q '.assets[] | "\(.name)"' > release_assets.txt
 
-      - name: Cleanup
-        run: |
+          while read a; do
+            echo "deleting $a from soi-latest"
+            gh release delete-asset soi-latest $a -y
+          done < release_assets.txt
+
+          gh release upload soi-latest staging/pmtiles/*
+
+          echo "=== Updating sheet lists ==="
           gh release download soi-tiffs -p list.txt
           mv list.txt tiled_list.txt
           gh release upload soi-tiffs tiled_list.txt --clobber
           rm tiled_list.txt
+
+          echo "=== cleaning up ==="
           rm -rf staging/* || true
+
+
+
+      - name: Cleanup
+        run: |
 
       - name: Setup fly tools
         if: steps.push-pmtiles.outcome == 'success'

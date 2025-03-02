@@ -1,4 +1,4 @@
-name: SOI Monthly Parse Run
+name: SOI Weekly Parse Run
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -6,7 +6,7 @@ concurrency:
 
 on: 
   schedule:
-    - cron: 0 5 1 * *
+    - cron: 0 5 * * 6
   workflow_dispatch:
 
 
@@ -25,7 +25,7 @@ jobs:
         run: |
           cd maps/SOI
           mkdir data
-          util/get_work_for_parser.sh data/to_parse.txt
+          util/get_work_for_compressor.sh data/to_.txt
           cat data/to_parse.txt
           num_items=$(wc -l data/to_parse.txt | tr -s " " | cut -d" " -f1)
           echo "num_items=$num_items"

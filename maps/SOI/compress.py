@@ -42,6 +42,7 @@ PIL.Image.MAX_IMAGE_PIXELS = None
 inter_dir = Path('data/inter')
 
 download_dir = Path('data/raw')
+export_dir = Path('export/compressed/')
 
 def get_file_dir(filename):
     file_p = Path(filename)
@@ -337,6 +338,19 @@ class Converter:
             self.file_fp.close()
             self.file_fp = None
 
+    def run(self):
+        sheet_no = file_p.name.replace('.pdf', '')
+        export_file = export_dir / f'{sheet_no}.jpg'
+        if export_file.exists():
+            return
+        print(f'converting {sheet}')
+        converter.convert()
+        print(f'fixing dpi for {sheet}')
+        converter.fix_dpi()
+        print(f'compressing {sheet}')
+        converter.compress()
+        compressed_file = self.get_compressed_file()
+        shutil.copy(compressed_file, export_file)
 
 def get_extra(special_cases, filename):
     extra = special_cases.get(filename, {})
@@ -386,33 +400,26 @@ def download_from_github(p):
 
 
 if __name__ == '__main__':
-    pdfs = get_pdfs()
-    num_pdfs = len(pdfs)
-    done_set = get_done_list()
-    num_done = len(done_set)
+    import sys
+    from_list_file = Path(sys.srgv[1])
 
+    from_list = from_list_file.read_text().split('\n')
+    from_list = [ f.strip() for f in from_list ]
+    total = len(from_list)
+    
     special_cases = {}
     special_cases_file = Path(__file__).parent.joinpath('special_cases.json')
     if special_cases_file.exists():
         special_cases = json.loads(special_cases_file.read_text())
 
-    for p in pdfs:
-        if p in done_set:
-            continue
-        print(f'downloading {p} {num_done}/{num_pdfs}')
-        file = download_from_github(p)
-        extra, extra_ancillary = get_extra(special_cases, str(file))
-        converter = Converter(str(file), extra, extra_ancillary)
-        print(f'converting {p}')
-        converter.convert()
-        print(f'fixing dpi for {p}')
-        converter.fix_dpi()
-        print(f'compressing {p}')
-        converter.compress()
+    export_dir.mkdir(parents=True, exist_ok=True)
+    count = 0
+    for sheet in from_list:
+        count += 1
+        filename = f'data/raw/{sheet}.pdf'
+        print('handling {sheet=} {count}/{total}')
+        extra, extra_ancillary = get_extra(special_cases, filename)
+        converter = Converter(filename, extra, extra_ancillary)
+        converter.run()
         converter.close()
-        run_external(f'gsutil cp data/inter/{p}/compressed.jpg gs://soi_data/compressed/{p}.jpg') 
-        shutil.rmtree(f'data/inter/{p}')
-        file.unlink()
-        add_to_done(p)
-        num_done += 1
 

@@ -152,16 +152,12 @@ jobs:
           rm -rf staging/* || true
 
 
-
-      - name: Cleanup
-        run: |
-
       - name: Setup fly tools
-        if: steps.push-pmtiles.outcome == 'success'
+        if: steps.retile.outcome == 'success'
         uses: superfly/flyctl-actions/setup-flyctl@1.5
 
       - name: Restart Fly Server
-        if: steps.push-pmtiles.status == 'success'
+        if: steps.retile.status == 'success'
         run: |
           flyctl scale count 0 --app indianopenmaps -y
           flyctl scale count 1 --app indianopenmaps -y

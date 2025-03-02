@@ -30,10 +30,11 @@ jobs:
           num_items=$(wc -l data/to_parse.txt | tr -s " " | cut -d" " -f1)
           echo "num_items=$num_items"
           echo "num_items=$num_items" >> $GITHUB_OUTPUT
+          exit 1
 
   Run-SOI-Parsing:
     needs: Check-For-Work
-    if: ${{ needs.Check-For-Work.outputs.work_item_count != '0' }}
+    if: needs.Check-For-Work.outputs.work_item_count != 0
     timeout-minutes: 600
     runs-on: ubuntu-22.04
     env:

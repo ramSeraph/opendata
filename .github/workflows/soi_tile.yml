@@ -66,7 +66,7 @@ jobs:
         run: |
           sudo add-apt-repository ppa:ubuntugis/ppa
           sudo apt-get update
-          sudo apt-get install -y gdal-bin libgdal-dev
+          sudo apt-get install -y python3-pil gdal-bin libgdal-dev
 
       - name: Get current date
         run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT

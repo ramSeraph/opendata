@@ -115,7 +115,7 @@ jobs:
 
           util/generate_lists.sh jpgs
 
-          rm -rf data/raw/* || true
+          rm -rf data/raw/*.pdf || true
           rm -rf export/compressed/* || true
           rm -rf data/inter/* || true
 

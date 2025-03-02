@@ -76,15 +76,16 @@ jobs:
         with:
           path: |
             staging/
-          key:  soi-gcs-v6-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  soi-gcs-v7-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            soi-gcs-v6-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            soi-gcs-v6-${{ steps.date.outputs.date }}-
+            soi-gcs-v7-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            soi-gcs-v7-${{ steps.date.outputs.date }}-
 
       - name: Retile
         id: retile
         run: |
           cd maps/SOI
+          mkdir data
           util/get_work_for_tiler.sh data/to_retile.txt
 
           if [[ ! -e staging/download_done ]]; then
@@ -92,7 +93,7 @@ jobs:
             mkdir -p export/pmtiles
             mkdir -p staging
 
-            gh release download soi-latest -D export/pmtiles
+            gh release download soi-latest -p * -D export/pmtiles
 
             touch staging/download_done
           fi
@@ -104,7 +105,7 @@ jobs:
 
             [[ -f data/index.geojson ]] || wget -P data/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
 
-            gh release download soi-tiffs list.txt
+            gh release download soi-tiffs -p list.txt
             cat list.txt | cut -d" " -f2 > gtiff_list.txt
 
             GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)

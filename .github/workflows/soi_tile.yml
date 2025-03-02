@@ -85,7 +85,7 @@ jobs:
         id: retile
         run: |
           cd maps/SOI
-          mkdir data
+          mkdir -p data
           util/get_work_for_tiler.sh data/to_retile.txt
 
           if [[ ! -e staging/download_done ]]; then

@@ -105,14 +105,11 @@ jobs:
           echo "=== downlaoding the tiffs ==="
           cmd=""
           while read p; do
-            cmd="$cmd -p ${p}.tif"
+            gh release download soi-tiffs -p ${p}.tif -D staging/gtiffs/
           done < sheet_list.txt
           rm sheet_list.txt
 
-          echo $cmd
-          gh release download soi-tiffs $cmd -D staging/gtiffs/
-
-          ls staging/gtiffs 
+          ls -lh staging/gtiffs 
 
           echo "=== running retiler ==="
           uv run --with numpy --with pillow --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt gtiff_list.txt

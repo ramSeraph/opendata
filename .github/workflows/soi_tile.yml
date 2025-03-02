@@ -111,7 +111,7 @@ jobs:
             echo "GDAL_VERSION=$GDAL_VERSION"
             uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt gtiff_list.txt sheet_list.txt
             
-            cat sheet_list.txt | xargs -I {} gh release download soi-tiffs -p {} -D staging/gtiffs/
+            cat sheet_list.txt | xargs -I {} gh release download soi-tiffs -p {}.tif -D staging/gtiffs/
 
             uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt gtiff_list.txt
             

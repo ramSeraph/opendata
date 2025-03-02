@@ -85,30 +85,39 @@ jobs:
 
           gh release download soi-latest -p '*' -D export/pmtiles
 
-          echo "=== running retiler ==="
           mkdir -p staging/tiles/
           mkdir -p staging/gtiffs/
 
+          echo "=== getting index file ==="
           [[ -f data/index.geojson ]] || wget -P data/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
 
+          echo "=== getting available tiff list ==="
           gh release download soi-tiffs -p list.txt
           cat list.txt | cut -d" " -f2 > gtiff_list.txt
           rm list.txt
 
+          echo "=== getting list of tiffs to pull ==="
           GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
           echo "GDAL_VERSION=$GDAL_VERSION"
           uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt gtiff_list.txt sheet_list.txt
           
+          echo "=== downlaoding the tiffs ==="
           cmd=""
           while read p; do
             cmd="$cmd -p ${p}.tif"
           done < sheet_list.txt
+
+          rm sheet_list.txt
+
+          echo "=== running retiler ==="
           echo $cmd
           gh release download soi-tiffs $cmd -D staging/gtiffs/
 
+          ls staging/gtiffs 
+
           uv run --with numpy --with pillow --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt gtiff_list.txt
           
-          rm list.txt gtiff_list.txt sheet_list.txt
+          rm gtiff_list.txt
           rm -rf staging/gtiffs/
 
           echo "=== running partitioner ==="

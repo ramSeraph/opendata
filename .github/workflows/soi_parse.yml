@@ -12,6 +12,7 @@ on:
 
 jobs:
   Check-For-Work:
+    runs-on: ubuntu-22.04
     env:
       GH_TOKEN: ${{ github.token }}
     outputs: 

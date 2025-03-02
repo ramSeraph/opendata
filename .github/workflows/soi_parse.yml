@@ -10,14 +10,30 @@ on:
   workflow_dispatch:
 
 
-env:
-  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 jobs:
+  Check-For-Work:
+    env:
+      GH_TOKEN: ${{ github.token }}
+    outputs: 
+      work_item_count: ${{ steps.work.num_items }}  
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - name: Check for work
+        id: work
+        run:
+          cd maps/SOI
+          util/get_work_for_parser.sh data/to_parse.txt
+          num_items=$(wc -l data/to_parse.txt | tr -s " " | cut -d " " -f2)
+          echo "num_items=$num_items" >> $GITHUB_OUTPUT
+
   Run-SOI-Parsing:
+    needs: Check-For-Work
+    if: ${{ needs.Check-For-Work.outputs.work_item_count != '0' }}
     timeout-minutes: 600
     runs-on: ubuntu-22.04
     env:
       GH_TOKEN: ${{ github.token }}
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
       - name: Setup swap
         uses: pierotofy/set-swap-space@v1.0
@@ -46,7 +62,6 @@ jobs:
 
 
       - name: Install tools
-        #if: ${{ steps.tools-cache.outputs.cache-hit != 'true' }}
         run: |
           cd maps/SOI
           if [[ ! -f bin/mutool ]]; then
@@ -101,7 +116,9 @@ jobs:
           util/generate_lists.sh tiffs
 
   SOI-Parse-Failure-Notify:
-    needs: [Run-SOI-Parsing]
+    needs: 
+      - Run-SOI-Parsing
+      - Check-For-Work
     if: always() && needs.Run-SOI-Parsing.result == 'failure'
     uses: ./.github/workflows/common-pb-alert.yml
     secrets: inherit

@@ -30,7 +30,7 @@ jobs:
         uses: ramSeraph/cache-always@v0.0.1
         with:
           path: 'maps/SOI/data/captcha/models/'
-          key:  'SOI-tesseract-models-gcs-v2'
+          key:  'SOI-tesseract-models-v2'
         id: models-cache
 
       - name: Install packages
@@ -45,33 +45,41 @@ jobs:
           mkdir -p data/captcha/models/
           util/download_captcha_models.sh data/captcha/models
 
-      - name: Download users lists
-        run: |
-          cd maps/SOI
-          echo "${{ secrets.SOI_USERS }}" | base64 -d > data/users.json
+      - name: Restore ancillary files from cache
+        uses: ramSeraph/cache-always@v0.0.1
+        with:
+          path: |
+            maps/SOI/data/index.geojson
+            maps/SOI/data/raw/SOI_FONTS.zip
+          key: 'SOI-scrape-basefiles-v1'
+        id: base-files-cache
 
       - name: Get current date
         run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
         id: date
 
-      - name: Restore prev workspace
+      - name: Restore prev login workspace
         uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
-            maps/SOI/data/raw/
-            maps/SOI/data/index.geojson
             maps/SOI/data/cookies/
             maps/SOI/data/tried_users.txt
-          key:  SOI-data-ua-raw-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  SOI-data-ua-login-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            SOI-data-ua-raw-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            SOI-data-ua-raw-v3-${{ steps.date.outputs.date }}-
+            SOI-data-ua-login-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            SOI-data-ua-login-v3-${{ steps.date.outputs.date }}-
 
-      - name: Download index file
-        run: |
-          cd maps/SOI/data/
-          [[ -f index.geojson ]] || wget https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
-              
+      - name: Restore prev data workspace
+        uses: ramSeraph/cache-always@v0.0.1
+        with:
+          path: |
+            maps/SOI/data/raw/*.pdf
+            maps/SOI/data/raw/*.unavailable
+          key:  SOI-data-ua-raw-v3-${{ github.run_number }}-${{ github.run_attempt }}
+          restore-keys: |
+            SOI-data-ua-raw-v3-${{ github.run_number }}-
+            SOI-data-ua-raw-v3-
+
       - name: Authenticate with GCP
         run: |
           gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
@@ -84,6 +92,10 @@ jobs:
       - name: Download SOI data
         run: |
           cd maps/SOI
+          mkdir -p data/raw
+          [[ -f data/index.geojson ]] || wget -P data https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
+          [[ -f data/raw/SOI_FONTS.zip ]] || wget -P data https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/SOI_FONTS.zip
+          echo "${{ secrets.SOI_USERS }}" | base64 -d > data/users.json
           wget https://github.com/ramSeraph/opendata/releases/download/soi-pdfs/list.txt
           cat list.txt | cut -d" " -f2 | xargs -I {} echo {}.pdf > data/files_done.txt
           PROXY_URL="http://$(cat ../../ip_address.txt):80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -i -r 25
@@ -102,7 +114,8 @@ jobs:
           ls data/raw/*.pdf > downloaded.txt || touch downloaded.txt
           cat downloaded.txt
           cat downloaded.txt | xargs -I {} gh release upload soi-pdfs {}
-          rm -rf data/raw/* || true
+          rm -rf data/raw/*.pdf || true
+          rm -rf data/raw/*.unavailable || true
           rm -rf data/cookies || true
           rm -rf data/tried_users.txt || true
           rm downloaded.txt

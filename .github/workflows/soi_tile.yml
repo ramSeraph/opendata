@@ -104,14 +104,17 @@ jobs:
 
             [[ -f data/index.geojson ]] || wget -P data/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
 
+            gh release download soi-tiffs list.txt
+            cat list.txt | cut -d" " -f2 > gtiff_list.txt
+
             GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
-            uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt list.txt sheet_list.txt
+            uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt gtiff_list.txt sheet_list.txt
             
             cat sheet_list.txt | xargs -I {} gh release download soi-tiffs -p {} -D staging/gtiffs/
 
-            uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt list.txt
+            uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt gtiff_list.txt
             
-            rm list.txt
+            rm list.txt gtiff_list.txt sheet_list.txt
             rm -rf staging/gtiffs/
 
             touch staging/retiling_done

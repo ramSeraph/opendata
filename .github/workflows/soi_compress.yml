@@ -19,6 +19,7 @@ jobs:
       work_item_count: ${{ steps.work.outputs.num_items }}  
     steps:
       - uses: actions/checkout@v4.1.7
+      - uses: astral-sh/setup-uv@v5
       - name: Check for work
         id: work
         run: |
@@ -103,10 +104,12 @@ jobs:
 
           [[ -f data/raw/SOI_FONTS.zip ]] || wget -P data/raw/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/SOI_FONTS.zip 
 
-          util/get_work_for_compresser.sh data/to_compress.txt
+          util/get_work_for_compressor.sh data/to_compress.txt
           util/download_sheets.sh data/to_compress.txt
 
           uv run compress.py data/to_compress.txt
+
+          gsutil -m cp export/compressed/* gs://soi_data/compressed/
 
           rm -rf data/raw/* || true
           rm -rf export/compressed/* || true

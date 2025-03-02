@@ -11,7 +11,28 @@ on:
 
 
 jobs:
+  Check-For-Work:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+    outputs: 
+      work_item_count: ${{ steps.work.outputs.num_items }}  
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - name: Check for work
+        id: work
+        run: |
+          cd maps/SOI
+          mkdir data
+          util/get_work_for_compressor.sh data/to_compress.txt
+          cat data/to_compress.txt
+          num_items=$(wc -l data/to_compress.txt | tr -s " " | cut -d" " -f1)
+          echo "num_items=$num_items"
+          echo "num_items=$num_items" >> $GITHUB_OUTPUT
+
   Run-SOI-Compress:
+    needs: Check-For-Work
+    if: needs.Check-For-Work.outputs.work_item_count != '0'
     timeout-minutes: 600
     runs-on: ubuntu-22.04
     steps:

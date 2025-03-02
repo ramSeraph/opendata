@@ -10,7 +10,7 @@ on:
 
 jobs:
   Check-For-Work:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       GH_TOKEN: ${{ github.token }}
     outputs: 
@@ -33,7 +33,7 @@ jobs:
     needs: Check-For-Work
     if: needs.Check-For-Work.outputs.work_item_count != '0'
     timeout-minutes: 600
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       GH_TOKEN: ${{ github.token }}
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

@@ -14,7 +14,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     outputs: 
-      work_item_count: ${{ steps.work.num_items }}  
+      work_item_count: ${{ steps.work.outputs.num_items }}  
     steps:
       - uses: actions/checkout@v4.1.7
       - name: Check for work

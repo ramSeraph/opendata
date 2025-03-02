@@ -34,7 +34,6 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       GH_TOKEN: ${{ github.token }}
-      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
       - name: Setup swap
         uses: pierotofy/set-swap-space@v1.0
@@ -61,6 +60,15 @@ jobs:
           key:  soi-parse-tools-v5
         id: tools-cache
 
+      - name: Restore ancillary files from cache
+        uses: ramSeraph/cache-always@v0.0.1
+        with:
+          path: |
+            maps/SOI/data/index.geojson
+            maps/SOI/data/raw/SOI_FONTS.zip
+          key: 'SOI-parse-basefiles-v1'
+        id: base-files-cache
+
 
       - name: Install tools
         run: |
@@ -78,8 +86,7 @@ jobs:
         uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
-            maps/SOI/data/index.geojson
-            maps/SOI/data/raw/
+            maps/SOI/data/raw/*.pdf
             maps/SOI/export/gtiffs/
           key:  soi-gcs-parse-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |

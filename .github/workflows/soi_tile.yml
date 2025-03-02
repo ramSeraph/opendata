@@ -8,14 +8,32 @@ on:
   workflow_dispatch:
 
 
-env:
-  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 jobs:
-  Run-SOI-Parsing:
+  Check-For-Work:
+    runs-on: ubuntu-22.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+    outputs: 
+      work_item_count: ${{ steps.work.num_items }}  
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - name: Check for work
+        id: work
+        run: |
+          cd maps/SOI
+          util/get_work_for_tiler.sh data/to_retile.txt
+          num_items=$(wc -l data/to_retile.txt | tr -s " " | cut -d " " -f2)
+          echo "num_items=$num_items" >> $GITHUB_OUTPUT
+
+
+  Run-SOI-Tiling:
+    needs: Check-For-Work
+    if: ${{ needs.Check-For-Work.outputs.work_item_count != '0' }}
     timeout-minutes: 600
     runs-on: ubuntu-22.04
     env:
       GH_TOKEN: ${{ github.token }}
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
       - name: Setup swap
         uses: pierotofy/set-swap-space@v1.0
@@ -30,6 +48,14 @@ jobs:
             maps/SOI/partition.py.lock
             maps/SOI/retile.py.lock
           version: ">=0.5.29"
+
+      - name: Restore ancillary files from cache
+        uses: ramSeraph/cache-always@v0.0.1
+        with:
+          path: |
+            maps/SOI/data/index.geojson
+          key: 'SOI-parse-basefiles-v1'
+        id: base-files-cache
 
       - name: Install packages
         run: |
@@ -57,11 +83,6 @@ jobs:
         run: |
           cd maps/SOI
           util/get_work_for_tiler.sh data/to_retile.txt
-          num_sheets=$(wc -l data/to_retile.txt | tr -s" " | cut -d" " -f2)
-          if [[ $num_sheets == 0 ]]; then
-            echo "num_release_files=0" >> $GITHUB_OUTPUT
-            exit 0
-          fi
 
           if [[ ! -e staging/download_done ]]; then
             echo "=== downloading pmtiles files from soi-latest ==="
@@ -76,6 +97,7 @@ jobs:
             mkdir -p staging/tiles/
             mkdir -p staging/pmtiles/
             echo "=== running retiler ==="
+            [[ -f data/index.geojson ]] || wget -P data/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
             GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
             uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt
             rm -rf export/gtiffs/
@@ -85,6 +107,7 @@ jobs:
           fi
 
           if [[ ! -e staging/partitioned ]]; then
+            echo "=== running partitioner ==="
             mkdir temp
             TMPDIR=./temp uv run partition.py
             rm -rf export/
@@ -130,3 +153,14 @@ jobs:
         run: |
           flyctl scale count 0 --app indianopenmaps -y
           flyctl scale count 1 --app indianopenmaps -y
+
+  SOI-Tile-Failure-Notify:
+    needs: 
+      - Run-SOI-Tiling
+      - Check-For-Work
+    if: always() && needs.Run-SOI-Tiling.result == 'failure'
+    uses: ./.github/workflows/common-pb-alert.yml
+    secrets: inherit
+    with:
+      title: "SOI Tile Run Failed"
+      which-run: "self"

@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4.1.7
       - name: Check for work
         id: work
-        run:
+        run: |
           cd maps/SOI
           util/get_work_for_parser.sh data/to_parse.txt
           num_items=$(wc -l data/to_parse.txt | tr -s " " | cut -d " " -f2)

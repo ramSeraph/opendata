@@ -75,7 +75,6 @@ jobs:
       - name: Retile
         id: retile
         run: |
-          set -x
           cd maps/SOI
           mkdir -p data
           util/get_work_for_tiler.sh data/to_retile.txt
@@ -101,7 +100,7 @@ jobs:
           GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
           echo "GDAL_VERSION=$GDAL_VERSION"
           uv venv
-          uv pip install numpy pillow
+          uv pip install numpy pillow mercantile pmtiles
           uv pip install GDAL==${GDAL_VERSION}
           uv run retile.py data/to_retile.txt gtiff_list.txt sheet_list.txt
           

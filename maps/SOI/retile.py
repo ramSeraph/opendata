@@ -1,13 +1,3 @@
-# /// script
-# requires-python = ">=3.12"
-# dependencies = [
-#     "mercantile",
-#     "numpy>=2.2.3",
-#     "pillow>=11.1.0",
-#     "pmtiles",
-# ]
-# ///
-
 import os
 import re
 import json

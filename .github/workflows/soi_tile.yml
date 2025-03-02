@@ -24,7 +24,7 @@ jobs:
           mkdir data
           util/get_work_for_tiler.sh data/to_retile.txt
           cat data/to_retile.txt
-          num_items=$(wc -l data/to_retile.txt | tr -s " " | cut -d" " -f2)
+          num_items=$(wc -l data/to_retile.txt | tr -s " " | cut -d" " -f1)
           echo "num_items=$num_items"
           echo "num_items=$num_items" >> $GITHUB_OUTPUT
 
@@ -120,7 +120,7 @@ jobs:
 
           find staging/pmtiles -type f > release_files.txt || touch release_files.txt
           staging_files=$(cat release_files.txt)
-          num_release_files=$(wc -l release_files.txt | tr -s " " | cut -d" " -f2)
+          num_release_files=$(wc -l release_files.txt | tr -s " " | cut -d" " -f1)
           echo "num_release_files=$num_release_files" >> $GITHUB_OUTPUT
           echo "staging_files: $staging_files"
           echo "release_files<<EOF" >> $GITHUB_OUTPUT

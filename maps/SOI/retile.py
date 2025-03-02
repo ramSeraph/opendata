@@ -266,7 +266,7 @@ if __name__ == '__main__':
 
     print(f'{sheets_to_pull=}')
     if sheets_to_pull_outfile is not None:
-        Path(sheets_to_pull_outfile).write_text('\n'.join(sheets_to_pull))
+        Path(sheets_to_pull_outfile).write_text('\n'.join(sheets_to_pull) + '\n')
         exit(0)
 
     print('check the sheets availability')

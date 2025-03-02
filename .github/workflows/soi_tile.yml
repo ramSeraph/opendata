@@ -64,6 +64,7 @@ jobs:
 
       - name: Install packages
         run: |
+          sudo add-apt-repository ppa:ubuntugis/ppa
           sudo apt-get update
           sudo apt-get install -y gdal-bin libgdal-dev
 
@@ -88,14 +89,12 @@ jobs:
           mkdir -p data
           util/get_work_for_tiler.sh data/to_retile.txt
 
-          if [[ ! -e staging/download_done ]]; then
+          if [[ ! -e staging/partitioned ]]; then
             echo "=== downloading pmtiles files from soi-latest ==="
             mkdir -p export/pmtiles
             mkdir -p staging
 
             gh release download soi-latest -p '*' -D export/pmtiles
-
-            touch staging/download_done
           fi
 
           if [[ ! -e staging/retiling_done ]]; then
@@ -109,6 +108,7 @@ jobs:
             cat list.txt | cut -d" " -f2 > gtiff_list.txt
 
             GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
+            echo "GDAL_VERSION=$GDAL_VERSION"
             uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt gtiff_list.txt sheet_list.txt
             
             cat sheet_list.txt | xargs -I {} gh release download soi-tiffs -p {} -D staging/gtiffs/

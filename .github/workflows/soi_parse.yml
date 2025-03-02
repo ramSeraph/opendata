@@ -19,6 +19,7 @@ jobs:
       work_item_count: ${{ steps.work.num_items }}  
     steps:
       - uses: actions/checkout@v4.1.7
+      - uses: astral-sh/setup-uv@v5
       - name: Check for work
         id: work
         run: |

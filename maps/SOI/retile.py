@@ -123,7 +123,7 @@ def copy_tiles_over(tiles_to_pull):
 def create_upper_tiles(tiles_to_create):
     options = AttrDict({
         'resume': True,
-        'verbose': True,
+        'verbose': False,
         'quiet': False,
         'xyz': True,
         'exclude_transparent': True,

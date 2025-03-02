@@ -23,6 +23,7 @@ jobs:
         id: work
         run: |
           cd maps/SOI
+          mkdir data
           util/get_work_for_parser.sh data/to_parse.txt
           num_items=$(wc -l data/to_parse.txt | tr -s " " | cut -d " " -f2)
           echo "num_items=$num_items" >> $GITHUB_OUTPUT
@@ -127,7 +128,7 @@ jobs:
     needs: 
       - Run-SOI-Parsing
       - Check-For-Work
-    if: always() && needs.Run-SOI-Parsing.result == 'failure'
+    if: always() && ( needs.Check-For-Work.result == 'failure' || needs.Run-SOI-Parsing.result == 'failure' )
     uses: ./.github/workflows/common-pb-alert.yml
     secrets: inherit
     with:

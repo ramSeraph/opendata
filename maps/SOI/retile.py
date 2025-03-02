@@ -5,7 +5,6 @@
 #     "numpy>=2.2.3",
 #     "pillow>=11.1.0",
 #     "pmtiles",
-#     "requests",
 # ]
 # ///
 
@@ -22,7 +21,6 @@ from pathlib import Path
 
 
 import mercantile
-import requests
 
 from osgeo_utils.gdal2tiles import main as gdal2tiles_main
 from osgeo_utils.gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
@@ -32,18 +30,10 @@ from osgeo_utils.gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
 
 from tile_sources import PartitionedPMTilesSource, MissingTileError
 
-SHEETS_FROM_GCS = os.environ.get("SHEETS_FROM_GCS", '0') == '1'
-SHEETS_FROM_GITHUB = os.environ.get("SHEETS_FROM_GITHUB", '1') == '1'
-TILES_TO_GCS = os.environ.get("TILES_TO_GCS", '0') == '1'
-TILES_FROM_PMTILES = os.environ.get('TILES_FROM_PMTILES', '1') == '1'
-TILES_TO_PMTILES = os.environ.get('TILES_TO_PMTILES', '1') == '1'
-INDEX_FILE = os.environ.get('INDEX_FILE', 'data/index.geojson')
-
+INDEX_FILE_NAME = 'data/index.geojson'
 
 
 orig_pmtiles_dir = Path('export/pmtiles')
-orig_tiles_dir = Path('export/tiles')
-orig_tiffs_dir = Path('export/gtiffs')
 tiles_dir = Path('staging/tiles')
 tiffs_dir = Path('staging/gtiffs')
 
@@ -99,27 +89,6 @@ def create_base_tiles(inp_file, output_dir, zoom_levels):
                      inp_file, output_dir])
 
 
-def pull_from_gcs(file):
-    file.parent.mkdir(parents=True, exist_ok=True)
-    print(f'pulling {file} from gcs')
-    resp = requests.get(f'https://storage.googleapis.com/soi_data/{file}')
-    if not resp.ok:
-        if resp.status_code == 404 or resp.status_code == 403:
-            return
-        raise Exception(f'unable to get {file} from gcs')
-    file.write_bytes(resp.content)
-
-def pull_from_github(file):
-    file.parent.mkdir(parents=True, exist_ok=True)
-    print(f'pulling {file} from github')
-    resp = requests.get(f'https://github.com/ramSeraph/opendata/releases/download/soi-tiffs/{file.name}')
-    if not resp.ok:
-        if resp.status_code == 404:
-            return
-        raise Exception(f'unable to get {file} from github')
-    file.write_bytes(resp.content)
-
-
 
 pmtiles_reader = None
 def get_pmtiles_reader():
@@ -151,45 +120,18 @@ def get_tile_file(tile):
 def get_tile_file_orig(tile):
     return f'{orig_tiles_dir}/{tile.z}/{tile.x}/{tile.y}.webp'
 
-def copy_sheets_over(sheets_to_pull):
+def check_sheets(sheets_to_pull):
     for sheet_no in sheets_to_pull:
         to = tiffs_dir.joinpath(f'{sheet_no}.tif')
-        fro = orig_tiffs_dir.joinpath(f'{sheet_no}.tif')
-        if to.exists():
-            continue
-        if SHEETS_FROM_GCS:
-            pull_from_gcs(fro)
-        if SHEETS_FROM_GITHUB:
-            pull_from_github(fro)
-        if not fro.exists():
-            continue
-        shutil.copy(str(fro), str(to))
+        if not to.exists():
+            raise Exception(f'missing file {to}')
 
 def copy_tiles_over(tiles_to_pull):
     for tile in tiles_to_pull:
         to = Path(get_tile_file(tile))
         if to.exists():
             continue
-        fro = Path(get_tile_file_orig(tile))
-        if TILES_FROM_PMTILES:
-            pull_from_pmtiles(fro)
-        if not fro.exists():
-            continue
-        to.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(str(fro), str(to))
-
-def push_tiles(tiles_to_push):
-    for tile in tiles_to_push:
-        fro = Path(get_tile_file(tile))
-        to = Path(get_tile_file_orig(tile))
-        if TILES_TO_GCS:
-            to = Path(get_tile_file(tile).replace('staging', 'to_gcs/export'))
-        if not fro.exists():
-            continue
-        to.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(str(fro), str(to))
-    if TILES_TO_GCS:
-        Path('to_gcs/all_done').write_text('')
+        pull_from_pmtiles(to)
 
 
 def create_upper_tiles(tiles_to_create):
@@ -222,8 +164,11 @@ def create_upper_tiles(tiles_to_create):
  
 
 def get_sheet_data():
-    with open(INDEX_FILE, 'r') as f:
-        index_data = json.load(f)
+    index_file = Path(INDEX_FILE_NAME)
+    if not index_file.exists():
+        raise Exception(F'missing index file at {INDEX_FILE_NAME}')
+
+    index_data = json.loads(index_file.read_text())
 
     sheets_to_box = {}
     for f in index_data['features']:
@@ -264,12 +209,14 @@ def delete_unwanted_tiles(tiles_to_keep, z):
 
 
 def create_vrt_file(sheets):
+    vrt_file = f'{tiffs_dir}/combined.vrt'
+    if vrt_file.exists():
+        return vrt_file
     tiff_list = [ tiffs_dir.joinpath(f'{p_sheet}.tif').resolve() for p_sheet in sheets ]
     tiff_list = [ str(f) for f in tiff_list if f.exists() ]
 
     tiff_list_str = ' '.join(tiff_list)
 
-    vrt_file = f'{tiffs_dir}/combined.vrt'
     run_external(f'gdalbuildvrt {vrt_file} {tiff_list_str}')
     convert_paths_in_vrt(vrt_file)
 
@@ -277,17 +224,27 @@ def create_vrt_file(sheets):
 
 
 if __name__ == '__main__':
-    if SHEETS_FROM_GCS and SHEETS_FROM_GITHUB:
-        raise Exception('Both SHEETS_FROM_GITHUB and SHEETS_FROM_GCS can\'t be enabled together')
 
     import sys
+    if len(sys.argv) < 3:
+        print('ERROR: needs atleast 2 arguments')
+        print(f'USAGE: {sys.argv[0]} <retile_file> <full_tiff_list_file> <sheet_list_output_file>')
+        exit(1)
+
     retile_list_file = sys.argv[1]
+    retile_sheets = Path(retile_list_file).read_text().split('\n')
+    retile_sheets = set([ r.strip() for r in retile_sheets if r.strip() != '' ])
+
+    full_tiff_list_file = sys.argv[2] 
+    available_sheets = Path(full_tiff_list_file).read_text().split('\n')
+    available_sheets = set([ r.strip() for r in available_sheets if r.strip() != '' ])
+
+    sheets_to_pull_outfile = None
+    if len(sys.argv) > 3:
+        sheets_to_pull_outfile = sys.argv[3]
 
     tiles_dir.mkdir(parents=True, exist_ok=True)
     tiffs_dir.mkdir(parents=True, exist_ok=True)
-
-    retile_sheets = Path(retile_list_file).read_text().split('\n')
-    retile_sheets = set([ r.strip() for r in retile_sheets if r.strip() != '' ])
 
     zmin = 0
     zmax = 14
@@ -306,11 +263,18 @@ if __name__ == '__main__':
 
     sheets_to_pull = set()
     for tile in affected_base_tiles:
-        sheets_to_pull.update(base_tiles_to_sheets[tile])
-    print(f'{sheets_to_pull=}')
+        to_add = base_tiles_to_sheets[tile]
+        for sheet in to_add:
+            if sheet in available_sheets:
+                sheets_to_pull.add(sheet)
 
-    print('pulling in the sheets involved')
-    copy_sheets_over(sheets_to_pull)
+    print(f'{sheets_to_pull=}')
+    if sheets_to_pull_outfile is not None:
+        Path(sheets_to_pull_outfile).write_text('\n'.join(sheets_to_pull))
+        exit(0)
+
+    print('check the sheets availability')
+    check_sheets(sheets_to_pull)
 
     print('creating vrt file from sheets involved')
     vrt_file = create_vrt_file(sheets_to_pull)
@@ -346,11 +310,6 @@ if __name__ == '__main__':
         delete_unwanted_tiles(prev_affected_tiles, z+1)
 
         prev_affected_tiles = curr_affected_tiles
-
-    if not TILES_TO_PMTILES:
-        print('pushing back tiles to main')
-        push_tiles(all_affected_tiles)
-    #shutil.rmtree('staging')
 
     print('All Done!!!')
 

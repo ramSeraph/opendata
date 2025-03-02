@@ -43,6 +43,8 @@ jobs:
         with:
           swap-size-gb: 12
 
+      - uses: actions/checkout@v4.1.7
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -74,8 +76,6 @@ jobs:
         with:
           path: |
             staging/
-            export/
-            !export/pmtiles/*
           key:  soi-gcs-v6-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
             soi-gcs-v6-${{ steps.date.outputs.date }}-${{ github.run_number }}-
@@ -90,31 +90,43 @@ jobs:
           if [[ ! -e staging/download_done ]]; then
             echo "=== downloading pmtiles files from soi-latest ==="
             mkdir -p export/pmtiles
-            gh release download soi-latest -D export/pmtiles
             mkdir -p staging
+
+            gh release download soi-latest -D export/pmtiles
+
             touch staging/download_done
           fi
 
           if [[ ! -e staging/retiling_done ]]; then
-            mkdir -p export/tiles/
-            mkdir -p staging/tiles/
-            mkdir -p staging/pmtiles/
             echo "=== running retiler ==="
+            mkdir -p staging/tiles/
+            mkdir -p staging/gtiffs/
+
             [[ -f data/index.geojson ]] || wget -P data/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
+
             GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
-            uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt
-            rm -rf export/gtiffs/
-            rm -rf export/tiles/
+            uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt list.txt sheet_list.txt
+            
+            cat sheet_list.txt | xargs -I {} gh release download soi-tiffs -p {} -D staging/gtiffs/
+
+            uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt list.txt
+            
+            rm list.txt
             rm -rf staging/gtiffs/
+
             touch staging/retiling_done
           fi
 
           if [[ ! -e staging/partitioned ]]; then
             echo "=== running partitioner ==="
+            mkdir -p staging/pmtiles/
             mkdir temp
+
             TMPDIR=./temp uv run partition.py
+
             rm -rf export/
             rm -rf staging/tiles/*
+
             touch staging/partitioned
           fi
 

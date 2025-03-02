@@ -113,9 +113,12 @@ jobs:
 
           gsutil -m cp export/compressed/* gs://soi_data/compressed/
 
+          util/generate_lists.sh jpgs
+
           rm -rf data/raw/* || true
           rm -rf export/compressed/* || true
           rm -rf data/inter/* || true
+
 
 
   SOI-Compress-Failure-Notify:

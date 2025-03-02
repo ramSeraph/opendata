@@ -36,6 +36,8 @@ jobs:
     if: needs.Check-For-Work.outputs.work_item_count != '0'
     timeout-minutes: 600
     runs-on: ubuntu-22.04
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4.1.7
 

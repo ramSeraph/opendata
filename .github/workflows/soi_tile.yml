@@ -65,7 +65,7 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pil python3-numpy gdal-bin libgdal-dev
+          sudo apt-get install -y gdal-bin libgdal-dev
 
       - name: Get current date
         run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
@@ -99,8 +99,8 @@ jobs:
           GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
           echo "GDAL_VERSION=$GDAL_VERSION"
           uv venv
-          uv pip install numpy pillow mercantile pmtiles
-          uv pip install --no-build-isolation GDAL==${GDAL_VERSION}
+          uv pip install numpy pillow mercantile pmtiles setuptools wheel
+          uv pip install --no-build-isolation --no-cache-dir --force-reinstall GDAL==${GDAL_VERSION}
           uv run retile.py data/to_retile.txt gtiff_list.txt sheet_list.txt
           
           echo "=== downlaoding the tiffs ==="

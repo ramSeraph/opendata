@@ -339,7 +339,7 @@ class Converter:
             self.file_fp = None
 
     def run(self):
-        sheet_no = file_p.name.replace('.pdf', '')
+        sheet_no = Path(filename).name.replace('.pdf', '')
         export_file = export_dir / f'{sheet_no}.jpg'
         if export_file.exists():
             return
@@ -401,10 +401,10 @@ def download_from_github(p):
 
 if __name__ == '__main__':
     import sys
-    from_list_file = Path(sys.srgv[1])
+    from_list_file = Path(sys.argv[1])
 
     from_list = from_list_file.read_text().split('\n')
-    from_list = [ f.strip() for f in from_list ]
+    from_list = [ f.strip() for f in from_list if f.strip() != '' ]
     total = len(from_list)
     
     special_cases = {}
@@ -417,7 +417,7 @@ if __name__ == '__main__':
     for sheet in from_list:
         count += 1
         filename = f'data/raw/{sheet}.pdf'
-        print('handling {sheet=} {count}/{total}')
+        print(f'handling {sheet=} {count}/{total}')
         extra, extra_ancillary = get_extra(special_cases, filename)
         converter = Converter(filename, extra, extra_ancillary)
         converter.run()

@@ -93,7 +93,7 @@ jobs:
             mkdir -p export/pmtiles
             mkdir -p staging
 
-            gh release download soi-latest -p * -D export/pmtiles
+            gh release download soi-latest -p '*' -D export/pmtiles
 
             touch staging/download_done
           fi
@@ -158,7 +158,7 @@ jobs:
 
       - name: Cleanup
         run: |
-          gh release download soi-tiffs list.txt
+          gh release download soi-tiffs -p list.txt
           mv list.txt tiled_list.txt
           gh release upload soi-tiffs tiled_list.txt --clobber
           rm tiled_list.txt

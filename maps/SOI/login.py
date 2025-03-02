@@ -2,15 +2,34 @@ import re
 import hashlib
 import logging
 
+import json
+import pickle
 from pprint import pformat
+from datetime import datetime
+from pathlib import Path
 
 from bs4 import BeautifulSoup
 
 from captcha_helper import get_captcha_from_page
-from common import base_url, get_form_data, session
+from common import base_url, get_form_data, session, ensure_dir, data_dir
+
+from otp import setup_otp_listener, get_otp_pb, get_otp_manual
 
 logger = logging.getLogger(__name__)
 
+MAX_CAPTCHA_ATTEMPTS = 20
+
+def get_secrets():
+    with open(data_dir + 'users.json', 'r') as f:
+        users_text = f.read()
+    users_data = json.loads(users_text)
+
+    secrets_map = {
+        u['phone_num']:u['password']
+        for u in users_data
+        if not u['first_login']
+    }
+    return secrets_map
 
 def get_salt(soup):
     div = soup.find('div', {'id': 'divMain'})
@@ -98,5 +117,86 @@ def login_otp(otp):
     if span is not None:
         raise Exception(f'{span.text}')
     return resp
+
+
+def login_wrap(phone_num, password, otp_from_pb):
+    global session
+    FAILED_CAPTCHA = 'Please enter valid Captcha'
+    saved_cookie_file = f'data/cookies/saved_cookies.{phone_num}.pkl'
+    if Path(saved_cookie_file).exists():
+        logger.info('found saved cookie file')
+        with open(saved_cookie_file, 'rb') as f:
+            saved_cookies = pickle.load(f)
+        cookies_valid = True
+        current_time = datetime.now()
+
+        for cookie in saved_cookies:
+            if cookie.expires is not None:
+                expiry_time = datetime.fromtimestamp(cookie.expires)
+                logging.info(f'cookie expiry time: {expiry_time}')
+                logging.info(f'current time: {datetime.now()}')
+                if expiry_time < current_time:
+                    logger.warning(f'{cookie.name} expired')
+                    cookies_valid = False
+                    break
+
+        if cookies_valid:
+            session.cookies.update(saved_cookies)
+            logger.info('logged in with saved cookie')
+            return
+        Path(saved_cookie_file).unlink()
+        logger.warning('deleting old cookie file')
+
+    count = 0
+    success_phase_1 = False
+    if otp_from_pb:
+        otp_listener = setup_otp_listener()
+    while count < MAX_CAPTCHA_ATTEMPTS:
+        try:
+            logger.info('attempting a login')
+            login(phone_num, password)
+            success_phase_1 = True
+            logger.info('login password phase done')
+            break
+        except Exception as ex:
+            if str(ex) != FAILED_CAPTCHA:
+                if otp_from_pb:
+                    otp_listener.close()
+                raise ex
+            logger.warning('captcha failed..')
+            count += 1
+
+    if not success_phase_1:
+        if otp_from_pb:
+            otp_listener.close()
+        raise Exception('login failed because of captcha errors')
+
+    if otp_from_pb:
+        otp = get_otp_pb(otp_listener, timeout=300)
+    else:
+        otp = get_otp_manual()
+    if otp is None:
+        raise Exception('Unable to get OTP')
+
+    success = False
+    while count < MAX_CAPTCHA_ATTEMPTS:
+        try:
+            logger.info('entering the login otp')
+            login_otp(otp)
+            ensure_dir(saved_cookie_file)
+            logger.info('saving cookies to file')
+            with open(saved_cookie_file, 'wb') as f:
+                pickle.dump(session.cookies, f)
+            success = True
+            logger.info('login otp phase done')
+            break
+        except Exception as ex:
+            if str(ex) != FAILED_CAPTCHA:
+                raise ex
+            logger.warning('captcha failed..')
+            count += 1
+
+    if not success:
+        raise Exception('login failed because of captcha errors')
 
 

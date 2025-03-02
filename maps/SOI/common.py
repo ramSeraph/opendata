@@ -9,6 +9,9 @@ from bs4 import BeautifulSoup
 
 base_url = 'https://onlinemaps.surveyofindia.gov.in/'
 
+data_dir = 'data/'
+raw_data_dir = data_dir + 'raw/'
+
 session = requests.session()
 PROXY_URL = os.environ.get('PROXY_URL', None)
 if PROXY_URL is not None:

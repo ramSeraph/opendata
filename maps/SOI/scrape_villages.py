@@ -1,12 +1,25 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "bs4",
+#     "colorlog",
+#     "imgcat",
+#     "numpy",
+#     "opencv-python-headless",
+#     "pillow",
+#     "pushbullet-py",
+#     "pytesseract",
+#     "requests",
+#     "websocket-client",
+# ]
+# ///
+
 import os
-import json
-import pickle
 import logging
 import shutil
 import time
 
 from pathlib import Path
-from datetime import datetime
 
 #import requests
 
@@ -17,12 +30,11 @@ from captcha_helper import (
      CAPTCHA_MANUAL,
      captcha_model_dir
 )
-from login import login, get_form_data
+from login import login_wrap, get_form_data, get_secrets
 from common import (
     base_url,
     setup_logging,
     get_page_soup,
-    ensure_dir,
     session
 )
 
@@ -37,70 +49,6 @@ DELAY_DOWNLOAD = 1
 FORCE = (os.environ.get('FORCE', '0') == '1')
 FORCE_UNAVAILABLE = (os.environ.get('FORCE_UNAVAILABLE', '0') == '1')
 
-def get_secrets():
-    with open(data_dir + 'users.json', 'r') as f:
-        users_text = f.read()
-    users_data = json.loads(users_text)
-
-    with open(data_dir + 'users_extra.json', 'r') as f:
-        users_text = f.read()
-    users_data.extend(json.loads(users_text))
-
-    secrets_map = {
-        u['phone_num']:u['password']
-        for u in users_data
-        if not u['first_login']
-    }
-    return secrets_map
-
-def login_wrap(phone_num, password):
-    FAILED_CAPTCHA = 'Please enter valid Captcha'
-    saved_cookie_file = f'data/cookies/saved_cookies.{phone_num}.pkl'
-    if Path(saved_cookie_file).exists():
-        logger.info('found saved cookie file')
-        with open(saved_cookie_file, 'rb') as f:
-            saved_cookies = pickle.load(f)
-        cookies_valid = True
-        current_time = datetime.now()
-
-        for cookie in saved_cookies:
-            if cookie.expires is not None:
-                expiry_time = datetime.fromtimestamp(cookie.expires)
-                logging.info(f'cookie expiry time: {expiry_time}')
-                logging.info(f'current time: {datetime.now()}')
-                if expiry_time < current_time:
-                    logger.warning(f'{cookie.name} expired')
-                    cookies_valid = False
-                    break
-
-        if cookies_valid:
-            session.cookies.update(saved_cookies)
-            logger.info('logged in with saved cookie')
-            return
-        Path(saved_cookie_file).unlink()
-        logger.warning('deleting old cookie file')
-
-    count = 0
-    success = False
-    while count < MAX_CAPTCHA_ATTEMPTS:
-        try:
-            logger.info('attempting a login')
-            login(phone_num, password)
-            ensure_dir(saved_cookie_file)
-            logger.info('saving cookies to file')
-            with open(saved_cookie_file, 'wb') as f:
-                pickle.dump(session.cookies, f)
-            success = True
-            logger.info('logged in')
-            break
-        except Exception as ex:
-            if str(ex) != FAILED_CAPTCHA:
-                raise ex
-            logger.warning('captcha failed..')
-            count += 1
-
-    if not success:
-        raise Exception('login failed because of captcha errors')
 
 def check_for_error(resp, err_file=None):
     global force_map_tried
@@ -128,10 +76,10 @@ def check_for_error(resp, err_file=None):
                     raise Exception('Retriable Exception')
             raise Exception('Some Error Happened')
 
-def scrape(phone_num, password):
+def scrape(phone_num, password, otp_from_pb):
     global done_states
     global force_map_tried
-    login_wrap(phone_num, password)
+    login_wrap(phone_num, password, otp_from_pb)
     logging.info('Product Show page scraping')
     dp_page = base_url + 'Digital_Product_Show.aspx'
     soup = get_page_soup(dp_page)
@@ -406,7 +354,7 @@ def update_tried_users(tried_users):
     shutil.move(tried_users_file_new, tried_users_file)
 
  
-def scrape_wrap():
+def scrape_wrap(otp_from_pb):
     secrets_map = get_secrets()
     p_idx = 0
     tried_users = get_tried_users()
@@ -418,7 +366,7 @@ def scrape_wrap():
         phone_num, password = s_items[p_idx]
         try:
             logger.info(f'scraping with phone number: {p_idx}/{total_count}')
-            ret = scrape(phone_num, password)
+            ret = scrape(phone_num, password, otp_from_pb)
             if ret:
                 if Path(tried_users_file).exists():
                     Path(tried_users_file).unlink()
@@ -446,4 +394,6 @@ if __name__ == '__main__':
 
     done_states = []
     force_map_tried = {}
-    scrape_wrap()
+    otp_from_pb = True
+    scrape_wrap(otp_from_pb)
+

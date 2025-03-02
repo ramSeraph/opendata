@@ -59,7 +59,7 @@ jobs:
         with:
           path: |
             maps/SOI/data/index.geojson
-          key: 'SOI-parse-basefiles-v1'
+          key: 'SOI-tile-basefiles-v1'
         id: base-files-cache
 
       - name: Install packages
@@ -76,11 +76,11 @@ jobs:
         uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
-            staging/
-          key:  soi-gcs-v7-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+            maps/SOI/staging/
+          key:  soi-tile-data-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            soi-gcs-v7-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            soi-gcs-v7-${{ steps.date.outputs.date }}-
+            soi-tile-data-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            soi-tile-data-v0-${{ steps.date.outputs.date }}-
 
       - name: Retile
         id: retile
@@ -111,7 +111,7 @@ jobs:
             echo "GDAL_VERSION=$GDAL_VERSION"
             uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt gtiff_list.txt sheet_list.txt
             
-            cat sheet_list.txt | xargs -I {} gh release download soi-tiffs -p {}.tif -D staging/gtiffs/
+            cat sheet_list.txt | xargs -I {} sh -c "echo 'downloading {}'; gh release download soi-tiffs -p {}.tif -D staging/gtiffs/"
 
             uv run --with GDAL==${GDAL_VERSION} retile.py data/to_retile.txt gtiff_list.txt
             

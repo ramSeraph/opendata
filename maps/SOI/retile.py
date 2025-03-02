@@ -11,7 +11,6 @@
 import os
 import re
 import json
-import shutil
 
 import time
 import os.path
@@ -24,8 +23,6 @@ import mercantile
 
 from osgeo_utils.gdal2tiles import main as gdal2tiles_main
 from osgeo_utils.gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
-#from gdal2tiles import main as gdal2tiles_main
-#from gdal2tiles import create_overview_tile, TileJobInfo, GDAL2Tiles
 
 
 from tile_sources import PartitionedPMTilesSource, MissingTileError
@@ -55,9 +52,8 @@ def run_external(cmd):
         raise Exception(f'command {cmd} failed')
 
 
-def convert_paths_in_vrt(vrt_fname):
+def convert_paths_in_vrt(vrt_file):
     # <SourceFilename relativeToVRT="1">40M_15.tif</SourceFilename>
-    vrt_file = Path(vrt_fname)
     vrt_dirname = str(vrt_file.resolve().parent)
     vrt_text = vrt_file.read_text()
     replaced = re.sub(
@@ -209,7 +205,7 @@ def delete_unwanted_tiles(tiles_to_keep, z):
 
 
 def create_vrt_file(sheets):
-    vrt_file = f'{tiffs_dir}/combined.vrt'
+    vrt_file = Path(f'{tiffs_dir}/combined.vrt')
     if vrt_file.exists():
         return vrt_file
     tiff_list = [ tiffs_dir.joinpath(f'{p_sheet}.tif').resolve() for p_sheet in sheets ]

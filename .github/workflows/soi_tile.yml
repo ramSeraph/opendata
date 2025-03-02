@@ -23,7 +23,9 @@ jobs:
           cd maps/SOI
           mkdir data
           util/get_work_for_tiler.sh data/to_retile.txt
-          num_items=$(wc -l data/to_retile.txt | tr -s " " | cut -d " " -f2)
+          cat data/to_retile.txt
+          num_items=$(wc -l data/to_retile.txt | tr -s " " | cut -d" " -f2)
+          echo "num_items=$num_items"
           echo "num_items=$num_items" >> $GITHUB_OUTPUT
 
 

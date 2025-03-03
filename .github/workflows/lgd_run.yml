@@ -37,7 +37,7 @@ jobs:
           gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
 
       - name: Restore tesseract models from cache
-        uses: actions/cache@v4.0.2
+        uses: actions/cache@v4.2.2
         with:
           path: 'models/' 
           key:  'lgd-tesseract-models-gcs-v2'

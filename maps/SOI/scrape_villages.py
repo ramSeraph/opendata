@@ -356,16 +356,18 @@ def update_tried_users(tried_users):
  
 def scrape_wrap(otp_from_pb):
     secrets_map = get_secrets()
-    p_idx = 0
     tried_users = get_tried_users()
     secrets_map = {k:v for k,v in secrets_map.items() if k not in tried_users}
     total_count = len(secrets_map)
     s_items = list(secrets_map.items())
     p_idx = 0
     while True:
+        if p_idx >= total_count:
+            logger.warning('No more users!!')
+            break
         phone_num, password = s_items[p_idx]
         try:
-            logger.info(f'scraping with phone number: {p_idx}/{total_count}')
+            logger.info(f'scraping with phone number: {p_idx + 1}/{total_count}')
             ret = scrape(phone_num, password, otp_from_pb)
             if ret:
                 if Path(tried_users_file).exists():
@@ -386,7 +388,7 @@ def scrape_wrap(otp_from_pb):
 
 
 if __name__ == '__main__':
-    setup_logging(logging.DEBUG)
+    setup_logging(logging.INFO)
 
     if not CAPTCHA_MANUAL:
         check_captcha_models(captcha_model_dir)

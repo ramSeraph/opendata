@@ -1,3 +1,12 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "mercantile",
+#     "pmtiles",
+#     "requests",
+# ]
+# ///
+
 import json
 import shutil
 import sqlite3
@@ -175,3 +184,4 @@ if __name__ == '__main__':
     Path(mosaic_file).unlink()
     print('done')
     
+

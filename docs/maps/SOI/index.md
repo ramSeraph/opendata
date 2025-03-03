@@ -17,14 +17,12 @@ All the data below is updated monthly
 # Get A Copy
 The data is also hosted as a mosaic of [pmtiles](https://protomaps.com/docs/pmtiles) files in the [releases](https://github.com/ramSeraph/opendata/releases/tag/soi-latest)
 
-This can be downloaded as local [mbtiles](https://docs.mapbox.com/help/glossary/mbtiles/) by running the following commands:
+
+This can be downloaded as local [mbtiles](https://docs.mapbox.com/help/glossary/mbtiles/) by running the following commands( after installing [uv](https://docs.astral.sh/uv/getting-started/installation/):
 
 
 ```
-git clone https://github.com/ramSeraph/opendata.git
-cd opendata/maps/SOI/
-pip install pmtiles==3.2.0 mercantile==1.2.1 requests==2.30.0
-python download_as_mbtiles.py
+uv run https://raw.githubusercontent.com/ramSeraph/opendata/refs/heads/master/maps/SOI/download_as_mbtiles.py
 
 ```
 

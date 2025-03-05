@@ -7,13 +7,18 @@ models_folder=$1
 [[ -d $models_folder ]] || mkdir -p $models_folder
 
 cd $models_folder
-files=("LICENSE" 'lstm/eng.traineddata' 'lstm/osd.traineddata' 'old/eng.traineddata' 'old/myconfig')
+files=('lstm_eng.traineddata' 'lstm_osd.traineddata' 'old_eng.traineddata' 'old_myconfig')
+
+mkdir lstm
+mkdir old
 
 for f in "${files[@]}"
 do
-   d=$(dirname $f)
-   [[ -d $d ]] || mkdir $d
-   wget https://storage.googleapis.com/lgd_captcha_tesseract_models/$f -O $f
+   wget https://github.com/ramSeraph/opendata/releases/download/tesseract-models/$f
 done
 
+mv lstm_eng.traineddata lstm/eng.traineddata
+mv lstm_osd.traineddata lstm/osd.traineddata
 
+mv old_eng.traineddata old/eng.traineddata
+mv old_myconfig old/myconfig

@@ -1,0 +1,49 @@
+name: LGD Daily Run
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on: 
+  schedule:
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+
+
+jobs:
+  Run-LGD-Extraction:
+    timeout-minutes: 600
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Setup swap
+        uses: pierotofy/set-swap-space@v1.0
+        with:
+          swap-size-gb: 10
+
+      - uses: actions/checkout@v4.1.7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          version: ">=0.5.29"
+
+      - name: Get current date
+        run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
+        id: date
+
+      - name: Restore run data from cache
+        uses: ramSeraph/cache-always@v0.0.1
+        with:
+          path: |
+            lgd/data/raw/
+          key:  lgd-archive-data-raw-v2-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          restore-keys: |
+            lgd-archive-data-raw-v2-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            lgd-archive-data-raw-v2-${{ steps.date.outputs.date }}-
+
+      - name: Compress data
+        run: |
+          uv run utils/get_prev_month_year.py month_year.txt
+          ./utils/archive_prev_month.sh $(cat month_year.txt)
+        timeout-minutes: 600

@@ -1,4 +1,4 @@
-name: LGD Daily Run
+name: LGD Monthly Compression
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}

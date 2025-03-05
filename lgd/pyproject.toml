@@ -1,0 +1,21 @@
+[project]
+name = "lgd"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "bs4>=0.0.2",
+    "calmjs>=3.4.4",
+    "colorlog>=6.9.0",
+    "humanize>=4.12.1",
+    "lxml>=5.3.1",
+    "numpy>=2.2.3",
+    "odfpy>=1.4.1",
+    "psutil>=7.0.0",
+    "pytesseract>=0.3.13",
+    "requests>=2.32.3",
+    "scikit-image>=0.25.2",
+    "scipy>=1.15.2",
+    "xlsx2csv>=0.8.4",
+]

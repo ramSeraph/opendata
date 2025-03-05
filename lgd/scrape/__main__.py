@@ -5,7 +5,6 @@ import logging
 import subprocess
 
 
-from datetime import datetime
 from pathlib import Path
 from enum import Enum
 from pprint import pprint
@@ -200,7 +199,7 @@ def get_version_text():
 
 
 def get_license_txt():
-    license_txt = f"""
+    license_txt = """
     COPYRIGHT POLICY: https://lgdirectory.gov.in/copyRightPolicy.do( archived - https://web.archive.org/web/20230322190637/https://lgdirectory.gov.in/copyRightPolicy.do )
     SOURCE: https://lgdirectory.gov.in
     """
@@ -278,7 +277,13 @@ def archive_all_data(downloaders):
     return True
 
 
-def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1, use_procs=False):
+def run(params, mode,
+        comps_to_run=set(), 
+        comps_to_not_run=set(), 
+        num_parallel=1, 
+        use_procs=False, 
+        archive_data=False, 
+        status_outfile=None):
     ctx = Context(params)
     all_downloaders = get_all_downloaders(ctx)
     dmap = {d.name:d for d in all_downloaders}
@@ -358,8 +363,11 @@ def run(params, mode, comps_to_run=set(), comps_to_not_run=set(), num_parallel=1
         if mode == Mode.RUN:
             comps_done, comps_in_error = run_on_threads(graph_to_run, dmap, num_parallel, use_procs, params)
 
-        result = { 'done': comps_done, 'error': comps_in_error, 'left': comps_to_run_expanded - (comps_done | comps_in_error) }
-        if params.archive_data:
+        result = { 'done': list(comps_done), 'error': list(comps_in_error), 'left': list(comps_to_run_expanded - (comps_done | comps_in_error)) }
+        if status_outfile is not None:
+            Path(status_outfile).write_text(json.dumps(result))
+
+        if archive_data:
             success = archive_all_data(all_downloaders)
             log_level = logging.INFO if success else logging.ERROR
             log_msg = 'archiving {}'.format('successful' if success else 'failed')
@@ -417,6 +425,7 @@ if __name__ == '__main__':
     parser.add_argument('--captcha-model-dir', help='location of the directory with tesseract models', type=str)
     parser.add_argument('--archive-data', help='archive data into a zip file and delete the staging files', action='store_true')
     parser.add_argument('--save-intermediates', help='save intermediate files before converting to csv, in the temp dir', action='store_true')
+    parser.add_argument('--save-status', help='save the final status of the run to a json file', type=str)
 
     parser.add_argument('-l', '--log-level', help='Set the logging level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], type=str)
     parser.set_defaults(**default_params_dict)
@@ -428,6 +437,8 @@ if __name__ == '__main__':
     num_parallel = args.parallel
     use_procs = args.use_procs
     to_markdown = args.to_markdown
+    archive_data = args.archive_data
+    save_status = args.save_status
 
     if len(comps_to_run) and len(comps_to_not_run):
         raise Exception("Can't specify both comps to run and not run")
@@ -448,6 +459,8 @@ if __name__ == '__main__':
     del args_dict['parallel']
     del args_dict['use_procs']
     del args_dict['to_markdown']
+    del args_dict['archive_data']
+    del args_dict['save_status']
 
     params = Params()
     params.__dict__ = args_dict
@@ -479,7 +492,7 @@ if __name__ == '__main__':
 
 
     BaseDownloader.set_known_site_map(known_site_map)
-    ret = run(params, mode, set(comps_to_run), set(comps_to_not_run), num_parallel, use_procs)
+    ret = run(params, mode, set(comps_to_run), set(comps_to_not_run), num_parallel, use_procs, archive_data, save_status)
     if mode == Mode.COMPS and to_markdown:
         markdown_str = get_markdown_from_comps(ret)
         print('\n\nMarkdown:\n\n')
@@ -487,5 +500,5 @@ if __name__ == '__main__':
     else:
         pprint(ret)
 
-    if mode == Mode.RUN and params.archive_data and not ret['archival_status']:
+    if mode == Mode.RUN and archive_data and not ret['archival_status']:
         exit(1)

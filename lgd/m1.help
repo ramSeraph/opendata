@@ -1,7 +1,0 @@
-export OPENBLAS=/opt/homebrew/opt/openblas/lib/
-pip install --no-binary :all: --no-use-pep517 numpy==1.20.3
-pip install pybind11
-pip install cython
-pip install pythran
-pip install packaging==21.3 pyparsing==2.4.7 python-dateutil==2.8.2
-pip install --no-binary :all: --no-use-pep517 scipy scikit-image==0.18.2

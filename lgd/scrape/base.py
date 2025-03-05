@@ -38,7 +38,6 @@ class Params:
         self.save_all_captchas = False
         self.save_failed_captchas = False
         self.captcha_model_dir = str(Path(__file__).parent.joinpath('captcha', 'models'))
-        self.archive_data = False
         self.base_raw_dir = 'data/raw'
         self.temp_dir = 'data/temp'
         self.save_intermediates = False

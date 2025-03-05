@@ -165,8 +165,7 @@ def scrape(phone_num, password, otp_from_pb):
                 continue
             d_name = o.text
             ALL_DISTRICTS = 'All Districts'
-            all_dist_data_path = state_dir_path / ALL_DISTRICTS / 'data.zip'
-            if d_name != ALL_DISTRICTS and all_dist_data_path.exists():
+            if d_name == ALL_DISTRICTS:
                 continue
             logging.info(f'handling district {d_name}')
             dist_dir_path = state_dir_path / d_name

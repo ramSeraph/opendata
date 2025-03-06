@@ -90,6 +90,7 @@ jobs:
 
       - name: Upload archive file to github
         if: always()
+        id: upload
         run: |
           cd lgd/
           curr_date=${{ steps.date.outputs.date }}

@@ -85,7 +85,7 @@ jobs:
         id: download
         run: |
           cd lgd/
-          uv run python -m scrape -m RUN -l INFO -R 300 --use-procs -p 10 --save-status status.json --captcha-model-dir data/captcha/models
+          uv run python -m scrape -m RUN -l INFO -R 300 --use-procs -p 10 --save-status status.json --captcha-model-dir data/captcha/models --captcha-retries 10
         timeout-minutes: 300
 
       - name: Upload archive file to github

@@ -19,3 +19,6 @@ dependencies = [
     "scipy>=1.15.2",
     "xlsx2csv>=0.8.4",
 ]
+
+[tool.uv.workspace]
+members = ["wikidata"]

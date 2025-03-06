@@ -4,7 +4,7 @@ lgd_file_prefixes=(
   'district_panchayats'
   'districts'
   #'gp_mapping'
-  #'pri_local_bodies'
+  'pri_local_bodies'
   'states'
   #'statewise_ulbs_coverage'
   'subdistricts'

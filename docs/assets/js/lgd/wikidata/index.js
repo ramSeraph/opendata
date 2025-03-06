@@ -1,5 +1,5 @@
 
-const baseUrl = 'https://indianopenmaps.fly.dev/lgd/wikidata/reports';
+const externalUrl = 'https://indianopenmaps.fly.dev/lgd/wikidata/reports';
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
@@ -96,11 +96,11 @@ function addLinks(entities, entity_info) {
   const list = document.getElementById('linklist');
   const baseUrl = window.location.toString();
   for (const e of entities) {
-    const entityLink = `<a href='${baseUrl}?entity=${e}'>${e}s</a>`;
+    const entityLink = `<a href='${externalUrl}?entity=${e}'>${e}s</a>`;
     const queryLink = `<a href='${entity_info[e]["query"]}' target="_blank">query</a>`;
     list.insertAdjacentHTML('beforeend', `<li><span id="${e}">${entityLink} - ${queryLink}</span></li>`);
   }
-  const jsonUrl = `${baseUrl}/status.json`;
+  const jsonUrl = `${externalUrl}/status.json`;
   fetch(jsonUrl)
     .then(response => {
       if (response.ok) {

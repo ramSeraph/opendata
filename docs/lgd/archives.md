@@ -9,7 +9,7 @@ custom-css-list:
   - url:  "/assets/css/lgd/status.css"
 ---
 
-# !!!! StALE DATA WARNING.. all data past 05th March 2025 is not listed here and is only listed [here](https://github.com/ramSeraph/opendata/releases/downloads/lgd-latest/url_list.txt)](https://github.com/ramSeraph/opendata/releases/downloads/lgd-latest/url_list.txt). The data storage is being redone and the UI will be updated when things are stable !!!!
+## !!!! STALE DATA WARNING !!!! All data past 5th March 2025 is not listed here and is only listed [here](https://github.com/ramSeraph/opendata/releases/downloads/lgd-latest/url_list.txt). The data storage is being redone and the UI will be updated when things are stable.
 
 <span id='call_status'></span>
 <div id='archive_list'></div>

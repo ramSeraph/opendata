@@ -101,4 +101,4 @@ jobs:
       - name: Cleanup
         if: steps.download.outcome == 'success' && steps.upload.outcome == 'success'
         run: |
-          rm -rf data/raw/ || true
+          rm -rf lgd/data/raw/ || true

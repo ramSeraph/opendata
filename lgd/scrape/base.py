@@ -45,6 +45,7 @@ class Params:
         self.connect_timeout = 10
         self.read_timeout = 60
         self.http_retries = 3
+        self.captcha_retries = 5
 
     def request_args(self):
         return {

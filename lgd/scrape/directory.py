@@ -138,6 +138,7 @@ class DirectoryDownloader(BaseDownloader):
 
     def get_records(self):
         download_types = copy.copy(self.download_types)
+        max_captcha_retries = self.ctx.params.captcha_retries
         while True:
             download_type = download_types.pop(0)
             try:
@@ -147,8 +148,8 @@ class DirectoryDownloader(BaseDownloader):
                     try:
                         return self.make_request(download_type)
                     except CaptchaFailureException:
-                        if count > 5:
-                            raise Exception('captcha failed for 5 tries')
+                        if count > max_captcha_retries:
+                            raise Exception('captcha failed for {max_captcha_retries} tries')
                         time.sleep(1)
             except IntermittentFailureException as ex:
                 raise ex
@@ -157,38 +158,6 @@ class DirectoryDownloader(BaseDownloader):
                     raise ex
                 else:
                     logger.warning(f'Caught exception while running with download_type: {download_type}.. checking with other downloadtypes', exc_info=True)
-
-
-    #TODO: this is incomplete
-    def get_file_mod(self):
-    
-        if not self.ctx.params.using_mods:
-            self.get_file()
-            return
-    
-        csv_filename = self.get_filename()
-        dir_name = os.path.dirname(csv_filename)
-        file_name = os.path.basename(csv_filename)
-        old_csv_filename = csv_filename
-        csv_filename = f'{dir_name}/mods/{file_name}'
-        self.post_data['downloadOption'] = 'DMO'
-        self.post_data['rptFileNameMod'] = self.post_data['rptFileName'] + 'byDate' 
-        self.post_data['rptFileName'] = '-1'
-        self.post_data['fromDate'] = MOD_FROM_DATE
-        self.post_data['toDate'] = MOD_TO_DATE
-        dir_dir_name = os.path.dirname(dir_name)
-        old_file = f'{dir_dir_name}/{MOD_FROM_DATE}/{file_name}'
-    
-        if os.path.exists(csv_filename):
-            merge_file(old_file, csv_filename, old_csv_filename) 
-            os.remove(csv_filename)
-            return
-    
-        # TODO: use changed filename
-        self.get_file()
-        merge_file(old_file, csv_filename, old_csv_filename) 
-        os.remove(csv_filename)
-
 
 
 

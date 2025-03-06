@@ -413,6 +413,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-verify-ssl', help='don\'t verify ssl for connections', action='store_true')
     parser.add_argument('-r', '--http-retries', help='number of times to retry on http failure', type=int)
 
+    parser.add_argument('--captcha-retries', help='number of times to retry on captcha failure', type=int)
     parser.add_argument('--print-captchas', help='print captchas on failure', action='store_true')
     parser.add_argument('--save-failed-html', help='save html for failed requests', action='store_true')
     parser.add_argument('--save-all-captchas', help='save all captchas encountered', action='store_true')

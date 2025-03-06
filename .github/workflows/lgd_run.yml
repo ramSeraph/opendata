@@ -35,7 +35,7 @@ jobs:
       - name: Restore tesseract models from cache
         uses: actions/cache@v4.2.2
         with:
-          path: 'lgd/models/' 
+          path: 'lgd/data/catcha/models/' 
           key:  'lgd-tesseract-models-gcs-v2'
         id: models-cache
 

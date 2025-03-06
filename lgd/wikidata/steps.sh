@@ -2,11 +2,11 @@
 set -aeux
 
 script_dir=$(dirname "$0")
-unameOut="$(uname -s)"
+uname_out="$(uname -s)"
 RUNNER="uv run"
 
 conv_date() {
-  if [[ $unameOut == "Darwin" ]]; then
+  if [[ $uname_out == "Darwin" ]]; then
     date -j -f "%d%b%Y" "$1" +"%s"
   else
     date -d"$1" +"%s"
@@ -14,12 +14,10 @@ conv_date() {
 }
 
 get_lgd_latest_date() {
+  prefix=$1
   max_date="01Jan1970"
   max_date_conv=$(conv_date $max_date)
-  cd data > /dev/null
-  wget -q https://storage.googleapis.com/lgd_data_archive/listing_archives.txt
-  all_dates="$(cat listing_archives.txt| cut -d' ' -f2)"
-  rm listing_archives.txt
+  all_dates="$(cat listing_archives.txt | cut -d" " -f2 | grep "^$prefix\." | cut -d"." -f2)"
   for d in $all_dates
   do
     d_conv=$(conv_date $d)
@@ -28,42 +26,28 @@ get_lgd_latest_date() {
       max_date_conv=$d_conv
     fi
   done
-  cd - > /dev/null
   echo ${max_date}
 }
 
 
-lgd_files=(
-  'blocks.csv'
-  'district_panchayats.csv'
-  'districts.csv'
-  #'gp_mapping.csv'
-  'pri_local_bodies.csv'
-  'states.csv'
-  #'statewise_ulbs_coverage.csv'
-  'subdistricts.csv'
-  #'urban_local_bodies.csv'
-  #'villages.csv'
-  #'villages_by_blocks.csv'
-)
-
+release_url="https://github.com/ramSeraph/opendata/releases/download/lgd-latest"
 
 get_lgd_files() {
   mkdir -p data/lgd
   cd data
-  date_str=$(get_lgd_latest_date)
-  echo "getting lgd_archive for $date_str"
-  echo "$date_str" > lgd_date.txt
-  # download the lgd archive
-  wget https://storage.googleapis.com/lgd_data_archive/${date_str}.zip
-  # unzip files
-  7z x ${date_str}.zip
-  # move files to lgd dir
-  for file in ${lgd_files[*]}
+  wget -q ${release_url}/listing_archives.txt
+  for prefix in ${lgd_file_prefixes[*]}
   do
-    mv "${date_str}/$file" lgd/
+    date_str=$(get_lgd_latest_date $prefix)
+    echo "getting lgd_archive for $prefix $date_str"
+    echo "$date_str" > ${prefix}.lgd_date.txt
+    fname=${prefix}.${date_str}.csv.7z
+    wget ${release_url}/${fname}
+    7z x $fname
+    rm $fname
+    mv ${prefix}.${date_str}.csv lgd/${prefix}.csv
   done
-  rm -rf ${date_str} ${date_str}.zip
+  rm listing_archives.txt
   cd -
 }
 
@@ -121,6 +105,8 @@ verify_block_panchayats() {
   $RUNNER ${script_dir}/download.py block_panchayat
   $RUNNER ${script_dir}/check_block_panchayats.py
 }
+
+source ${script_dir}/files.sh
 
 get_lgd_files
 

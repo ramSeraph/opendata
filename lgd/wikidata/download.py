@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "pywikibot",
+# ]
+# ///
+
 import json
 import sys
 import pywikibot
@@ -69,3 +76,4 @@ if __name__ == '__main__':
         get_data(repo, 'Q4927168', 'data/block_panchayats.jsonl')
     elif entity == 'village':
         print('getting villages')
+

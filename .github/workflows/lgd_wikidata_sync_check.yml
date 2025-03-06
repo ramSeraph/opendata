@@ -27,12 +27,6 @@ jobs:
           cache-suffix: 'lgd-wikidata-check'
         id: setup-uv
               
-      - name: Setup python requirements
-        run: |
-          cd lgd/wikidata
-          uv venv
-          uv pip install -r requirements.check.txt
-
       - name: Get current date
         run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
         id: date

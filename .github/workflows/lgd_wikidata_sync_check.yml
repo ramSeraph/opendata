@@ -49,16 +49,12 @@ jobs:
         run: |
           cd lgd/wikidata
           bash steps.sh
-          wd_date=${{ steps.date.outputs.date }}
-          lgd_date=$(cat data/lgd_date.txt)
-          echo "{ \"lgd_date\": \"$lgd_date\", \"wd_date\": \"$wd_date\" }" > data/dates.json
         timeout-minutes: 60
 
       - name: Upload Reports
         run: |
           cd lgd/wikidata
-          gsutil -m cp reports/*.json gs://lgd_wikidata_reports/
-          gsutil -m acl ch -u AllUsers:R gs://lgd_wikidata_reports/*
+          gh release upload lgd-wikidata-sync reports/*.json --clobber
         timeout-minutes: 5
 
       - name: Cleanup data

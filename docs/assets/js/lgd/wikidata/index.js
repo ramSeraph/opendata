@@ -64,7 +64,7 @@ function showPage(entity) {
   div.insertAdjacentHTML('beforeend', `<h1>${reportType} Report:</h1>`);
   div.insertAdjacentHTML('beforeend', '<ul id="sectionlist"></ul>');
   const list = document.getElementById('sectionlist');
-  const jsonUrl = `${baseUrl}/${entity}s.json`;
+  const jsonUrl = `${externalUrl}/${entity}s.json`;
   fetch(jsonUrl)
     .then(response => {
       if (response.ok) {
@@ -96,7 +96,7 @@ function addLinks(entities, entity_info) {
   const list = document.getElementById('linklist');
   const baseUrl = window.location.toString();
   for (const e of entities) {
-    const entityLink = `<a href='${externalUrl}?entity=${e}'>${e}s</a>`;
+    const entityLink = `<a href='${baseUrl}?entity=${e}'>${e}s</a>`;
     const queryLink = `<a href='${entity_info[e]["query"]}' target="_blank">query</a>`;
     list.insertAdjacentHTML('beforeend', `<li><span id="${e}">${entityLink} - ${queryLink}</span></li>`);
   }

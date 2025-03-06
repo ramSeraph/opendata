@@ -60,12 +60,11 @@ jobs:
         uses: ramSeraph/cache-always@v0.0.1
         with:
           path: |
-            lgd/data/raw/${{ steps.date.outputs.date }}
-            lgd/data/raw/changes 
-          key:  lgd-data-raw-v2-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+            lgd/data/raw/
+          key:  lgd-data-raw-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            lgd-data-raw-v2-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            lgd-data-raw-v2-${{ steps.date.outputs.date }}-
+            lgd-data-raw-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            lgd-data-raw-v3-${{ steps.date.outputs.date }}-
 
       - name: Download changes file from github
         run: |
@@ -101,4 +100,4 @@ jobs:
       - name: Cleanup
         if: steps.download.outcome == 'success' && steps.upload.outcome == 'success'
         run: |
-          rm -rf lgd/data/raw/ || true
+          rm -rf lgd/data/raw/* || true

@@ -1,4 +1,5 @@
 
+const baseUrl = 'https://indianopenmaps.fly.dev/lgd/wikidata/reports';
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
@@ -63,7 +64,7 @@ function showPage(entity) {
   div.insertAdjacentHTML('beforeend', `<h1>${reportType} Report:</h1>`);
   div.insertAdjacentHTML('beforeend', '<ul id="sectionlist"></ul>');
   const list = document.getElementById('sectionlist');
-  const jsonUrl = `https://storage.googleapis.com/lgd_wikidata_reports/${entity}s.json`;
+  const jsonUrl = `${baseUrl}/${entity}s.json`;
   fetch(jsonUrl)
     .then(response => {
       if (response.ok) {
@@ -99,7 +100,7 @@ function addLinks(entities, entity_info) {
     const queryLink = `<a href='${entity_info[e]["query"]}' target="_blank">query</a>`;
     list.insertAdjacentHTML('beforeend', `<li><span id="${e}">${entityLink} - ${queryLink}</span></li>`);
   }
-  const jsonUrl = 'https://storage.googleapis.com/lgd_wikidata_reports/status.json';
+  const jsonUrl = `${baseUrl}/status.json`;
   fetch(jsonUrl)
     .then(response => {
       if (response.ok) {

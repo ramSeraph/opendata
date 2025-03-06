@@ -5,14 +5,18 @@ concurrency:
   cancel-in-progress: true
 
 on: 
-  schedule:
-    - cron: 0 5 * * 6
+  workflow_run:
+    workflows:
+      - "SOI Weekly Unavailable Pull Run"
+    type:
+      - completed
   workflow_dispatch:
 
 
 jobs:
   Check-For-Work:
     runs-on: ubuntu-22.04
+    if: github.event.workflow_run.conclusion == 'success'
     env:
       GH_TOKEN: ${{ github.token }}
     outputs: 
@@ -33,7 +37,7 @@ jobs:
 
   Run-SOI-Parsing:
     needs: Check-For-Work
-    if: needs.Check-For-Work.outputs.work_item_count != '0'
+    if: github.event.workflow_run.conclusion == 'success' and needs.Check-For-Work.outputs.work_item_count != '0'
     timeout-minutes: 600
     runs-on: ubuntu-22.04
     env:

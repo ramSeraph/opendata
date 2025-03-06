@@ -14,6 +14,8 @@ jobs:
   Run-LGD-Extraction:
     timeout-minutes: 600
     runs-on: ubuntu-22.04
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Setup swap
         uses: pierotofy/set-swap-space@v1.0
@@ -73,8 +75,8 @@ jobs:
           if [[ -e combined.csv ]]; then
             exit 0
           fi
-          gh release download lgd-latest changes.csv.7z
-          gh release download lgd-latest changes_dates_covered.txt -O dates_covered.txt
+          gh release download lgd-latest -p changes.csv.7z
+          gh release download lgd-latest -p changes_dates_covered.txt -O dates_covered.txt
           7z x changes.csv.7z
           rm changes.csv.7z
           mv changes.csv combined.csv
@@ -91,7 +93,7 @@ jobs:
         run: |
           cd lgd/
           curr_date=${{ steps.date.outputs.date }}
-          cat status.json | jq -r '.done[]' > done_comps.txt
+          cat status.json | jq -r '.done[]' > done_comps.txt || touch done_comps.txt
           utils/push_to_release.sh $curr_date
           utils/generate_lists.sh
 

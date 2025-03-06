@@ -1,6 +1,12 @@
 version = 1
 requires-python = ">=3.12"
 
+[manifest]
+members = [
+    "lgd",
+    "wikidata",
+]
+
 [[package]]
 name = "beautifulsoup4"
 version = "4.13.3"
@@ -262,6 +268,19 @@ wheels = [
 ]
 
 [[package]]
+name = "mwparserfromhell"
+version = "0.6.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/aa/358f9af602b743ac8898353f240f678b69722801bd0625507c69d9755936/mwparserfromhell-0.6.6.tar.gz", hash = "sha256:71afec1e9784ba576e95d6f34845582d3c733a3a52ba770dd8a9c3a40e5b649f", size = 138899 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/61/c0/059513420490a2d96b470d4f560445d89f022a4749a20a952bfb002e2915/mwparserfromhell-0.6.6-cp312-cp312-macosx_10_9_universal2.whl", hash = "sha256:910d36bc70e8bea758380e75c12fd47626b295abec9f73a6099d8f937a649e77", size = 124175 },
+    { url = "https://files.pythonhosted.org/packages/bc/ab/da1b51303f0457c8cd343cf2d9a66fd0c5654fe8d0331c8107751459191f/mwparserfromhell-0.6.6-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d2febd92a55a3f19b461833267726cb81429c3d6cb0006ad1691dfa849789e5d", size = 203036 },
+    { url = "https://files.pythonhosted.org/packages/7a/39/6bd8d9678e8b3f57babee36b5a9540db8cccba1b81a64ed56576c653994b/mwparserfromhell-0.6.6-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2b75fae6d01c8fda19dbf127175122d7aa2964ef6454690e6868bbc3d80a7bc1", size = 201886 },
+    { url = "https://files.pythonhosted.org/packages/8e/e1/026ea60ac66a8bc9314230cc0c1ad2bf496ceb16a3771d4fcfd6ecc25971/mwparserfromhell-0.6.6-cp312-cp312-win32.whl", hash = "sha256:19e9a4bcd85707c83172405eb2a9a046eff9d38dd7f1a56a5e5ecbbfef4a640a", size = 98748 },
+    { url = "https://files.pythonhosted.org/packages/78/09/24c2f37524a3ebc3574975766748c7e4423ecefaa815c9fc4a324cbcf94a/mwparserfromhell-0.6.6-cp312-cp312-win_amd64.whl", hash = "sha256:cdc46c115b2495d4025920b7b30a6885a96d2b797ccc4009bf3cc02940ae55d3", size = 101071 },
+]
+
+[[package]]
 name = "networkx"
 version = "3.4.2"
 source = { registry = "https://pypi.org/simple" }
@@ -402,6 +421,20 @@ wheels = [
 ]
 
 [[package]]
+name = "pywikibot"
+version = "10.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mwparserfromhell" },
+    { name = "packaging" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c1/df/d9443a4381268b41ad1cdb2868fd76392886f50a590ee3602121bc63d62d/pywikibot-10.0.0.tar.gz", hash = "sha256:b69c23a242d96543e2283083e213df8c1760d75a76f4b66fe386b78624de22e1", size = 616439 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9e/e0/06d2d5a38ce0adb11d4008793a6b49f23d568f5064fab9b003853fbea1d8/pywikibot-10.0.0-py3-none-any.whl", hash = "sha256:9d94c5b5e54d354c2dab760eb9d0c4d3a6f97dad668ac4876d1fd11405061cc4", size = 718549 },
+]
+
+[[package]]
 name = "requests"
 version = "2.32.3"
 source = { registry = "https://pypi.org/simple" }
@@ -523,12 +556,40 @@ wheels = [
 ]
 
 [[package]]
+name = "unidecode"
+version = "1.3.8"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f7/89/19151076a006b9ac0dd37b1354e031f5297891ee507eb624755e58e10d3e/Unidecode-1.3.8.tar.gz", hash = "sha256:cfdb349d46ed3873ece4586b96aa75258726e2fa8ec21d6f00a591d98806c2f4", size = 192701 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/84/b7/6ec57841fb67c98f52fc8e4a2d96df60059637cba077edc569a302a8ffc7/Unidecode-1.3.8-py3-none-any.whl", hash = "sha256:d130a61ce6696f8148a3bd8fe779c99adeb4b870584eeb9526584e9aa091fd39", size = 235494 },
+]
+
+[[package]]
 name = "urllib3"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/aa/63/e53da845320b757bf29ef6a9062f5c669fe997973f966045cb019c3f4b66/urllib3-2.3.0.tar.gz", hash = "sha256:f8c5449b3cf0861679ce7e0503c7b44b5ec981bec0d1d3795a07f1ba96f0204d", size = 307268 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c8/19/4ec628951a74043532ca2cf5d97b7b14863931476d117c471e8e2b1eb39f/urllib3-2.3.0-py3-none-any.whl", hash = "sha256:1cee9ad369867bfdbbb48b7dd50374c0967a0bb7710050facf0dd6911440e3df", size = 128369 },
+]
+
+[[package]]
+name = "wikidata"
+version = "0.1.0"
+source = { virtual = "wikidata" }
+dependencies = [
+    { name = "bs4" },
+    { name = "pywikibot" },
+    { name = "requests" },
+    { name = "unidecode" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "bs4", specifier = ">=0.0.2" },
+    { name = "pywikibot", specifier = ">=10.0.0" },
+    { name = "requests", specifier = ">=2.32.3" },
+    { name = "unidecode", specifier = ">=1.3.8" },
 ]
 
 [[package]]

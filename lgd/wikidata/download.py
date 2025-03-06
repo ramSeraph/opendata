@@ -1,10 +1,3 @@
-# /// script
-# requires-python = ">=3.12"
-# dependencies = [
-#     "pywikibot",
-# ]
-# ///
-
 import json
 import sys
 import pywikibot

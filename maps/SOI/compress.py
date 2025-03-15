@@ -2,7 +2,6 @@
 # requires-python = ">=3.12"
 # dependencies = [
 #     "numpy",
-#     "requests",
 #     "opencv-python-headless",
 #     "pdfminer-six",
 #     "pillow",
@@ -33,9 +32,6 @@ from pdfminer.pdftypes import resolve_all, PDFObjRef, PDFNotImplementedError
 
 from pypdf import PdfReader
 import PIL
-import requests
-import numpy as np
-from scipy import interpolate
 
 PIL.Image.MAX_IMAGE_PIXELS = None
 
@@ -111,34 +107,6 @@ def get_images(layout):
 
 
 MAX_SIZE = 10 * 1024 * 1024
-def predict_quality_for_size(known_qualities, known_sizes, target_size):
-    known_qualities = np.array(known_qualities)
-    known_sizes = np.array(known_sizes)
-    
-    # Sort by size to ensure monotonicity (important for interpolation)
-    idx = np.argsort(known_sizes)
-    known_sizes = known_sizes[idx]
-    known_qualities = known_qualities[idx]
-
-    if len(known_sizes) == 1:
-        target_quality = (known_qualities[0] *  target_size) / known_sizes[0]
-        return target_quality
-
-    kind = 'cubic'
-    if len(known_qualities) == 2:
-        kind = 'linear'
-    elif len(known_qualities) == 3:
-        kind = 'quadratic'
-
-    interpolator = interpolate.interp1d(
-        known_sizes, known_qualities, 
-        kind=kind, 
-        bounds_error=False,
-        fill_value='extrapolate'
-    )
-    predicted_quality = float(interpolator(target_size))
-    return predicted_quality
-
 
 class Converter:
     def __init__(self, filename, extra={}, extra_ancillary={}):
@@ -285,53 +253,39 @@ class Converter:
         else:
             self.convert_pdf_to_image()
 
-    def fix_dpi(self):
-        img_file = self.get_full_img_file()
-        dpi = get_dpi(img_file)
+    def fix_dpi(self, file):
+        dpi = get_dpi(file)
         if dpi != 300:
             temp_file = Path('temp.jpg')
             if temp_file.exists():
                 temp_file.unlink()
-            run_external(f'magick -units PixelsPerInch {img_file} -density 300 {temp_file}')
-            shutil.move(temp_file, img_file)
+            run_external(f'magick -units PixelsPerInch {file} -density 300 {temp_file}')
+            shutil.move(temp_file, file)
 
 
     def compress(self):
+        temp_file = Path('temp.jpg')
+
         img_file = self.get_full_img_file()
+
         compressed_file = self.get_compressed_file()
         if compressed_file.exists():
             print(f'file {compressed_file} exists.. skipping compression')
             return
-
-        temp_file = Path('temp.jpg')
         shutil.copy(img_file, compressed_file)
+
         quality = 100
-        known_qualities = [ quality ]
-        known_sizes = []
-        prev_size = None
+        quality_list = [ 75, 50, 25, 10 ]
         while True:
             curr_size = compressed_file.stat().st_size
-            known_sizes.append(curr_size)
-            
+
             if curr_size < MAX_SIZE:
                 break
 
-            if prev_size is not None and curr_size > prev_size:
-                known_sizes = [curr_size]
-                known_qualities = [ known_qualities[-1] ]
-            prev_size = curr_size
+            quality = quality_list.pop(0)
+            run_external(f'bin/cjpeg -outfile {compressed_file} -quality {quality} -baseline {img_file}')
+            self.fix_dpi(compressed_file)
 
-            quality = predict_quality_for_size(known_qualities, known_sizes, MAX_SIZE)
-            quality = int(quality)
-            if quality < 10:
-                print(f'{quality=} less than 10.. skipping') 
-                break
-            run_external(f'bin/cjpeg -outfile {temp_file} -quality {quality} -baseline {compressed_file}')
-            shutil.copy(temp_file, compressed_file)
-            known_qualities.append(quality)
-            #if prev_quality > quality:
-            #    break
-            #prev_quality = quality
 
     def close(self):
         if self.file_fp is not None:
@@ -346,7 +300,7 @@ class Converter:
         print(f'converting {sheet}')
         converter.convert()
         print(f'fixing dpi for {sheet}')
-        converter.fix_dpi()
+        converter.fix_dpi(converter.get_full_img_file())
         print(f'compressing {sheet}')
         converter.compress()
         compressed_file = self.get_compressed_file()
@@ -364,39 +318,6 @@ def get_extra(special_cases, filename):
         if full_filename in special_cases:
             extra_ancillary[k] = special_cases[full_filename]
     return extra, extra_ancillary
-
-def add_to_done(p):
-    with open('done.txt', 'a') as f:
-        f.write(p)
-        f.write('\n')
-
-def get_done_list():
-    done_file = Path('done.txt')
-    if not done_file.exists():
-        return set()
-    lines = done_file.read_text().split('\n')
-    lines = [ li.strip() for li in lines ]
-    lines = [ li for li in lines if li != '' ]
-    return set(lines)
-
-def get_pdfs():
-    lines = Path('listing_pdfs.txt').read_text().split('\n')
-    pdfs = [ line.strip('\n').split(' ')[1] for line in lines if line.strip('\n') != '']
-    pdfs = [ p for p in pdfs if not p.endswith('.unavailable') ]
-    return pdfs
-
-
-def download_from_github(p):
-    out_file = download_dir / f'{p}.pdf'
-    if out_file.exists():
-        return out_file
-    resp = requests.get(f'https://github.com/ramSeraph/opendata/releases/download/soi-pdfs/{p}.pdf')
-    if not resp.ok:
-        raise Exception(f'unable to download {p}')
-    
-    out_file.write_bytes(resp.content)
-    return out_file
-
 
 
 if __name__ == '__main__':

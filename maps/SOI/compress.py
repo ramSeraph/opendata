@@ -264,8 +264,6 @@ class Converter:
 
 
     def compress(self):
-        temp_file = Path('temp.jpg')
-
         img_file = self.get_full_img_file()
 
         compressed_file = self.get_compressed_file()
@@ -274,9 +272,10 @@ class Converter:
             return
         shutil.copy(img_file, compressed_file)
 
+        curr_size = None
         quality = 100
         quality_list = [ 75, 50, 25, 10 ]
-        while True:
+        while len(quality_list) > 0:
             curr_size = compressed_file.stat().st_size
 
             if curr_size < MAX_SIZE:
@@ -286,6 +285,8 @@ class Converter:
             run_external(f'bin/cjpeg -outfile {compressed_file} -quality {quality} -baseline {img_file}')
             self.fix_dpi(compressed_file)
 
+        if curr_size > MAX_SIZE:
+            raise Exception(f'Couldn\'t compress {img_file} beyond {curr_size} bytes') 
 
     def close(self):
         if self.file_fp is not None:

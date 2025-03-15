@@ -572,5 +572,9 @@
     },
     "data/raw/40K_5.pdf": {
       "shrunk_map_area_corners": [[342, 95], [341, 1680], [1211, 1682], [1211, 96]]
+    },
+    "data/raw/54D_5.pdf": {
+      "shrunk_map_area_corners": [[241, 88], [238, 1658], [1234, 1660], [1237, 89]],
+      "corner_overrides": [[3216, 1070], null, null, [14479, 1072]]
     }
 }

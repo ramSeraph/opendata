@@ -6,10 +6,15 @@ concurrency:
 
 on: 
   workflow_dispatch:
-
+  workflow_run:
+    workflows:
+      - "SOI Weekly Parse Run"
+    type:
+      - completed
 
 jobs:
   Check-For-Work:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     env:
       GH_TOKEN: ${{ github.token }}
@@ -31,7 +36,7 @@ jobs:
 
   Run-SOI-Tiling:
     needs: Check-For-Work
-    if: needs.Check-For-Work.outputs.work_item_count != '0'
+    if: ( github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' ) && needs.Check-For-Work.outputs.work_item_count != '0'
     timeout-minutes: 600
     runs-on: ubuntu-24.04
     env:

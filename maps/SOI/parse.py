@@ -414,7 +414,7 @@ class Converter:
         self.poly_approx_factor = extra.get('poly_approx_factor', 0.001)
         self.cwidth = extra.get('cwidth', 1)
         self.collar_erode = extra.get('collar_erode', 0)
-        self.process_only_maparea = extra.get('process_only_maparea', False)
+        self.process_only_maparea = extra.get('process_only_maparea', True)
 
 
 

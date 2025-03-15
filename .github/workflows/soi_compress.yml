@@ -38,7 +38,7 @@ jobs:
 
   Run-SOI-Compress:
     needs: Check-For-Work
-    if: github.event.workflow_run.conclusion == 'success' and needs.Check-For-Work.outputs.work_item_count != '0'
+    if: github.event.workflow_run.conclusion == 'success' && needs.Check-For-Work.outputs.work_item_count != '0'
     timeout-minutes: 600
     runs-on: ubuntu-22.04
     env:

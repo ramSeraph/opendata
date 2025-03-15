@@ -259,7 +259,7 @@ class Converter:
             temp_file = Path('temp.jpg')
             if temp_file.exists():
                 temp_file.unlink()
-            run_external(f'magick -units PixelsPerInch {file} -density 300 {temp_file}')
+            run_external(f'convert -units PixelsPerInch {file} -density 300 {temp_file}')
             shutil.move(temp_file, file)
 
 

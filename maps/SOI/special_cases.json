@@ -580,5 +580,8 @@
     "data/raw/40M_9.pdf": {
         "band_color": [ "red1", "red2" ],
         "corner_overrides": [[3748, 1067], [3694, 16195], [16976, 16214], [17052, 1091]]
+    },
+    "data/raw/54A_4.pdf": {
+        "corner_overrides": [null, null, [15940, 14541], null]
     }
 }

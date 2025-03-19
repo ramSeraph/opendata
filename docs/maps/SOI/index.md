@@ -22,7 +22,7 @@ This can be downloaded as local [mbtiles](https://docs.mapbox.com/help/glossary/
 
 
 ```
-uv run https://raw.githubusercontent.com/ramSeraph/opendata/refs/heads/master/maps/SOI/download_as_mbtiles.py
+uv run https://raw.githubusercontent.com/ramSeraph/indianopenmaps/refs/heads/master/utils/download_as_mbtiles.py https://github.com/ramSeraph/opendata/releases/download/soi-latest/soi.mosaic.json soi.mbtiles
 
 ```
 

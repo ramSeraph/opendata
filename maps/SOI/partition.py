@@ -263,7 +263,15 @@ def create_pmtiles(partition_info, reader):
 
     for suffix in suffix_arr:
         out_pmtiles_file = f'{to_pmtiles_prefix}{suffix}.pmtiles'
-        metadata = { 'attribution': SOI_ATTRIBUTION }
+        metadata = {
+            "type": "baselayer",
+            "format": "webp",
+            "version": "1",
+            "name": "soi_osm",
+            "description": "Survey Of India Open Series Maps",
+            'attribution': SOI_ATTRIBUTION
+        }
+
         header = {
             "tile_type": TileType.WEBP,
             "tile_compression": Compression.NONE,
@@ -290,7 +298,7 @@ def create_pmtiles(partition_info, reader):
 
 if __name__ == '__main__':
 
-    to_partition_file = Path('staging/pmtiles/partition_info.json')
+    to_partition_file = Path('staging/pmtiles/soi.partition_info.json')
     if ONLY_DISK:
         reader = DiskSource('export/tiles')
     else:
@@ -305,6 +313,6 @@ if __name__ == '__main__':
     print('creating pmtiles')
     mosaic_data = create_pmtiles(partition_info, reader)
     pprint(mosaic_data)
-    Path('staging/pmtiles/mosaic.json').write_text(json.dumps(mosaic_data))
+    Path('staging/pmtiles/soi.mosaic.json').write_text(json.dumps(mosaic_data))
 
 

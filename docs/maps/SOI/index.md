@@ -22,14 +22,14 @@ This can be downloaded as local [mbtiles](https://docs.mapbox.com/help/glossary/
 
 
 ```
-uv run https://raw.githubusercontent.com/ramSeraph/indianopenmaps/refs/heads/master/utils/download_as_mbtiles.py https://github.com/ramSeraph/opendata/releases/download/soi-latest/soi.mosaic.json soi.mbtiles
+uv run https://raw.githubusercontent.com/ramSeraph/indianopenmaps/refs/heads/main/utils/download_as_mbtiles.py https://github.com/ramSeraph/opendata/releases/download/soi-latest/soi.mosaic.json soi.mbtiles
 
 ```
 
 
 This creates a file `soi.mbtiles` in the current directory containing the whole data.
 
-The process requires a disk space of around 20GB and will download around 10GB from the internet.
+The process requires a disk space of around 12GB and will download around 10GB from the internet.
 
 # Web
 * Tile URL

@@ -95,7 +95,7 @@ jobs:
           curr_date=${{ steps.date.outputs.date }}
           cat status.json | jq -r '.done[]' > done_comps.txt || touch done_comps.txt
           utils/push_to_release.sh $curr_date
-          utils/generate_lists.sh
+          utils/generate_lists.sh lgd-latest
 
       - name: Cleanup
         if: steps.download.outcome == 'success' && steps.upload.outcome == 'success'

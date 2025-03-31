@@ -29,11 +29,9 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: lgd/uv.lock
-          version: ">=0.5.29"
-
 
       - name: Restore tesseract models from cache
-        uses: actions/cache@v4.2.2
+        uses: actions/cache/restore@v4.2.2
         with:
           path: 'lgd/data/captcha/models/' 
           key:  'lgd-tesseract-models-gcs-v2'
@@ -46,6 +44,13 @@ jobs:
           mkdir -p data/captcha/models/
           utils/download_captcha_models.sh data/captcha/models
 
+      - name: Save tesseract models to cache
+        if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: 'lgd/data/captcha/models/' 
+          key:  'lgd-tesseract-models-gcs-v2'
+
       - name: Install packages
         run: |
           sudo apt-get update
@@ -57,7 +62,7 @@ jobs:
         id: date
 
       - name: Restore daily run data from cache
-        uses: ramSeraph/cache-always@v0.0.1
+        uses: actions/cache/restore@v4
         with:
           path: |
             lgd/data/raw/
@@ -101,3 +106,12 @@ jobs:
         if: steps.download.outcome == 'success' && steps.upload.outcome == 'success'
         run: |
           rm -rf lgd/data/raw/* || true
+
+      - name: Save daily run data to cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            lgd/data/raw/
+          key:  lgd-data-raw-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+

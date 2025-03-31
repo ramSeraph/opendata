@@ -1,7 +1,7 @@
 name: SOI Weekly Compress Run
 
 concurrency: 
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 on: 
@@ -51,7 +51,6 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: maps/SOI/compress.py.lock
-          version: ">=0.5.29"
 
       - name: Install packages
         run: |
@@ -59,22 +58,37 @@ jobs:
           sudo apt-get install -y imagemagick
 
       - name: Restore ancillary files from cache
-        uses: ramSeraph/cache-always@v0.0.1
+        uses: actions/cache/restore@v4
         with:
           path: |
             maps/SOI/data/raw/SOI_FONTS.zip
           key: 'SOI-compress-basefiles-v1'
         id: base-files-cache
 
+      - name: Get SOI Fonts
+        if: ${{ steps.base-files-cache.outputs.cache-hit != 'true' }}
+        run: |
+          cd maps/SOI
+
+          [[ -f data/raw/SOI_FONTS.zip ]] || wget -P data/raw/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/SOI_FONTS.zip 
+
+      - name: Save ancillary files to cache
+        if: ${{ steps.base-files-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            maps/SOI/data/raw/SOI_FONTS.zip
+          key: 'SOI-compress-basefiles-v1'
 
       - name: Restore parse tools from cache
-        uses: ramSeraph/cache-always@v0.0.1
+        uses: actions/cache/restore@v4
         with:
           path: maps/SOI/bin/
           key:  soi-compress-tools-v1
         id: tools-cache
 
       - name: Install tools
+        if: ${{ steps.tools-cache.outputs.cache-hit != 'true' }}
         run: |
           cd maps/SOI
           if [[ ! -f bin/mutool ]]; then
@@ -85,6 +99,13 @@ jobs:
             util/build_mozjpeg.sh
           fi
 
+      - name: Save parse tools to cache
+        if: ${{ steps.tools-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: maps/SOI/bin/
+          key:  soi-compress-tools-v1
+
       - name: Authenticate with GCP
         run: |
           gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
@@ -94,7 +115,7 @@ jobs:
         id: date
 
       - name: Restore compress run data from cache
-        uses: ramSeraph/cache-always@v0.0.1
+        uses: actions/cache/restore@v4
         with:
           path: |
             maps/SOI/data/raw/*
@@ -109,8 +130,6 @@ jobs:
         run: |
           cd maps/SOI
 
-          [[ -f data/raw/SOI_FONTS.zip ]] || wget -P data/raw/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/SOI_FONTS.zip 
-
           util/get_work_for_compressor.sh data/to_compress.txt
           util/download_sheets.sh data/to_compress.txt
 
@@ -124,6 +143,15 @@ jobs:
           rm -rf export/compressed/* || true
           rm -rf data/inter/* || true
 
+      - name: Save compress run data to cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            maps/SOI/data/raw/*
+            maps/SOI/data/inter/*
+            maps/SOI/export/compressed/*
+          key:  soi-gcs-compress-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
 
 
   SOI-Compress-Failure-Notify:
@@ -136,7 +164,3 @@ jobs:
     with:
       title: "SOI Compress Run Failed"
       which-run: "self"
-
-
-
-

@@ -1,7 +1,7 @@
 name: SOI Tile Run
 
 concurrency: 
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 on: 
@@ -57,15 +57,29 @@ jobs:
           cache-dependency-glob: |
             maps/SOI/partition.py.lock
             maps/SOI/retile.py.lock
-          version: ">=0.5.29"
 
       - name: Restore ancillary files from cache
-        uses: ramSeraph/cache-always@v0.0.1
+        uses: actions/cache/restore@v4
         with:
           path: |
             maps/SOI/data/index.geojson
           key: 'SOI-tile-basefiles-v1'
         id: base-files-cache
+
+      - name: Download index file
+        if: ${{ steps.base-files-cache.outputs.cache-hit != 'true' }}
+        run: |
+          cd maps/SOI
+          mkdir -p data
+          [[ -f data/index.geojson ]] || wget -P data/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
+
+      - name: Save ancillary files to cache
+        if: ${{ steps.base-files-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            maps/SOI/data/index.geojson
+          key: 'SOI-tile-basefiles-v1'
 
       - name: Authenticate with GCP
         run: |
@@ -96,8 +110,6 @@ jobs:
           mkdir -p staging/tiles/
           mkdir -p staging/gtiffs/
 
-          echo "=== getting index file ==="
-          [[ -f data/index.geojson ]] || wget -P data/ https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
 
           echo "=== getting available tiff list ==="
           gh release download soi-tiffs -p list.txt

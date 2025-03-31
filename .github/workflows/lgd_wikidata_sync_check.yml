@@ -1,7 +1,7 @@
 name: LGD Daily Wikidata Sync Check
 
 concurrency: 
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 on: 
@@ -34,7 +34,7 @@ jobs:
         id: date
 
       - name: Restore daily run data from cache
-        uses: ramSeraph/cache-always@v0.0.1
+        uses: actions/cache/restore@v4
         with:
           path: |
             lgd/wikidata/data/
@@ -64,6 +64,14 @@ jobs:
           cd lgd/wikidata
           rm -rf data/*
           rm -rf reports/
+
+      - name: Save daily run data to cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            lgd/wikidata/data/
+          key:  data-raw-lgd-wikidata-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
 
   LGD-Wikidata-Sync-Check-Failure:
     needs: 

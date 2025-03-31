@@ -1,7 +1,7 @@
 name: SOI Weekly Unavailable Pull Run
 
 concurrency: 
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 on: 
@@ -24,10 +24,9 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: maps/SOI/scrape.py.lock
-          version: ">=0.5.29"
 
       - name: Restore tesseract models from cache
-        uses: ramSeraph/cache-always@v0.0.1
+        uses: actions/cache/restore@v4
         with:
           path: 'maps/SOI/data/captcha/models/'
           key:  'SOI-tesseract-models-v2'
@@ -45,21 +44,45 @@ jobs:
           mkdir -p data/captcha/models/
           util/download_captcha_models.sh data/captcha/models
 
+      - name: Save tesseract models to cache
+        if: ${{ steps.models-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: 'maps/SOI/data/captcha/models/'
+          key:  'SOI-tesseract-models-v2'
+
       - name: Restore ancillary files from cache
-        uses: ramSeraph/cache-always@v0.0.1
+        uses: actions/cache/restore@v4
         with:
           path: |
             maps/SOI/data/index.geojson
             maps/SOI/data/raw/SOI_FONTS.zip
           key: 'SOI-scrape-basefiles-v1'
         id: base-files-cache
+            
+      - name: Download Ancillary data
+        if: ${{ steps.base-files-cache.outputs.cache-hit != 'true' }}
+        run: |
+          cd maps/SOI
+          mkdir -p data/raw
+          [[ -f data/index.geojson ]] || wget -P data https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
+          [[ -f data/raw/SOI_FONTS.zip ]] || wget -P data https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/SOI_FONTS.zip
+
+      - name: Save ancillary files to cache
+        if: ${{ steps.base-files-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            maps/SOI/data/index.geojson
+            maps/SOI/data/raw/SOI_FONTS.zip
+          key: 'SOI-scrape-basefiles-v1'
 
       - name: Get current date
         run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
         id: date
 
       - name: Restore prev login workspace
-        uses: ramSeraph/cache-always@v0.0.1
+        uses: actions/cache/restore@v4
         with:
           path: |
             maps/SOI/data/cookies/
@@ -93,8 +116,6 @@ jobs:
         run: |
           cd maps/SOI
           mkdir -p data/raw
-          [[ -f data/index.geojson ]] || wget -P data https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/index.geojson
-          [[ -f data/raw/SOI_FONTS.zip ]] || wget -P data https://github.com/ramSeraph/opendata/releases/download/soi-ancillary/SOI_FONTS.zip
           echo "${{ secrets.SOI_USERS }}" | base64 -d > data/users.json
           wget https://github.com/ramSeraph/opendata/releases/download/soi-pdfs/list.txt
           cat list.txt | cut -d" " -f2 | xargs -I {} echo {}.pdf > data/files_done.txt
@@ -124,6 +145,25 @@ jobs:
         run: |
           cd maps/SOI
           util/generate_lists.sh pdfs
+
+      - name: Save prev data workspace
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            maps/SOI/data/raw/*.pdf
+            maps/SOI/data/raw/*.unavailable
+          key:  SOI-data-ua-raw-v3-${{ github.run_number }}-${{ github.run_attempt }}
+
+      - name: Save prev login workspace
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            maps/SOI/data/cookies/
+            maps/SOI/data/tried_users.txt
+          key:  SOI-data-ua-login-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+
 
   SOI-Extraction-Failure-Notify:
     needs: [Run-SOI-Extraction]

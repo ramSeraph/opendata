@@ -1,7 +1,7 @@
 name: LGD Monthly Compression
 
 concurrency: 
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 on: 
@@ -28,14 +28,13 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          version: ">=0.5.29"
 
       - name: Get current date
         run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
         id: date
 
       - name: Restore run data from cache
-        uses: ramSeraph/cache-always@v0.0.1
+        uses: actions/cache/restore@v4
         with:
           path: |
             lgd/data/raw/
@@ -52,3 +51,12 @@ jobs:
           ./utils/generate_lists.sh lgd-archive
           ./utils/generate_lists.sh lgd-latest
         timeout-minutes: 600
+
+      - name: Save run data to cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            lgd/data/raw/
+          key:  lgd-archive-data-raw-v2-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+

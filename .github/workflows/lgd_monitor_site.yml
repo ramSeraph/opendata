@@ -159,10 +159,10 @@ jobs:
       - name: Get current date
         run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
         id: date
-      - name: Cache changes
-        uses: ramSeraph/cache-always@v0.0.1
+      - name: Restore cached changes
+        uses: actions/cache/restore@v4
         with:
-          path: data/raw
+          path: lgd/data/raw
           key: LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
             LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-

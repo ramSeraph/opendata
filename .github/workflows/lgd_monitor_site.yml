@@ -43,8 +43,8 @@ jobs:
         run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
         id: date
 
-      - name: Cache changes
-        uses: ramSeraph/cache-always@v0.0.1
+      - name: Restore Cached changes
+        uses: actions/cache/restore@v4
         with:
           path: data/raw
           key: LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
@@ -69,11 +69,19 @@ jobs:
         timeout-minutes: 5
 
       - name: Cleanup Processes
-        if: ${{ always() }}
+        if: always()
         run: |
           docker stop runner || true
           docker kill runner || true
           docker rm runner || true
+
+      - name: Save Cached changes
+        uses: actions/cache/restore@v4
+        if: always()
+        with:
+          path: data/raw
+          key: LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+
 
   LGD-Issue-Lister:
     runs-on: ubuntu-22.04

@@ -53,7 +53,7 @@ jobs:
 
           uv run python -m scrape -m MONITOR -l INFO
 
-          filename="data/raw/${{ steps.date.outputs.date }}/struct_changes.json" 
+          filename="lgd/data/raw/${{ steps.date.outputs.date }}/struct_changes.json" 
           if [[ -f $filename ]]; then
             cat $filename
             echo

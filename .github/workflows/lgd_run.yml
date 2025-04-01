@@ -1,10 +1,10 @@
 name: LGD Daily Run
 
 concurrency: 
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
-on: 
+on:
   schedule:
     - cron: '15 6 * * *'
   workflow_dispatch:
@@ -89,7 +89,16 @@ jobs:
         id: download
         run: |
           cd lgd/
+
           uv run python -m scrape -m RUN -l INFO -R 300 --use-procs -p 10 --save-status status.json --captcha-model-dir data/captcha/models --captcha-retries 10
+
+          cat status.json | jq -r '.error[]' > error_comps.txt || touch error_comps.txt
+
+          error_count=$(cat error_comps.txt | wc -l)
+
+          [[ $error_count == 0 ]] && exit 0
+          exit 1
+
         timeout-minutes: 300
 
       - name: Upload archive file to github
@@ -103,7 +112,7 @@ jobs:
           utils/generate_lists.sh lgd-latest
 
       - name: Cleanup
-        if: steps.download.outcome == 'success' && steps.upload.outcome == 'success'
+        if: always() && steps.download.outcome == 'success' && steps.upload.outcome == 'success'
         run: |
           rm -rf lgd/data/raw/* || true
 

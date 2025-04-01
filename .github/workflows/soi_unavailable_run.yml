@@ -103,31 +103,38 @@ jobs:
             SOI-data-ua-raw-v3-${{ github.run_number }}-
             SOI-data-ua-raw-v3-
 
-      - name: Authenticate with GCP
-        run: |
-          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
-
       - name: Bring up the proxy
-        run: |
-          ./infra/create.sh
+        id: setup-proxy
+        uses: ramSeraph/gcp-simple-proxy-action/start@v0.0.1
+        with:
+          gcp-project: lgd-data
+          gcp-zone: asia-south1-a
+          gcp-credentials: ${{ secrets.GCP_AUTH }}
 
       # scrape things
       - name: Download SOI data
         run: |
           cd maps/SOI
           mkdir -p data/raw
+
+          ip_address="${{ steps.setup-proxy.outputs.ip_address }}"
+
           echo "${{ secrets.SOI_USERS }}" | base64 -d > data/users.json
+
           wget https://github.com/ramSeraph/opendata/releases/download/soi-pdfs/list.txt
           cat list.txt | cut -d" " -f2 | xargs -I {} echo {}.pdf > data/files_done.txt
-          PROXY_URL="http://$(cat ../../ip_address.txt):80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -i -r 25
+
+          PROXY_URL="http://${ip_address}:80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -i -r 25
         timeout-minutes: 180
 
       - name: Bring down the proxy
-        if: ${{ always() }}
-        run: |
-          if [[ -e info.sh ]]; then
-            ./infra/destroy.sh 
-          fi
+        if: always()
+        uses: ramSeraph/gcp-simple-proxy-action/stop@v0.0.1
+        with:
+          gcp-project: lgd-data
+          gcp-zone: asia-south1-a
+          gcp-credentials: ${{ secrets.GCP_AUTH }}
+          gcp-instance-name: ${{ steps.setup-proxy.outputs.instance_name }}
 
       - name: Upload raw files to github releases
         run: |

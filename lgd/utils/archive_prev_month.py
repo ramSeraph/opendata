@@ -36,40 +36,60 @@ def get_mapping(names):
 
 if __name__ == '__main__':
     import sys
+
     month_year = sys.argv[1]
+
     all_archives = get_all_archive_names()
+
     relevant_names = [ a for a in all_archives if a.endswith(f'{month_year}.csv.7z') ]
 
     by_file = get_mapping(relevant_names)
 
     zipping_dir = Path('data/zipping_area')
     zipping_dir.mkdir(exist_ok=True, parents=True)
+
     for prefix, dates in by_file.items():
         to_zip = []
+
         prefix_file = Path('data/combined/{prefix}.{month_year}.7z')
         if prefix_file.exists():
             continue
+
         for d in dates:
             zname = f'{prefix}.{d}.csv.7z'
             fname = f'{prefix}.{d}.csv'
+
             zfile = zipping_dir / zname
-            file = zipping_dir / fname
+            file  = zipping_dir / fname
             if file.exists():
                 continue
+
             print('downloading {zname}')
             run_external(f'gh release download lgd-latest -p {zname} -D {zipping_dir}')
-            run_external(f'7z x {zname}')
+
+            print('extracting {zname}')
+            run_external(f'sh -c "cd {zipping_dir}; 7z e {zname}"')
+
+            print(f'deleting {zfile}')
             zfile.unlink()
+
             to_zip.append(file)
 
         to_zip_str = ' '.join([f.name for f in to_zip])
+
         run_external(f'sh -c "cd {zipping_dir}; 7z a -t7z -mmt=off -m0=lzma2 -mx=9 -ms=on -md=1G -mfb=273 ../combined/{prefix}.{month_year}.7z {to_zip_str}"')
+
+        print(f'deleting all unzipped files for {prefix}')
         for p in to_zip:
             p.unlink()
+
     print('uploading files')
     run_external('gh release upload lgd-archive data/combined/*')
+
     print('downloading mapping file')
     run_external('gh release download lgd-archive -p archive_mapping.json')
+
+    print('regenerating archive mapping')
     mapping = json.loads(Path('archive_mapping.json').read_text())
     for prefix, dates in by_file.items():
         if prefix not in mapping:
@@ -80,11 +100,13 @@ if __name__ == '__main__':
         mapping[prefix] = list(set(mapping[prefix]))
 
     Path('archive_mapping.json').write_text(json.dumps(mapping))
+
     print('uploading updated mapping')
     run_external('gh release upload lgd-archive archive_mapping.json --clobber')
 
-    for asset_name in relevant_names:
-        run_external(f'gh release delete-asset lgd-latest {asset_name} -y')
+    #print('deleting already archived files from latest release')
+    #for asset_name in relevant_names:
+    #    run_external(f'gh release delete-asset lgd-latest {asset_name} -y')
 
 
     

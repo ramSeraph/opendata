@@ -93,7 +93,7 @@ jobs:
             SOI-data-ua-login-v3-${{ steps.date.outputs.date }}-
 
       - name: Restore prev data workspace
-        uses: ramSeraph/cache-always@v0.0.1
+        uses: actions/cache/restore@v4
         with:
           path: |
             maps/SOI/data/raw/*.pdf
@@ -107,7 +107,7 @@ jobs:
         id: setup-proxy
         uses: ramSeraph/gcp-simple-proxy-action/start@v0.0.1
         with:
-          gcp-project: lgd-data
+          gcp-project: ${{ secrets.GCP_PROJECT }}
           gcp-zone: asia-south1-a
           gcp-credentials: ${{ secrets.GCP_AUTH }}
 
@@ -131,7 +131,7 @@ jobs:
         if: always()
         uses: ramSeraph/gcp-simple-proxy-action/stop@v0.0.1
         with:
-          gcp-project: lgd-data
+          gcp-project: ${{ secrets.GCP_PROJECT }}
           gcp-zone: asia-south1-a
           gcp-credentials: ${{ secrets.GCP_AUTH }}
           gcp-instance-name: ${{ steps.setup-proxy.outputs.instance_name }}

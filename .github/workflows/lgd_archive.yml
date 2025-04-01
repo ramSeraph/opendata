@@ -37,11 +37,11 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
-            lgd/data/raw/
-          key:  lgd-archive-data-raw-v2-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+            lgd/data/combined/
+          key:  lgd-archive-data-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            lgd-archive-data-raw-v2-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            lgd-archive-data-raw-v2-${{ steps.date.outputs.date }}-
+            lgd-archive-data-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            lgd-archive-data-v0-${{ steps.date.outputs.date }}-
 
       - name: Compress data
         run: |
@@ -58,5 +58,5 @@ jobs:
         with:
           path: |
             lgd/data/raw/
-          key:  lgd-archive-data-raw-v2-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  lgd-archive-data-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
 

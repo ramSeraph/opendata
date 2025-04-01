@@ -38,7 +38,7 @@ if __name__ == '__main__':
     import sys
     month_year = sys.argv[1]
     all_archives = get_all_archive_names()
-    relevant_names = [ a for a in all_archives if a.endswith(f'{month_year}.csv') ]
+    relevant_names = [ a for a in all_archives if a.endswith(f'{month_year}.csv.7z') ]
 
     by_file = get_mapping(relevant_names)
 
@@ -82,6 +82,9 @@ if __name__ == '__main__':
     Path('archive_mapping.json').write_text(json.dumps(mapping))
     print('uploading updated mapping')
     run_external('gh release upload lgd-archive archive_mapping.json --clobber')
+
+    for asset_name in relevant_names:
+        run_external(f'gh release delete-asset lgd-latest {asset_name} -y')
 
 
     

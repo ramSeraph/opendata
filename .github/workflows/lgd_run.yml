@@ -92,9 +92,7 @@ jobs:
 
           uv run python -m scrape -m RUN -l INFO -R 300 --use-procs -p 10 --save-status status.json --captcha-model-dir data/captcha/models --captcha-retries 10
 
-          cat status.json | jq -r '.error[]' > error_comps.txt || touch error_comps.txt
-
-          error_count=$(cat error_comps.txt | wc -l)
+          error_count=$(cat status.json | jq -r '.error | length')
 
           [[ $error_count == 0 ]] && exit 0
           exit 1

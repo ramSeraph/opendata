@@ -64,10 +64,10 @@ if __name__ == '__main__':
             if file.exists():
                 continue
 
-            print('downloading {zname}')
+            print(f'downloading {zname}')
             run_external(f'gh release download lgd-latest -p {zname} -D {zipping_dir}')
 
-            print('extracting {zname}')
+            print(f'extracting {zname}')
             run_external(f'sh -c "cd {zipping_dir}; 7z e {zname}"')
 
             print(f'deleting {zfile}')

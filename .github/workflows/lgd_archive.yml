@@ -47,7 +47,7 @@ jobs:
         run: |
           cd lgd
           uv run utils/get_prev_month_year.py month_year.txt
-          ./utils/archive_prev_month.py $(cat month_year.txt)
+          uv run utils/archive_prev_month.py $(cat month_year.txt)
           ./utils/generate_lists.sh lgd-archive
           ./utils/generate_lists.sh lgd-latest
         timeout-minutes: 600

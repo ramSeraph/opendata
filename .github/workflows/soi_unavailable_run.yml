@@ -105,11 +105,12 @@ jobs:
 
       - name: Bring up the proxy
         id: setup-proxy
-        uses: ramSeraph/gcp-simple-proxy-action/start@v0.0.1
+        uses: ramSeraph/gcp-simple-proxy-action@v0.0.2
         with:
           gcp-project: ${{ secrets.GCP_PROJECT }}
           gcp-zone: asia-south1-a
           gcp-credentials: ${{ secrets.GCP_AUTH }}
+          simpleproxy-basicauth: 'soi_proxy:soi_proxy'
 
       # scrape things
       - name: Download SOI data
@@ -124,17 +125,8 @@ jobs:
           wget https://github.com/ramSeraph/opendata/releases/download/soi-pdfs/list.txt
           cat list.txt | cut -d" " -f2 | xargs -I {} echo {}.pdf > data/files_done.txt
 
-          PROXY_URL="http://${ip_address}:80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -i -r 25
+          PROXY_URL="http://soi_proxy:soi_proxy@${ip_address}:80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -i -r 25
         timeout-minutes: 180
-
-      - name: Bring down the proxy
-        if: always()
-        uses: ramSeraph/gcp-simple-proxy-action/stop@v0.0.1
-        with:
-          gcp-project: ${{ secrets.GCP_PROJECT }}
-          gcp-zone: asia-south1-a
-          gcp-credentials: ${{ secrets.GCP_AUTH }}
-          gcp-instance-name: ${{ steps.setup-proxy.outputs.instance_name }}
 
       - name: Upload raw files to github releases
         run: |

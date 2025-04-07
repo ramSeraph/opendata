@@ -105,12 +105,21 @@ jobs:
 
       - name: Bring up the proxy
         id: setup-proxy
-        uses: ramSeraph/gcp-simple-proxy-action@v0.0.2
+        env:
+          OCI_CLI_USER: ${{ secrets.OCI_CLI_USER }}
+          OCI_CLI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
+          OCI_CLI_REGION: ${{ secrets.OCI_CLI_REGION }}
+          OCI_CLI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
+          OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+        uses: ramSeraph/oci-simple-proxy-action@v0.0.1
         with:
-          gcp-project: ${{ secrets.GCP_PROJECT }}
-          gcp-zone: asia-south1-a
-          gcp-credentials: ${{ secrets.GCP_AUTH }}
+          oci-compartment-name: ${{ secrets.OCI_COMPARTMENT_NAME }}
+          oci-availability-domain: 'wGsJ:AP-MUMBAI-1-AD-1'
+          oci-shape: 'VM.Standard.A1.Flex'
+          oci-shape-ocpus: 1
+          oci-shape-memory: 1
           simpleproxy-basicauth: 'soi_proxy:soi_proxy'
+          simpleproxy-port: 8080
 
       # scrape things
       - name: Download SOI data
@@ -125,7 +134,7 @@ jobs:
           wget https://github.com/ramSeraph/opendata/releases/download/soi-pdfs/list.txt
           cat list.txt | cut -d" " -f2 | xargs -I {} echo {}.pdf > data/files_done.txt
 
-          PROXY_URL="http://soi_proxy:soi_proxy@${ip_address}:80" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -i -r 25
+          PROXY_URL="http://soi_proxy:soi_proxy@${ip_address}:8080" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -i -r 25
         timeout-minutes: 180
 
       - name: Upload raw files to github releases

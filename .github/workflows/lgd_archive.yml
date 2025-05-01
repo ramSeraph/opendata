@@ -57,6 +57,6 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: |
-            lgd/data/raw/
+            lgd/data/combined/
           key:  lgd-archive-data-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
 

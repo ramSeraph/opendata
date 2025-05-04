@@ -11,7 +11,7 @@ on:
 
 
 jobs:
-  Run-LGD-Extraction:
+  Run-LGD-Compression:
     timeout-minutes: 600
     runs-on: ubuntu-22.04
     env:
@@ -60,3 +60,9 @@ jobs:
             lgd/data/combined/
           key:  lgd-archive-data-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
 
+  BuildDocs:
+    needs: Run-LGD-Compression
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit
+
+ 

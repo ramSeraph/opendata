@@ -1,0 +1,14 @@
+name: LGD Monitor Monthly Compress Run
+on:
+  workflow_run:
+    workflows:
+      - LGD Monthly Compression
+    types: [completed]
+
+jobs:
+  RetryTrigger:
+    uses: ./.github/workflows/common-rerun-trigger.yml
+    secrets: inherit
+    with:
+      alert-title: "LGD Monthly Compress Run failed"
+      num-attempts: 2

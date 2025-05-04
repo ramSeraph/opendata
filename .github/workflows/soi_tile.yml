@@ -189,3 +189,11 @@ jobs:
     with:
       title: "SOI Tile Run Failed"
       which-run: "self"
+
+  BuildDocs:
+    needs: 
+      - Run-SOI-Tiling
+      - Check-For-Work
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit
+

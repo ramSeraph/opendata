@@ -122,3 +122,9 @@ jobs:
             lgd/data/raw/
           key:  lgd-data-raw-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
 
+  BuildDocs:
+    needs: Run-LGD-Extraction
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit
+
+

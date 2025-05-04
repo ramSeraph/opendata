@@ -84,4 +84,8 @@ jobs:
       title: "LGD Wikidata Sync Check Run Failed"
       which-run: "self"
 
-
+  BuildDocs:
+    needs: 
+      - Run-LGD-Wikidata-Sync-Check
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit

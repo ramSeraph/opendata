@@ -176,3 +176,11 @@ jobs:
     with:
       title: "SOI Parse Run Failed"
       which-run: "self"
+
+  BuildDocs:
+    needs: 
+      - Run-SOI-Parsing
+      - Check-For-Work
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit
+

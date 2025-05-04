@@ -15,10 +15,11 @@ def run_external(cmd):
         raise Exception(f'command {cmd} failed with exit code: {res.returncode}')
 
 
-def get_all_archive_names():
-    run_external('sh -c "gh release view lgd-latest --json assets > release.json"')
+def get_all_archive_names(release):
+    run_external(f'sh -c "gh release view {release} --json assets > release.json"')
     rfile = Path('release.json')
     data = json.loads(rfile.read_text())
+    rfile.unlink()
     assets = data['assets']
     fnames = [ a['name'] for a in assets ]
     return fnames
@@ -39,7 +40,9 @@ if __name__ == '__main__':
 
     month_year = sys.argv[1]
 
-    all_archives = get_all_archive_names()
+    all_archives = get_all_archive_names('lgd-latest')
+
+    all_monthly_archives = set(get_all_archive_names('lgd-archive'))
 
     relevant_names = [ a for a in all_archives if a.endswith(f'{month_year}.csv.7z') ]
 
@@ -51,7 +54,11 @@ if __name__ == '__main__':
     for prefix, dates in by_file.items():
         to_zip = []
 
-        prefix_file = Path('data/combined/{prefix}.{month_year}.7z')
+        monthly_archive_name = f'{prefix}.{month_year}.7z'
+        if monthly_archive_name in all_monthly_archives:
+            continue
+
+        prefix_file = Path(f'data/combined/{monthly_archive_name}')
         if prefix_file.exists():
             continue
 
@@ -77,14 +84,15 @@ if __name__ == '__main__':
 
         to_zip_str = ' '.join([f.name for f in to_zip])
 
-        run_external(f'sh -c "cd {zipping_dir}; 7z a -t7z -mmt=off -m0=lzma2 -mx=9 -ms=on -md=1G -mfb=273 ../combined/{prefix}.{month_year}.7z {to_zip_str}"')
+        run_external(f'sh -c "cd {zipping_dir}; 7z a -t7z -mmt=off -m0=lzma2 -mx=9 -ms=on -md=1G -mfb=273 ../combined/{monthly_archive_name} {to_zip_str}"')
+
+        run_external(f'gh release upload lgd-archive data/combined/{monthly_archive_name}')
+
+        prefix_file.unlink()
 
         print(f'deleting all unzipped files for {prefix}')
         for p in to_zip:
             p.unlink()
-
-    print('uploading files')
-    run_external('gh release upload lgd-archive data/combined/*')
 
     print('downloading mapping file')
     run_external('gh release download lgd-archive -p archive_mapping.json')
@@ -104,9 +112,9 @@ if __name__ == '__main__':
     print('uploading updated mapping')
     run_external('gh release upload lgd-archive archive_mapping.json --clobber')
 
-    #print('deleting already archived files from latest release')
-    #for asset_name in relevant_names:
-    #    run_external(f'gh release delete-asset lgd-latest {asset_name} -y')
+    print('deleting already archived files from latest release')
+    for asset_name in relevant_names:
+        run_external(f'gh release delete-asset lgd-latest {asset_name} -y')
 
 
     

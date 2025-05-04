@@ -41,3 +41,4 @@ window.onload = (event) => {
     statusSpan.innerHTML = 'Fetching sheet list..'
     getStatusData(fetchListCb)
 }
+

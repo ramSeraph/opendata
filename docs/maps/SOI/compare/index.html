@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta http-equiv="Content-Security-Policy" content="
+default-src 'none';
+script-src 'self' https://unpkg.com https://cdn.jsdelivr.net;
+style-src 'self' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net https://viglino.github.io;
+img-src 'self' https://tile.openstreetmap.org https://indianopenmaps.fly.dev https://*.tile.opentopomap.org https://server.arcgisonline.com https://*.google.com data:;
+font-src 'self' https://fonts.gstatic.com https://viglino.github.io;
+connect-src 'self' https://tile.openstreetmap.org https://storage.googleapis.com https://raw.githubusercontent.com https://indianopenmaps.fly.dev;
+media-src 'self';
+object-src 'self';
+child-src 'self';
+form-action 'self' 'unsafe-inline';
+base-uri 'self';
+worker-src 'self' blob:
+" />
+<meta http-equiv="X-XSS-Protection"  content="1;mode=block" always>
+<meta http-equiv="Referrer-Policy" content="no-referrer, strict-origin-when-cross-origin"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SOI Demo Page</title><!-- Begin Jekyll SEO tag v2.8.0 -->
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="SOI Demo Page" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="collection of Indian open government data related scripts." />
+<meta property="og:description" content="collection of Indian open government data related scripts." />
+<link rel="canonical" href="https://ramseraph.github.io/opendata/maps/SOI/compare" />
+<meta property="og:url" content="https://ramseraph.github.io/opendata/maps/SOI/compare" />
+<meta property="og:site_name" content="opendata" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="SOI Demo Page" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"collection of Indian open government data related scripts.","headline":"SOI Demo Page","url":"https://ramseraph.github.io/opendata/maps/SOI/compare"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="shortcut icon" type="image/png" href="/opendata/assets/images/favicon.png"/><link rel="stylesheet" type="text/css" href="/opendata/assets/css/main-dark.css"><link href="https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css" rel="stylesheet" property="stylesheet" type="text/css"><link href="https://cdn.jsdelivr.net/gh/Viglino/ol-ext@v4.0.5/dist/ol-ext.min.css" rel="stylesheet" property="stylesheet" type="text/css"><link href="https://viglino.github.io/font-gis/css/font-gis.css" rel="stylesheet" property="stylesheet" type="text/css"><link href="/opendata/assets/css/maps/SOI/compare.css" rel="stylesheet" property="stylesheet" type="text/css">
+    
+      <script src="https://cdn.jsdelivr.net/npm/elm-pep@1.0.6/dist/elm-pep.js" ></script>
+    
+      <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js" ></script>
+    
+      <script src="https://cdn.jsdelivr.net/gh/Viglino/ol-ext@v4.0.5/dist/ol-ext.min.js" ></script>
+    
+      <script src="/opendata/assets/js/maps/SOI/sheets_common.js" ></script>
+    
+      <script src="/opendata/assets/js/maps/SOI/ol_common.js" ></script>
+    
+      <script src="/opendata/assets/js/maps/SOI/compare.js" ></script>
+    
+  
+</head>
+<body>
+    <div class="container"><header>
+  <div class="menu">
+    <ul><li><a href="/opendata/">Home</a></li><li><a href="/opendata/lgd/">LGD</a></li><li><a href="/opendata/bbnl/">BBNL</a></li><li><a href="/opendata/maps/SOI/">SOI</a></li><li><a href="/opendata/about/">About</a></li></ul>
+  </div>
+</header>
+<main>
+      <h1 id="compare-maps">Compare Maps</h1>
+
+<div id="call_status"></div>
+<div id="compare" class="compare">
+   <div id="map1"></div>
+   <div id="map2"></div>
+</div>
+
+
+    </main><footer>
+  Source Code at: <a href="https://github.com/ramSeraph/opendata">Github</a>
+</footer>
+</div>
+  </body>
+</html>
+

@@ -1,0 +1,511 @@
+@import url("https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700");:root {
+    --base-color: #DBDBDB;
+    --border: dashed 1px rgba(219, 219, 219, 0.9);
+    --selection-background: rgba(219, 219, 219, 0.99);
+    --selection-text: #000;
+    --background-color: #000;
+    --text-color: var(--base-color);
+    --placeholder-color: var(--base-color);
+    --link-color: var(--base-color);
+    --code-color-1: #aaaaaa;
+    --code-color-2: #ffffcc;
+    --code-color-3: #F00000;
+    --code-color-4: #F0A0A0;
+    --code-color-5: #b38aff;
+    --code-color-6: #5ba711;
+    --code-color-7: #e4e477;
+    --code-color-8: #000080;
+    --code-color-9: #05ca05;
+    --code-color-10: #888888;
+    --code-color-11: #555555;
+    --code-color-12: #800080;
+    --code-color-13: #00d4d4;
+    --code-color-14: #00c1c1;
+    --code-color-15: #ed9d13;
+    --code-color-16: #1e90ff;
+    --code-color-17: #800000;
+    --code-color-18: #bbbbbb
+}
+
+body {
+    background-color: var(--background-color);
+    margin: 0 auto;
+    padding: 0;
+    font-family: "Source Code Pro",monospace;
+    font-size: 12.5px;
+    color: var(--text-color);
+    text-align: left;
+    line-height: 1.5 !important
+}
+
+h1,h2,h3,h4,h5,h6 {
+    font-size: 12.5px;
+    margin: 0px;
+    margin-top: 22px;
+    font-weight: bold;
+    color: var(--text-color)
+}
+
+p,ul,ol {
+    margin: 0px;
+    color: var(--text-color)
+}
+
+a {
+    text-decoration: underline;
+    color: var(--link-color)
+}
+
+a:hover {
+    color: var(--background-color);
+    background-color: var(--base-color)
+}
+
+@media only screen and (max-device-width: 500px) {
+    * {
+        font-size:12px !important
+    }
+}
+
+hr {
+    height: 0;
+    border: 0;
+    border-bottom: 1px dashed var(--base-color);
+    color: var(--base-color)
+}
+
+.container {
+    width: 90%;
+    max-width: 600px;
+    margin-right: auto;
+    margin-left: auto
+}
+
+p {
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+    margin-bottom: 15px
+}
+
+footer {
+    color: var(--text-color);
+    border-top: var(--border);
+    margin: 20px auto 15px;
+    padding-top: 10px;
+    text-align: right
+}
+
+header {
+    margin-top: 25px;
+    margin-bottom: 10px
+}
+
+header p {
+    text-align: left;
+    margin: 0
+}
+
+footer {
+    margin-bottom: 20px
+}
+
+::selection {
+    background: var(--selection-background);
+    color: var(--selection-text)
+}
+
+::-moz-selection {
+    background: var(--selection-background);
+    color: var(--selection-text)
+}
+
+:not(.menu)>ul {
+    list-style: none;
+    padding-left: 0
+}
+
+:not(.menu)>ul {
+    list-style-type: none
+}
+
+:not(.menu)>ul,ol {
+    list-style-position: inside
+}
+
+:not(.menu)>ul>li:before {
+    content: "-";
+    margin-right: 9px
+}
+
+:not(.menu)>li>ul,li>ol {
+    padding-left: 2rem
+}
+
+.menu {
+    border-top: var(--border);
+    border-bottom: var(--border);
+    margin-bottom: 25px
+}
+
+.menu ul {
+    margin-top: 12px;
+    margin-bottom: 12px;
+    padding-left: 0px;
+    list-style-type: none;
+    text-align: right
+}
+
+.menu ul li {
+    display: inline;
+    margin-left: 10px
+}
+
+.menu ul li a {
+    text-decoration: none;
+    color: var(--text-color)
+}
+
+.menu ul li a:hover {
+    text-decoration: none;
+    color: var(--background-color);
+    background-color: var(--base-color)
+}
+
+input,select,textarea {
+    padding: 0;
+    margin: 0;
+    -webkit-appearance: none;
+    -webkit-border-radius: 0;
+    border: none
+}
+
+input[type=text],select,textarea {
+    width: 100%;
+    resize: none;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    caret-color: var(--text-color);
+    font-size: 12.5px;
+    font-family: "Source Code Pro",monospace;
+    line-height: 1.5
+}
+
+input,select,textarea,textarea::-webkit-input-placeholder {
+    text-indent: 0px
+}
+
+::placeholder {
+    color: var(--placeholder-color);
+    opacity: 1
+}
+
+:-ms-input-placeholder {
+    color: var(--placeholder-color)
+}
+
+::-ms-input-placeholder {
+    color: var(--placeholder-color)
+}
+
+input[type=submit] {
+    font-size: 12.5px;
+    font-family: "Source Code Pro",monospace;
+    line-height: 1.5;
+    cursor: pointer;
+    color: var(--link-color);
+    background-color: var(--background-color)
+}
+
+input[type=submit]:hover {
+    color: var(--background-color);
+    background-color: var(--base-color)
+}
+
+*:focus {
+    outline: none
+}
+
+textarea {
+    vertical-align: top
+}
+
+table {
+    text-align: center;
+    border-collapse: collapse;
+    border-spacing: 0;
+    border: 1px solid var(--text-color)
+}
+
+th {
+    border: 2px solid var(--text-color)
+}
+
+td {
+    border: 1px solid var(--text-color)
+}
+
+.lineno {
+    color: var(--code-color-1);
+    margin-right: 15px
+}
+
+figure.highlight {
+    margin: 5px 0
+}
+
+pre {
+    background-color: var(--background-color);
+    border: none;
+    padding: 0;
+    margin: 0;
+    overflow: auto;
+    font-size: 12.5px;
+    color: var(--text-color);
+    line-height: 1.7 !important;
+    font-family: "Source Code Pro",monospace !important
+}
+
+.highlight .hll {
+    background-color: var(--code-color-2)
+}
+
+.highlight .c {
+    color: var(--code-color-1);
+    font-style: italic
+}
+
+.highlight .err {
+    color: var(--code-color-3);
+    background-color: var(--code-color-4)
+}
+
+.highlight .k {
+    color: var(--code-color-5)
+}
+
+.highlight .cm {
+    color: var(--code-color-1);
+    font-style: italic
+}
+
+.highlight .cp {
+    color: var(--code-color-6)
+}
+
+.highlight .c1 {
+    color: var(--code-color-1);
+    font-style: italic
+}
+
+.highlight .cs {
+    color: var(--code-color-5);
+    font-style: italic
+}
+
+.highlight .gd {
+    color: var(--code-color-7)
+}
+
+.highlight .ge {
+    font-style: italic
+}
+
+.highlight .gr {
+    color: var(--code-color-7)
+}
+
+.highlight .gh {
+    color: var(--code-color-8);
+    font-weight: bold
+}
+
+.highlight .gi {
+    color: var(--code-color-9)
+}
+
+.highlight .go {
+    color: var(--code-color-10)
+}
+
+.highlight .gp {
+    color: var(--code-color-11)
+}
+
+.highlight .gs {
+    font-weight: bold
+}
+
+.highlight .gu {
+    color: var(--code-color-12);
+    font-weight: bold
+}
+
+.highlight .gt {
+    color: var(--code-color-7)
+}
+
+.highlight .kc {
+    color: var(--code-color-5)
+}
+
+.highlight .kd {
+    color: var(--code-color-5)
+}
+
+.highlight .kn {
+    color: var(--code-color-5)
+}
+
+.highlight .kp {
+    color: var(--code-color-5)
+}
+
+.highlight .kr {
+    color: var(--code-color-5)
+}
+
+.highlight .kt {
+    color: var(--code-color-13)
+}
+
+.highlight .m {
+    color: var(--code-color-14)
+}
+
+.highlight .s {
+    color: var(--code-color-15)
+}
+
+.highlight .na {
+    color: var(--code-color-16)
+}
+
+.highlight .nb {
+    color: var(--code-color-13)
+}
+
+.highlight .nc {
+    color: var(--code-color-9);
+    text-decoration: underline
+}
+
+.highlight .no {
+    color: var(--code-color-7)
+}
+
+.highlight .nd {
+    color: var(--code-color-10)
+}
+
+.highlight .ni {
+    color: var(--code-color-17);
+    font-weight: bold
+}
+
+.highlight .nf {
+    color: var(--code-color-9)
+}
+
+.highlight .nn {
+    color: var(--code-color-13);
+    text-decoration: underline
+}
+
+.highlight .nt {
+    color: var(--code-color-16);
+    font-weight: bold
+}
+
+.highlight .nv {
+    color: var(--code-color-7)
+}
+
+.highlight .ow {
+    color: var(--code-color-5)
+}
+
+.highlight .w {
+    color: var(--code-color-18)
+}
+
+.highlight .mf {
+    color: var(--code-color-14)
+}
+
+.highlight .mh {
+    color: var(--code-color-14)
+}
+
+.highlight .mi {
+    color: var(--code-color-14)
+}
+
+.highlight .mo {
+    color: var(--code-color-14)
+}
+
+.highlight .sb {
+    color: var(--code-color-15)
+}
+
+.highlight .sc {
+    color: var(--code-color-15)
+}
+
+.highlight .sd {
+    color: var(--code-color-15)
+}
+
+.highlight .s2 {
+    color: var(--code-color-15)
+}
+
+.highlight .se {
+    color: var(--code-color-15)
+}
+
+.highlight .sh {
+    color: var(--code-color-15)
+}
+
+.highlight .si {
+    color: var(--code-color-15)
+}
+
+.highlight .sx {
+    color: var(--code-color-15)
+}
+
+.highlight .sr {
+    color: var(--code-color-14)
+}
+
+.highlight .s1 {
+    color: var(--code-color-15)
+}
+
+.highlight .ss {
+    color: var(--code-color-5)
+}
+
+.highlight .bp {
+    color: var(--code-color-13)
+}
+
+.highlight .vc {
+    color: var(--code-color-7)
+}
+
+.highlight .vg {
+    color: var(--code-color-7)
+}
+
+.highlight .vi {
+    color: var(--code-color-7)
+}
+
+.highlight .il {
+    color: var(--code-color-14)
+}
+

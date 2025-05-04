@@ -126,3 +126,4 @@ function getTextStyle(el) {
     return olTextStyle;
 }
 
+

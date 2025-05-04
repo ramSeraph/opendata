@@ -1,0 +1,56 @@
+jobs:
+  # Build job
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Collect-Ancillary-Files
+        run: |
+          lgd_dir='docs/lgd/'
+          archive_dir=${lgd_dir}/archives/
+          mkdir -p $archive_dir
+
+          cp lgd/site_map.json $lgd_dir
+          gh release download lgd-latest -p listing_archives.txt -O ${lgd_dir}/listing.txt
+          gh release download lgd-archive -p archive_mapping.json -O ${archive_dir}/mapping.txt
+          gh release download lgd-archive -p listing_archives.txt -O ${archive_dir}/listing.txt
+
+          reports_dir='docs/lgd/wikidata/reports/'
+          mkdir -p $reports_dir
+          gh release download lgd-wikidata-sync -p '*.json' -D $reports_dir
+          
+          soi_dir='docs/maps/soi/'
+          gh release download soi-ancillary -p index.geojson -O ${soi_dir}/osm_index.geojson
+          gh release download soi-ancillary -p polymap15m_area.geojson -O ${soi_dir}/india_boundary.geojson
+          gh release download soi-pdfs -p list.txt -O ${soi_dir}/pdf_list.txt
+          gh release download soi-tiffs -p list.txt -O ${soi_dir}/tiff_list.txt
+
+      - name: Upload-Artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: 'docs/'
+
+  # Deploy job
+  deploy:
+    # Add a dependency to the build job
+    needs: build
+
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # Specify runner + deployment step
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1

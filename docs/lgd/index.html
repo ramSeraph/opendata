@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta http-equiv="Content-Security-Policy" content="
+default-src 'none';
+script-src 'self' https://unpkg.com https://cdn.jsdelivr.net;
+style-src 'self' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net https://viglino.github.io;
+img-src 'self' https://tile.openstreetmap.org https://indianopenmaps.fly.dev https://*.tile.opentopomap.org https://server.arcgisonline.com https://*.google.com data:;
+font-src 'self' https://fonts.gstatic.com https://viglino.github.io;
+connect-src 'self' https://tile.openstreetmap.org https://storage.googleapis.com https://raw.githubusercontent.com https://indianopenmaps.fly.dev;
+media-src 'self';
+object-src 'self';
+child-src 'self';
+form-action 'self' 'unsafe-inline';
+base-uri 'self';
+worker-src 'self' blob:
+" />
+<meta http-equiv="X-XSS-Protection"  content="1;mode=block" always>
+<meta http-equiv="Referrer-Policy" content="no-referrer, strict-origin-when-cross-origin"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>LGD</title><!-- Begin Jekyll SEO tag v2.8.0 -->
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="LGD" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="collection of Indian open government data related scripts." />
+<meta property="og:description" content="collection of Indian open government data related scripts." />
+<link rel="canonical" href="https://ramseraph.github.io/opendata/lgd/" />
+<meta property="og:url" content="https://ramseraph.github.io/opendata/lgd/" />
+<meta property="og:site_name" content="opendata" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="LGD" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"collection of Indian open government data related scripts.","headline":"LGD","url":"https://ramseraph.github.io/opendata/lgd/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="shortcut icon" type="image/png" href="/opendata/assets/images/favicon.png"/><link rel="stylesheet" type="text/css" href="/opendata/assets/css/main-dark.css"><link href="/opendata/assets/css/lgd/flatpickr_dark_custom.min.css" rel="stylesheet" property="stylesheet" type="text/css"><link href="/opendata/assets/css/lgd/status.css" rel="stylesheet" property="stylesheet" type="text/css">
+    
+      <script src="/opendata/assets/js/lgd/flatpickr.min.js" ></script>
+    
+      <script src="/opendata/assets/js/lgd/archive_common.js" ></script>
+    
+      <script src="/opendata/assets/js/lgd/archive_picker.js" ></script>
+    
+  
+</head>
+<body>
+    <div class="container"><header>
+  <div class="menu">
+    <ul><li><a href="/opendata/">Home</a></li><li><a href="/opendata/lgd/">LGD</a></li><li><a href="/opendata/bbnl/">BBNL</a></li><li><a href="/opendata/maps/SOI/">SOI</a></li><li><a href="/opendata/about/">About</a></li></ul>
+  </div>
+</header>
+<main>
+      <p>Collection of Data from <a href="https://lgdirectory.gov.in">Local Government Directory</a></p>
+
+<p><a href="https://github.com/ramSeraph/opendata//tree/master/lgd">Code</a> used to extract this data.</p>
+
+<h1 id="notes">Notes</h1>
+
+<p>Some of the data present here is also available at <a href="https://data.gov.in/catalog/local-government-directory-lgd">data.gov.in</a>(updated monthly)</p>
+
+<p>The archives use a zip format which is not understood by the standard unix <code class="language-plaintext highlighter-rouge">unzip</code> tool. Use <a href="https://www.7-zip.org/">7zip</a> to extract the data from the archives instead.</p>
+
+<h1 id="data">Data</h1>
+
+<p><a href="archives">List Of All Daily Archives</a></p>
+
+<p><a href="anatomy">Description</a> of data in the archive</p>
+
+<h1 id="get-archive-for-date">Get Archive for date</h1>
+
+<h2 id="-stale-data-warning-">!!!! STALE DATA WARNING !!!!</h2>
+
+<p>All data past 5th March 2025 is not listed here and is only listed <a href="https://github.com/ramSeraph/opendata/releases/download/lgd-latest/url_list.txt">here</a>. The data storage is being redone and the UI will be updated when things are stable.</p>
+
+<hr />
+<div id="archive_date" class="flatpickr"></div>
+<p><br />
+<span id="form_status"></span></p>
+
+<hr />
+<h1 id="wikidata-syncing">Wikidata Syncing</h1>
+
+<p>Some of the entities have been synced into <a href="https://www.wikidata.org/wiki/Wikidata:Main_Page">Wikidata</a>.</p>
+
+<p><a href="wikidata">Wikidata Syncing Report</a></p>
+
+
+
+    </main><footer>
+  Source Code at: <a href="https://github.com/ramSeraph/opendata">Github</a>
+</footer>
+</div>
+  </body>
+</html>
+

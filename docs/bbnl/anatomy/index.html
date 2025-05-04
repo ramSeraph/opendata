@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta http-equiv="Content-Security-Policy" content="
+default-src 'none';
+script-src 'self' https://unpkg.com https://cdn.jsdelivr.net;
+style-src 'self' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net https://viglino.github.io;
+img-src 'self' https://tile.openstreetmap.org https://indianopenmaps.fly.dev https://*.tile.opentopomap.org https://server.arcgisonline.com https://*.google.com data:;
+font-src 'self' https://fonts.gstatic.com https://viglino.github.io;
+connect-src 'self' https://tile.openstreetmap.org https://storage.googleapis.com https://raw.githubusercontent.com https://indianopenmaps.fly.dev;
+media-src 'self';
+object-src 'self';
+child-src 'self';
+form-action 'self' 'unsafe-inline';
+base-uri 'self';
+worker-src 'self' blob:
+" />
+<meta http-equiv="X-XSS-Protection"  content="1;mode=block" always>
+<meta http-equiv="Referrer-Policy" content="no-referrer, strict-origin-when-cross-origin"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BBNL Archive Details</title><!-- Begin Jekyll SEO tag v2.8.0 -->
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="BBNL Archive Details" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="collection of Indian open government data related scripts." />
+<meta property="og:description" content="collection of Indian open government data related scripts." />
+<link rel="canonical" href="https://ramseraph.github.io/opendata/bbnl/anatomy" />
+<meta property="og:url" content="https://ramseraph.github.io/opendata/bbnl/anatomy" />
+<meta property="og:site_name" content="opendata" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="BBNL Archive Details" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"collection of Indian open government data related scripts.","headline":"BBNL Archive Details","url":"https://ramseraph.github.io/opendata/bbnl/anatomy"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="shortcut icon" type="image/png" href="/opendata/assets/images/favicon.png"/><link rel="stylesheet" type="text/css" href="/opendata/assets/css/main-dark.css">
+</head>
+<body>
+    <div class="container"><header>
+  <div class="menu">
+    <ul><li><a href="/opendata/">Home</a></li><li><a href="/opendata/lgd/">LGD</a></li><li><a href="/opendata/bbnl/">BBNL</a></li><li><a href="/opendata/maps/SOI/">SOI</a></li><li><a href="/opendata/about/">About</a></li></ul>
+  </div>
+</header>
+<main>
+      <h1 id="anatomy-of-a-bbnl-archive">Anatomy of a BBNL archive</h1>
+
+<hr />
+
+<h2 id="planned_nofncsv">planned_nofn.csv</h2>
+
+<dl>
+  <dt>description</dt>
+  <dd>Counts of GPs with hierarchy and implementers planned for NOFN Phase I</dd>
+  <dt>Location in BBNL</dt>
+  <dd>
+    <ul>
+      <li>Projects
+        <ul>
+          <li>LIST OF DISTRICTS/BLOCKS/GPs PLANNED TO BE COVERED UNDER NOFN PHASE-I (Revised Version-4 dated 15th July 2016) (362KB)</li>
+        </ul>
+      </li>
+    </ul>
+  </dd>
+</dl>
+
+<hr />
+
+<h2 id="panchayatscsv">panchayats.csv</h2>
+
+<dl>
+  <dt>description</dt>
+  <dd>Panchayat Ids</dd>
+  <dt>Location in BBNL</dt>
+  <dd>
+    <ul>
+      <li>Know your Panchayat</li>
+    </ul>
+  </dd>
+</dl>
+
+<hr />
+
+<h2 id="active_gpscsv">active_gps.csv</h2>
+
+<dl>
+  <dt>description</dt>
+  <dd>All Service Ready Gram Panchayats</dd>
+  <dt>Location in BBNL</dt>
+  <dd>
+    <ul>
+      <li>Services
+        <ul>
+          <li>List of Service Ready GP</li>
+        </ul>
+      </li>
+    </ul>
+  </dd>
+</dl>
+
+<hr />
+
+<h2 id="implementerscsv">implementers.csv</h2>
+
+<dl>
+  <dt>description</dt>
+  <dd>State Wise Details (Phase 1)</dd>
+  <dt>Location in BBNL</dt>
+  <dd>
+    <ul>
+      <li>Projects
+        <ul>
+          <li>State Wise Details (Phase 1)</li>
+        </ul>
+      </li>
+    </ul>
+  </dd>
+</dl>
+
+<hr />
+
+<h2 id="block_graphsjson"><del>block_graphs.json</del></h2>
+
+<dl>
+  <dt>description</dt>
+  <dd>Block wise line diagrams for BharatNet and BBNL dark fiber</dd>
+  <dt>Location in BBNL</dt>
+  <dd>
+    <ul>
+      <li>Services
+        <ul>
+          <li>Block wise line diagrams for BharatNet and BBNL dark fiber</li>
+        </ul>
+      </li>
+    </ul>
+  </dd>
+</dl>
+
+<hr />
+
+<h2 id="block_connected_gpscsv">block_connected_gps.csv</h2>
+
+<dl>
+  <dt>description</dt>
+  <dd>List of Gram Panchayats where fiber of BBNL is available up to the Blocks from the GPs</dd>
+  <dt>Location in BBNL</dt>
+  <dd>
+    <ul>
+      <li>Services
+        <ul>
+          <li>List of Gram Panchayats where fiber of BBNL is available up to the Blocks from the GPs (2444KB)</li>
+        </ul>
+      </li>
+    </ul>
+  </dd>
+</dl>
+
+<hr />
+
+<h2 id="status_active_gpscsv">status_active_gps.csv</h2>
+
+<dl>
+  <dt>description</dt>
+  <dd>Status Of Active Gram Panchayats</dd>
+  <dt>Location in BBNL</dt>
+  <dd>
+    <ul>
+      <li>Services
+        <ul>
+          <li>Status of Active GPs</li>
+        </ul>
+      </li>
+    </ul>
+  </dd>
+</dl>
+
+<hr />
+
+<h2 id="gp_locationscsv">GP_locations.csv</h2>
+
+<dl>
+  <dt>description</dt>
+  <dd>Lat-Long of GPs under BharatNet Phase-I</dd>
+  <dt>Location in BBNL</dt>
+  <dd>
+    <ul>
+      <li>Navigation
+        <ul>
+          <li>Lat-Long of GPs, FPOIs and OLTs  for GPs under BharatNet Phase-I</li>
+        </ul>
+      </li>
+    </ul>
+  </dd>
+</dl>
+
+<hr />
+
+<h2 id="fpoi_locationscsv">FPOI_locations.csv</h2>
+
+<dl>
+  <dt>description</dt>
+  <dd>Lat-Long of FPOIs for GPs under BharatNet Phase-I</dd>
+  <dt>Location in BBNL</dt>
+  <dd>
+    <ul>
+      <li>Navigation
+        <ul>
+          <li>Lat-Long of GPs, FPOIs and OLTs  for GPs under BharatNet Phase-I</li>
+        </ul>
+      </li>
+    </ul>
+  </dd>
+</dl>
+
+<hr />
+
+<h2 id="olt_locationscsv">OLT_locations.csv</h2>
+
+<dl>
+  <dt>description</dt>
+  <dd>Lat-Long of OLTs for GPs under BharatNet Phase-I</dd>
+  <dt>Location in BBNL</dt>
+  <dd>
+    <ul>
+      <li>Navigation
+        <ul>
+          <li>Lat-Long of GPs, FPOIs and OLTs  for GPs under BharatNet Phase-I</li>
+        </ul>
+      </li>
+    </ul>
+  </dd>
+</dl>
+
+
+
+    </main><footer>
+  Source Code at: <a href="https://github.com/ramSeraph/opendata">Github</a>
+</footer>
+</div>
+  </body>
+</html>
+

@@ -1,8 +1,0 @@
-_site
-.sass-cache
-.jekyll-metadata
-vendor
-token.txt
-TODO
-cors.config
-node_modules/

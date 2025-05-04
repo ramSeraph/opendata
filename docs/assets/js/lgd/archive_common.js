@@ -67,3 +67,4 @@ function getArchiveList(cb) {
     httpRequest.open('GET', `https://storage.googleapis.com/${bucketName}/${listFileName}`)
     httpRequest.send()
 }
+

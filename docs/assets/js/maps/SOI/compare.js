@@ -350,3 +350,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     setMode('swipev');
 });
+

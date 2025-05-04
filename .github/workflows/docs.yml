@@ -20,6 +20,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Collect-Ancillary-Files
         run: |
+          find .
           lgd_dir='docs/lgd/'
           archive_dir=${lgd_dir}/archives/
           mkdir -p $archive_dir

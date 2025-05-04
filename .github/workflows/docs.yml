@@ -20,12 +20,11 @@ jobs:
         uses: actions/checkout@v2
       - name: Collect-Ancillary-Files
         run: |
-          find .
           lgd_dir='docs/lgd/'
           archive_dir=${lgd_dir}/archives/
           mkdir -p $archive_dir
 
-          cp lgd/site_map.json $lgd_dir
+          cp lgd/scrape/site_map.json $lgd_dir
           gh release download lgd-latest -p listing_archives.txt -O ${lgd_dir}/listing.txt
           gh release download lgd-archive -p archive_mapping.json -O ${archive_dir}/mapping.txt
           gh release download lgd-archive -p listing_archives.txt -O ${archive_dir}/listing.txt

@@ -7,7 +7,7 @@ on:
   workflow_call:
 
 concurrency: 
-  group: ${{ github.workflow }}
+  group: docs
   cancel-in-progress: false
 
 jobs:

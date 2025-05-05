@@ -23,7 +23,7 @@ parseListing = (listingText) => {
 const releasesUrlPrefix = 'https://github.com/ramSeraph/opendata/releases/download'
 
 function fetchSheetList(listFilename, callback) {
-    var url = `${listFilename}`
+    var url = `../${listFilename}`
     var httpRequest = new XMLHttpRequest()
     
     alertContents = () => {

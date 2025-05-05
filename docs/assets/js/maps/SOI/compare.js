@@ -52,7 +52,7 @@ function getSOILayer() {
 function getGridSource() {
     const src = new ol.source.Vector({
         format: new ol.format.GeoJSON(),
-        url: 'osm_index.geojson',
+        url: '../osm_index.geojson',
         overlaps: false,
         attributions: [
             makeLink("https://onlinemaps.surveyofindia.gov.in/FreeOtherMaps.aspx", "SOI OSM Index(simplified)")
@@ -62,7 +62,7 @@ function getGridSource() {
 }
 
 function getIndiaOutlineSource(map1, map2, container, statusFn) {
-    const url = 'india_boundary.geojson';
+    const url = '../india_boundary.geojson';
     const src = new ol.source.Vector({
         format: new ol.format.GeoJSON(),
         url: url,

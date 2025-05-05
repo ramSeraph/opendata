@@ -1,5 +1,5 @@
 
-const externalUrl = 'https://indianopenmaps.fly.dev/lgd/wikidata/reports';
+const externalUrl = 'reports';
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);

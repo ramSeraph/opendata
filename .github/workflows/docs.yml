@@ -34,7 +34,7 @@ jobs:
           mkdir -p $reports_dir
           gh release download lgd-wikidata-sync -p '*.json' -D $reports_dir
           
-          soi_dir='docs/maps/soi/'
+          soi_dir='docs/maps/SOI/'
           gh release download soi-ancillary -p index.geojson -O ${soi_dir}/osm_index.geojson
           gh release download soi-ancillary -p polymap15m_area.geojson -O ${soi_dir}/india_boundary.geojson
           gh release download soi-pdfs -p list.txt -O ${soi_dir}/pdf_list.txt

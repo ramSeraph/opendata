@@ -21,7 +21,7 @@ def get_otp_from_msg(data):
         return None
     title = push.get('title', '')
     body  = push.get('body', '')
-    if not title.endswith('NAKSHE'):
+    if title.find('NAKSHE') == -1:
         return None
     otps = []
     for m in re.finditer(r"(\d+)\s+is\s+your\s+OTP", body):

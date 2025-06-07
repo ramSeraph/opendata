@@ -57,7 +57,7 @@ function getTilePopoverContent(sheetNo, feature, statusMap) {
     const cx = (extent[0] + extent[2]) / 2;
     const cy = (extent[1] + extent[3]) / 2;
     html += ' ';
-    html += `<a target="_blank" href=compare?x=${cx}&y=${cy}&z=11&r=0&l=10000111$>view</a>`;
+    html += `<a target="_blank" href=../compare?x=${cx}&y=${cy}&z=11&r=0&l=10000111$>view</a>`;
     return html;
 }
 

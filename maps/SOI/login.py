@@ -65,7 +65,12 @@ def get_login_form_data(soup, phone_num, password):
 def get_login_otp_form_data(soup, otp):
     captcha = get_captcha_from_page(soup)
     form_data = {}
-    form_data['ctl00$ContentPlaceHolder1$txtOTP'] = otp
+    form_data['ctl00$ContentPlaceHolder1$txtotp1'] = otp[0]
+    form_data['ctl00$ContentPlaceHolder1$txtotp2'] = otp[1]
+    form_data['ctl00$ContentPlaceHolder1$txtotp3'] = otp[2]
+    form_data['ctl00$ContentPlaceHolder1$txtotp4'] = otp[3]
+    form_data['ctl00$ContentPlaceHolder1$txtotp5'] = otp[4]
+    form_data['ctl00$ContentPlaceHolder1$txtotp6'] = otp[5]
     form_data['ctl00$ContentPlaceHolder1$txtCaptchaMtr'] = captcha
     form_data['ctl00$ContentPlaceHolder1$btnOTP'] = 'Verify OTP'
     return form_data
@@ -112,6 +117,10 @@ def login_otp(otp):
     logger.debug(f'status_code = {resp.status_code}\n headers:\n{pformat(resp.headers)}')
     if not resp.ok:
         raise Exception('login otp failed')
+    if resp.url.endswith('Errorpage.aspx'):
+        with open('login_fail.html', 'w') as f:
+            f.write(resp.text)
+        raise Exception('login failed')
     soup = BeautifulSoup(resp.text, 'html.parser')
     span = soup.find('span', { 'id': 'ContentPlaceHolder1_lblMsgOTPAttempt' })
     if span is not None:

@@ -81,7 +81,7 @@ def get_pmtiles_reader():
     global pmtiles_reader
     if pmtiles_reader is None:
         pmtiles_reader = PartitionedPMTilesSource(f'{orig_pmtiles_dir}/soi-',
-                                                  f'{orig_pmtiles_dir}/partition_info.json')
+                                                  f'{orig_pmtiles_dir}/soi.partition_info.json')
     return pmtiles_reader
 
 

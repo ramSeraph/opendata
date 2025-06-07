@@ -302,7 +302,7 @@ if __name__ == '__main__':
     if ONLY_DISK:
         reader = DiskSource('export/tiles')
     else:
-        reader = DiskAndPartitionedPMTilesSource('staging/tiles', 'export/pmtiles/soi-', 'export/pmtiles/partition_info.json')
+        reader = DiskAndPartitionedPMTilesSource('staging/tiles', 'export/pmtiles/soi-', 'export/pmtiles/soi.partition_info.json')
 
     print('getting partition info')
     partition_info = get_partition_info(reader)

@@ -72,7 +72,7 @@ class DirectoryDownloader(BaseDownloader):
         if not web_data.ok:
             raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
 
-        if 'Content-Disposition' not in web_data.headers or 'attachment;' not in web_data.headers['Content-Disposition']:
+        if 'Content-Disposition' not in web_data.headers or 'attachment;' not in web_data.headers['Content-Disposition'] or len(web_data.text) == 0:
             if INCORRECT_CAPTCHA_MESSAGE  not in web_data.text:
                 if self.ctx.params.save_failed_html:
                     with open('failed.html', 'w') as f:

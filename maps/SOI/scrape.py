@@ -272,8 +272,8 @@ def download_tile(sheet_no):
             raise Exception(f'Unexpected Error: {error_heading.text}')
 
         not_found = soup.find('span', {'id':'ContentPlaceHolder1_lblSheetNotExist'})
-        NOT_FOUND_MSG = 'Sheet is not available. Please contact to Survey of India.'
-        if not_found is not None and not_found.text == NOT_FOUND_MSG:
+        NOT_FOUND_MSG = 'Sheet Number is not available.'
+        if not_found is not None and not_found.text.strip() == NOT_FOUND_MSG:
             logger.warning('sheet not found, writing unavailable file')
             file_to_write = out_filename_unavailable
             content = b''

@@ -1,3 +1,4 @@
+import re
 import json
 import time
 import subprocess
@@ -14,14 +15,24 @@ def run_external(cmd):
     if res.returncode != 0:
         raise Exception(f'command {cmd} failed with exit code: {res.returncode}')
 
+def get_all_releases():
+    run_external('sh -c "gh release list --json tagName > tags.json"')
+    tfile = Path('tags.json')
+    data = json.loads(tfile.read_text())
+    tfile.unlink()
+    releases = [ r['tagName'] for r in data ]
+    return releases
 
-def get_all_archive_names(release):
-    run_external(f'sh -c "gh release view {release} --json assets > release.json"')
-    rfile = Path('release.json')
-    data = json.loads(rfile.read_text())
-    rfile.unlink()
-    assets = data['assets']
-    fnames = [ a['name'] for a in assets ]
+def get_all_archive_names(releases):
+    fnames = {}
+    for release in releases:
+        run_external(f'sh -c "gh release view {release} --json assets > release.json"')
+        rfile = Path('release.json')
+        data = json.loads(rfile.read_text())
+        rfile.unlink()
+        assets = data['assets']
+        fnames.update({ a['name']:release for a in assets })
+
     return fnames
 
 def get_mapping(names):
@@ -35,14 +46,53 @@ def get_mapping(names):
         m[prefix].append(date)
     return m
 
+def filter_releases(release, prefix):
+    filtered = []
+    for r in releases:
+        if r == prefix:
+            filtered.append(r)
+            continue
+        match = re.match(rf'{release}-extra\d', r)
+        if match is not None:
+            filtered.append(r)
+    return filtered
+
+def upload_to_archive(fname, counts):
+    monthly_archive_name = Path(fname).name
+    uploaded = False
+    for k in sorted(counts.keys()):
+        max_count = 988 if k == 'lgd-archive' else 998
+        if counts[k] >= max_count:
+            continue
+        print(f'uploading {monthly_archive_name} to {k}')
+        run_external(f'gh release upload {k} data/combined/{monthly_archive_name}')
+        counts[k] += 1
+        uploaded = True
+
+    if not uploaded:
+        raise Exception(f'No archive available for {monthly_archive_name}, skipping upload')
+
 if __name__ == '__main__':
     import sys
 
     month_year = sys.argv[1]
 
-    all_archives = get_all_archive_names('lgd-latest')
+    releases = get_all_releases()
 
-    all_monthly_archives = set(get_all_archive_names('lgd-archive'))
+    archive_releases = filter_releases(releases, 'lgd-archive')
+    latest_releases = filter_releases(releases, 'lgd-latest')
+
+    all_archives_mapping = get_all_archive_names(latest_releases)
+    all_archives = list(all_archives_mapping.keys())
+
+    all_monthly_archives_mapping = get_all_archive_names(archive_releases)
+    archive_counts = {}
+    for k,v in all_monthly_archives_mapping.items():
+        if v not in archive_counts:
+            archive_counts[v] = 0
+        archive_counts[v] += 1
+
+    all_monthly_archives = set(all_monthly_archives_mapping.keys())
 
     relevant_names = [ a for a in all_archives if a.endswith(f'{month_year}.csv.7z') ]
 
@@ -72,7 +122,8 @@ if __name__ == '__main__':
                 continue
 
             print(f'downloading {zname}')
-            run_external(f'gh release download lgd-latest -p {zname} -D {zipping_dir}')
+            rname = all_archives_mapping[zname]
+            run_external(f'gh release download {rname} -p {zname} -D {zipping_dir}')
 
             print(f'extracting {zname}')
             run_external(f'sh -c "cd {zipping_dir}; 7z e {zname}"')
@@ -86,6 +137,7 @@ if __name__ == '__main__':
 
         run_external(f'sh -c "cd {zipping_dir}; 7z a -t7z -mmt=off -m0=lzma2 -mx=9 -ms=on -md=1G -mfb=273 ../combined/{monthly_archive_name} {to_zip_str}"')
 
+        upload_to_archive(f'data/combined/{monthly_archive_name}', archive_counts)
         run_external(f'gh release upload lgd-archive data/combined/{monthly_archive_name}')
 
         prefix_file.unlink()
@@ -114,7 +166,8 @@ if __name__ == '__main__':
 
     print('deleting already archived files from latest release')
     for asset_name in relevant_names:
-        run_external(f'gh release delete-asset lgd-latest {asset_name} -y')
+        rname = all_archives_mapping[asset_name]
+        run_external(f'gh release delete-asset {rname} {asset_name} -y')
 
 
     

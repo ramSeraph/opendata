@@ -26,9 +26,9 @@ jobs:
           mkdir -p $archive_dir
 
           cp lgd/scrape/site_map.json $lgd_dir
-          gh release download lgd-latest -p listing_archives.txt -O ${lgd_dir}/listing.txt
+          gh release download lgd-latest -p listing_files.csv -O ${lgd_dir}/listing_files.csv
           gh release download lgd-archive -p archive_mapping.json -O ${archive_dir}/mapping.json
-          gh release download lgd-archive -p listing_archives.txt -O ${archive_dir}/listing.txt
+          gh release download lgd-archive -p listing_files.csv -O ${archive_dir}/listing_files.csv
 
           reports_dir='docs/lgd/wikidata/reports/'
           mkdir -p $reports_dir
@@ -37,8 +37,8 @@ jobs:
           soi_dir='docs/maps/SOI/'
           gh release download soi-ancillary -p index.geojson -O ${soi_dir}/osm_index.geojson
           gh release download soi-ancillary -p polymap15m_area.geojson -O ${soi_dir}/india_boundary.geojson
-          gh release download soi-pdfs -p list.txt -O ${soi_dir}/pdf_list.txt
-          gh release download soi-tiffs -p list.txt -O ${soi_dir}/tiff_list.txt
+          gh release download soi-pdfs -p listing_files.csv -O ${soi_dir}/pdf_listing.csv
+          #gh release download soi-tiffs -p listing_files.csv -O ${soi_dir}/tiff_listing.csv
 
       - name: Upload-Artifact
         uses: actions/upload-pages-artifact@v3

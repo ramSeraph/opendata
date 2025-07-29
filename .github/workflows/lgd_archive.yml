@@ -48,8 +48,8 @@ jobs:
           cd lgd
           uv run utils/get_prev_month_year.py month_year.txt
           uv run utils/archive_prev_month.py $(cat month_year.txt)
-          ./utils/generate_lists.sh lgd-archive
-          ./utils/generate_lists.sh lgd-latest
+          uvx --from topo_map_processor generate-lists lgd-latest '.7z'
+          uvx --from topo_map_processor generate-lists lgd-archive '.7z'
         timeout-minutes: 600
 
       - name: Save run data to cache

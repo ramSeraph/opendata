@@ -17,7 +17,7 @@ get_lgd_latest_date() {
   prefix=$1
   max_date="01Jan1970"
   max_date_conv=$(conv_date $max_date)
-  all_dates="$(cat listing_archives.txt | cut -d" " -f2 | grep "^$prefix\." | cut -d"." -f2)"
+  all_dates="$(cat listing_files.csv | cut -d"," -f1 | grep "^$prefix\." | cut -d"." -f2)"
   for d in $all_dates
   do
     d_conv=$(conv_date $d)
@@ -35,19 +35,20 @@ release_url="https://github.com/ramSeraph/opendata/releases/download/lgd-latest"
 get_lgd_files() {
   mkdir -p data/lgd
   cd data
-  wget -q ${release_url}/listing_archives.txt
+  wget -q ${release_url}/listing_files.csv
   for prefix in ${lgd_file_prefixes[*]}
   do
     date_str=$(get_lgd_latest_date $prefix)
     echo "getting lgd_archive for $prefix $date_str"
     echo "$date_str" > ${prefix}.lgd_date.txt
     fname=${prefix}.${date_str}.csv.7z
-    wget ${release_url}/${fname}
+    url="$(grep "^${fname}," listing_files.csv | cut -d"," -f3)"
+    wget $url
     7z x $fname
     rm $fname
     mv ${prefix}.${date_str}.csv lgd/${prefix}.csv
   done
-  rm listing_archives.txt
+  rm listing_files.csv
   cd -
 }
 

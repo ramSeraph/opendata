@@ -43,10 +43,6 @@ jobs:
             data-raw-lgd-wikidata-${{ steps.date.outputs.date }}-${{ github.run_number }}-
             data-raw-lgd-wikidata-${{ steps.date.outputs.date }}-
 
-      - name: Authenticate with GCP
-        run: |
-          gcloud auth activate-service-account --key-file=<(echo ${{ secrets.GCP_AUTH }} | base64 -d)
-
       - name: Make Sync Reports
         run: |
           cd lgd/wikidata

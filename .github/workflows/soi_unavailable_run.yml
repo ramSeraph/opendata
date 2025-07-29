@@ -113,8 +113,9 @@ jobs:
 
           echo "${{ secrets.SOI_USERS }}" | base64 -d > data/users.json
 
-          wget https://github.com/ramSeraph/opendata/releases/download/soi-pdfs/list.txt
-          cat list.txt | cut -d" " -f2 | xargs -I {} echo {}.pdf > data/files_done.txt
+          gh release download soi-pdfs -p listing_files.csv
+          tail -n +2 listing_files.csv | cut -d"," -f1 > data/files_done.txt
+          rm listing_files.csv
 
           proxy_url="http://${{ secrets.PROXY_AUTH }}@${{ secrets.PROXY_IP_ADDRESS }}:8080"
           PROXY_URL="$proxy_url" PB_TOKEN="${{ secrets.PB_TOKEN }}" uv run scrape.py -u -p -i -r 25
@@ -125,7 +126,7 @@ jobs:
           cd maps/SOI
           ls data/raw/*.pdf > downloaded.txt || touch downloaded.txt
           cat downloaded.txt
-          cat downloaded.txt | xargs -I {} gh release upload soi-pdfs {}
+          uvx --from topo_map_processor upload-to-release soi-pdfs data/raw pdf || true
           rm -rf data/raw/*.pdf || true
           rm -rf data/raw/*.unavailable || true
           rm -rf data/cookies || true
@@ -135,7 +136,7 @@ jobs:
       - name: Update lists
         run: |
           cd maps/SOI
-          util/generate_lists.sh pdfs
+          uvx --from topo_map_processor generate-lists soi-pdfs '.pdf'
 
       - name: Save prev data workspace
         if: always()

@@ -1,4 +1,3 @@
-
 function fileSize(size) {
     var i = Math.floor(Math.log(size) / Math.log(1024));
     return (size / Math.pow(1024, i)).toFixed(2) + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
@@ -7,17 +6,22 @@ function fileSize(size) {
 bucketName = 'soi_data'
 
 parseListing = (listingText) => {
-    var entryTexts = listingText.split('\n')
-    var sizeMap = {}
-    for (var entryText of entryTexts) {
-        entryText = entryText.trim()
+    var entryTexts = listingText.trim().split('\n');
+    var data = {};
+    // skip header
+    for (var i = 1; i < entryTexts.length; i++) {
+        var entryText = entryTexts[i].trim();
         if (entryText === '') {
-            continue
+            continue;
         }
-        var pieces = entryText.split(' ')
-        sizeMap[pieces[1]] = pieces[0]
+        var pieces = entryText.split(',');
+        if (pieces.length < 3) continue;
+        var name = pieces[0];
+        var size = pieces[1];
+        var url = pieces[2];
+        data[name] = { size: size, url: url };
     }
-    return sizeMap
+    return data;
 }
 
 const releasesUrlPrefix = 'https://github.com/ramSeraph/opendata/releases/download'
@@ -29,8 +33,8 @@ function fetchSheetList(listFilename, callback) {
     alertContents = () => {
         if (httpRequest.readyState === XMLHttpRequest.DONE) {
             if (httpRequest.status === 200) {
-                var sizeMap = parseListing(httpRequest.responseText)
-                callback(null, sizeMap)
+                var data = parseListing(httpRequest.responseText)
+                callback(null, data)
             } else {
                 callback('Remote Request failed', null)
                 console.log(`Remote Request failed with ${httpRequest.status} and text: ${httpRequest.responseText}`)
@@ -63,57 +67,49 @@ function getStatusData(cb) {
             return
         }
         var statusInfo = {}
-        for (sheetNo in pdfSizeData) {
-            var name = `${sheetNo}.pdf`
-            var sheetSize = pdfSizeData[sheetNo]
-            var url = null
-            var status = 'found'
-            if (sheetNo.endsWith('.unavailable')) {
-                status = 'not_found'
-                name = name.replace('.unavailable', '')
-            } else {
-                url = `${releasesUrlPrefix}/soi-pdfs/${name}`
-            }
-
-            var sheetNoDisp = name.replace('_', '/').replace('.pdf', '')
-            var fsize = fileSize(pdfSizeData[sheetNo])
-            var info = {}
+        for (const name in pdfSizeData) {
+            const pdfInfo = pdfSizeData[name];
+            const sheetNoDisp = name.replace('_', '/').replace('.pdf', '');
+            const fsize = fileSize(pdfInfo.size);
             if (!(sheetNoDisp in statusInfo)) {
-                statusInfo[sheetNoDisp] = {}
+                statusInfo[sheetNoDisp] = {};
             }
-            statusInfo[sheetNoDisp]['status'] = status
-            statusInfo[sheetNoDisp]['pdfUrl'] = url
-            statusInfo[sheetNoDisp]['pdfFilesize'] = fsize
+            statusInfo[sheetNoDisp]['status'] = 'found';
+            statusInfo[sheetNoDisp]['pdfUrl'] = pdfInfo.url;
+            statusInfo[sheetNoDisp]['pdfFilesize'] = fsize;
         }
 
 
-        for (sheetNo in gtiffSizeData) {
-            var name = `${sheetNo}.tif`
-            var url = `${releasesUrlPrefix}/soi-tiffs/${name}`
-            var sheetNoDisp = name.replace('_', '/').replace('.tif', '')
-            var fsize = fileSize(gtiffSizeData[sheetNo])
-            var info = {}
+        for (const name in gtiffSizeData) {
+            const gtiffInfo = gtiffSizeData[name];
+            const sheetNoDisp = name.replace('_', '/').replace('.tif', '');
+            const fsize = fileSize(gtiffInfo.size);
             if (!(sheetNoDisp in statusInfo)) {
-                statusInfo[sheetNoDisp] = {}
+                statusInfo[sheetNoDisp] = {};
             }
-            statusInfo[sheetNoDisp]['status'] = 'parsed'
-            statusInfo[sheetNoDisp]['gtiffUrl'] = url
-            statusInfo[sheetNoDisp]['gtiffFilesize'] = fsize
+            statusInfo[sheetNoDisp]['status'] = 'parsed';
+            statusInfo[sheetNoDisp]['gtiffUrl'] = gtiffInfo.url;
+            statusInfo[sheetNoDisp]['gtiffFilesize'] = fsize;
         }
         cb(null, statusInfo)
     }
 
-    fetchSheetList('tiff_list.txt', (e, results) => {
+    fetchSheetList('tiffs_listing.csv', (e, results) => {
+        if (e) {
+            err = e;
+        }
         gtiffSizeData = results
         console.log('gtiff data callback invoked')
         collate()
     })
 
-    fetchSheetList('pdf_list.txt', (e, results) => {
+    fetchSheetList('pdfs_listing.csv', (e, results) => {
+        if (e) {
+            err = e;
+        }
         pdfSizeData = results
         console.log('pdf data callback invoked')
         collate()
     })
 
 }
-

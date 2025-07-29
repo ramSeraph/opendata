@@ -3,8 +3,6 @@ function fileSize(size) {
     return (size / Math.pow(1024, i)).toFixed(2) + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
 }
 
-bucketName = 'soi_data'
-
 parseListing = (listingText) => {
     var entryTexts = listingText.trim().split('\n');
     var data = {};
@@ -23,8 +21,6 @@ parseListing = (listingText) => {
     }
     return data;
 }
-
-const releasesUrlPrefix = 'https://github.com/ramSeraph/opendata/releases/download'
 
 function fetchSheetList(listFilename, callback) {
     var url = `../${listFilename}`
@@ -94,7 +90,7 @@ function getStatusData(cb) {
         cb(null, statusInfo)
     }
 
-    fetchSheetList('tiffs_listing.csv', (e, results) => {
+    fetchSheetList('tiff_listing.csv', (e, results) => {
         if (e) {
             err = e;
         }
@@ -103,7 +99,7 @@ function getStatusData(cb) {
         collate()
     })
 
-    fetchSheetList('pdfs_listing.csv', (e, results) => {
+    fetchSheetList('pdf_listing.csv', (e, results) => {
         if (e) {
             err = e;
         }

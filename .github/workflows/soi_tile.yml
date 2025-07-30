@@ -114,7 +114,6 @@ jobs:
           echo "=== getting available tiff list ==="
           gh release download soi-tiffs -p listing_files.csv
           cat listing_files.csv | cut -d"," -f1 | cut -d"." -f1 > gtiff_list.txt
-          rm listing_files.csv
 
           echo "=== getting list of tiffs to pull ==="
           GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
@@ -127,10 +126,10 @@ jobs:
           echo "=== downlaoding the tiffs ==="
           cmd=""
           while read p; do
-            cmd="$cmd -p ${p}.tif"
+            echo "downloading $p"
+            cat listing_files.csv | grep "^${p}.tif," | cut -d"," -f3 | xargs -I {} wget -q -P staging/gtiffs/ {}
           done < sheet_list.txt
           rm sheet_list.txt
-          gh release download soi-tiffs $cmd -D staging/gtiffs/
 
           echo "=== running retiler ==="
           uv run retile.py data/to_retile.txt gtiff_list.txt
@@ -160,7 +159,6 @@ jobs:
           gh release upload soi-latest staging/pmtiles/*
 
           echo "=== Updating sheet lists ==="
-          gh release download soi-tiffs -p listing_files.csv
           gh release upload soi-latest listing_files.csv --clobber
           rm listing_files.csv
 

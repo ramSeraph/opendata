@@ -707,6 +707,7 @@ def get_all_directory_downloaders(ctx):
     downloaders.append(AdminDeptWiseDirectoryDownloader(name='CENTRAL_ADMIN_DEPT_UNITS',
                                                         depends_on='CENTRAL_ADMIN_DEPTS',
                                                         ctx=ctx,
+                                                        download_types=['odt'],
                                                         transform=['ignore_if_empty_field', 'Admin Unit Entity Code'],
                                                         post_data_extra={
                                                               'rptFileName': 'adminUnitLevelAdminUnitEntity',
@@ -719,6 +720,7 @@ def get_all_directory_downloaders(ctx):
     downloaders.append(AdminDeptWiseDirectoryDownloader(name='STATE_ADMIN_DEPT_UNITS',
                                                         depends_on='STATE_ADMIN_DEPTS',
                                                         ctx=ctx,
+                                                        download_types=['odt'],
                                                         transform=['ignore_if_empty_field', 'Admin Unit Entity Code'],
                                                         post_data_extra={
                                                               'rptFileName': 'adminUnitLevelAdminUnitEntity',

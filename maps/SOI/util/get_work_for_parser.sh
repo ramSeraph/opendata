@@ -1,7 +1,7 @@
 #!/bin/bash
 
 gh release download soi-pdfs -p listing_files.csv -O pdfs_listing.csv --clobber
-gh release download soi-tiffs -p listing_files.csv -O tiffs_listing.txt --clobber
+gh release download soi-tiffs -p listing_files.csv -O tiffs_listing.csv --clobber
 
 comm -23 <(cat pdfs_listing.csv| cut -d"," -f1 | cut -d"." -f1 | sort) <(cat tiffs_listing.csv | cut -d"," -f1 | cut -d"." -f1 | sort) | cut -f1 | sed '/^[[:space:]]*$/d' > temp.txt
 

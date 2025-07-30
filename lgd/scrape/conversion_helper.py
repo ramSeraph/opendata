@@ -131,10 +131,13 @@ def records_from_excel(excel_file, header_row_span=1):
     return dicts
 
 
-def records_from_xslx(input_file):
+def records_from_xslx(input_file, header_row_span=0):
     csv_out_file = io.StringIO()
     Xlsx2csv(input_file, outputencoding="utf-8").convert(csv_out_file)
     csv_out_file.seek(0)
+    # Skip header rows if specified
+    for _ in range(header_row_span):
+        next(csv_out_file)
     reader = csv.DictReader(csv_out_file)
     records = [ r for r in reader ]
     nrecs = [{normalize(k):v for k,v in r.items()} for r in records]

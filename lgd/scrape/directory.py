@@ -29,6 +29,7 @@ def merge_file(old_file, mod_file, tgt_file):
 class DirectoryDownloader(BaseDownloader):
     def __init__(self, **kwargs):
         kwargs = add_defaults_to_args({'post_data_extra':{},
+                                       'xlsx_conv_args': {},
                                        'odt_conv_args':{},
                                        'excel_conv_args':{},
                                        'download_types': ['xls']}, kwargs)
@@ -49,6 +50,7 @@ class DirectoryDownloader(BaseDownloader):
             "lbl": None,
         }
         self.post_data.update(kwargs['post_data_extra'])
+        self.xlsx_conv_args = kwargs['xlsx_conv_args']
         self.odt_conv_args = kwargs['odt_conv_args']
         self.excel_conv_args = kwargs['excel_conv_args']
         self.download_types = kwargs['download_types']
@@ -116,7 +118,7 @@ class DirectoryDownloader(BaseDownloader):
             with open(data_file_name, 'rb') as data_file:
                 records = []
                 if suffix == '.xlsx':
-                    records = records_from_xslx(data_file)
+                    records = records_from_xslx(data_file, **self.xlsx_conv_args)
                 elif suffix == '.odt':
                     records = records_from_odt(data_file, **self.odt_conv_args)
                 elif suffix == '.htm':
@@ -166,7 +168,7 @@ class StateWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
     def __init__(self, **kwargs):
         if 'enrichers' not in kwargs:
             kwargs['enrichers'] = { 'State Code': 'State Code',
-                                    'State Name': 'State Name(In English)' }
+                                    'State Name': 'State Name (In English)' }
         if 'deps' not in kwargs:
             kwargs['deps'] = []
         if 'STATES' not in kwargs['deps']:
@@ -180,7 +182,7 @@ class StateWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
         downloader_items = []
         for r in BaseDownloader.records_from_downloader('STATES'):
             state_code = r['State Code']
-            state_name = r['State Name(In English)']
+            state_name = r['State Name (In English)']
 
             csv_path = Path(self.csv_filename)
             csv_filename_s = '{}_{}{}'.format(csv_path.stem, state_code, csv_path.suffix)
@@ -194,6 +196,7 @@ class StateWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
                                              ctx=self.ctx,
                                              transform=self.transform,
                                              download_types=self.download_types,
+                                             xlsx_conv_args=self.xlsx_conv_args,
                                              odt_conv_args=self.odt_conv_args,
                                              excel_conv_args=self.excel_conv_args,
                                              post_data_extra=post_data_extra)
@@ -235,6 +238,7 @@ class OrgWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
                                                   .format(self.desc, org_name, org_code, state_name, state_code),
                                              csv_filename=csv_filename_s,
                                              ctx=self.ctx,
+                                             xlsx_conv_args=self.xlsx_conv_args,
                                              excel_conv_args=self.excel_conv_args,
                                              post_data_extra=post_data_extra)
             downloader_items.append(DownloaderItem(downloader=downloader, record=r))
@@ -335,6 +339,9 @@ def get_all_directory_downloaders(ctx):
     downloaders = []
     downloaders.append(DirectoryDownloader(name='STATES',
                                            ctx=ctx,
+                                           xlsx_conv_args={
+                                               'header_row_span': 1,
+                                           },
                                            excel_conv_args={
                                                'header_row_span': 1,
                                            },
@@ -343,6 +350,9 @@ def get_all_directory_downloaders(ctx):
                                            }))
     downloaders.append(DirectoryDownloader(name='DISTRICTS',
                                            ctx=ctx,
+                                           xlsx_conv_args={
+                                               'header_row_span': 1,
+                                           },
                                            excel_conv_args={
                                                'header_row_span': 2,
                                            },
@@ -351,11 +361,17 @@ def get_all_directory_downloaders(ctx):
                                            }))
     downloaders.append(DirectoryDownloader(name='SUB_DISTRICTS', 
                                            ctx=ctx,
+                                           xlsx_conv_args={
+                                               'header_row_span': 1,
+                                           },
                                            post_data_extra={
                                                'rptFileName': 'allSubDistrictofIndia',
                                            }))
     downloaders.append(DirectoryDownloader(name='BLOCKS',
                                            ctx=ctx,
+                                           xlsx_conv_args={
+                                               'header_row_span': 1,
+                                           },
                                            excel_conv_args={
                                                'header_row_span': 2,
                                            },
@@ -387,6 +403,9 @@ def get_all_directory_downloaders(ctx):
     #                                       }))
     downloaders.append(DirectoryDownloader(name='TRADITIONAL_LOCAL_BODIES',
                                            ctx=ctx,
+                                           xlsx_conv_args={
+                                               'header_row_span': 1,
+                                           },
                                            excel_conv_args={
                                                'header_row_span': 2,
                                            },
@@ -395,6 +414,9 @@ def get_all_directory_downloaders(ctx):
                                            }))
     downloaders.append(DirectoryDownloader(name='URBAN_LOCAL_BODIES',
                                            ctx=ctx,
+                                           xlsx_conv_args={
+                                               'header_row_span': 1,
+                                           },
                                            excel_conv_args={
                                                'header_row_span': 2,
                                            },
@@ -403,6 +425,9 @@ def get_all_directory_downloaders(ctx):
                                            }))
     downloaders.append(DirectoryDownloader(name='URBAN_LOCAL_BODIES_COVERAGE',
                                            ctx=ctx,
+                                           xlsx_conv_args={
+                                               'header_row_span': 1,
+                                           },
                                            excel_conv_args={
                                                'header_row_span': 2,
                                            },
@@ -411,6 +436,9 @@ def get_all_directory_downloaders(ctx):
                                            }))
     downloaders.append(DirectoryDownloader(name='DISTRICT_PANCHAYATS',
                                            ctx=ctx,
+                                           xlsx_conv_args={
+                                               'header_row_span': 1,
+                                           },
                                            excel_conv_args={
                                                'header_row_span': 1,
                                            },
@@ -420,6 +448,7 @@ def get_all_directory_downloaders(ctx):
 
     downloaders.append(DirectoryDownloader(name='CONSTITUENCIES_PARLIAMENT',
                                            ctx=ctx,
+                                           download_types=['odt'],
                                            transform=['ignore_if_empty_field', 'Parliament Constituency Code'],
                                            post_data_extra={
                                                'rptFileName': 'assembly_parliament_constituency',
@@ -429,6 +458,7 @@ def get_all_directory_downloaders(ctx):
                                            }))
     downloaders.append(DirectoryDownloader(name='CONSTITUENCIES_ASSEMBLY',
                                            ctx=ctx,
+                                           download_types=['odt'],
                                            post_data_extra={
                                                'rptFileName': 'assembly_parliament_constituency',
                                                'stateName': 'India',
@@ -437,17 +467,26 @@ def get_all_directory_downloaders(ctx):
                                            }))
     downloaders.append(DirectoryDownloader(name='PINCODE_VILLAGES',
                                            ctx=ctx,
+                                           xlsx_conv_args={
+                                               'header_row_span': 1,
+                                           },
                                            post_data_extra={
                                                'rptFileName': 'pincodetoVillageMapping',
                                            }))
     downloaders.append(DirectoryDownloader(name='PINCODE_URBAN',
                                            ctx=ctx,
+                                           xlsx_conv_args={
+                                               'header_row_span': 1,
+                                           },
                                            post_data_extra={
                                                'rptFileName': 'pincodetoUrbanMapping',
                                            }))
 
     downloaders.append(DirectoryDownloader(name='CENTRAL_ORG_DETAILS',
                                            ctx=ctx,
+                                           xlsx_conv_args={
+                                               'header_row_span': 1,
+                                           },
                                            transform=['ignore_if_empty_field', 'Organization Code'],
                                            post_data_extra={
                                                'deptListbyOption': '0',
@@ -466,6 +505,9 @@ def get_all_directory_downloaders(ctx):
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='VILLAGES',
                                                     ctx=ctx,
+                                                    xlsx_conv_args={
+                                                        'header_row_span': 1,
+                                                    },
                                                     excel_conv_args={
                                                         'header_row_span': 2,
                                                     },
@@ -474,10 +516,13 @@ def get_all_directory_downloaders(ctx):
                                                     },
                                                     enrichers={
                                                         'State Code': 'State Code',
-                                                        'State Name (In English)': 'State Name(In English)'
+                                                        'State Name(In English)': 'State Name (In English)'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='BLOCK_VILLAGES',
                                                     ctx=ctx,
+                                                    xlsx_conv_args={
+                                                        'header_row_span': 1,
+                                                    },
                                                     excel_conv_args={
                                                         'header_row_span': 2,
                                                     },
@@ -487,6 +532,9 @@ def get_all_directory_downloaders(ctx):
                                                     enrichers={}))
     downloaders.append(StateWiseDirectoryDownloader(name='PRI_LOCAL_BODIES',
                                                     ctx=ctx,
+                                                    xlsx_conv_args={
+                                                        'header_row_span': 1,
+                                                    },
                                                     excel_conv_args={
                                                         'header_row_span': 2,
                                                     },
@@ -518,6 +566,9 @@ def get_all_directory_downloaders(ctx):
     #                                                }))
     downloaders.append(StateWiseDirectoryDownloader(name='CONSTITUENCIES_MAPPINGS_URBAN',
                                                     ctx=ctx,
+                                                    xlsx_conv_args={
+                                                        'header_row_span': 1,
+                                                    },
                                                     transform=['ignore_if_empty_field', 'Parliament Constituency code'],
                                                     post_data_extra={
                                                         'rptFileName': 'parlimentConstituencyAndAssemblyConstituencyUrban@state'
@@ -527,22 +578,34 @@ def get_all_directory_downloaders(ctx):
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='PRI_LOCAL_BODY_WARDS',
                                                     ctx=ctx,
+                                                    xlsx_conv_args={
+                                                        'header_row_span': 1,
+                                                    },
                                                     post_data_extra={
                                                         'rptFileName': 'priWards@state'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='URBAN_LOCAL_BODY_WARDS',
                                                     ctx=ctx,
+                                                    xlsx_conv_args={
+                                                        'header_row_span': 1,
+                                                    },
                                                     post_data_extra={
                                                         'rptFileName': 'uLBWardforState@state'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='CONSTITUENCY_COVERAGE',
                                                     ctx=ctx,
+                                                    xlsx_conv_args={
+                                                        'header_row_span': 1,
+                                                    },
                                                     transform=['ignore_if_empty_field', 'Parliament Constituency Code'],
                                                     post_data_extra={
                                                         'rptFileName': 'constituencyReport@state'
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='TLB_VILLAGES',
                                                     ctx=ctx,
+                                                    xlsx_conv_args={
+                                                        'header_row_span': 1,
+                                                    },
                                                     excel_conv_args={
                                                         'header_row_span': 2,
                                                     },
@@ -552,6 +615,9 @@ def get_all_directory_downloaders(ctx):
  
     downloaders.append(StateWiseDirectoryDownloader(name='STATE_ORG_DETAILS',
                                                     ctx=ctx,
+                                                    xlsx_conv_args={
+                                                        'header_row_span': 1,
+                                                    },
                                                     transform=['ignore_if_empty_field', 'Organization Code'],
                                                     post_data_extra={
                                                         'rptFileName': 'parentWiseOrganizationDepartmentDetails',
@@ -573,6 +639,9 @@ def get_all_directory_downloaders(ctx):
     downloaders.append(OrgWiseDirectoryDownloader(name='STATE_ORG_UNITS',
                                                   depends_on='STATE_ORG_DETAILS',
                                                   ctx=ctx,
+                                                  xlsx_conv_args={
+                                                      'header_row_span': 1,
+                                                  },
                                                   excel_conv_args={
                                                       'header_row_span': 2,
                                                   },
@@ -589,6 +658,9 @@ def get_all_directory_downloaders(ctx):
     downloaders.append(OrgWiseDirectoryDownloader(name='CENTRAL_ORG_UNITS',
                                                   depends_on='CENTRAL_ORG_DETAILS',
                                                   ctx=ctx,
+                                                  xlsx_conv_args={
+                                                      'header_row_span': 1,
+                                                  },
                                                   excel_conv_args={
                                                       'header_row_span': 2,
                                                   },
@@ -603,6 +675,9 @@ def get_all_directory_downloaders(ctx):
     downloaders.append(OrgWiseDirectoryDownloader(name='STATE_ORG_DESIGNATIONS',
                                                   depends_on='STATE_ORG_DETAILS',
                                                   ctx=ctx,
+                                                  xlsx_conv_args={
+                                                      'header_row_span': 1,
+                                                  },
                                                   post_data_extra={
                                                         'rptFileName': 'designationBasedOnOrgCode',
                                                         'state': 'on'
@@ -616,6 +691,9 @@ def get_all_directory_downloaders(ctx):
     downloaders.append(OrgWiseDirectoryDownloader(name='CENTRAL_ORG_DESIGNATIONS',
                                                   depends_on='CENTRAL_ORG_DETAILS',
                                                   ctx=ctx,
+                                                  xlsx_conv_args={
+                                                      'header_row_span': 1,
+                                                  },
                                                   post_data_extra={
                                                         'rptFileName': 'designationBasedOnOrgCode',
                                                         'state': '0'

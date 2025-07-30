@@ -112,9 +112,9 @@ jobs:
 
 
           echo "=== getting available tiff list ==="
-          gh release download soi-tiffs -p list.txt
-          cat list.txt | cut -d" " -f2 > gtiff_list.txt
-          rm list.txt
+          gh release download soi-tiffs -p listing_files.csv
+          cat listing_files.csv | cut -d"," -f1 | cut -d"." -f1 > gtiff_list.txt
+          rm listing_files.csv
 
           echo "=== getting list of tiffs to pull ==="
           GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
@@ -160,10 +160,9 @@ jobs:
           gh release upload soi-latest staging/pmtiles/*
 
           echo "=== Updating sheet lists ==="
-          gh release download soi-tiffs -p list.txt
-          mv list.txt tiled_list.txt
-          gh release upload soi-tiffs tiled_list.txt --clobber
-          rm tiled_list.txt
+          gh release download soi-tiffs -p listing_files.csv
+          gh release upload soi-latest listing_files.csv --clobber
+          rm listing_files.csv
 
           echo "=== cleaning up ==="
           rm -rf staging/* || true

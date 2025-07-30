@@ -1,8 +1,8 @@
 #!/bin/bash
 
-gh release download soi-tiffs -p list.txt -O tiffs_list.txt --clobber
-gh release download soi-tiffs -p tiled_list.txt -O tiled_list.txt --clobber
+gh release download soi-tiffs -p listing_files.csv -O tiffs_listing.csv --clobber
+gh release download soi-latest -p listing_files.csv -O tiled_listing.csv --clobber
 
-comm <(cat tiffs_list.txt| cut -d" " -f2 | sort) <(cat tiled_list.txt | cut -d" " -f2 | sort) | cut -f1 | grep "^[0-9]" > $1
+comm -23 <(cat tiffs_listing.csv| cut -d"," -f1 | cut -d"." -f1 | sort) <(cat tiled_listing.csv | cut -d"," -f1 | cut -d"." -f1 | sort) | cut -f1 | sed '/^[[:space:]]*$/d' > $1
 
-rm tiffs_list.txt tiled_list.txt
+rm tiled_listing.csv tiffs_listing.csv

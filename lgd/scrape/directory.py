@@ -496,7 +496,7 @@ def get_all_directory_downloaders(ctx):
 
     downloaders.append(StateWiseDirectoryDownloader(name='PANCHAYAT_MAPPINGS',
                                                     ctx=ctx,
-                                                    download_types=['xls', 'htm'],
+                                                    download_types=['htm'],
                                                     excel_conv_args={
                                                         'header_row_span': 1,
                                                     },

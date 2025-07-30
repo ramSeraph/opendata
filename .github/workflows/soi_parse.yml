@@ -144,8 +144,7 @@ jobs:
           GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
           FROM_LIST=data/to_parse.txt uv run --with GDAL==${GDAL_VERSION} parse.py
           
-          ls export/gtiffs/*.tif > to_upload.txt || touch to_upload.txt
-          cat to_upload.txt | xargs -I {} gh release upload soi-tiffs {}
+          uvx --from topo_map_processor upload-to-release soi-tiffs export/gtiffs tif 
 
           rm -rf data/raw/* || true
           rm -rf export/gtiffs/* || true
@@ -154,7 +153,7 @@ jobs:
       - name: Update lists
         run: |
           cd maps/SOI
-          util/generate_lists.sh tiffs
+          uvx --from topo_map_processor generate-lists soi-tiffs .tif
 
       - name: Save parse run data to cache
         if: always()

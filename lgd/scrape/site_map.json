@@ -646,8 +646,8 @@
   },
   {
     "dropdown": [ "Download Directory", "Department/Organization", "Administrative Unit Level Wise Administrative Unit Entity", "State" ],
-    "comp": "STATE_ADMIN_DEPT_UNITS",
-    "desc": "list of all state adminstrative department units",
+    "comp": "IGNORE",
+    "desc": "STATE_ADMIN_DEPT_UNITS list of all state adminstrative department units",
     "file": "state_admin_dept_units.csv",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial number" },
@@ -662,8 +662,8 @@
   },
   {
     "dropdown": [ "Download Directory", "Department/Organization", "Administrative Unit Level Wise Administrative Unit Entity", "State", "Internal Dwr Call" ],
-    "comp": "STATE_ADMIN_DEPTS",
-    "desc": "list of all state administrative departments",
+    "comp": "IGNORE",
+    "desc": "STATE_ADMIN_DEPTS list of all state administrative departments",
     "file": "state_admin_depts.csv",
     "fields": {
       "adminLevelNameEng": { "action": "KEEP", "description": "Name of Administrative Department in English" },

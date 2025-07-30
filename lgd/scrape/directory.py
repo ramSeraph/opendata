@@ -704,34 +704,35 @@ def get_all_directory_downloaders(ctx):
                                                   }))
 
 
-    downloaders.append(AdminDeptWiseDirectoryDownloader(name='CENTRAL_ADMIN_DEPT_UNITS',
-                                                        depends_on='CENTRAL_ADMIN_DEPTS',
-                                                        ctx=ctx,
-                                                        download_types=['odt'],
-                                                        transform=['ignore_if_empty_field', 'Admin Unit Entity Code'],
-                                                        post_data_extra={
-                                                              'rptFileName': 'adminUnitLevelAdminUnitEntity',
-                                                              'state': '0',
-                                                        },
-                                                        enrichers={
-                                                            'Admin Department Name': 'adminLevelNameEng',
-                                                            'Admin Department Code': 'adminUnitCode',
-                                                        }))
-    downloaders.append(AdminDeptWiseDirectoryDownloader(name='STATE_ADMIN_DEPT_UNITS',
-                                                        depends_on='STATE_ADMIN_DEPTS',
-                                                        ctx=ctx,
-                                                        download_types=['odt'],
-                                                        transform=['ignore_if_empty_field', 'Admin Unit Entity Code'],
-                                                        post_data_extra={
-                                                              'rptFileName': 'adminUnitLevelAdminUnitEntity',
-                                                              'state': 'on'
-                                                        },
-                                                        enrichers={
-                                                            'Admin Department Name': 'adminLevelNameEng',
-                                                            'Admin Department Code': 'adminUnitCode',
-                                                            'State Name': 'State Name',
-                                                            'State Code': 'State Code'
-                                                        }))
+    # TODO; broken.. needs to be checked
+    #downloaders.append(AdminDeptWiseDirectoryDownloader(name='CENTRAL_ADMIN_DEPT_UNITS',
+    #                                                    depends_on='CENTRAL_ADMIN_DEPTS',
+    #                                                    ctx=ctx,
+    #                                                    download_types=['odt'],
+    #                                                    transform=['ignore_if_empty_field', 'Admin Unit Entity Code'],
+    #                                                    post_data_extra={
+    #                                                          'rptFileName': 'adminUnitLevelAdminUnitEntity',
+    #                                                          'state': '0',
+    #                                                    },
+    #                                                    enrichers={
+    #                                                        'Admin Department Name': 'adminLevelNameEng',
+    #                                                        'Admin Department Code': 'adminUnitCode',
+    #                                                    }))
+    #downloaders.append(AdminDeptWiseDirectoryDownloader(name='STATE_ADMIN_DEPT_UNITS',
+    #                                                    depends_on='STATE_ADMIN_DEPTS',
+    #                                                    ctx=ctx,
+    #                                                    download_types=['odt'],
+    #                                                    transform=['ignore_if_empty_field', 'Admin Unit Entity Code'],
+    #                                                    post_data_extra={
+    #                                                          'rptFileName': 'adminUnitLevelAdminUnitEntity',
+    #                                                          'state': 'on'
+    #                                                    },
+    #                                                    enrichers={
+    #                                                        'Admin Department Name': 'adminLevelNameEng',
+    #                                                        'Admin Department Code': 'adminUnitCode',
+    #                                                        'State Name': 'State Name',
+    #                                                        'State Code': 'State Code'
+    #                                                    }))
 
     return downloaders
 

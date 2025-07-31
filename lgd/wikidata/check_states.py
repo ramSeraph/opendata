@@ -57,7 +57,7 @@ def get_correction_info(lgd_entry):
 if __name__ == '__main__':
     wd_fname = 'data/states.jsonl'
     report = base_entity_checks(entity_type='state',
-                                lgd_fname='data/lgd/states.csv', lgd_id_key='State Code', lgd_name_key='State Name(In English)',
+                                lgd_fname='data/lgd/states.csv', lgd_id_key='State Code', lgd_name_key='State Name (In English)',
                                 lgd_url_fn=lambda x: { 'base': 'https://lgdirectory.gov.in/globalviewStateDetail.do', 'params': {'globalstateId': str(x) }},
                                 lgd_correction_fn=get_correction_info,
                                 lgd_code_type='state',

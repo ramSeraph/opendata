@@ -14,7 +14,7 @@ from suffixes import DISTRICT_PREFIXES, DISTRICT_SUFFIXES
 
 lgd_fname = 'data/lgd/districts.csv'
 lgd_id_key = 'District Code'
-lgd_name_key = 'District Name (In English)'
+lgd_name_key = 'District Name(In English)'
 wd_fname = 'data/districts.jsonl'
 
 def hierarchy_check():

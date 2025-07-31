@@ -173,7 +173,7 @@ def contains_completeness_check():
             continue
         lgd_entry = lgd_dist_data[dist_mapping[k]]
         state_code = lgd_entry['State Code']
-        state_name = lgd_entry['State Name(In English)']
+        state_name = lgd_entry['State Name (In English)']
         if state_code not in dists_by_state:
             dists_by_state[state_code] = {'state_name': state_name, 'entries': []}
         dists_by_state[state_code]['entries'].append({'id': k, 'label': get_label(v)})
@@ -193,7 +193,7 @@ def contains_completeness_check():
         scode = state_mapping[parent_wid]
         lgd_entry = lgd_state_data[scode]
         state_code = lgd_entry['State Code']
-        state_name = lgd_entry['State Name(In English)']
+        state_name = lgd_entry['State Name (In English)']
         contains_ids = get_contains_ids(v)
         if state_code not in dists_by_state_from_divs:
             dists_by_state_from_divs[state_code] = {'state_name': state_name, 'entries': [], 'state_wid': parent_wid}

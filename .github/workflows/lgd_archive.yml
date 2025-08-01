@@ -46,7 +46,8 @@ jobs:
       - name: Compress data
         run: |
           cd lgd
-          uv run utils/get_prev_month_year.py month_year.txt
+          num_months_back="${{ secrets.LGD_ARCHIVE_NUM_MONTHS_BACK }}"
+          uv run utils/get_prev_month_year.py month_year.txt $num_months_back
           uv run utils/archive_prev_month.py $(cat month_year.txt)
           uvx --from topo_map_processor generate-lists lgd-latest '.7z'
           uvx --from topo_map_processor generate-lists lgd-archive '.7z'

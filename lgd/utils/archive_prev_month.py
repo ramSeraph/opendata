@@ -57,20 +57,55 @@ def filter_releases(release, prefix):
             filtered.append(r)
     return filtered
 
-def upload_to_archive(fname, counts):
+def upload_to_archive(fname, counts, archive_releases):
     monthly_archive_name = Path(fname).name
     uploaded = False
-    for k in sorted(counts.keys()):
+
+    def sort_key(r_name):
+        if r_name == 'lgd-archive':
+            return -1
+        match = re.search(r'extra(\d+)', r_name)
+        if match:
+            return int(match.group(1))
+        return float('inf')
+
+    sorted_releases = sorted(list(archive_releases), key=sort_key)
+
+    for k in sorted_releases:
         max_count = 988 if k == 'lgd-archive' else 998
-        if counts[k] >= max_count:
+        if counts.get(k, 0) >= max_count:
             continue
         print(f'uploading {monthly_archive_name} to {k}')
         run_external(f'gh release upload {k} data/combined/{monthly_archive_name}')
-        counts[k] += 1
+        counts[k] = counts.get(k, 0) + 1
         uploaded = True
+        break
 
-    if not uploaded:
-        raise Exception(f'No archive available for {monthly_archive_name}, skipping upload')
+    if uploaded:
+        return
+
+    max_num = 0
+    for r in archive_releases:
+        match = re.search(r'extra(\d+)', r)
+        if match:
+            num = int(match.group(1))
+            if num > max_num:
+                max_num = num
+
+    new_release_name = f'lgd-archive-extra{max_num + 1}'
+    print(f'No archive available for {monthly_archive_name}, creating new release {new_release_name}')
+
+    notes = "Extension of [lgd-archive](https://github.com/ramSeraph/opendata/releases/tag/lgd-archive)\n\n"
+    notes += "Files and their sizes are listed at [listing_files.csv](https://github.com/ramSeraph/opendata/releases/download/lgd-archive/listing_files.csv)\n"
+
+    title = f"Local Government Directory monthly archives Supplementary{max_num + 1}"
+
+    run_external(f'gh release create {new_release_name} --notes "{notes}" --title {title}')
+
+    print(f'uploading {monthly_archive_name} to {new_release_name}')
+    run_external(f'gh release upload {new_release_name} data/combined/{monthly_archive_name}')
+    counts[new_release_name] = 1
+    archive_releases.append(new_release_name)
 
 def redistribute_latest(latest_releases):
     all_archives_mapping = get_all_archive_names(latest_releases)
@@ -250,7 +285,7 @@ if __name__ == '__main__':
         if not prefix_file.exists():
             run_external(f'sh -c "cd {zipping_dir}; 7z a -t7z -mmt=off -m0=lzma2 -mx=9 -ms=on -md=1G -mfb=273 ../combined/{monthly_archive_name} {to_zip_str}"')
 
-        upload_to_archive(f'data/combined/{monthly_archive_name}', archive_counts)
+        upload_to_archive(f'data/combined/{monthly_archive_name}', archive_counts, archive_releases)
 
         prefix_file.unlink()
 

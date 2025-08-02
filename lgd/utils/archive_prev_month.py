@@ -1,6 +1,7 @@
 import re
 import json
 import time
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -52,8 +53,7 @@ def filter_releases(release, prefix):
         if r == prefix:
             filtered.append(r)
             continue
-        match = re.match(rf'{release}-extra\d', r)
-        if match is not None:
+        if r.startswith(prefix + '-'):
             filtered.append(r)
     return filtered
 
@@ -72,8 +72,120 @@ def upload_to_archive(fname, counts):
     if not uploaded:
         raise Exception(f'No archive available for {monthly_archive_name}, skipping upload')
 
+def redistribute_latest(latest_releases):
+    all_archives_mapping = get_all_archive_names(latest_releases)
+    by_release = {}
+    for name, release in all_archives_mapping.items():
+        if release not in by_release:
+            by_release[release] = []
+        by_release[release].append(name)
+
+    def sort_key(r_name):
+        if r_name == 'lgd-latest':
+            return 0
+        match = re.search(r'extra(\d+)', r_name)
+        if match:
+            return int(match.group(1))
+        # Should not happen given the filtering, but as a fallback
+        return float('inf')
+
+    release_names = sorted(list(by_release.keys()), key=sort_key)
+
+    slots = {}
+    for release in release_names:
+        max_count = 988 if release == 'lgd-latest' else 998
+        slots[release] = max_count - len(by_release.get(release, []))
+
+    moves = []
+    # Iterate through releases from first to second-to-last
+    for i in range(len(release_names)):
+        target_release = release_names[i]
+
+        # If no slots in target, we can't move anything to it.
+        if slots[target_release] <= 0:
+            continue
+
+        # Iterate backwards from the last release to find files to move.
+        # This helps in emptying the last releases first.
+        for j in range(len(release_names) - 1, i, -1):
+            source_release = release_names[j]
+
+            files_in_source = by_release.get(source_release, [])
+            if not files_in_source:
+                continue
+
+            # Determine how many files to move
+            num_to_move = min(slots[target_release], len(files_in_source))
+
+            if num_to_move <= 0:
+                continue
+
+            # Get the actual files to move (we can just take the first `num_to_move` items)
+            files_to_relocate = files_in_source[:num_to_move]
+
+            for fname in files_to_relocate:
+                moves.append((fname, source_release, target_release))
+
+            # Update our in-memory state to reflect the planned move
+            # 1. Remove files from source
+            by_release[source_release] = files_in_source[num_to_move:]
+            # 2. Add files to target
+            if target_release not in by_release:
+                by_release[target_release] = []
+            by_release[target_release].extend(files_to_relocate)
+            # 3. Update slot counts
+            slots[source_release] += num_to_move
+            slots[target_release] -= num_to_move
+
+    if not moves:
+        print("No redistribution of assets is needed.")
+        return
+
+    print(f"Found {len(moves)} assets to redistribute.")
+
+    redistribute_dir = Path('redistribute_temp')
+    redistribute_dir.mkdir(exist_ok=True, parents=True)
+
+    for fname, source, target in moves:
+        local_path = redistribute_dir / fname
+        print(f"Preparing to move {fname} from {source} to {target}")
+        run_external(f'gh release download {source} -p "{fname}" -D "{redistribute_dir}"')
+        run_external(f'gh release upload {target} "{local_path}"')
+        run_external(f'gh release delete-asset {source} "{fname}" -y')
+        local_path.unlink()
+
+    shutil.rmtree(redistribute_dir, ignore_errors=True)
+
+
+def update_mapping(prefix, dates):
+    print('downloading mapping file')
+    run_external('gh release download lgd-archive -p archive_mapping.json')
+
+    print('regenerating archive mapping')
+    mapping = json.loads(Path('archive_mapping.json').read_text())
+    if prefix not in mapping:
+        mapping[prefix] = []
+
+    for d in dates:
+        mapping[prefix].append(d)
+
+    for prefix in mapping.keys():
+        mapping[prefix] = list(set(mapping[prefix]))
+
+    Path('archive_mapping.json').write_text(json.dumps(mapping))
+
+    print('uploading updated mapping')
+    run_external('gh release upload lgd-archive archive_mapping.json --clobber')
+
+    Path('archive_mapping.json').unlink()
+
+
+
+
+
 if __name__ == '__main__':
     import sys
+
 
     month_year = sys.argv[1]
 
@@ -109,8 +221,8 @@ if __name__ == '__main__':
             continue
 
         prefix_file = Path(f'data/combined/{monthly_archive_name}')
-        if prefix_file.exists():
-            continue
+
+        asset_names = [f'{prefix}.{d}.csv.7z' for d in dates]
 
         for d in dates:
             zname = f'{prefix}.{d}.csv.7z'
@@ -135,10 +247,10 @@ if __name__ == '__main__':
 
         to_zip_str = ' '.join([f.name for f in to_zip])
 
-        run_external(f'sh -c "cd {zipping_dir}; 7z a -t7z -mmt=off -m0=lzma2 -mx=9 -ms=on -md=1G -mfb=273 ../combined/{monthly_archive_name} {to_zip_str}"')
+        if not prefix_file.exists():
+            run_external(f'sh -c "cd {zipping_dir}; 7z a -t7z -mmt=off -m0=lzma2 -mx=9 -ms=on -md=1G -mfb=273 ../combined/{monthly_archive_name} {to_zip_str}"')
 
         upload_to_archive(f'data/combined/{monthly_archive_name}', archive_counts)
-        run_external(f'gh release upload lgd-archive data/combined/{monthly_archive_name}')
 
         prefix_file.unlink()
 
@@ -146,28 +258,17 @@ if __name__ == '__main__':
         for p in to_zip:
             p.unlink()
 
-    print('downloading mapping file')
-    run_external('gh release download lgd-archive -p archive_mapping.json')
+        update_mapping(prefix, dates)
 
-    print('regenerating archive mapping')
-    mapping = json.loads(Path('archive_mapping.json').read_text())
-    for prefix, dates in by_file.items():
-        if prefix not in mapping:
-            mapping[prefix] = []
-        for d in dates:
-            mapping[prefix].append(d)
-    for prefix in mapping.keys():
-        mapping[prefix] = list(set(mapping[prefix]))
+        print('deleting already archived files from latest release')
+        for asset_name in asset_names:
+            rname = all_archives_mapping[asset_name]
+            print(f'deleting asset {asset_name} from release {rname}')
+            run_external(f'gh release delete-asset {rname} {asset_name} -y')
 
-    Path('archive_mapping.json').write_text(json.dumps(mapping))
+    print('redistributing latest release assets after deletions')
+    redistribute_latest(latest_releases)
 
-    print('uploading updated mapping')
-    run_external('gh release upload lgd-archive archive_mapping.json --clobber')
-
-    print('deleting already archived files from latest release')
-    for asset_name in relevant_names:
-        rname = all_archives_mapping[asset_name]
-        run_external(f'gh release delete-asset {rname} {asset_name} -y')
 
 
     

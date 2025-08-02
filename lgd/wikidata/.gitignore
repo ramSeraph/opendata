@@ -3,3 +3,4 @@ data/
 apicache/
 apicache-py3/
 logs/
+throttle.ctrl

@@ -110,7 +110,6 @@ jobs:
           mkdir -p staging/tiles/
           mkdir -p staging/gtiffs/
 
-
           echo "=== getting available tiff list ==="
           gh release download soi-tiffs -p listing_files.csv
           cat listing_files.csv | cut -d"," -f1 | cut -d"." -f1 > gtiff_list.txt
@@ -141,6 +140,7 @@ jobs:
           mkdir -p staging/pmtiles/
           mkdir temp
 
+          # TODO: use partition tool from topo_map_processor
           TMPDIR=./temp uv run partition.py
 
           rm -rf staging/tiles/*

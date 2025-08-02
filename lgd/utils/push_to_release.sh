@@ -4,7 +4,7 @@ set -ex
 
 echo "Fetching list of existing .7z files from GitHub releases..."
 RELEASE_FILES_LIST="existing_release_files.txt"
-gh release list --jq '.[] | select(.name | startswith("lgd-latest")) | .name' | while read -r release_name; do
+gh release list --json tagName --jq '.[] | select(.tagName | startswith("lgd-latest")) | .tagName' | while read -r release_name; do
   gh release view "$release_name" --json assets --jq '.assets[]? | select(.name | endswith(".7z")) | .name' 2>/dev/null
 done > "$RELEASE_FILES_LIST"
 echo "Found $(wc -l < "$RELEASE_FILES_LIST") existing .7z files."

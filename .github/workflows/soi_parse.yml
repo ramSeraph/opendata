@@ -141,20 +141,27 @@ jobs:
 
           mkdir -p export/gtiffs/
 
+          echo "Running parse.py"
           GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
           FROM_LIST=data/to_parse.txt uv run --with GDAL==${GDAL_VERSION} parse.py
           
+          echo "Parse run completed, generating lists and uploading to release"
           uvx --from topo_map_processor upload-to-release soi-tiffs export/gtiffs tif 
+
+          echo "Generating lists"
+          uvx --from topo_map_processor generate-lists soi-tiffs .tif
+
+          echo "Generating bounds file and uploading"
+          gh reelease download soi-tiffs -p 'listing_files.csv' 
+          uv run filter_index_file.py data/index.geojson data/bounds.geojson listing_files.csv
+          gh release upload soi-tiffs data/bounds.geojson --clobber
+          rm listing_files.csv
+          rm data/bounds.geojson
 
           rm -rf data/raw/* || true
           rm -rf export/gtiffs/* || true
         timeout-minutes: 600
  
-      - name: Update lists
-        run: |
-          cd maps/SOI
-          uvx --from topo_map_processor generate-lists soi-tiffs .tif
-
       - name: Save parse run data to cache
         if: always()
         uses: actions/cache/save@v4

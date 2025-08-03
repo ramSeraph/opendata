@@ -1,86 +1,204 @@
 
-// uses fileSize, getDateParts, bucketName from archive_common.js
+function showLinksforDate(selectedComponent, dateStr, currentMonthInfos, previousMonthsInfos) {
+    var componentInfoDiv = document.getElementById('component_info');
 
-function getDateStr(d, forArchive) {
-    var ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(d);
-    var mo = new Intl.DateTimeFormat('en', { month: 'short' }).format(d);
-    var ml = new Intl.DateTimeFormat('en', { month: 'long' }).format(d);
-    var da = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(d);
-    if (forArchive === true) {
-        return `${da}${mo}${ye}`
+    // Display URL and size
+    var fileInfoDiv = document.getElementById('file_info');
+    if (!fileInfoDiv) {
+        fileInfoDiv = document.createElement('div');
+        fileInfoDiv.id = 'file_info';
+        componentInfoDiv.appendChild(fileInfoDiv);
     }
-    return `${da} ${ml} ${ye}`
-}
+    fileInfoDiv.innerHTML = ''; // Clear previous info
 
-function getDateRange(dstrs) {
-    var minDate = null
-    var maxDate = null
-    for (let dstr of dstrs) {
-        const date = getDateParts(dstr)['date']
-        if (minDate === null || date < minDate) {
-            minDate = date
-        }
 
-        if (maxDate === null || date > maxDate) {
-            maxDate = date
+    var fileData = null;
+    var isMonthFile = false;
+    // Check current month files first (exact date match)
+    if (currentMonthInfos[selectedComponent] && currentMonthInfos[selectedComponent][dateStr]) {
+        fileData = currentMonthInfos[selectedComponent][dateStr];
+    } else {
+        // Check previous months files (month/year match)
+        var monthYear = dateStr.substring(0, 7); // YYYY-MM
+        console.log("monthYear: " + monthYear);
+        if (previousMonthsInfos[selectedComponent] && previousMonthsInfos[selectedComponent][monthYear]) {
+            fileData = previousMonthsInfos[selectedComponent][monthYear];
+            isMonthFile = true;
         }
     }
 
-    return { minDate, maxDate }
+    if (fileData) {
+        var span = document.createElement('span');
+        span.textContent = 'Download ';
+        fileInfoDiv.appendChild(span);
+
+        var link = document.createElement('a');
+        link.href = fileData.url;
+        var fileSize = formatFileSize(fileData.size);
+        link.textContent = fileData.filename;
+        fileInfoDiv.appendChild(link);
+        var sizeSpan = document.createElement('span');
+        sizeSpan.textContent = ' (' + fileSize + ')';
+        fileInfoDiv.appendChild(sizeSpan);
+        if (isMonthFile) {
+            var infoSpan = document.createElement('span');
+            var dateStrConv = convertDateToDDBBBYYYY(dateStr);
+            var filename = `${selectedComponent}.${dateStrConv}.csv`
+            infoSpan.textContent = `[ File inside archive: ${filename} ]`;
+            fileInfoDiv.appendChild(infoSpan);
+        }
+    } else {
+        fileInfoDiv.textContent = 'File not found for this date.';
+    }
+    console.log("Selected date: " + dateStr);
+
 }
 
-function showLink(date, sizeMap, statusSetter) {
-    const dateStr = getDateStr(date, true)
-    const objName = dateStr + '.zip'
-    const size = fileSize(sizeMap[dateStr])
-    statusSetter(`Archive: <a href=https://storage.googleapis.com/${bucketName}/${objName} >${objName}</a> ${size}`, false)
+function populateComponentInfo(selectedComponent, componentInfo, currentMonthInfos, previousMonthsInfos) {
+    var componentInfoDiv = document.getElementById('component_info');
+
+    // Clear previous info
+    componentInfoDiv.innerHTML = '';
+
+    let componentData = componentInfo[selectedComponent];
+    if (componentData.desc) {
+        var description = document.createElement('p');
+        description.textContent = 'Description: ' + componentData.desc;
+        componentInfoDiv.appendChild(description);
+    }
+
+    if (componentData.fields) {
+        var fieldsTable = createFieldsTable(componentData.fields);
+        componentInfoDiv.appendChild(fieldsTable);
+    }
+
+    if (selectedComponent === 'changes') {
+        var fileInfoDiv = document.getElementById('file_info');
+        if (!fileInfoDiv) {
+            fileInfoDiv = document.createElement('div');
+            fileInfoDiv.id = 'file_info';
+            componentInfoDiv.appendChild(fileInfoDiv);
+        }
+        fileInfoDiv.innerHTML = ''; // Clear previous info
+
+        var fileData = currentMonthInfos['changes'];
+
+        if (fileData) {
+            var span = document.createElement('span');
+            span.textContent = 'Download ';
+            fileInfoDiv.appendChild(span);
+
+            var link = document.createElement('a');
+            link.href = fileData.url;
+            var fileSize = formatFileSize(fileData.size);
+            link.textContent = fileData.filename;
+            fileInfoDiv.appendChild(link);
+            var sizeSpan = document.createElement('span');
+            sizeSpan.textContent = ' (' + fileSize + ')';
+            fileInfoDiv.appendChild(sizeSpan);
+        } else {
+            fileInfoDiv.textContent = 'File not found for changes component.';
+        }
+    } else {
+        var availableDates = [];
+        if (currentMonthInfos[selectedComponent]) {
+            availableDates = availableDates.concat(Object.keys(currentMonthInfos[selectedComponent]));
+        }
+        if (previousMonthsInfos[selectedComponent]) {
+            availableDates = availableDates.concat(previousMonthsInfos[selectedComponent].dates);
+        }
+        availableDates = [...new Set(availableDates)].sort();
+
+        flatpickr("#archive_date", {
+            enable: availableDates,
+            dateFormat: "Y-m-d", // Set to YYYY-MM-DD
+            inline: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                showLinksforDate(selectedComponent, dateStr, currentMonthInfos, previousMonthsInfos);
+            }
+        });
+    }
 }
 
+function populateDropdown(components, componentInfo, currentMonthInfos, previousMonthsInfos) {
+    var componentInfoDiv = document.getElementById('component_info');
+    var componentSelector = document.getElementById('component_selector');
 
-function setupDatePicker(el, statusSetter, sizeMap) {
-    
-    var { minDate, maxDate } = getDateRange(Object.keys(sizeMap)) 
+    var option = document.createElement("option");
+    option.value = "";
+    option.text = "pick component";
+    componentSelector.appendChild(option);
 
-    flatpickr(el, {
-        'inline': true,
-        // 'clickOpens': false,
-        // 'static': true,
-        'dateFormat': "",
-        // 'position': "above",
-        'minDate': minDate,
-        'maxDate': new Date(),
-        'defaultDate': maxDate,
-        'disable': [ (d) => { const k = getDateStr(d, true); return !(k in sizeMap) } ], 
-        'onChange': [ (sdates, ddstr, inst) => { showLink(sdates[0], sizeMap, statusSetter) } ]
+    for (var component of components) {
+        var option = document.createElement("option");
+        option.value = component;
+        option.text = component;
+        componentSelector.appendChild(option);
+    }
+  
+    componentSelector.addEventListener('change', (event) => {
+        var selectedComponent = event.target.value;
+        componentInfoDiv.innerHTML = ''; // Clear previous info
+        if (!selectedComponent) {
+            return; // Do nothing if no component is selected
+        }
+        // Clear the date picker if it exists
+        var datePicker = document.getElementById('archive_date');
+        if (datePicker && datePicker._flatpickr) {
+            datePicker._flatpickr.destroy(); // Destroy the flatpickr instance
+            datePicker.value = ''; // Clear the input value
+        }
+        populateComponentInfo(selectedComponent, componentInfo, currentMonthInfos, previousMonthsInfos);
+
     });
-    showLink(maxDate, sizeMap, statusSetter)
 }
 
-window.onload = (event) => {
-    console.log('on window load')
 
-    var statusSpan = document.getElementById('form_status')
-    setStatus = (msg, error, selected) => {
-        if (statusSpan.hasAttribute("class")) {
-            statusSpan.removeAttribute("class")
+
+document.addEventListener('DOMContentLoaded', function() {
+    var status = document.getElementById('form_status');
+
+    status.textContent = 'Loading files...';
+    status.style.color = 'black';
+    Promise.all([
+        fetch('/opendata/lgd/site_map.json').then(response => response.json()),
+        fetch('/opendata/lgd/listing_files.csv').then(response => response.text()),
+        fetch('/opendata/lgd/archives/mapping.json').then(response => response.json()),
+        fetch('/opendata/lgd/archives/listing_files.csv').then(response => response.text()) // New fetch
+    ])
+    .then(([siteMapData, listingFilesData, archivesMappingData, archivesListingFilesData]) => {
+
+        var componentInfo = parseSiteMap(siteMapData);
+        // Process siteMapData
+        var currMonthInfos = parseFileListings(listingFilesData, false);
+        var prevMonthsInfos = parseFileListings(archivesListingFilesData, true);
+        var components = new Set();
+        for (var key in currMonthInfos) {
+            components.add(key);
         }
-        statusSpan.innerHTML = msg
-        if (error) {
-            statusSpan.setAttribute("class", "error")
+        for (var key in prevMonthsInfos) {
+            components.add(key);
         }
-    }
-    setStatus(`Getting list of all archives.. `, false)
-    var datepicker = document.getElementById("archive_date")
 
-    fillDatePicker = (data, error) => {
-        if (error === true) {
-            setStatus(data, true)
-            return
+        // Process archivesMappingData (previous months date list)
+        for (var compKey in archivesMappingData) {
+            if (ignoredComponents.has(compKey)) {
+              continue
+            }
+            var componentName = compKey.toLowerCase(); 
+            prevMonthsInfos[componentName]['dates'] = archivesMappingData[compKey].map(dateStr => convertDateToYYYYMMDD(dateStr));
         }
-        setStatus('', false)
-        setupDatePicker(datepicker, setStatus, data)
-    }
 
-    getArchiveList(fillDatePicker)
-}
+        var sortedComponents = Array.from(components).sort();
+            
+        populateDropdown(sortedComponents, componentInfo, currMonthInfos, prevMonthsInfos);
+      
+        status.textContent = ''; // Clear loading message
 
+    })
+    .catch(error => {
+        console.error('Error loading data:', error);
+        status.textContent = `Error loading data: ${error.message || error}`;
+        status.style.color = 'red';
+    });
+});

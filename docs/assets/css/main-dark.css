@@ -180,7 +180,7 @@ input,select,textarea {
     border: none
 }
 
-input[type=text],select,textarea {
+input[type=text],textarea {
     width: 100%;
     resize: none;
     background-color: var(--background-color);
@@ -189,6 +189,18 @@ input[type=text],select,textarea {
     font-size: 12.5px;
     font-family: "Source Code Pro",monospace;
     line-height: 1.5
+}
+
+select {
+    width: 100%;
+    resize: none;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    caret-color: var(--text-color);
+    font-size: 12.5px;
+    font-family: "Source Code Pro",monospace;
+    line-height: 1.5;
+    border: 1px solid var(--base-color);
 }
 
 input,select,textarea,textarea::-webkit-input-placeholder {

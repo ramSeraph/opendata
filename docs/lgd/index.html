@@ -69,12 +69,15 @@ worker-src 'self' blob:
 
 <h1 id="get-archive-for-date">Get Archive for date</h1>
 
-<h2 id="-stale-data-warning-">!!!! STALE DATA WARNING !!!!</h2>
-
-<p>All data past 5th March 2025 is not listed here and is only listed <a href="https://github.com/ramSeraph/opendata/releases/download/lgd-latest/url_list.txt">here</a>. The data storage is being redone and the UI will be updated when things are stable.</p>
-
 <hr />
+<div id="component_selector_div">
+  <label for="component_selector">Select Component:</label>
+  <select name="component" id="component_selector">
+  </select>
+  <div id="component_info"></div>
+</div>
 <div id="archive_date" class="flatpickr"></div>
+<div id="file_info"></div>
 <p><br />
 <span id="form_status"></span></p>
 

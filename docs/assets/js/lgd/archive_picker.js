@@ -1,14 +1,20 @@
 
-function showLinksforDate(selectedComponent, dateStr, currentMonthInfos, previousMonthsInfos) {
+function getFileInfoDiv() {
     var componentInfoDiv = document.getElementById('component_info');
-
-    // Display URL and size
     var fileInfoDiv = document.getElementById('file_info');
     if (!fileInfoDiv) {
         fileInfoDiv = document.createElement('div');
         fileInfoDiv.id = 'file_info';
         componentInfoDiv.appendChild(fileInfoDiv);
     }
+    fileInfoDiv.innerHTML = ''; // Clear previous info
+    return fileInfoDiv;
+}
+
+
+function showLinksforDate(selectedComponent, dateStr, currentMonthInfos, previousMonthsInfos) {
+    // Display URL and size
+    var fileInfoDiv = getFileInfoDiv();
     fileInfoDiv.innerHTML = ''; // Clear previous info
 
 
@@ -73,17 +79,11 @@ function populateComponentInfo(selectedComponent, componentInfo, currentMonthInf
     }
 
     if (selectedComponent === 'changes') {
-        var fileInfoDiv = document.getElementById('file_info');
-        if (!fileInfoDiv) {
-            fileInfoDiv = document.createElement('div');
-            fileInfoDiv.id = 'file_info';
-            componentInfoDiv.appendChild(fileInfoDiv);
-        }
-        fileInfoDiv.innerHTML = ''; // Clear previous info
 
         var fileData = currentMonthInfos['changes'];
 
         if (fileData) {
+            var fileInfoDiv = getFileInfoDiv();
             var span = document.createElement('span');
             span.textContent = 'Download ';
             fileInfoDiv.appendChild(span);
@@ -142,6 +142,10 @@ function populateDropdown(components, componentInfo, currentMonthInfos, previous
         if (!selectedComponent) {
             return; // Do nothing if no component is selected
         }
+
+        var fileInfoDiv = getFileInfoDiv();
+        fileInfoDiv.innerHTML = ''; // Clear previous info
+
         // Clear the date picker if it exists
         var datePicker = document.getElementById('archive_date');
         if (datePicker && datePicker._flatpickr) {

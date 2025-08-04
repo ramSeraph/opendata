@@ -2,12 +2,18 @@ document.addEventListener('DOMContentLoaded', function() {
     fetch('/opendata/lgd/site_map.json')
         .then(response => response.json())
         .then(data => {
+            compMap = parseSiteMap(data);
             const anatomyContent = document.getElementById('anatomy-content');
-            data.forEach(item => {
-                if (item.comp && item.comp !== "IGNORE" && item.fields) {
+            Object.keys(compMap).forEach(key => {
+                const item = compMap[key];
+                if (item.comp && item.fields) {
                     const h2 = document.createElement('h2');
-                    h2.id = item.file.toLowerCase().replace('.', '');
-                    h2.textContent = item.file;
+                    h2.id = key;
+                    var heading = key + '.csv';
+                    if (item.comp === "IGNORE") {
+                        heading += ' (No longer active)';
+                    }
+                    h2.textContent = heading;
                     anatomyContent.appendChild(h2);
 
                     const dl = document.createElement('dl');

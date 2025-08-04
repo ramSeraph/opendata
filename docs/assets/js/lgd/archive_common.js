@@ -70,14 +70,12 @@ function parseSiteMap(siteMapData) {
     var componentInfo = {};
 
     siteMapData.forEach(item => {
-        if (item.comp && item.comp !== "IGNORE") {
-            if (!item.file) {
-                return;
-            }
-            var key = item.file.toLowerCase().replace('.csv', '');                  
-            delete item.file; // Remove file property from item
-            componentInfo[key] = item; // Store the item in componentInfo
-        }
+        if (!item.comp) return;
+        if (item.comp === "IGNORE" && !item.fields) return;
+        if (!item.file) return;
+        var key = item.file.toLowerCase().replace('.csv', '');                  
+        delete item.file; // Remove file property from item
+        componentInfo[key] = item; // Store the item in componentInfo
     });
     return componentInfo;
 }

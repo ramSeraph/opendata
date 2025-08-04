@@ -52,7 +52,6 @@
       "Census 2001 code": { "action": "KEEP", "description": "Sub District Code from 2001 Census" },
       "Census 2011 code": { "action": "KEEP", "description": "Sub District Code from 2011 Census" }
     }
-
   },
   {
     "dropdown": [ "Download Directory", "SUB-DISTRICT", "All Sub-Districts of a State" ],
@@ -301,7 +300,32 @@
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "State Wise Parliament Constituency and Assembly Constituency along with coverage details PRI" ],
     "comp": "IGNORE",
-    "ignore_reason": "Needs Review, Confusing"
+    "desc": "list of all constituencies with PRI local body coverage",
+    "file": "constituencies_mapping_pri.csv",
+    "ignore_reason": "CONSTITUENCIES_MAPPINGS_PRI Needs Review, Confusing",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Parliament Constituency code": { "action": "KEEP", "description": "LGD Code for the parliament constituency" },
+      "Parliament Constituency ECI Code": { "action": "KEEP", "description": "ECI(Election Commision of India) Code for the parliament constituency" },
+      "Parliament Constituency Name": { "action": "KEEP", "description": "Name of the parliament constituency" },
+      "Assembly Constituency Code": { "action": "KEEP", "description": "LGD Code for the assembly constituency" },
+      "Assembly Constituency ECI Code": { "action": "KEEP", "description": "ECI(Election Commision of India) Code for the assembly constituency" },
+      "Assembly Constituency Name": { "action": "KEEP", "description": "Name of the assembly constituency" },
+      "District Census 2011 Code": { "action": "KEEP", "description": "District Census 2011 Code" },
+      "District Code": { "action": "KEEP", "description": "District LGD Code" },
+      "District Name": { "action": "KEEP", "description": "Name of the District" },
+      "Subdistrict Census 2011 Code": { "action": "KEEP", "description": "Sub District Census 2011 Code" },
+      "Subdistrict Code": { "action": "KEEP", "description": "Sub District LGD Code" },
+      "Subdistrict Name": { "action": "KEEP", "description": "Name of the Sub District" },
+      "Block Code": { "action": "KEEP", "description": "Block LGD Code" },
+      "Block Name": { "action": "KEEP", "description": "Block Name in English" },
+      "Village Census 2011 Code": { "action": "KEEP", "description": "Village Census 2011 Code" },
+      "Village Code": { "action": "KEEP", "description": "Village LGD Code" },
+      "Village Name": { "action": "KEEP", "description": "Name of the Village" },
+      "Rural Localbody Code": { "action": "KEEP", "description": "LGD Code of the Rural Local Body" },
+      "Rural LocalbodyName": { "action": "KEEP", "description": "Name of the Rural Local Body" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "State Wise Parliament Constituency and Assembly Constituency along with coverage details Urban" ],
@@ -325,6 +349,23 @@
       "Urban Localbody Code": { "action": "KEEP", "description": "LGD Code of the Urban Local Body Code" },
       "Urban Localbody Name": { "action": "KEEP", "description": "Name of the Urban Local Body" },
       "State Code": { "action": "KEEP", "description": "State LGD Code" }
+    }
+  },
+  {
+    "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "<NO LONGER ACCESSIBLE>" ],
+    "comp": "IGNORE",
+    "desc": "parliament constituencies with local body mappings",
+    "file": "parliament_constituencies_lb_mapping.csv",
+    "ignore_reason": "PARLIAMENT_CONSTITUENCIES_LOCAL_BODY_MAPPINGS Not accessible anymore",
+    "fields": {
+      "S.no.": { "action": "IGNORE", "description": "Serial number" },
+      "Parliament": { "action": "IGNORE", "description": "Parliament Constituency Name" },
+      "Assembly": { "action": "IGNORE", "description": "Assembly Constituency Name" },
+      "Classification": { "action": "IGNORE", "description": "Classification of the local body ex: Village Panchayat or District Panchayat" },
+      "Local Gov. Name": { "action": "IGNORE", "description": "Name of the local body" },
+      "Coverage": { "action": "IGNORE", "description": "Coverage details partial(P) or full(F)" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "Parliament Constituency Code": { "action": "KEEP", "description": "LGD Code for the parliament constituency" }
     }
   },
   {
@@ -622,8 +663,9 @@
   {
     "dropdown": [ "Download Directory", "Department/Organization", "Administrative Unit Level Wise Administrative Unit Entity", "Central" ],
     "comp": "IGNORE",
-    "desc": "CENTRAL_ADMIN_DEPT_UNITS list of all central adminstrative department units",
+    "desc": "list of all central adminstrative department units",
     "file": "central_admin_dept_units.csv",
+    "ignore_reason": "CENTRAL_ADMIN_DEPT_UNITS broken",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial number" },
       "Admin Unit Entity Code": { "action": "KEEP", "description": "Admin Unit Entity LGD Code" },
@@ -647,8 +689,9 @@
   {
     "dropdown": [ "Download Directory", "Department/Organization", "Administrative Unit Level Wise Administrative Unit Entity", "State" ],
     "comp": "IGNORE",
-    "desc": "STATE_ADMIN_DEPT_UNITS list of all state adminstrative department units",
+    "desc": "list of all state adminstrative department units",
     "file": "state_admin_dept_units.csv",
+    "ignore_reason": "STATE_ADMIN_DEPT_UNITS broken",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial number" },
       "Admin Unit Entity Code": { "action": "KEEP", "description": "Admin Unit Entity LGD Code" },
@@ -916,9 +959,19 @@
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "NOFN Panchayat List" ],
-    "comp": "NOFN_PANCHAYATS",
     "comp":  "IGNORE",
-    "ignore_reason": "broken"
+    "desc": "list of Panchayats in National Optical Fibre Network (NOFN) project",
+    "ignore_reason": "NOFN_PANCHAYATS broken",
+    "file": "nofn_panchayats.csv",
+    "fields": {
+      "SR.NO": { "action": "IGNORE", "description": "Serial number" },
+      "District Name": { "action": "KEEP", "description": "District Name in English" },
+      "Sub District Name(In English)": { "action": "KEEP", "description": "Sub District Name in English" },
+      "Local Body Code": { "action": "KEEP", "description": "Local Body LGD Code" },
+      "Local Body Name (In English)": { "action": "KEEP", "description": "Local Body Name in English" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code" },
+      "State Name": { "action": "KEEP", "description": "State Name in English" }
+    }
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "List Of Modification Done In LGD" ],

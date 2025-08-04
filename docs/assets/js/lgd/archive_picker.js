@@ -67,13 +67,11 @@ function populateComponentInfo(selectedComponent, componentInfo, currentMonthInf
     componentInfoDiv.innerHTML = '';
 
     let componentData = componentInfo[selectedComponent];
-    if (componentData.desc) {
-        var description = document.createElement('p');
-        description.textContent = 'Description: ' + componentData.desc;
-        componentInfoDiv.appendChild(description);
-    }
 
     if (componentData.fields) {
+        var fieldsHeading = document.createElement('h3');
+        fieldsHeading.textContent = 'Expected Fields';
+        componentInfoDiv.appendChild(fieldsHeading);
         var fieldsTable = createFieldsTable(componentData.fields);
         componentInfoDiv.appendChild(fieldsTable);
     }
@@ -108,15 +106,25 @@ function populateComponentInfo(selectedComponent, componentInfo, currentMonthInf
             availableDates = availableDates.concat(previousMonthsInfos[selectedComponent].dates);
         }
         availableDates = [...new Set(availableDates)].sort();
+        var lastAvailableDate = availableDates.length > 0 ? availableDates[availableDates.length - 1] : null;
+
+        var datePickerContainer = document.getElementById('date_picker_container');
+        datePickerContainer.innerHTML = '<h3>Pick a Date</h3><div id="archive_date" class="flatpickr"></div>';
+        datePickerContainer.style.display = 'block';
 
         flatpickr("#archive_date", {
             enable: availableDates,
             dateFormat: "Y-m-d", // Set to YYYY-MM-DD
+            defaultDate: lastAvailableDate,
             inline: true,
             onChange: function(selectedDates, dateStr, instance) {
                 showLinksforDate(selectedComponent, dateStr, currentMonthInfos, previousMonthsInfos);
             }
         });
+
+        if (lastAvailableDate) {
+            showLinksforDate(selectedComponent, lastAvailableDate, currentMonthInfos, previousMonthsInfos);
+        }
     }
 }
 
@@ -132,13 +140,23 @@ function populateDropdown(components, componentInfo, currentMonthInfos, previous
     for (var component of components) {
         var option = document.createElement("option");
         option.value = component;
-        option.text = component;
+        let componentData = componentInfo[component];
+        if (componentData.desc) {
+            option.text = `${component} (${componentData.desc})`;
+        } else {
+            option.text = component;
+        }
         componentSelector.appendChild(option);
     }
   
     componentSelector.addEventListener('change', (event) => {
         var selectedComponent = event.target.value;
         componentInfoDiv.innerHTML = ''; // Clear previous info
+        
+        var datePickerContainer = document.getElementById('date_picker_container');
+        datePickerContainer.innerHTML = '';
+        datePickerContainer.style.display = 'none';
+
         if (!selectedComponent) {
             return; // Do nothing if no component is selected
         }
@@ -146,12 +164,6 @@ function populateDropdown(components, componentInfo, currentMonthInfos, previous
         var fileInfoDiv = getFileInfoDiv();
         fileInfoDiv.innerHTML = ''; // Clear previous info
 
-        // Clear the date picker if it exists
-        var datePicker = document.getElementById('archive_date');
-        if (datePicker && datePicker._flatpickr) {
-            datePicker._flatpickr.destroy(); // Destroy the flatpickr instance
-            datePicker.value = ''; // Clear the input value
-        }
         populateComponentInfo(selectedComponent, componentInfo, currentMonthInfos, previousMonthsInfos);
 
     });

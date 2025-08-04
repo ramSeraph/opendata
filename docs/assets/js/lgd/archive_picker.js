@@ -107,6 +107,7 @@ function populateComponentInfo(selectedComponent, componentInfo, currentMonthInf
         }
         availableDates = [...new Set(availableDates)].sort();
         var lastAvailableDate = availableDates.length > 0 ? availableDates[availableDates.length - 1] : null;
+        var firstAvailableDate = availableDates.length > 0 ? availableDates[0] : null;
 
         var datePickerContainer = document.getElementById('date_picker_container');
         datePickerContainer.innerHTML = '<h3>Pick a Date</h3><div id="archive_date" class="flatpickr"></div>';
@@ -117,6 +118,8 @@ function populateComponentInfo(selectedComponent, componentInfo, currentMonthInf
             dateFormat: "Y-m-d", // Set to YYYY-MM-DD
             defaultDate: lastAvailableDate,
             inline: true,
+            minDate: firstAvailableDate,
+            maxDate: lastAvailableDate,
             onChange: function(selectedDates, dateStr, instance) {
                 showLinksforDate(selectedComponent, dateStr, currentMonthInfos, previousMonthsInfos);
             }
@@ -157,12 +160,12 @@ function populateDropdown(components, componentInfo, currentMonthInfos, previous
         datePickerContainer.innerHTML = '';
         datePickerContainer.style.display = 'none';
 
+        var fileInfoDiv = getFileInfoDiv();
+        fileInfoDiv.innerHTML = ''; // Clear previous info
+
         if (!selectedComponent) {
             return; // Do nothing if no component is selected
         }
-
-        var fileInfoDiv = getFileInfoDiv();
-        fileInfoDiv.innerHTML = ''; // Clear previous info
 
         populateComponentInfo(selectedComponent, componentInfo, currentMonthInfos, previousMonthsInfos);
 

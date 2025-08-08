@@ -152,7 +152,7 @@ jobs:
           uvx --from topo_map_processor generate-lists soi-tiffs .tif
 
           echo "Generating bounds file and uploading"
-          gh reelease download soi-tiffs -p 'listing_files.csv' 
+          gh release download soi-tiffs -p 'listing_files.csv' 
           uv run filter_index_file.py data/index.geojson data/bounds.geojson listing_files.csv
           gh release upload soi-tiffs data/bounds.geojson --clobber
           rm listing_files.csv

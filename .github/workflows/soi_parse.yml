@@ -146,10 +146,10 @@ jobs:
           FROM_LIST=data/to_parse.txt uv run --with GDAL==${GDAL_VERSION} parse.py
           
           echo "Parse run completed, generating lists and uploading to release"
-          uvx --from topo_map_processor upload-to-release soi-tiffs export/gtiffs tif 
+          uvx --from gh_release_tools upload-to-release soi-tiffs export/gtiffs tif 
 
           echo "Generating lists"
-          uvx --from topo_map_processor generate-lists soi-tiffs .tif
+          uvx --from gh_release_tools generate-lists soi-tiffs .tif
 
           echo "Generating bounds file and uploading"
           gh release download soi-tiffs -p 'listing_files.csv' 

@@ -42,7 +42,7 @@ while read comp; do
   fi
 done < done_comps.txt
 
-uvx --from topo_map_processor upload-to-release lgd-latest data/raw/$curr_date '7z'
+uvx --from gh_release_tools upload-to-release lgd-latest data/raw/$curr_date '7z'
 
 for f in "${to_del_7zs[@]}"; do
   echo "deleting $f"

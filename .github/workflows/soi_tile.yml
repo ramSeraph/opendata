@@ -71,7 +71,7 @@ jobs:
           TMPDIR=./temp 
           GDAL_VERSION=$(gdalinfo --version | cut -d"," -f1 | cut -d" " -f2)
           echo "GDAL_VERSION=$GDAL_VERSION"
-          uvx --with numpy --with pillow --with gdal==$GDAL_VERSION --from topo_map_processor retile-e2e \
+          uvx --with numpy --with pillow --with gdal==$GDAL_VERSION --from topo-map-processor retile-e2e \
               --pmtiles-release soi-latest \
               --gtiffs-release soi-tiffs \
               --pmtiles-prefix soi \

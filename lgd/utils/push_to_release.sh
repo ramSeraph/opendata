@@ -42,7 +42,7 @@ while read comp; do
   fi
 done < done_comps.txt
 
-uvx --from gh_release_tools upload-to-release lgd-latest data/raw/$curr_date '7z'
+uvx --from gh-release-tools upload-to-release -r 'lgd-latest' -d "data/raw/$curr_date" -e '.7z'
 
 for f in "${to_del_7zs[@]}"; do
   echo "deleting $f"

@@ -126,7 +126,7 @@ jobs:
           cd maps/SOI
           ls data/raw/*.pdf > downloaded.txt || touch downloaded.txt
           cat downloaded.txt
-          uvx --from topo_map_processor upload-to-release soi-pdfs data/raw pdf || true
+          uvx --from gh-release-tools upload-to-release -r 'soi-pdfs' -d 'data/raw' -e '.pdf' || true
           rm -rf data/raw/*.pdf || true
           rm -rf data/raw/*.unavailable || true
           rm -rf data/cookies || true
@@ -136,7 +136,7 @@ jobs:
       - name: Update lists
         run: |
           cd maps/SOI
-          uvx --from topo_map_processor generate-lists soi-pdfs '.pdf'
+          uvx --from gh-release-tools generate-lists -r 'soi-pdfs' -e '.pdf'
 
       - name: Save prev data workspace
         if: always()

@@ -42,7 +42,7 @@ get_lgd_files() {
     echo "getting lgd_archive for $prefix $date_str"
     echo "$date_str" > ${prefix}.lgd_date.txt
     fname=${prefix}.${date_str}.csv.7z
-    url="$(grep "^${fname}," listing_files.csv | cut -d"," -f3)"
+    url="$(grep "^${fname}," listing_files.csv | cut -d"," -f3 | tr -d '\r')"
     wget $url
     7z x $fname
     rm $fname

@@ -5,7 +5,7 @@ The Open Series Map part of the Code has been moved to [India Topo Maps](https:/
 
 the pmtiles mosaic code has been moved to [PMtiles Mosaic](https://github.com/ramSeraph/pmtiles_mosaic)
 
-The SOI Village Boundaries part of the Code has been moved to [Indian Admin Boundaries](https://github.com/ramSeraph/india_topo_maps/tree/main/soi)
+The SOI Village Boundaries part of the Code has been moved to [Indian Admin Boundaries](https://github.com/ramSeraph/indian_admin_boundaries/tree/main/soi)
 
 All the common soi scraping code has been moved to [SOI common](https://github.com/ramSeraph/soi_common)
 

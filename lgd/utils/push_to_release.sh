@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 echo "Fetching list of existing .7z files from GitHub releases..."
 RELEASE_FILES_LIST="existing_release_files.txt"
@@ -17,11 +17,13 @@ while read comp; do
 
     cd data/raw/$curr_date
     7z a changes.csv.7z changes.csv
+    echo "uploading changes.csv.7z"
     gh release upload lgd-latest changes.csv.7z --clobber
     to_del_7zs+=("changes.csv.7z")
     cd -
 
     cp data/raw/changes/dates_covered.txt data/raw/changes/changes_dates_covered.txt
+    echo "uploading changes_dates_covered.txt"
     gh release upload lgd-latest data/raw/changes/changes_dates_covered.txt --clobber
     rm data/raw/changes/changes_dates_covered.txt
   else

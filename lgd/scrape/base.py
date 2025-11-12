@@ -420,7 +420,7 @@ class BaseDownloader:
             records_transformed = []
             for r in records:
                 t = transform_fn(r, records_transformed)
-                if t != False:
+                if t is not False:
                     records_transformed.append(t)
 
             csv_filename = self.get_filename()

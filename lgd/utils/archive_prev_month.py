@@ -17,7 +17,7 @@ def run_external(cmd):
         raise Exception(f'command {cmd} failed with exit code: {res.returncode}')
 
 def get_all_releases():
-    run_external('sh -c "gh release list --json tagName > tags.json"')
+    run_external('sh -c "gh release list --limit 100 --json tagName > tags.json"')
     tfile = Path('tags.json')
     data = json.loads(tfile.read_text())
     tfile.unlink()

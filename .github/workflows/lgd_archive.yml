@@ -46,7 +46,7 @@ jobs:
       - name: Compress data
         run: |
           cd lgd
-          num_months_back="${{ secrets.LGD_ARCHIVE_NUM_MONTHS_BACK }}"
+          num_months_back="${{ vars.LGD_ARCHIVE_NUM_MONTHS_BACK }}"
           uv run utils/get_prev_month_year.py month_year.txt $num_months_back
           uv run utils/archive_prev_month.py $(cat month_year.txt)
           uvx --from gh-release-tools generate-lists -r 'lgd-latest' -e '.7z'

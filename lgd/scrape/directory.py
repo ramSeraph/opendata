@@ -133,8 +133,9 @@ class DirectoryDownloader(BaseDownloader):
             else:
                 logger.info(f'intermediate {data_file_name=}')
 
-        #logger.debug('got {} records'.format(len(records)))
-        #logger.debug('{}'.format(records[0]))
+        logger.debug('got {} records'.format(len(records)))
+        if len(records) > 0:
+            logger.debug('{}'.format(records[0]))
         return records
 
 
@@ -175,6 +176,7 @@ class StateWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
             kwargs['deps'].append('STATES')
         super().__init__(**kwargs)
         self.post_data_extra = kwargs.get('post_data_extra', {})
+        self.add_state_name = kwargs.get('add_state_name', True)
 
     def populate_downloaders(self):
         if self.downloader_items is not None:
@@ -187,8 +189,11 @@ class StateWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
             csv_path = Path(self.csv_filename)
             csv_filename_s = '{}_{}{}'.format(csv_path.stem, state_code, csv_path.suffix)
             post_data_extra = copy.copy(self.post_data_extra)
-            post_data_extra.update({ 'stateName': state_name,
-                                     'entityCodes': state_code })
+            if self.add_state_name:
+                post_data_extra.update({ 'stateName': state_name,
+                                         'entityCodes': state_code })
+            else:
+                post_data_extra.update({ 'entityCodes': [ 35, state_code ]})
             downloader = DirectoryDownloader(name='{}_{}'.format(self.name, state_code),
                                              base_name=self.name,
                                              desc='{} for state {}({})'.format(self.desc, state_name, state_code),
@@ -496,12 +501,13 @@ def get_all_directory_downloaders(ctx):
 
     downloaders.append(StateWiseDirectoryDownloader(name='PANCHAYAT_MAPPINGS',
                                                     ctx=ctx,
-                                                    download_types=['htm'],
-                                                    excel_conv_args={
+                                                    xlsx_conv_args={
                                                         'header_row_span': 1,
                                                     },
+                                                    add_state_name=False,
                                                     post_data_extra={
-                                                        'rptFileName': 'LocalbodyMappingtoCensusLandregionCode@state',
+                                                        'DDOption': 'DFD',
+                                                        'rptFileName': 'villageGramPanchayatMapping',
                                                     }))
     downloaders.append(StateWiseDirectoryDownloader(name='VILLAGES',
                                                     ctx=ctx,

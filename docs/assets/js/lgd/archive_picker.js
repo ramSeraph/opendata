@@ -50,7 +50,7 @@ function showLinksforDate(selectedComponent, dateStr, currentMonthInfos, previou
             var infoSpan = document.createElement('span');
             var dateStrConv = convertDateToDDBBBYYYY(dateStr);
             var filename = `${selectedComponent}.${dateStrConv}.csv`
-            infoSpan.textContent = `[ File inside archive: ${filename} ]`;
+            infoSpan.textContent = `[ Command to extract from archive: 7z e ${fileData.filename} ${filename} ]`;
             fileInfoDiv.appendChild(infoSpan);
         }
     } else {

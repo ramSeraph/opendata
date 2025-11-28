@@ -176,6 +176,11 @@ def territory_overlaps_check():
         if len(lgd_codes) != 1:
             continue
         lgd_code = lgd_codes[0]
+
+        if lgd_code not in dp_to_d:
+            print(f'No district mapping for district panchayat LGD code {lgd_code}')
+            continue
+
         overlapping_dist_codes = dp_to_d[lgd_code]
         overlapping_dist_ids = set([ int(wd_dist_map_rev[c][1:]) for c in overlapping_dist_codes ])
         curr_overlap_ids = set(get_overlap_ids(v))

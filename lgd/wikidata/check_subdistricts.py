@@ -45,7 +45,9 @@ def hierarchy_check():
             continue
         lgd_entry = lgd_subdist_data[lgd_code]
         expected_lgd_dist_code = lgd_entry['District Code']
-        expected_dist_wd_id = wd_dist_map_rev[expected_lgd_dist_code]
+        expected_dist_wd_id = wd_dist_map_rev.get(expected_lgd_dist_code)
+        if expected_dist_wd_id is None:
+            continue
         expected_dist_id = int(expected_dist_wd_id[1:])
 
         located_in_ids = get_located_in_ids(v)
@@ -158,7 +160,9 @@ def get_correction_info(lgd_entry):
     if g_wd_dist_map_rev is None:
         wd_dist_map = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district, 'district')
         g_wd_dist_map_rev = {v:k for k,v in wd_dist_map.items()}
-    loc_in = g_wd_dist_map_rev[dcode]
+    loc_in = g_wd_dist_map_rev.get(dcode, None)
+    if loc_in is None:
+        print(f'Warning: could not find located in for district code {dcode}')
 
     if 'Effective Date' in lgd_entry:
         i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')

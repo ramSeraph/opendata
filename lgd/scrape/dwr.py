@@ -1,4 +1,6 @@
 import logging
+import random
+import time
 import urllib.parse
 
 from datetime import datetime
@@ -13,13 +15,38 @@ from .base import (DownloaderItem, BaseDownloader,
 
 logger = logging.getLogger(__name__)
 
+DWR_TOKEN_CHARMAP = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ*$'
+
 def get_fn_call_args(name, ast_dict):
-    fn_calls = ast_dict.get(FunctionCall, [])
-    for fn_call in fn_calls:
-        fn_name = fn_call[0]
-        if fn_name == name:
-            return fn_call[1]
+    if isinstance(ast_dict, dict):
+        fn_calls = ast_dict.get(FunctionCall, [])
+        for fn_call in fn_calls:
+            if not isinstance(fn_call, list) or len(fn_call) < 2:
+                continue
+            fn_name = fn_call[0]
+            if fn_name == name:
+                return fn_call[1]
+        for value in ast_dict.values():
+            call_args = get_fn_call_args(name, value)
+            if call_args is not None:
+                return call_args
+    elif isinstance(ast_dict, list):
+        for value in ast_dict:
+            call_args = get_fn_call_args(name, value)
+            if call_args is not None:
+                return call_args
     return None
+
+
+def tokenify(number):
+    tokenbuf = []
+    remainder = int(number)
+    while remainder > 0:
+        tokenbuf.append(DWR_TOKEN_CHARMAP[remainder & 0x3F])
+        remainder = remainder // 64
+    if len(tokenbuf) == 0:
+        return DWR_TOKEN_CHARMAP[0]
+    return ''.join(tokenbuf)
 
 
 class DwrCaller:
@@ -28,23 +55,79 @@ class DwrCaller:
                  base_url=None,
                  script_name='',
                  method_name='',
-                 call_args={},
-                 fields_to_keep=[],
-                 fields_to_drop=[]):
+                 call_args=None,
+                 fields_to_keep=None,
+                 fields_to_drop=None):
         self.ctx=ctx
         self.base_url=base_url
         self.script_name = script_name
         self.method_name = method_name
-        self.call_args = call_args
-        self.fields_to_keep = fields_to_keep
-        self.fields_to_drop = fields_to_drop
-        if len(fields_to_keep) and len(fields_to_drop):
+        self.call_args = call_args or {}
+        self.fields_to_keep = fields_to_keep or []
+        self.fields_to_drop = fields_to_drop or []
+        if len(self.fields_to_keep) and len(self.fields_to_drop):
             raise Exception('fields_to_drop and fields_to_keep both cant be non-empty together')
 
 
-    def make_request(self, script_name, method_name, ref_url, extra_args={}):
+    def get_request_name(self, script_name, method_name):
+        return '{}.{}'.format(script_name, method_name)
+
+
+    def get_ref_url(self):
+        return '/downloadDirectory.do?OWASP_CSRFTOKEN={}'.format(self.ctx.csrf_token)
+
+
+    def get_instance_id(self):
+        instance_id = getattr(self.ctx, 'dwr_instance_id', None)
+        if instance_id is None:
+            instance_id = 0
+            self.ctx.dwr_instance_id = instance_id
+        return instance_id
+
+
+    def get_page_id(self):
+        page_id = getattr(self.ctx, 'dwr_page_id', None)
+        if page_id is not None:
+            return page_id
+
+        page_id = '{}-{}'.format(
+            tokenify(round(time.time() * 1000)),
+            tokenify(random.getrandbits(53))
+        )
+        self.ctx.dwr_page_id = page_id
+        return page_id
+
+
+    def get_dwr_session_id(self):
+        dwr_session_id = getattr(self.ctx, 'dwr_session_id', None)
+        if dwr_session_id is not None:
+            return dwr_session_id
+
+        dwr_session_id = self.ctx.session.cookies.get('DWRSESSIONID')
+        if dwr_session_id is not None:
+            self.ctx.dwr_session_id = dwr_session_id
+        return dwr_session_id
+
+
+    def raise_on_batch_error(self, script_name, method_name, js_dict):
+        batch_exception = get_fn_call_args('dwr.engine.remote.handleBatchException', js_dict)
+        if batch_exception is None:
+            return
+
+        if len(batch_exception) == 0 or not isinstance(batch_exception[0], dict):
+            raise Exception('Failed DWR request for {} with malformed batch exception: {}'.format(
+                self.get_request_name(script_name, method_name), batch_exception))
+
+        error = batch_exception[0]
+        error_name = error.get('name', 'unknown')
+        error_message = error.get('message', '')
+        raise Exception('Failed DWR request for {}: {}: {}'.format(
+            self.get_request_name(script_name, method_name), error_name, error_message))
+
+
+    def make_request(self, script_name, method_name, ref_url, extra_args=None, script_session_id=None):
         dwr_url = '{}/dwr/call/plaincall/{}.{}.dwr'.format(self.base_url, script_name, method_name)
-        ref_url = urllib.parse.quote_plus(ref_url)
+        ref_url = urllib.parse.quote(ref_url, safe='')
         post_data = {
             'callCount': '1',
             'windowName': '',
@@ -52,11 +135,12 @@ class DwrCaller:
             'c0-methodName': method_name,
             'c0-id': '0',
             'batchId': self.ctx.script_batch_id,
+            'instanceId': self.get_instance_id(),
             'page': ref_url,
-            'httpSessionId': '',
-            'scriptSessionId': self.ctx.script_session_id
+            'scriptSessionId': self.ctx.script_session_id if script_session_id is None else script_session_id
         }
-        post_data.update(extra_args)
+        if extra_args is not None:
+            post_data.update(extra_args)
 
         post_data_strs = []
         for k,v in post_data.items():
@@ -76,9 +160,11 @@ class DwrCaller:
         if not web_data.ok:
             raise Exception('bad web request.. {}: {}'.format(web_data.status_code, web_data.text))
 
-        content_type = web_data.headers['Content-Type']
-        if content_type != 'text/javascript;charset=utf-8':
-            raise Exception('Failed DWR request for {} expected javascript got {}'.format(self.name, content_type))
+        content_type = web_data.headers.get('Content-Type', '')
+        content_type_main = content_type.split(';')[0].strip().lower()
+        if content_type_main != 'text/javascript':
+            raise Exception('Failed DWR request for {} expected javascript got {}'.format(
+                self.get_request_name(script_name, method_name), content_type))
 
         try:
             js_resp = es5(web_data.text)
@@ -86,10 +172,7 @@ class DwrCaller:
             logger.error('unable to parse {} as js'.format(web_data.text))
             raise
         js_dict = ast_to_dict(js_resp)
-        session_call_args = get_fn_call_args('dwr.engine.remote.handleNewScriptSession', js_dict)
-        if session_call_args is not None:
-            self.ctx.script_session_id = session_call_args[0]
-            logger.info('got new script session id: {}'.format(self.ctx.script_session_id))
+        self.raise_on_batch_error(script_name, method_name, js_dict)
         return js_dict
 
 
@@ -97,9 +180,17 @@ class DwrCaller:
         if self.ctx.script_session_id != '':
             return
 
-        self.make_request('__System', 'pageLoaded', '/downloadDirectory.do?OWASP_CSRFTOKEN={}'.format(self.ctx.csrf_token))
-        if self.ctx.script_session_id == '':
-            raise Exception('Unable to obtain new script session id')
+        dwr_session_id = self.get_dwr_session_id()
+        if dwr_session_id is None:
+            js_dict = self.make_request('__System', 'generateId', self.get_ref_url(), script_session_id='')
+            cb_args = get_fn_call_args('dwr.engine.remote.handleCallback', js_dict)
+            if cb_args is None or len(cb_args) < 3 or not isinstance(cb_args[2], str):
+                raise Exception('Unable to obtain DWR session id from response: {}'.format(js_dict))
+            dwr_session_id = cb_args[2]
+            self.ctx.dwr_session_id = dwr_session_id
+            self.ctx.session.cookies.set('DWRSESSIONID', dwr_session_id, path='/')
+
+        self.ctx.script_session_id = '{}/{}'.format(dwr_session_id, self.get_page_id())
 
 
     def marshal_dwr_data(self, data):
@@ -138,11 +229,12 @@ class DwrCaller:
     def call(self):
         self.ensure_session_id()
         js_dict = self.make_request(self.script_name, self.method_name,
-                                    '/downloadDirectory.do?OWASP_CSRFTOKEN={}'.format(self.ctx.csrf_token),
+                                    self.get_ref_url(),
                                     extra_args=self.call_args)
         cb_args = get_fn_call_args('dwr.engine.remote.handleCallback', js_dict)
         if cb_args is None:
-            raise Exception(f'unable to find callback function in dwr js: {js_dict}')
+            raise Exception('unable to find callback function in dwr js for {}: {}'.format(
+                self.get_request_name(self.script_name, self.method_name), js_dict))
         data = cb_args[2]
 
         records = self.marshal_dwr_data(data)
@@ -252,4 +344,3 @@ def get_all_dwr_downloaders(ctx):
                                               ctx=ctx))
 
     return downloaders
-

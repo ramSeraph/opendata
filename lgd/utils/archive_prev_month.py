@@ -1,9 +1,10 @@
-import re
+import hashlib
 import json
-import time
-import shutil
+import re
 import shlex
+import shutil
 import subprocess
+import time
 from pathlib import Path
 
 def run_external(cmd):
@@ -59,6 +60,70 @@ def filter_releases(releases, prefix):
     return filtered
 
 
+def get_release_asset(release, name):
+    result = subprocess.run(['gh', 'release', 'view', release, '--json', 'assets'],
+                            check=True, capture_output=True, text=True)
+    assets = [asset for asset in json.loads(result.stdout)['assets'] if asset['name'] == name]
+    if len(assets) > 1:
+        raise ValueError(f'Multiple assets named {name} in {release}')
+    return assets[0] if assets else None
+
+
+def require_uploaded(asset, name):
+    if not asset or asset.get('state') != 'uploaded' or asset.get('size', 0) <= 0:
+        raise ValueError(f'{name} is not a completed release upload')
+
+
+def file_digest(path):
+    with path.open('rb') as source:
+        return hashlib.file_digest(source, 'sha256').hexdigest()
+
+
+def check_download_metadata(path, asset):
+    require_uploaded(asset, path.name)
+    if path.stat().st_size != asset['size']:
+        raise ValueError(f'{path} does not match the published size')
+    digest = asset.get('digest')
+    if digest:
+        if digest != f'sha256:{file_digest(path)}':
+            raise ValueError(f'{path} does not match the published SHA-256')
+        return True
+    return False
+
+
+def download_asset(path, release, name):
+    run_external(shlex.join(['gh', 'release', 'download', release, '-p', name,
+                             '-O', str(path), '--clobber']))
+
+
+def verify_published_file(path, release):
+    # Always inspect the remote asset, even when the local archive came from cache.
+    asset = get_release_asset(release, path.name)
+    if check_download_metadata(path, asset):
+        return
+    # Older assets may lack GitHub's SHA-256. Compare the actual published bytes.
+    temporary = path.with_suffix(path.suffix + '.verify.tmp')
+    try:
+        download_asset(temporary, release, path.name)
+        check_download_metadata(temporary, asset)
+        if file_digest(temporary) != file_digest(path):
+            raise ValueError(f'{path} differs from the published file')
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def remove_empty_upload(release, name):
+    asset = get_release_asset(release, name)
+    if asset and asset.get('state') == 'starter' and asset.get('size') == 0:
+        # GitHub can leave this placeholder after a failed upload. Delete by ID
+        # so a replacement asset with the same name can never be removed here.
+        print(f'removing empty upload placeholder {name} from {release}')
+        run_external(shlex.join(['gh', 'api', '--method', 'DELETE', asset['apiUrl']]))
+        return True
+    require_uploaded(asset, name)
+    return False
+
+
 def validate_archive_files(archive, file_names, allow_extra=False):
     result = subprocess.run(['7z', 'l', '-slt', '-ba', str(archive)],
                             check=True, capture_output=True, text=True)
@@ -69,6 +134,22 @@ def validate_archive_files(archive, file_names, allow_extra=False):
     if len(names) != len(actual) or expected - actual or (not allow_extra and actual - expected):
         raise ValueError(f'{archive} has unexpected contents: missing={sorted(expected - actual)}, '
                          f'extra={sorted(actual - expected)}')
+
+
+def test_archive_integrity(archive):
+    subprocess.run(['7z', 't', str(archive)], check=True, capture_output=True, text=True)
+
+
+def extract_daily_archive(archive, destination):
+    validate_archive_files(archive, [destination.name])
+    temporary = destination.with_suffix(destination.suffix + '.tmp')
+    try:
+        with temporary.open('wb') as output:
+            subprocess.run(['7z', 'e', '-so', str(archive), destination.name],
+                           stdout=output, stderr=subprocess.PIPE, check=True)
+        temporary.replace(destination)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def compress_archive(archive, files, zipping_dir):
@@ -87,13 +168,16 @@ def compress_archive(archive, files, zipping_dir):
 
 
 def download_published_archive(archive, release, file_names):
+    asset = get_release_asset(release, archive.name)
+    require_uploaded(asset, archive.name)
     archive.parent.mkdir(parents=True, exist_ok=True)
     temporary = archive.with_suffix(archive.suffix + '.tmp')
     try:
-        run_external(shlex.join(['gh', 'release', 'download', release, '-p', archive.name,
-                                 '-O', str(temporary), '--clobber']))
+        download_asset(temporary, release, archive.name)
+        check_download_metadata(temporary, asset)
         # A retry may have already deleted some of the daily source files.
         validate_archive_files(temporary, file_names, allow_extra=True)
+        test_archive_integrity(temporary)
         temporary.replace(archive)
     finally:
         temporary.unlink(missing_ok=True)
@@ -105,7 +189,6 @@ def refresh_indexes():
 
 def upload_to_archive(fname, counts, archive_releases):
     monthly_archive_name = Path(fname).name
-    uploaded = False
 
     def sort_key(r_name):
         if r_name == 'lgd-archive':
@@ -124,11 +207,7 @@ def upload_to_archive(fname, counts, archive_releases):
         print(f'uploading {monthly_archive_name} to {k}')
         run_external(f'gh release upload {k} data/combined/{monthly_archive_name}')
         counts[k] = counts.get(k, 0) + 1
-        uploaded = True
-        break
-
-    if uploaded:
-        return
+        return k
 
     max_num = 0
     for r in archive_releases:
@@ -146,12 +225,14 @@ def upload_to_archive(fname, counts, archive_releases):
 
     title = f"Local Government Directory monthly archives Supplementary{max_num + 1}"
 
-    run_external(f'gh release create {new_release_name} --notes "{notes}" --title {title}')
+    run_external(shlex.join(['gh', 'release', 'create', new_release_name,
+                             '--notes', notes, '--title', title]))
 
     print(f'uploading {monthly_archive_name} to {new_release_name}')
     run_external(f'gh release upload {new_release_name} data/combined/{monthly_archive_name}')
     counts[new_release_name] = 1
     archive_releases.append(new_release_name)
+    return new_release_name
 
 def redistribute_latest(latest_releases):
     all_archives_mapping = get_all_archive_names(latest_releases)
@@ -239,30 +320,38 @@ def redistribute_latest(latest_releases):
 
 
 def update_mapping(prefix, dates):
-    print('downloading mapping file')
-    run_external('gh release download lgd-archive -p archive_mapping.json --clobber')
+    release = 'lgd-archive'
+    destination = Path('archive_mapping.json')
+    backup = Path('archive_mapping.backup.json')
+    asset = get_release_asset(release, destination.name)
+    recovering = asset is None or (asset.get('state') == 'starter' and asset.get('size') == 0)
+    source_name = backup.name if recovering else destination.name
+    if recovering:
+        print('recovering mapping from the backup after an interrupted replacement')
+        asset = get_release_asset(release, backup.name)
+    require_uploaded(asset, source_name)
+    try:
+        download_asset(destination, release, source_name)
+        check_download_metadata(destination, asset)
+        mapping = json.loads(destination.read_text())
+        if not isinstance(mapping, dict) or any(not isinstance(values, list) for values in mapping.values()):
+            raise ValueError('Invalid archive mapping')
 
-    print('regenerating archive mapping')
-    mapping = json.loads(Path('archive_mapping.json').read_text())
-    if prefix not in mapping:
-        mapping[prefix] = []
+        # --clobber deletes the old asset first. Keep a verified remote copy
+        # before replacing it; retries can recover even on a fresh runner.
+        if not recovering:
+            shutil.copyfile(destination, backup)
+            run_external(f'gh release upload {release} {backup} --clobber')
+            verify_published_file(backup, release)
 
-    for d in dates:
-        mapping[prefix].append(d)
-
-    for prefix in mapping.keys():
-        mapping[prefix] = list(set(mapping[prefix]))
-
-    Path('archive_mapping.json').write_text(json.dumps(mapping))
-
-    print('uploading updated mapping')
-    run_external('gh release upload lgd-archive archive_mapping.json --clobber')
-
-    Path('archive_mapping.json').unlink()
-
-
-
-
+        mapping.setdefault(prefix, []).extend(dates)
+        mapping = {key: sorted(set(values)) for key, values in mapping.items()}
+        destination.write_text(json.dumps(mapping))
+        run_external(f'gh release upload {release} {destination} --clobber')
+        verify_published_file(destination, release)
+    finally:
+        destination.unlink(missing_ok=True)
+        backup.unlink(missing_ok=True)
 
 def archive_month(month_year, *, component=None, redistribute=True):
     releases = get_all_releases()
@@ -299,28 +388,36 @@ def archive_month(month_year, *, component=None, redistribute=True):
         if prefix_file.exists():
             try:
                 validate_archive_files(prefix_file, file_names, allow_extra=bool(published_release))
+                test_archive_integrity(prefix_file)
             except (subprocess.CalledProcessError, ValueError):
                 print(f'discarding incomplete cached archive {prefix_file}')
                 prefix_file.unlink()
 
+        if published_release and remove_empty_upload(published_release, monthly_archive_name):
+            archive_counts[published_release] -= 1
+            published_release = None
+
         if published_release:
             # Complete mapping/deletion/index work interrupted after an upload.
             # Check the actual archive before deleting any remaining daily files.
-            if not prefix_file.exists():
+            if prefix_file.exists():
+                verify_published_file(prefix_file, published_release)
+            else:
                 download_published_archive(prefix_file, published_release, file_names)
         else:
             if not prefix_file.exists():
                 for file, zname in zip(to_zip, asset_names):
-                    if file.exists():
-                        continue
+                    # Refresh staging files from older versions as well: their
+                    # extraction may have been interrupted before atomic writes.
                     zfile = zipping_dir / zname
                     rname = all_archives_mapping[zname]
-                    run_external(f'gh release download {rname} -p {zname} -D {zipping_dir} --clobber')
-                    run_external(f'sh -c "cd {zipping_dir}; 7z e -y {zname}"')
+                    download_asset(zfile, rname, zname)
+                    extract_daily_archive(zfile, file)
                     zfile.unlink()
                 compress_archive(prefix_file, to_zip, zipping_dir)
 
-            upload_to_archive(str(prefix_file), archive_counts, archive_releases)
+            published_release = upload_to_archive(str(prefix_file), archive_counts, archive_releases)
+            verify_published_file(prefix_file, published_release)
 
         update_mapping(prefix, dates)
 

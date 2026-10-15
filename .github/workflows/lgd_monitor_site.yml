@@ -9,7 +9,7 @@ on:
     - cron: '15 3 * * *'
   push:
     branches:
-      - 'main'
+      - 'master'
     paths:
       - 'lgd/scrape/site_map.json'
   workflow_dispatch:
@@ -49,9 +49,7 @@ jobs:
       - name: Monitor site for changes
         id: monitor-changes
         run: |
-          cd lgd
-
-          uv run python -m scrape -m MONITOR -l INFO
+          (cd lgd && uv run python -m scrape -m MONITOR -l INFO)
 
           filename="lgd/data/raw/${{ steps.date.outputs.date }}/struct_changes.json" 
           if [[ -f $filename ]]; then

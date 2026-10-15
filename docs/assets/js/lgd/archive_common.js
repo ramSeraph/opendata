@@ -95,13 +95,13 @@ function parseFileListings(listingFilesData, expectMonth) {
         var filenameParts = filename.split('.');
         var datePart = filenameParts[filenameParts.length - 2];
         var componentName = filenameParts[0].toLowerCase(); // Use the first part as component name
-        if (componentName === 'changes') {
+        if (componentName === 'changes' || componentName === 'transactions') {
             infos[componentName] = {
                 size: size,
                 url: url,
                 filename: filename
             };
-            continue; // Skip further processing for changes.csv.7z
+            continue; // Cumulative histories have no date in their filenames.
         }
 
         var date = datePart;

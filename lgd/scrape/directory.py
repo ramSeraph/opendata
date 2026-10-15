@@ -165,6 +165,55 @@ class DirectoryDownloader(BaseDownloader):
 
 
 
+class TraditionalLocalBodyLevelDownloader(DirectoryDownloader):
+    LEVELS = {
+        'districtPanchayat': ('District', 'District Level TLB'),
+        'intermediatePanchayat': ('Intermediate', 'Intermediate/Block Level TLB'),
+        'villagePanchayat': ('Village', 'Gram/Village Level TLB'),
+    }
+
+    def get_records(self):
+        level, prefix = self.LEVELS[self.post_data['TlbLocalBodyType']]
+        records = super().get_records()
+        if not records:
+            raise ValueError(f'Empty national {level} TLB export')
+        normalized = []
+        for row in records:
+            # Normalize the three tiers to the fields supplied by the current
+            # exports. Parent codes are blank where the tier has no parent.
+            record = dict.fromkeys(self.expected_fields, '')
+            record.update({
+                'S.No.': row['S.No.'],
+                'State Code': row['State Code'],
+                'State Name (In English)': row['State Name'],
+                'Local Body Code': row[f'{prefix} Code'],
+                'Local Body Name (In English)': row[f'{prefix} Name'],
+                'Local Body Level': level,
+            })
+            if level != 'District':
+                record['District Panchayat Code'] = row['District Level TLB Code']
+            if level == 'Village':
+                record['Intermediate/Block Panchayat Code'] = row['Intermediate/Block Level TLB Code']
+            normalized.append(record)
+        return normalized
+
+
+class TraditionalLocalBodiesDownloader(MultiDownloader):
+    def populate_downloaders(self):
+        if self.downloader_items is not None:
+            return
+        self.downloader_items = []
+        path = Path(self.csv_filename)
+        for level in TraditionalLocalBodyLevelDownloader.LEVELS:
+            downloader = TraditionalLocalBodyLevelDownloader(
+                name=f'{self.name}_{level}', base_name=self.name, ctx=self.ctx,
+                csv_filename=f'{path.stem}_{level}{path.suffix}',
+                xlsx_conv_args={'header_row_span': 1},
+                post_data_extra={'rptFileName': 'allTraditionalLBofInida',
+                                 'TlbLocalBodyType': level})
+            self.downloader_items.append(DownloaderItem(downloader, {}))
+
+
 class StateWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
     def __init__(self, **kwargs):
         if 'enrichers' not in kwargs:
@@ -406,17 +455,7 @@ def get_all_directory_downloaders(ctx):
     #                                           'rptFileName': 'priLocalBodyIndia',
     #                                           'downloadType': 'odt' # because the header came out unbroken in odt as opposed xls
     #                                       }))
-    downloaders.append(DirectoryDownloader(name='TRADITIONAL_LOCAL_BODIES',
-                                           ctx=ctx,
-                                           xlsx_conv_args={
-                                               'header_row_span': 1,
-                                           },
-                                           excel_conv_args={
-                                               'header_row_span': 2,
-                                           },
-                                           post_data_extra={
-                                               'rptFileName': 'allTraditionalLBofInida',
-                                           }))
+    downloaders.append(TraditionalLocalBodiesDownloader(name='TRADITIONAL_LOCAL_BODIES', ctx=ctx))
     downloaders.append(DirectoryDownloader(name='URBAN_LOCAL_BODIES',
                                            ctx=ctx,
                                            xlsx_conv_args={

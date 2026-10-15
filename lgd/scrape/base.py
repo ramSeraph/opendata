@@ -46,6 +46,7 @@ class Params:
         self.read_timeout = 60
         self.http_retries = 3
         self.captcha_retries = 5
+        self.transactions_start_date = '2020-01-30'
 
     def request_args(self):
         return {
@@ -429,18 +430,18 @@ class BaseDownloader:
                 os.makedirs(dirname, exist_ok=True)
 
             logger.info(f'writing file {csv_filename}')
+            temporary = Path(csv_filename + '.tmp')
             try:
                 wr = None
-                with open(csv_filename, 'w') as f:
+                with temporary.open('w') as f:
                     for r in records_transformed:
                         if wr is None:
                             wr = csv.DictWriter(f, fieldnames=r.keys())
                             wr.writeheader()
                         wr.writerow(r)
-            except KeyboardInterrupt:
-                logger.warning(f'Interrupted while writing {csv_filename}, deleting incomplete file')
-                Path(csv_filename).unlink(missing_ok=True)
-                raise
+                temporary.replace(csv_filename)
+            finally:
+                temporary.unlink(missing_ok=True)
 
         self.cleanup()
 

@@ -18,6 +18,7 @@ from .base import (INCORRECT_CAPTCHA_MESSAGE,
                    DownloaderItem, add_defaults_to_args,
                    RUN_FOR_PREV_DAY)
 from .conversion_helper import records_from_excel, records_from_htm
+from .transactions import TransactionsDownloader
 
 logger = logging.getLogger(__name__)
 
@@ -466,9 +467,12 @@ def get_all_report_downloaders(ctx):
     #downloaders.append(StateWiseReportDownloader(name='NOFN_PANCHAYATS',
     #                                             sub_url='nofnStates.do',
     #                                             ctx=ctx))
-    downloaders.append(ChangesReportDownloader(name='CHANGES',
-                                               sub_url='changedEntity.do',
-                                               ctx=ctx,
-                                               num_dates=4000))
+    # changedEntity.do no longer produces the old entity-level report. Keep
+    # changes.csv as historical data and publish the replacement separately.
+    #downloaders.append(ChangesReportDownloader(name='CHANGES',
+    #                                           sub_url='changedEntity.do',
+    #                                           ctx=ctx,
+    #                                           num_dates=4000))
+    downloaders.append(TransactionsDownloader(name='TRANSACTIONS', ctx=ctx))
 
     return downloaders

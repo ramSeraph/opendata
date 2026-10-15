@@ -22,7 +22,45 @@ Typical invocation `python -m scrape -m RUN -p 10 -l INFO -R 300`
 
 Individual components can be downloaded by running `python -m scrape -m RUN --comp <comp_name>`
 
-list of components can be retrieved using `python -m scrape -m COMPS`
+The current active components are listed below. Run `python -m scrape -m COMPS`
+for their descriptions and fields.
+
+| Component | Output file |
+| --- | --- |
+| `BLOCKS` | `blocks.csv` |
+| `BLOCK_VILLAGES` | `villages_by_blocks.csv` |
+| `CENTRAL_ADMIN_DEPTS` | `central_admin_depts.csv` |
+| `CENTRAL_ORG_DESIGNATIONS` | `central_org_designations.csv` |
+| `CENTRAL_ORG_DETAILS` | `central_orgs.csv` |
+| `CENTRAL_ORG_UNITS` | `central_org_units.csv` |
+| `CONSTITUENCIES_ASSEMBLY` | `assembly_constituencies.csv` |
+| `CONSTITUENCIES_MAPPINGS_URBAN` | `constituencies_mapping_urban.csv` |
+| `CONSTITUENCIES_PARLIAMENT` | `parliament_constituencies.csv` |
+| `CONSTITUENCY_COVERAGE` | `constituency_coverage.csv` |
+| `DISTRICTS` | `districts.csv` |
+| `DISTRICT_PANCHAYATS` | `district_panchayats.csv` |
+| `INVALIDATED_VILLAGES` | `invalidated_census_villages.csv` |
+| `PANCHAYAT_MAPPINGS` | `gp_mapping.csv` |
+| `PINCODE_URBAN` | `pincode_urban.csv` |
+| `PINCODE_VILLAGES` | `pincode_villages.csv` |
+| `PRI_LOCAL_BODIES` | `pri_local_bodies.csv` |
+| `PRI_LOCAL_BODY_WARDS` | `pri_local_body_wards.csv` |
+| `STATES` | `states.csv` |
+| `STATE_ADMIN_DEPTS` | `state_admin_depts.csv` |
+| `STATE_ORG_DESIGNATIONS` | `state_org_designations.csv` |
+| `STATE_ORG_DETAILS` | `state_orgs.csv` |
+| `STATE_ORG_UNITS` | `state_org_units.csv` |
+| `SUB_DISTRICTS` | `subdistricts.csv` |
+| `TLB_VILLAGES` | `tlb_villages.csv` |
+| `TRADITIONAL_LOCAL_BODIES` | `traditional_local_bodies.csv` |
+| `TRANSACTIONS` | `transactions.csv` |
+| `URBAN_LOCAL_BODIES` | `urban_local_bodies.csv` |
+| `URBAN_LOCAL_BODIES_COVERAGE` | `statewise_ulbs_coverage.csv` |
+| `URBAN_LOCAL_BODY_WARDS` | `urban_local_body_wards.csv` |
+| `VILLAGES` | `villages.csv` |
+
+`CHANGES` is no longer an active downloader. Its historical `changes.csv` remains
+available; the replacement report is collected separately as `TRANSACTIONS`.
 
 to get list of possible arguments run `python -m scrape -h`
 ```

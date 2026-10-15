@@ -13,19 +13,23 @@ curr_date=$1
 to_del_7zs=()
 while read comp; do
   echo "handling $comp"
-  if [[ $comp == "CHANGES" ]]; then
+  if [[ $comp == "CHANGES" || $comp == "TRANSACTIONS" ]]; then
+    prefix=changes
+    if [[ $comp == "TRANSACTIONS" ]]; then
+      prefix=transactions
+    fi
 
     cd data/raw/$curr_date
-    7z a changes.csv.7z changes.csv
-    echo "uploading changes.csv.7z"
-    gh release upload lgd-latest changes.csv.7z --clobber
-    to_del_7zs+=("changes.csv.7z")
+    7z a "$prefix.csv.7z" "$prefix.csv"
+    echo "uploading $prefix.csv.7z"
+    gh release upload lgd-latest "$prefix.csv.7z" --clobber
+    to_del_7zs+=("$prefix.csv.7z")
     cd -
 
-    cp data/raw/changes/dates_covered.txt data/raw/changes/changes_dates_covered.txt
-    echo "uploading changes_dates_covered.txt"
-    gh release upload lgd-latest data/raw/changes/changes_dates_covered.txt --clobber
-    rm data/raw/changes/changes_dates_covered.txt
+    cp "data/raw/$prefix/dates_covered.txt" "data/raw/$prefix/${prefix}_dates_covered.txt"
+    echo "uploading ${prefix}_dates_covered.txt"
+    gh release upload lgd-latest "data/raw/$prefix/${prefix}_dates_covered.txt" --clobber
+    rm "data/raw/$prefix/${prefix}_dates_covered.txt"
   else
     fname=$(cat scrape/site_map.json | jq -r --arg comp $comp '.[] | select(.comp == $comp) | .file')
     prefix=${fname%.csv}

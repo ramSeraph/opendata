@@ -66,24 +66,37 @@ jobs:
         with:
           path: |
             lgd/data/raw/
-          key:  lgd-data-raw-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  lgd-data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            lgd-data-raw-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            lgd-data-raw-v3-${{ steps.date.outputs.date }}-
+            lgd-data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            lgd-data-raw-v4-${{ steps.date.outputs.date }}-
+            lgd-data-raw-v4-
 
-      - name: Download changes file from github
+      - name: Download transaction history from github
         run: |
           cd lgd/
-          mkdir -p data/raw/changes
-          cd data/raw/changes
-          if [[ -e combined.csv ]]; then
+          mkdir -p data/raw/transactions
+          cd data/raw/transactions
+          if [[ -e combined.csv && -e dates_covered.txt ]]; then
             exit 0
           fi
-          gh release download lgd-latest -p changes.csv.7z
-          gh release download lgd-latest -p changes_dates_covered.txt -O dates_covered.txt
-          7z x changes.csv.7z
-          rm changes.csv.7z
-          mv changes.csv combined.csv
+          rm -f dates_covered.txt
+          asset_names=$(gh release view lgd-latest --json assets --jq '.assets[].name')
+          if ! grep -Fxq 'transactions.csv.7z' <<< "$asset_names"; then
+            echo "No published transaction history yet; starting the backfill."
+            exit 0
+          fi
+          gh release download lgd-latest -p transactions.csv.7z --clobber
+          7z x -y transactions.csv.7z
+          rm transactions.csv.7z
+          mv transactions.csv combined.csv
+          if grep -Fxq 'transactions_dates_covered.txt' <<< "$asset_names"; then
+            gh release download lgd-latest -p transactions_dates_covered.txt -O dates_covered.txt.download --clobber
+            mv dates_covered.txt.download dates_covered.txt
+          else
+            echo "Published history has no coverage file; safely refetching and merging the backfill."
+            : > dates_covered.txt
+          fi
 
       - name: Download LGD data
         id: download
@@ -120,7 +133,7 @@ jobs:
         with:
           path: |
             lgd/data/raw/
-          key:  lgd-data-raw-v3-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+          key:  lgd-data-raw-v4-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
 
   BuildDocs:
     needs: Run-LGD-Extraction

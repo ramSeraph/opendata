@@ -137,6 +137,10 @@ def get_known_site_map():
 def get_changes_in_site_map(known, scraped):
     known_map = {}
     for e in known:
+        # Retain metadata for historical or unlisted reports without expecting
+        # their labels in the current catalog. A reappearance is an addition.
+        if not e.get('listed', True):
+            continue
         k = tuple(e["dropdown"][:3])
         known_map[k] = e
 

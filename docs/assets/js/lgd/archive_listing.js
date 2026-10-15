@@ -10,7 +10,7 @@ function displayArchives(data, elementId, isMonthly) {
 
     let allFiles = [];
     for (const component in data) {
-        if (component === 'changes' || (typeof ignoredComponents !== 'undefined' && ignoredComponents.has(component.toUpperCase()))) continue;
+        if (component === 'changes' || component === 'transactions' || (typeof ignoredComponents !== 'undefined' && ignoredComponents.has(component.toUpperCase()))) continue;
         for (const date in data[component]) {
             allFiles.push(data[component][date]);
         }

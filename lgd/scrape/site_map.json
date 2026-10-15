@@ -99,7 +99,7 @@
     "ignore_reason": "handled in VILLAGES"
   },
   {
-    "dropdown": [ "Download Directory", "VILLAGE", "All Villages of India category-wise and Urban villages mapped with Urban local bodies" ],
+    "dropdown": [ "Download Directory", "VILLAGE", "All Villages of India category-wise and Urban villages mapped with urban local bodies" ],
     "comp": "IGNORE",
     "ignore_reason": "handled in VILLAGES, has extra info, needs review"
   },           
@@ -201,7 +201,7 @@
     "dropdown": [ "Download Directory", "Local body", "All Traditional Local Bodies of India" ],
     "comp": "TRADITIONAL_LOCAL_BODIES",
     "file": "traditional_local_bodies.csv",
-    "desc": "list of all Traditional Local bodies",
+    "desc": "list of all Traditional Local bodies, combined from district, intermediate and village level exports",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial number" },
       "State Code": { "action": "KEEP", "description": "State LGD Code" },
@@ -209,11 +209,8 @@
       "District Panchayat Code": { "action": "KEEP", "description": "LGD code of the District Panchayat the local body belongs to" },
       "Intermediate/Block Panchayat Code": { "action": "KEEP", "description": "LGD code of the Intermediate/Block Panchayat the local body belongs to" },
       "Local Body Code": { "action": "KEEP", "description": "LGD Code for the local body" },
-      "Local Body Version": { "action": "KEEP", "description": "Version of the local body in LGD" },
       "Local Body Name (In English)": { "action": "KEEP", "description": "Name of the local body in English" },
-      "Local Body Name (In Local)": { "action": "KEEP", "description": "Name of the local body in Local language" },
-      "Localbody Type Code": { "action": "KEEP", "description": "LGD Code for the type of local body" },
-      "Localbody Type Name": { "action": "KEEP", "description": "The type of local body" }
+      "Local Body Level": { "action": "KEEP", "description": "District, Intermediate or Village" }
     }
   },
   {
@@ -353,6 +350,7 @@
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "<NO LONGER ACCESSIBLE>" ],
+    "listed": false,
     "comp": "IGNORE",
     "desc": "parliament constituencies with local body mappings",
     "file": "parliament_constituencies_lb_mapping.csv",
@@ -485,7 +483,7 @@
     }
   },
   { 
-    "dropdown": [ "Download Directory", "Development Block", "All India Subdistrict-Village-Development Block Mapping" ],
+    "dropdown": [ "Download Directory", "Development Block", "All India Subdistrict-Rural Village-Development Block Mapping" ],
     "comp":  "IGNORE",
     "ignore_reason": "handled in BLOCK_VILLAGES"
   },
@@ -818,7 +816,7 @@
     "ignore_reason": "handled elsewhere, Needs Review"
   },
   {
-    "dropdown": [ "Local Government Directory (LGD) Reports", "Consolidated LGD Codes of Panchayats" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Consolidated Local Government Directory (LGD) Codes of Rural Local Bodies" ],
     "comp":  "IGNORE",
     "ignore_reason": "handled elsewhere, Needs Review"
   },
@@ -919,6 +917,7 @@
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Nomenclature of Sub-District" ],
+    "listed": false,
     "comp": "IGNORE",
     "ignore_reason": "One Time"
   },
@@ -944,11 +943,13 @@
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Local Bodies Mapped to more than One District" ],
+    "listed": false,
     "comp": "IGNORE",
     "ignore_reason": "Covered Elsewhere"
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "View State Wise Freezed Status" ],
+    "listed": false,
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
@@ -959,6 +960,7 @@
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "NOFN Panchayat List" ],
+    "listed": false,
     "comp":  "IGNORE",
     "desc": "list of Panchayats in National Optical Fibre Network (NOFN) project",
     "ignore_reason": "NOFN_PANCHAYATS broken",
@@ -976,7 +978,7 @@
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "List Of Modification Done In LGD" ],
     "comp": "CHANGES",
-    "desc": "all changes to entities in LGD",
+    "desc": "historical entity-level changes in LGD, last updated 23 March 2026; the replacement transaction report is published separately",
     "file": "changes.csv",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial number" },
@@ -990,6 +992,21 @@
     }
   },
   {
+    "dropdown": [ "Local Government Directory (LGD) Reports", "List Of Modification Done In LGD" ],
+    "comp": "TRANSACTIONS",
+    "desc": "LGD transaction history by state and Center; descriptions may abbreviate affected entities and are not a structured entity-level change log",
+    "file": "transactions.csv",
+    "fields": {
+      "Transaction ID": { "action": "KEEP", "description": "LGD transaction identifier" },
+      "Operation Code": { "action": "KEEP", "description": "LGD operation code" },
+      "Operation Name": { "action": "KEEP", "description": "LGD operation name" },
+      "Description": { "action": "KEEP", "description": "Original transaction description; may abbreviate affected entities with etc" },
+      "Transaction Date": { "action": "KEEP", "description": "Transaction date (DD-Mon-YYYY)" },
+      "State Code": { "action": "KEEP", "description": "State LGD code, or 0 for Center" },
+      "State Name": { "action": "KEEP", "description": "State name, or Center" }
+    }
+  },
+  {
     "dropdown": [ "Local Government Directory (LGD) Reports", "GIS Map Verification Status" ],
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
@@ -1000,7 +1017,7 @@
     "ignore_reason": "Dont care"
   },
   { 
-    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on State Wise number of Urban Localbodies and Wards" ],
+    "dropdown": [ "Local Government Directory (LGD) Reports", "Report on State Wise Summary of ULBs & Wards" ],
     "comp": "IGNORE",
     "ignore_reason": "Covered elsewhere"
   },
@@ -1011,6 +1028,7 @@
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on State wise LGD Data Confirmation" ],
+    "listed": false,
     "comp": "IGNORE",
     "ignore_reason": "Needs Review"
   },
@@ -1031,6 +1049,7 @@
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Consolidated Report of Panchayats as available in other PES applications" ],
+    "listed": false,
     "comp":  "IGNORE",
     "ignore_reason": "Needs Review"
   },
@@ -1116,6 +1135,7 @@
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Financial Year wise Count of Gram Panchayats" ],
+    "listed": false,
     "comp": "IGNORE",
     "ignore_reason": "Needs Review, General Overview of change in GPS"
   },
@@ -1126,6 +1146,7 @@
   },
   {
     "dropdown": [ "Likely Erroneous/Exceptions", "Invalidated Census villages" ],
+    "listed": false,
     "comp": "INVALIDATED_VILLAGES",
     "desc": "list of all invalidated census villages",
     "file": "invalidated_census_villages.csv",

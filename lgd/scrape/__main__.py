@@ -70,7 +70,8 @@ class Joiner:
                 try:
                     download_task(self.downloader)
                 except Exception as ex:
-                    self.fut.set_result(ex)
+                    self.fut.set_exception(ex)
+                    return
                 self.fut.set_result(None)
         return done_cb
 
@@ -427,6 +428,7 @@ if __name__ == '__main__':
     parser.add_argument('--archive-data', help='archive data into a zip file and delete the staging files', action='store_true')
     parser.add_argument('--save-intermediates', help='save intermediate files before converting to csv, in the temp dir', action='store_true')
     parser.add_argument('--save-status', help='save the final status of the run to a json file', type=str)
+    parser.add_argument('--transactions-start-date', help='first transaction backfill date (YYYY-MM-DD)', type=str)
 
     parser.add_argument('-l', '--log-level', help='Set the logging level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], type=str)
     parser.set_defaults(**default_params_dict)

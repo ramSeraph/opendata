@@ -76,12 +76,12 @@ function populateComponentInfo(selectedComponent, componentInfo, currentMonthInf
         componentInfoDiv.appendChild(fieldsTable);
     }
 
-    if (selectedComponent === 'changes') {
+    if (selectedComponent === 'changes' || selectedComponent === 'transactions') {
 
-        var fileData = currentMonthInfos['changes'];
+        var fileData = currentMonthInfos[selectedComponent];
+        var fileInfoDiv = getFileInfoDiv();
 
         if (fileData) {
-            var fileInfoDiv = getFileInfoDiv();
             var span = document.createElement('span');
             span.textContent = 'Download ';
             fileInfoDiv.appendChild(span);
@@ -95,7 +95,7 @@ function populateComponentInfo(selectedComponent, componentInfo, currentMonthInf
             sizeSpan.textContent = ' (' + fileSize + ')';
             fileInfoDiv.appendChild(sizeSpan);
         } else {
-            fileInfoDiv.textContent = 'File not found for changes component.';
+            fileInfoDiv.textContent = 'File not found for ' + selectedComponent + ' component.';
         }
     } else {
         var availableDates = [];

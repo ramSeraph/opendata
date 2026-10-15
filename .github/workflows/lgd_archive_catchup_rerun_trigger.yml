@@ -1,0 +1,17 @@
+name: LGD Monitor Archive Catch-up
+
+on:
+  workflow_run:
+    workflows:
+      - LGD Archive Catch-up
+    types: [completed]
+
+jobs:
+  RetryTrigger:
+    uses: ./.github/workflows/common-rerun-trigger.yml
+    secrets: inherit
+    with:
+      alert-title: 'LGD Archive Catch-up failed'
+      num-attempts: 2
+      retry-timeouts: true
+      failed-jobs-only: true

@@ -1,0 +1,90 @@
+name: LGD Archive Catch-up
+
+on:
+  workflow_dispatch:
+    inputs:
+      month:
+        description: 'Completed month (YYYY-MM); leave blank for all older leftovers'
+        type: string
+        default: ''
+      component:
+        description: 'Dataset filename prefix (e.g. villages); leave blank for all datasets'
+        type: string
+        default: ''
+
+# The monthly workflow uses the same lock: both write the shared archive mapping.
+concurrency:
+  group: lgd-release-archiving
+  cancel-in-progress: false
+
+jobs:
+  Plan:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      has_work: ${{ steps.plan.outputs.has_work }}
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - uses: astral-sh/setup-uv@v5
+      - name: Discover unfinished archives
+        id: plan
+        working-directory: lgd
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_MONTH: ${{ inputs.month }}
+          TARGET_COMPONENT: ${{ inputs.component }}
+        run: uv run python -m utils.archive_catchup --month "$TARGET_MONTH" --component "$TARGET_COMPONENT"
+
+  Archive:
+    name: Archive ${{ matrix.component }} (${{ matrix.month }})
+    needs: Plan
+    if: ${{ needs.Plan.outputs.has_work == 'true' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 255
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.Plan.outputs.matrix) }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Setup swap
+        uses: pierotofy/set-swap-space@v1.0
+        with:
+          swap-size-gb: 10
+      - uses: actions/checkout@v4.1.7
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Restore completed archive from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: lgd/data/combined/*.7z
+          key: lgd-catchup-v1-${{ matrix.component }}-${{ matrix.month }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            lgd-catchup-v1-${{ matrix.component }}-${{ matrix.month }}-${{ github.run_id }}-
+            lgd-catchup-v1-${{ matrix.component }}-${{ matrix.month }}-
+      - name: Archive dataset
+        working-directory: lgd
+        timeout-minutes: 240
+        env:
+          TARGET_MONTH: ${{ matrix.month }}
+          TARGET_COMPONENT: ${{ matrix.component }}
+        run: uv run utils/archive_prev_month.py "$TARGET_MONTH" --component "$TARGET_COMPONENT" --no-redistribute
+      - name: Save completed archive to cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: lgd/data/combined/*.7z
+          key: lgd-catchup-v1-${{ matrix.component }}-${{ matrix.month }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+  BuildDocs:
+    needs: [Plan, Archive]
+    if: ${{ !cancelled() && needs.Plan.outputs.has_work == 'true' }}
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit

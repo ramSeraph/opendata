@@ -2,6 +2,7 @@ import re
 import json
 import time
 import shutil
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -47,7 +48,7 @@ def get_mapping(names):
         m[prefix].append(date)
     return m
 
-def filter_releases(release, prefix):
+def filter_releases(releases, prefix):
     filtered = []
     for r in releases:
         if r == prefix:
@@ -56,6 +57,51 @@ def filter_releases(release, prefix):
         if r.startswith(prefix + '-'):
             filtered.append(r)
     return filtered
+
+
+def validate_archive_files(archive, file_names, allow_extra=False):
+    result = subprocess.run(['7z', 'l', '-slt', '-ba', str(archive)],
+                            check=True, capture_output=True, text=True)
+    names = [line.removeprefix('Path = ') for line in result.stdout.splitlines()
+             if line.startswith('Path = ')]
+    expected = set(file_names)
+    actual = set(names)
+    if len(names) != len(actual) or expected - actual or (not allow_extra and actual - expected):
+        raise ValueError(f'{archive} has unexpected contents: missing={sorted(expected - actual)}, '
+                         f'extra={sorted(actual - expected)}')
+
+
+def compress_archive(archive, files, zipping_dir):
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    temporary = archive.with_suffix(archive.suffix + '.tmp')
+    temporary.unlink(missing_ok=True)
+    try:
+        command = ['7z', 'a', '-t7z', '-mmt=off', '-m0=lzma2', '-mx=9',
+                   '-ms=on', '-md=1G', '-mfb=273', str(temporary.resolve())]
+        command.extend(file.name for file in files)
+        run_external(f'cd {shlex.quote(str(zipping_dir))} && {shlex.join(command)}')
+        validate_archive_files(temporary, [file.name for file in files])
+        temporary.replace(archive)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def download_published_archive(archive, release, file_names):
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    temporary = archive.with_suffix(archive.suffix + '.tmp')
+    try:
+        run_external(shlex.join(['gh', 'release', 'download', release, '-p', archive.name,
+                                 '-O', str(temporary), '--clobber']))
+        # A retry may have already deleted some of the daily source files.
+        validate_archive_files(temporary, file_names, allow_extra=True)
+        temporary.replace(archive)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def refresh_indexes():
+    for release in ('lgd-archive', 'lgd-latest'):
+        run_external(f"uvx --from gh-release-tools generate-lists -r '{release}' -e '.7z'")
 
 def upload_to_archive(fname, counts, archive_releases):
     monthly_archive_name = Path(fname).name
@@ -194,7 +240,7 @@ def redistribute_latest(latest_releases):
 
 def update_mapping(prefix, dates):
     print('downloading mapping file')
-    run_external('gh release download lgd-archive -p archive_mapping.json')
+    run_external('gh release download lgd-archive -p archive_mapping.json --clobber')
 
     print('regenerating archive mapping')
     mapping = json.loads(Path('archive_mapping.json').read_text())
@@ -218,12 +264,7 @@ def update_mapping(prefix, dates):
 
 
 
-if __name__ == '__main__':
-    import sys
-
-
-    month_year = sys.argv[1]
-
+def archive_month(month_year, *, component=None, redistribute=True):
     releases = get_all_releases()
 
     archive_releases = filter_releases(releases, 'lgd-archive')
@@ -239,9 +280,8 @@ if __name__ == '__main__':
             archive_counts[v] = 0
         archive_counts[v] += 1
 
-    all_monthly_archives = set(all_monthly_archives_mapping.keys())
-
-    relevant_names = [ a for a in all_archives if a.endswith(f'{month_year}.csv.7z') ]
+    relevant_names = [a for a in all_archives if a.endswith(f'{month_year}.csv.7z')
+                      and (component is None or a.split('.')[0] == component)]
 
     by_file = get_mapping(relevant_names)
 
@@ -249,49 +289,38 @@ if __name__ == '__main__':
     zipping_dir.mkdir(exist_ok=True, parents=True)
 
     for prefix, dates in by_file.items():
-        to_zip = []
-
         monthly_archive_name = f'{prefix}.{month_year}.7z'
-        if monthly_archive_name in all_monthly_archives:
-            continue
-
         prefix_file = Path(f'data/combined/{monthly_archive_name}')
-
         asset_names = [f'{prefix}.{d}.csv.7z' for d in dates]
+        to_zip = [zipping_dir / f'{prefix}.{d}.csv' for d in dates]
+        file_names = [file.name for file in to_zip]
+        published_release = all_monthly_archives_mapping.get(monthly_archive_name)
 
-        for d in dates:
-            zname = f'{prefix}.{d}.csv.7z'
-            fname = f'{prefix}.{d}.csv'
+        if prefix_file.exists():
+            try:
+                validate_archive_files(prefix_file, file_names, allow_extra=bool(published_release))
+            except (subprocess.CalledProcessError, ValueError):
+                print(f'discarding incomplete cached archive {prefix_file}')
+                prefix_file.unlink()
 
-            zfile = zipping_dir / zname
-            file  = zipping_dir / fname
-            if file.exists():
-                continue
+        if published_release:
+            # Complete mapping/deletion/index work interrupted after an upload.
+            # Check the actual archive before deleting any remaining daily files.
+            if not prefix_file.exists():
+                download_published_archive(prefix_file, published_release, file_names)
+        else:
+            if not prefix_file.exists():
+                for file, zname in zip(to_zip, asset_names):
+                    if file.exists():
+                        continue
+                    zfile = zipping_dir / zname
+                    rname = all_archives_mapping[zname]
+                    run_external(f'gh release download {rname} -p {zname} -D {zipping_dir} --clobber')
+                    run_external(f'sh -c "cd {zipping_dir}; 7z e -y {zname}"')
+                    zfile.unlink()
+                compress_archive(prefix_file, to_zip, zipping_dir)
 
-            print(f'downloading {zname}')
-            rname = all_archives_mapping[zname]
-            run_external(f'gh release download {rname} -p {zname} -D {zipping_dir}')
-
-            print(f'extracting {zname}')
-            run_external(f'sh -c "cd {zipping_dir}; 7z e {zname}"')
-
-            print(f'deleting {zfile}')
-            zfile.unlink()
-
-            to_zip.append(file)
-
-        to_zip_str = ' '.join([f.name for f in to_zip])
-
-        if not prefix_file.exists():
-            run_external(f'sh -c "cd {zipping_dir}; 7z a -t7z -mmt=off -m0=lzma2 -mx=9 -ms=on -md=1G -mfb=273 ../combined/{monthly_archive_name} {to_zip_str}"')
-
-        upload_to_archive(f'data/combined/{monthly_archive_name}', archive_counts, archive_releases)
-
-        prefix_file.unlink()
-
-        print(f'deleting all unzipped files for {prefix}')
-        for p in to_zip:
-            p.unlink()
+            upload_to_archive(str(prefix_file), archive_counts, archive_releases)
 
         update_mapping(prefix, dates)
 
@@ -301,10 +330,24 @@ if __name__ == '__main__':
             print(f'deleting asset {asset_name} from release {rname}')
             run_external(f'gh release delete-asset {rname} {asset_name} -y')
 
-    print('redistributing latest release assets after deletions')
-    redistribute_latest(latest_releases)
+        refresh_indexes()
+        prefix_file.unlink()
+        for file in to_zip:
+            file.unlink(missing_ok=True)
+
+    if redistribute:
+        print('redistributing latest release assets after deletions')
+        redistribute_latest(latest_releases)
+    # Redistribution changes download URLs; refresh even if there was no new archive.
+    refresh_indexes()
 
 
-
-    
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('month', help='Month to archive, e.g. Sep2026')
+    parser.add_argument('--component', help='Archive only this dataset filename prefix')
+    parser.add_argument('--no-redistribute', action='store_true', help='Leave other daily assets in their current releases')
+    args = parser.parse_args()
+    archive_month(args.month, component=args.component, redistribute=not args.no_redistribute)
 

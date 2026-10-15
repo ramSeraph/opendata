@@ -1,8 +1,8 @@
 name: LGD Monthly Compression
 
-concurrency: 
-  group: ${{ github.workflow }}
-  cancel-in-progress: true
+concurrency:
+  group: lgd-release-archiving
+  cancel-in-progress: false
 
 on: 
   schedule:
@@ -12,7 +12,8 @@ on:
 
 jobs:
   Run-LGD-Compression:
-    timeout-minutes: 600
+    # Leave time to save the cache after the four-hour compression cutoff.
+    timeout-minutes: 255
     runs-on: ubuntu-22.04
     env:
       GH_TOKEN: ${{ github.token }}
@@ -37,11 +38,11 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
-            lgd/data/combined/
-          key:  lgd-archive-data-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+            lgd/data/combined/*.7z
+          key:  lgd-archive-data-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
           restore-keys: |
-            lgd-archive-data-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            lgd-archive-data-v0-${{ steps.date.outputs.date }}-
+            lgd-archive-data-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-
+            lgd-archive-data-v1-${{ steps.date.outputs.date }}-
 
       - name: Compress data
         run: |
@@ -49,19 +50,19 @@ jobs:
           num_months_back="${{ vars.LGD_ARCHIVE_NUM_MONTHS_BACK }}"
           uv run utils/get_prev_month_year.py month_year.txt $num_months_back
           uv run utils/archive_prev_month.py $(cat month_year.txt)
-          uvx --from gh-release-tools generate-lists -r 'lgd-latest' -e '.7z'
-          uvx --from gh-release-tools generate-lists -r 'lgd-archive' -e '.7z'
-        timeout-minutes: 600
+        timeout-minutes: 240
 
       - name: Save run data to cache
         if: always()
         uses: actions/cache/save@v4
         with:
           path: |
-            lgd/data/combined/
-          key:  lgd-archive-data-v0-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+            lgd/data/combined/*.7z
+          key:  lgd-archive-data-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
 
   BuildDocs:
+    # Publish completed archives even if a later component failed or timed out.
+    if: ${{ !cancelled() }}
     needs: Run-LGD-Compression
     uses: ./.github/workflows/docs.yml
     secrets: inherit

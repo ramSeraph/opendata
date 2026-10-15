@@ -12,3 +12,4 @@ jobs:
     with:
       alert-title: "LGD Monthly Compress Run failed"
       num-attempts: 2
+      retry-timeouts: true

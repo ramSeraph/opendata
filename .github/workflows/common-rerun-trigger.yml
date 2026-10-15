@@ -10,31 +10,69 @@ on:
         description: 'Title of the alert to send'
         required: true
         type: string
+      retry-timeouts:
+        description: 'Also retry timeouts, including cancellations with a timeout annotation'
+        type: boolean
+        default: false
+      failed-jobs-only:
+        description: 'Retry failed jobs and their dependents without repeating completed archives'
+        type: boolean
+        default: false
 
 jobs:
   Rerun-Attempter:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      actions: read
+      checks: read
     outputs:
       send-alert: ${{ steps.check.outputs.SEND_ALERT }}
     steps:
       - name: Check to give up
         id: check
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_NO: ${{ github.event.workflow_run.run_number }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          NUM_ATTEMPTS: ${{ inputs.num-attempts }}
+          RETRY_TIMEOUTS: ${{ inputs.retry-timeouts }}
         run: |
-          # conclusion values: action_required, cancelled, failure, neutral, success, skipped, stale, or timed_out
-          # TODO: deal with failure conclusions apart from 'failure'
-          export RUN_ID=${{ github.event.workflow_run.id }}
-          export RUN_NO=${{ github.event.workflow_run.run_number }}
-          export RUN_ATTEMPT=${{ github.event.workflow_run.run_attempt }}
-          export CONCLUSION=${{ github.event.workflow_run.conclusion }}
-          echo "got workflow run event for $RUN_NUMBER( attempt - $RUN_ATTEMPT ), conclusion - $CONCLUSION"
-          if [ "$CONCLUSION" != "failure" ]; then
+          echo "got workflow run event for $RUN_NO (attempt $RUN_ATTEMPT), conclusion: $CONCLUSION"
+          retryable=false
+          if [[ "$CONCLUSION" == failure ]]; then
+            retryable=true
+          elif [[ "$RETRY_TIMEOUTS" == true && "$CONCLUSION" == timed_out ]]; then
+            retryable=true
+          elif [[ "$RETRY_TIMEOUTS" == true && "$CONCLUSION" == cancelled ]]; then
+            # Inspect this attempt only: an earlier timeout must not turn a later
+            # manual cancellation into a retry. Do not infer timeouts from duration.
+            jobs=$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/attempts/$RUN_ATTEMPT/jobs?per_page=100" \
+              --jq '.jobs[] | select(.conclusion == "cancelled" or .conclusion == "timed_out") | [.conclusion, .check_run_url] | @tsv')
+            while IFS=$'\t' read -r conclusion check_run_url; do
+              [[ -n "$conclusion" ]] || continue
+              if [[ "$conclusion" == timed_out ]]; then
+                retryable=true
+                break
+              fi
+              annotations=$(gh api --paginate "$check_run_url/annotations?per_page=100" \
+                --jq '.[] | select(.annotation_level == "failure") | .message')
+              if grep -Eq '^The job( running on runner .+)? has exceeded the maximum execution time|^The action( .+)? has timed out' <<< "$annotations"; then
+                echo 'Confirmed timeout in the cancelled job'
+                retryable=true
+                break
+              fi
+            done <<< "$jobs"
+          fi
+          if [[ "$retryable" != true ]]; then
             echo "setting RERUN to false and SEND_ALERT to false"
             echo "RERUN=false" >> $GITHUB_OUTPUT
             echo "SEND_ALERT=false" >> $GITHUB_OUTPUT
           else
-            if [ "$RUN_ATTEMPT" -lt ${{ inputs.num-attempts }} ]; then
+            if [ "$RUN_ATTEMPT" -lt "$NUM_ATTEMPTS" ]; then
               echo "setting RERUN to true and SEND_ALERT to false"
               echo "RERUN=true" >> $GITHUB_OUTPUT
               echo "SEND_ALERT=false" >> $GITHUB_OUTPUT
@@ -48,8 +86,16 @@ jobs:
       - name: Call Rerun API
         if: ${{ steps.check.outputs.RERUN == 'true' }}
         shell: bash
+        env:
+          RERUN_URL: ${{ github.event.workflow_run.rerun_url }}
+          FAILED_JOBS_ONLY: ${{ inputs.failed-jobs-only }}
+          RERUN_USER: ${{ github.repository_owner }}
+          RERUN_TOKEN: ${{ secrets.RERUN_PAT }}
         run: |
-          curl -X POST -u "${{github.repository_owner}}:${{secrets.RERUN_PAT}}" ${{ github.event.workflow_run.rerun_url }}
+          if [[ "$FAILED_JOBS_ONLY" == true ]]; then
+            RERUN_URL="${RERUN_URL}-failed-jobs"
+          fi
+          curl --fail-with-body -X POST -u "$RERUN_USER:$RERUN_TOKEN" "$RERUN_URL"
 
   Alert-Sender:
     needs: [Rerun-Attempter]

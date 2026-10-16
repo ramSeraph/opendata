@@ -8,9 +8,7 @@ from datetime import datetime
 import requests
 from requests.models import PreparedRequest
 import unidecode
-import pywikibot
-from pywikibot import pagegenerators
-from pywikibot.data.sparql import SparqlQuery
+from raw_wikidata import client, download_query
 from bs4 import BeautifulSoup
 
 from lev import masala_levenshtein
@@ -423,11 +421,11 @@ P_STATED_IN = 'P248'
 transilterator = None
 def get_label_translit(v):
     global transilterator
-    from transliterate import CachedTransliterator 
-    labels = v.get('labels', {})
-    if 'en' in labels:
-        label = labels['en']['value']
+    label = get_label(v)
+    if label != 'NA':
         return label
+    from transliterate import CachedTransliterator
+    labels = v.get('labels', {})
     en_label = None
     unsup_langs = []
     all_langs = list(labels.keys())
@@ -455,6 +453,8 @@ def get_label(v, lang='en'):
     labels = v.get('labels', {})
     if lang in labels:
         label = labels[lang]['value']
+    elif 'mul' in labels:
+        label = labels['mul']['value']
     else:
         #print('labels:', labels)
         label = 'NA'
@@ -711,6 +711,7 @@ def get_entry_from_wd_id(wd_num_id):
     global repo
     global page_cache
 
+    wd_num_id = int(wd_num_id)
     pcache_fname = 'data/cache.jsonl'
     if page_cache is None:
         page_cache = {}
@@ -718,16 +719,30 @@ def get_entry_from_wd_id(wd_num_id):
             with open(pcache_fname, 'r') as f:
                 for line in f:
                     e = json.loads(line)
-                    page_cache[e['id']] = e['data']
+                    # Older cache entries did not consider multilingual labels.
+                    if e['data']['label'] != 'NA':
+                        page_cache[int(e['id'])] = e['data']
+
+        # These entities already came from wbgetentities. Reading their labels
+        # locally avoids one API request per referenced district/subdistrict.
+        for path in Path('data').glob('*.jsonl'):
+            if path.name == 'cache.jsonl':
+                continue
+            with path.open() as stream:
+                for line in stream:
+                    if not line.strip():
+                        continue
+                    row = json.loads(line)
+                    qid = row['id']
+                    label = get_label(row['data'])
+                    page_cache[int(qid[1:])] = {'id': qid, 'label': label}
 
     if wd_num_id in page_cache:
         return page_cache[wd_num_id]
 
-    if repo is None:
-        site = pywikibot.Site("wikidata", "wikidata")
-        repo = site.data_repository()
-    item = pywikibot.ItemPage(repo, f'Q{wd_num_id}')
-    label = item.get(get_redirect=True)['labels'].get('en', 'NA')
+    qid = f'Q{wd_num_id}'
+    item = client.entities([qid], props='labels', languages='en|mul')[qid]
+    label = get_label(item)
     data = { 'id': f'Q{wd_num_id}', 'label': label }
     page_cache[wd_num_id] = data
     with open(pcache_fname, 'a') as f:
@@ -929,7 +944,7 @@ def write_report(report, fname):
 
 def get_effective_date(url, params):
     print(url, params)
-    resp = requests.get(url, params)
+    resp = requests.get(url, params, timeout=(10, 60))
     if not resp.ok:
         raise Exception('unable to retrieve url')
     html = resp.text
@@ -942,33 +957,5 @@ def get_effective_date(url, params):
             return datetime.strftime(datetime.strptime(date_str, '%d/%m/%Y'), '%d%b%Y')
 
 def get_data_for_query(query, fname):
-    site = pywikibot.Site("wikidata", "wikidata")
-    repo = site.data_repository()
-    p = Path(fname)
-    already_seen = set()
-    if p.exists():
-        with open(p, 'r') as f:
-            for line in f:
-                if line.strip() == '':
-                    continue
-                item = json.loads(line)
-                k = item['id']
-                already_seen.add(k)
-
-    sparql = SparqlQuery(repo=repo)
-    qids = sparql.get_items(query, item_name='item')
-    qids = list(qids - already_seen)
-    generator = pagegenerators.PreloadingEntityGenerator(pagegenerators.PagesFromTitlesGenerator(qids,site=repo))
-    
-    count = 0
-    with open(p, 'a') as f:
-        for item in generator:
-            if item.id in already_seen:
-                count += 1
-                continue
-            d = item.toJSON()
-            f.write(json.dumps({'id': item.id, 'data': d}))
-            f.write('\n')
-            count += 1
-            print(f'handled {count} entries')
+    return download_query(query, fname)
 

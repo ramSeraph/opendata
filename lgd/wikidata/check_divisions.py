@@ -190,6 +190,10 @@ def contains_completeness_check():
             continue
         parent_id = located_in_ids[0]
         parent_wid = f'Q{parent_id}'
+        if parent_wid not in state_mapping:
+            # hierarchy_check reports this unresolved parent. Its districts
+            # cannot be compared with LGD without a state mapping.
+            continue
         scode = state_mapping[parent_wid]
         lgd_entry = lgd_state_data[scode]
         state_code = lgd_entry['State Code']
@@ -202,7 +206,7 @@ def contains_completeness_check():
             divs_by_state[scode] = []
         divs_by_state[scode].append({ 'id': k, 'label': get_label(v) })
         for c in contains_ids:
-            divs_by_dist[c] = k
+            divs_by_dist[f'Q{c}'] = k
 
     for scode, info in dists_by_state_from_divs.items():
         dists_in_divs = set(info['entries'])
@@ -212,7 +216,7 @@ def contains_completeness_check():
         if len(missing_in_divs) > 0 or len(extra_in_divs) > 0:
             extras = []
             for wid in extra_in_divs:
-                child = get_entry_from_wd_id(divs_by_dist[wid]) if wid in divs_by_dist else { 'label': 'Not in any Division' }
+                child = get_entry_from_wd_id(divs_by_dist[wid][1:]) if wid in divs_by_dist else { 'label': 'Not in any Division' }
                 extras.append({ 'element': get_entry_from_wd_id(wid[1:]), 'child': child })
             report['mismatch_in_contains'].append({'parent': get_entry_from_wd_id(info['state_wid'][1:]),
                                                    'children': divs_by_state[scode],

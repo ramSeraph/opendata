@@ -353,7 +353,7 @@ def update_mapping(prefix, dates):
         destination.unlink(missing_ok=True)
         backup.unlink(missing_ok=True)
 
-def archive_month(month_year, *, component=None, redistribute=True):
+def archive_month(month_year):
     releases = get_all_releases()
 
     archive_releases = filter_releases(releases, 'lgd-archive')
@@ -369,8 +369,7 @@ def archive_month(month_year, *, component=None, redistribute=True):
             archive_counts[v] = 0
         archive_counts[v] += 1
 
-    relevant_names = [a for a in all_archives if a.endswith(f'{month_year}.csv.7z')
-                      and (component is None or a.split('.')[0] == component)]
+    relevant_names = [a for a in all_archives if a.endswith(f'{month_year}.csv.7z')]
 
     by_file = get_mapping(relevant_names)
 
@@ -432,9 +431,8 @@ def archive_month(month_year, *, component=None, redistribute=True):
         for file in to_zip:
             file.unlink(missing_ok=True)
 
-    if redistribute:
-        print('redistributing latest release assets after deletions')
-        redistribute_latest(latest_releases)
+    print('redistributing latest release assets after deletions')
+    redistribute_latest(latest_releases)
     # Redistribution changes download URLs; refresh even if there was no new archive.
     refresh_indexes()
 
@@ -443,8 +441,6 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('month', help='Month to archive, e.g. Sep2026')
-    parser.add_argument('--component', help='Archive only this dataset filename prefix')
-    parser.add_argument('--no-redistribute', action='store_true', help='Leave other daily assets in their current releases')
     args = parser.parse_args()
-    archive_month(args.month, component=args.component, redistribute=not args.no_redistribute)
+    archive_month(args.month)
 

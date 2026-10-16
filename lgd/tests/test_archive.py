@@ -124,8 +124,9 @@ class ArchiveTests(unittest.TestCase):
                        check=True, capture_output=True, text=True)
 
     def worker(self):
-        with self.remote.installed(), patch.object(archive, 'refresh_indexes'):
-            archive.archive_month('Jan2026', component='states', redistribute=False)
+        with self.remote.installed(), patch.object(archive, 'refresh_indexes'), \
+                patch.object(archive, 'redistribute_latest'):
+            archive.archive_month('Jan2026')
 
     def assert_originals_retained(self):
         for file in self.files:
@@ -269,13 +270,14 @@ class ArchiveTests(unittest.TestCase):
     def test_indexes_are_refreshed_when_only_redistribution_remains(self):
         self.assertEqual(self.run_month([]), [('redistribute',), ('indexes',)])
 
-    def test_catchup_worker_only_handles_selected_month_and_component(self):
+    def test_monthly_archive_only_handles_selected_month(self):
         daily = [file.name + '.7z' for file in self.files]
-        daily += ['districts.01Jan2026.csv.7z', 'states.01Feb2026.csv.7z']
-        events = self.run_month(daily, component='states', redistribute=False)
+        daily += ['districts.01Feb2026.csv.7z', 'states.01Feb2026.csv.7z']
+        events = self.run_month(daily)
         self.assertEqual(events, [('upload', 'states'), ('mapping', 'states'),
                                  ('delete', 'states.01Jan2026.csv.7z'),
-                                 ('delete', 'states.02Jan2026.csv.7z'), ('indexes',), ('indexes',)])
+                                 ('delete', 'states.02Jan2026.csv.7z'), ('indexes',),
+                                 ('redistribute',), ('indexes',)])
 
     def test_extraction_only_replaces_destination_after_success_including_empty_csv(self):
         file = self.files[0]

@@ -94,26 +94,26 @@ sys.exit(result.returncode)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(values, {})
 
-    def test_retry_api_selects_failed_jobs_only_for_catchup(self):
+    def test_retry_api_retries_workflow_and_propagates_http_failure(self):
         workflow = Path(__file__).resolve().parents[2] / '.github/workflows/common-rerun-trigger.yml'
         step = workflow.read_text().split('      - name: Call Rerun API\n', 1)[1].split('  Alert-Sender:', 1)[0]
         script = textwrap.dedent(step.split('        run: |\n', 1)[1])
-        for failed_only in (False, True):
-            with self.subTest(failed_only=failed_only), tempfile.TemporaryDirectory() as tmp:
+        for exit_code in (0, 22):
+            with self.subTest(exit_code=exit_code), tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
                 curl = root / 'curl'
-                curl.write_text('#!/usr/bin/env python3\nimport json, sys\nprint(json.dumps(sys.argv[1:]))\n')
+                curl.write_text('#!/usr/bin/env python3\nimport json, sys\nprint(json.dumps(sys.argv[1:]))\n'
+                                f'sys.exit({exit_code})\n')
                 curl.chmod(0o755)
                 env = dict(os.environ, PATH=f'{root}:{os.environ["PATH"]}',
                            RERUN_URL='https://api.github.com/repos/owner/repo/actions/runs/123/rerun',
-                           FAILED_JOBS_ONLY=str(failed_only).lower(), RERUN_USER='owner', RERUN_TOKEN='fake-token')
+                           RERUN_USER='owner', RERUN_TOKEN='fake-token')
                 result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', script],
                                         env=env, capture_output=True, text=True)
-                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.returncode, exit_code, result.stderr)
                 args = json.loads(result.stdout)
                 self.assertIn('--fail-with-body', args)
-                expected = env['RERUN_URL'] + ('-failed-jobs' if failed_only else '')
-                self.assertEqual(args[-1], expected)
+                self.assertEqual(args[-1], env['RERUN_URL'])
 
 
 if __name__ == '__main__':

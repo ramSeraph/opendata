@@ -80,7 +80,16 @@ def hierarchy_check():
             continue
         lgd_entry = lgd_dist_panchayat_data[lgd_code]
         expected_lgd_state_code = lgd_entry['State Code']
-        expected_state_wd_id = wd_state_map_rev[expected_lgd_state_code]
+        expected_state_wd_id = wd_state_map_rev.get(expected_lgd_state_code)
+        if expected_state_wd_id is None:
+            report['wrong_hierarchy'].append({
+                'wikidata_id': k,
+                'wikidata_label': get_label(v),
+                'current': [get_entry_from_wd_id(i) for i in get_located_in_ids(v)],
+                'expected': [{'label': f"{lgd_entry['State Name']} (LGD state {expected_lgd_state_code}; Wikidata mapping unresolved)"}],
+                'unresolved_state_code': expected_lgd_state_code,
+            })
+            continue
         expected_state_id = int(expected_state_wd_id[1:])
 
         located_in_ids = get_located_in_ids(v)
@@ -149,7 +158,7 @@ def get_correction_info(lgd_entry):
     if g_wd_state_map_rev is None:
         wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
         g_wd_state_map_rev = {v:k for k,v in wd_state_map.items()}
-    loc_in = g_wd_state_map_rev[scode]
+    loc_in = g_wd_state_map_rev.get(scode)
 
     #i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
     #inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
@@ -162,12 +171,15 @@ def get_correction_info(lgd_entry):
         'lgd_code': lgd_entry['lgd_code'],
         'lgd_code_prop': P_LGD_LOCAL_BODY_CODE,
     }
+    if loc_in is None:
+        correction_info['unresolved_parent'] = f"{sname} (LGD state {scode})"
     return correction_info
 
 def territory_overlaps_check():
     report = { 'mismatch_territory_overlaps': [] }
     wd_dist_map = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district, 'district')
     wd_dist_map_rev = {v:k for k,v in wd_dist_map.items()}
+    lgd_dist_data = get_lgd_data('data/lgd/districts.csv', 'District Code')
     dp_to_d, d_to_dp = get_district_panchayat_and_district_lgd_mappings()
     filtered = get_wd_data(wd_fname, filter_district_panchayat)
     for k,v in filtered.items():
@@ -182,15 +194,24 @@ def territory_overlaps_check():
             continue
 
         overlapping_dist_codes = dp_to_d[lgd_code]
-        overlapping_dist_ids = set([ int(wd_dist_map_rev[c][1:]) for c in overlapping_dist_codes ])
+        unresolved = [
+            {'lgd_code': code, 'label': f"{lgd_dist_data.get(code, {}).get('District Name(In English)', 'Unknown district')} (LGD district {code}; Wikidata mapping unresolved)"}
+            for code in overlapping_dist_codes if code not in wd_dist_map_rev
+        ]
+        overlapping_dist_ids = {int(wd_dist_map_rev[c][1:]) for c in overlapping_dist_codes if c in wd_dist_map_rev}
         curr_overlap_ids = set(get_overlap_ids(v))
-        extra = curr_overlap_ids - overlapping_dist_ids
+        # An unresolved district may account for a current overlap, so we
+        # cannot call any overlap extra until every district is resolved.
+        extra = curr_overlap_ids - overlapping_dist_ids if not unresolved else set()
         missing = overlapping_dist_ids - curr_overlap_ids
-        if len(extra) == 0 and len(missing) == 0:
+        if len(extra) == 0 and len(missing) == 0 and not unresolved:
             continue
-        report['mismatch_territory_overlaps'].append({'wikidata_id': k, 'wikidata_label': label,
-                                                      'missing': [ get_entry_from_wd_id(i) for i in missing ],
-                                                      'extra': [ get_entry_from_wd_id(i) for i in extra ]})
+        entry = {'wikidata_id': k, 'wikidata_label': label,
+                 'missing': [get_entry_from_wd_id(i) for i in missing],
+                 'extra': [get_entry_from_wd_id(i) for i in extra]}
+        if unresolved:
+            entry['unresolved'] = unresolved
+        report['mismatch_territory_overlaps'].append(entry)
     return report
    
 def coextensiveness_check():

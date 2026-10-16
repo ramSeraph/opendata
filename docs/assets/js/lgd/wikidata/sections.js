@@ -165,10 +165,15 @@ class Missing {
     const lgdEntry = this.data['lgd_entry'];
     /* TODO: add extra fields */
     const lgdStr = renderLgdEntry(lgdEntry);
-    return `LGD Name: ${lgdEntry['lgd_name']}, LGD Code: <a href="${lgdEntry['lgd_url']}" target="_blank">${lgdEntry['lgd_code']}</a>${lgdStr}`;
+    const unresolved = this.data['correction_info']?.['unresolved_parent'];
+    const warning = unresolved ? `<p>Unresolved parent: ${unresolved}. Correction unavailable.</p>` : '';
+    return `LGD Name: ${lgdEntry['lgd_name']}, LGD Code: <a href="${lgdEntry['lgd_url']}" target="_blank">${lgdEntry['lgd_code']}</a>${lgdStr}${warning}`;
   }
   getQSRow() {
     const w = this.data['correction_info'];
+    if (!w || !w['loc_in']) {
+      return null;
+    }
     return `,"${w['label']}","${w['desc']}",Q668,${w['inst_of']},${w['loc_in']},${w['inception']},"""${w['lgd_code']}""",Q125923171`
   }
   getQSHeader() {
@@ -465,6 +470,11 @@ class MismatchTerritoryOverlaps {
     }
     if (extra_lis !== '') {
       html += `<li>extra:<ul>${extra_lis}</ul></li>`;
+    }
+    const unresolved = this.data['unresolved'] || [];
+    if (unresolved.length) {
+      const unresolved_lis = unresolved.map(e => `<li>${e['label']}</li>`).join('');
+      html += `<li>Unresolved LGD districts (extra overlaps not checked):<ul>${unresolved_lis}</ul></li>`;
     }
     html += '</ul>';
     return html;;

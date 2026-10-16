@@ -37,7 +37,7 @@ def hierarchy_check():
 
     filtered = get_wd_data(wd_fname, filter_subdistrict)
     for k,v in filtered.items():
-        lgd_codes = get_lgd_codes(v)
+        lgd_codes = get_lgd_codes(v, code_type='subdistrict')
         if len(lgd_codes) != 1:
             continue
         lgd_code = lgd_codes[0]
@@ -111,7 +111,7 @@ def inst_of_check():
 
     filtered = get_wd_data(wd_fname, filter_subdistrict)
     for k,v in filtered.items():
-        lgd_codes = get_lgd_codes(v)
+        lgd_codes = get_lgd_codes(v, code_type='subdistrict')
         if len(lgd_codes) != 1:
             continue
         lgd_code = lgd_codes[0]

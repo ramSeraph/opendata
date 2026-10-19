@@ -1,6 +1,7 @@
 import io
 import csv
 import logging
+import re
 import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 
@@ -156,25 +157,55 @@ def unzip_single(zipped_content):
     return names[0], content
 
 
-def records_from_odt(input_file, drop_tables_front=2, drop_tables_back=0):
+def records_from_odt(input_file, expected_fields=None):
+    """Read LGD's paginated, numbered ODT reports without dropping data pages.
+
+    Older exports had introductory tables; current ones start with data. Find
+    the actual header instead of assuming a fixed number of introductory pages.
+    Only recognized report footers may be discarded after the header.
+    """
     reader = ODTTableReader(input_file, clonespannedcolumns=False)
     logger.debug('got {} tables while converting odt to csv'.format(len(reader.SHEETS)))
-
-    tables = reader.SHEETS[drop_tables_front:]
-    logger.debug('dropping front tables: {}'.format(reader.SHEETS[:drop_tables_front]))
-    if drop_tables_back != 0:
-        tables = tables[:-drop_tables_back]
-        logger.debug('dropping back tables: {}'.format(reader.SHEETS[-drop_tables_back:]))
+    timestamp = r'[A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M'
+    footer = re.compile(
+        rf'(?:{timestamp}|URL https?://lgdirectory\.gov\.in/? '
+        rf'Report Generated on {timestamp}\s*Local Government Directory)')
+    header = None
     records = []
-    header_taken = False
-    for table in tables:
-        for i, row in enumerate(table):
-            if i == 0 and header_taken:
+    for table in reader.SHEETS:
+        for row in table:
+            # The ODT reader omits trailing empty cells and represents internal
+            # empty cells as None. Keep both kinds of blanks as CSV empty strings.
+            row = [value or '' for value in row]
+            if not any(row):
                 continue
-            header_taken = True
-            records.append(row)
+            normalized = [normalize(value) for value in row]
+            if normalized[0] == 'S.No.':
+                if (len(set(normalized)) != len(normalized) or
+                        (expected_fields is not None and
+                         set(normalized) != set(expected_fields)) or
+                        (header is not None and normalized != header)):
+                    raise ValueError(f'Unexpected ODT report header: {normalized!r}')
+                header = normalized
+                continue
+            numbered = re.fullmatch(r'[0-9]+', row[0]) is not None
+            if header is None:
+                if numbered:
+                    raise ValueError('ODT data row encountered before the report header')
+                continue
+            if not any(row[1:]) and footer.fullmatch(normalized[0]):
+                continue
+            expected_serial = len(records) + 1
+            if not numbered or int(row[0]) != expected_serial:
+                raise ValueError(f'Expected ODT serial {expected_serial}, got {row[0]!r}')
+            if len(row) > len(header):
+                raise ValueError(f'ODT row {expected_serial} has more cells than the header')
+            row += [''] * (len(header) - len(row))
+            records.append(dict(zip(header, row)))
 
-    return convert_to_dicts(records)
+    if header is None or not records:
+        raise ValueError('ODT report has no numbered data rows')
+    return records
 
 
 def records_from_htm_heavy(input_file):

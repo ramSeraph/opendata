@@ -120,7 +120,8 @@ class DirectoryDownloader(BaseDownloader):
                 if suffix == '.xlsx':
                     records = records_from_xslx(data_file, **self.xlsx_conv_args)
                 elif suffix == '.odt':
-                    records = records_from_odt(data_file, **self.odt_conv_args)
+                    records = records_from_odt(data_file, expected_fields=self.expected_fields,
+                                               **self.odt_conv_args)
                 elif suffix == '.htm':
                     records = records_from_htm(data_file)
                 elif suffix == '.xls':

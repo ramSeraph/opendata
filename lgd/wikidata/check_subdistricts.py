@@ -164,7 +164,7 @@ def get_correction_info(lgd_entry):
     if loc_in is None:
         print(f'Warning: could not find located in for district code {dcode}')
 
-    if 'Effective Date' in lgd_entry:
+    if lgd_entry.get('Effective Date'):
         i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
         inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
     else:

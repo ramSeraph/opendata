@@ -174,7 +174,7 @@ class Missing {
     if (!w || !w['loc_in']) {
       return null;
     }
-    return `,"${w['label']}","${w['desc']}",Q668,${w['inst_of']},${w['loc_in']},${w['inception']},"""${w['lgd_code']}""",Q125923171`
+    return `,"${w['label']}","${w['desc']}",Q668,${w['inst_of']},${w['loc_in']},${w['inception'] ?? ''},"""${w['lgd_code']}""",Q125923171`
   }
   getQSHeader() {
     const w = this.data['correction_info'];

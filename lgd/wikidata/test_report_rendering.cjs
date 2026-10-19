@@ -39,3 +39,21 @@ test('overlap reports show unresolved district mappings and incomplete extra che
   assert.match(report.getHTML(), /extra overlaps not checked/);
   assert.equal(report.getQSRow(), null);
 });
+
+test('unavailable effective dates are visible and export as an empty inception', () => {
+  for (const inception of [null, undefined, '']) {
+    const report = context.getInstance('missing', {
+      lgd_entry: {
+        lgd_name: 'Example', lgd_code: '4', lgd_url: 'https://example.org',
+        'Effective Date Error': '503 Server Error',
+      },
+      correction_info: {
+        label: 'Example', desc: 'Example subdistrict', inst_of: 'Q122987719',
+        loc_in: 'Q2001', inception, lgd_code: '4', lgd_code_prop: 'P12748',
+      },
+    });
+    assert.match(report.getHTML(), /Effective Date Error: 503 Server Error/);
+    assert.match(report.getQSRow(), /Q2001,,/);
+    assert.doesNotMatch(report.getQSRow(), /null|undefined/);
+  }
+});

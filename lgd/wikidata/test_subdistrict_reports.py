@@ -1,10 +1,14 @@
 import contextlib
 import io
+import json
 import os
 from pathlib import Path
+import runpy
 import tempfile
 import unittest
 from unittest.mock import patch
+
+import requests
 
 import check_subdistricts as checker
 import common
@@ -53,6 +57,29 @@ class SubdistrictReportTests(unittest.TestCase):
         rows = checker.inst_of_check()['wrong_inst_of']
         self.assertEqual([row['wikidata_id'] for row in rows], ['Q5002'])
         self.assertEqual(rows[0]['expected_inst_ofs'][0]['id'], common.state_info['6']['wd_id'])
+
+    def test_complete_report_survives_an_effective_date_http_failure(self):
+        Path(checker.lgd_fname).write_text(
+            'Sub-district Code,Sub-district Name,District Code,State Code,District Name,State Name\n'
+            '1,Subdistrict 1,100,6,Expected district,Haryana\n'
+            '2,Subdistrict 2,100,6,Expected district,Haryana\n'
+            '3,Subdistrict 3,100,6,Expected district,Haryana\n'
+            '4,Missing subdistrict,100,6,Expected district,Haryana\n')
+        response = requests.Response()
+        response.status_code = 503
+        response.url = 'https://lgdirectory.gov.in/globalviewSubDistrictDetail.do?globalsubdistrictId=4'
+        with patch.object(common.requests, 'get', return_value=response) as fetch, \
+             patch.object(common.time, 'sleep'):
+            runpy.run_path(checker.__file__, run_name='__main__')
+        self.assertEqual(fetch.call_count, 3)
+        report = json.loads(Path('reports/subdistricts.json').read_text())
+        self.assertEqual(len(report['missing']), 1)
+        missing = report['missing'][0]
+        self.assertEqual(missing['lgd_entry']['lgd_code'], '4')
+        self.assertIn('503', missing['lgd_entry']['Effective Date Error'])
+        self.assertIsNone(missing['correction_info']['inception'])
+        self.assertEqual([row['wikidata_id'] for row in report['wrong_hierarchy']], ['Q5001'])
+        self.assertEqual([row['wikidata_id'] for row in report['wrong_inst_of']], ['Q5002'])
 
 
 if __name__ == '__main__':

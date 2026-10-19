@@ -2,6 +2,7 @@ import re
 import csv
 import copy
 import json
+import time
 from pathlib import Path
 from datetime import datetime
 
@@ -913,7 +914,14 @@ def base_entity_checks(entity_type=None,
             req.prepare_url(url_info['base'], url_info['params'])
             lgd_entry_out['lgd_url'] = req.url
             if lgd_get_effective_date:
-                lgd_entry_out['Effective Date'] = get_effective_date(url_info['base'], url_info['params'])
+                try:
+                    lgd_entry_out['Effective Date'] = get_effective_date(url_info['base'], url_info['params'])
+                except (requests.RequestException, ValueError) as error:
+                    # The date enriches a missing-entity report; losing this
+                    # lookup must not discard the entity or the other checks.
+                    lgd_entry_out.pop('Effective Date', None)
+                    lgd_entry_out['Effective Date Error'] = str(error)
+                    print(f'Warning: effective date unavailable for {req.url}: {error}', flush=True)
             correction_info = lgd_correction_fn(lgd_entry_out)
             #TODO: locate and add best matches?
             report['missing'].append({'lgd_entry': lgd_entry_out, 'correction_info': correction_info})
@@ -943,18 +951,36 @@ def write_report(report, fname):
 
 
 def get_effective_date(url, params):
-    print(url, params)
-    resp = requests.get(url, params, timeout=(10, 60))
-    if not resp.ok:
-        raise Exception('unable to retrieve url')
-    html = resp.text
-    soup = BeautifulSoup(html, 'html.parser')
+    print(url, params, flush=True)
+    for attempt in range(3):
+        try:
+            resp = requests.get(url, params=params, timeout=(10, 60))
+            resp.raise_for_status()
+            break
+        except requests.RequestException as error:
+            response = error.response
+            retryable = isinstance(error, (requests.ConnectionError, requests.Timeout)) or (
+                response is not None and response.status_code in (408, 500, 502, 503, 504)
+            )
+            if not retryable or attempt == 2:
+                raise
+            delay = 2 ** (attempt + 1)
+            print(f'LGD effective date lookup failed: {error}; retrying in {delay}s', flush=True)
+            time.sleep(delay)
+
+    soup = BeautifulSoup(resp.text, 'html.parser')
     trs = soup.find_all('tr')
     for tr in trs:
-        if 'Effective Date' in tr.text:
-            tds = tr.find_all('td')
-            date_str = tds[1].text
-            return datetime.strftime(datetime.strptime(date_str, '%d/%m/%Y'), '%d%b%Y')
+        tds = tr.find_all('td', recursive=False)
+        if tds and tds[0].get_text(' ', strip=True).rstrip(':').strip() == 'Effective Date':
+            if len(tds) < 2:
+                break
+            date_str = tds[1].get_text(strip=True)
+            try:
+                return datetime.strptime(date_str, '%d/%m/%Y').strftime('%d%b%Y')
+            except ValueError as error:
+                raise ValueError('LGD Effective Date is empty or invalid') from error
+    raise ValueError('LGD page has no Effective Date')
 
 def get_data_for_query(query, fname):
     return download_query(query, fname)

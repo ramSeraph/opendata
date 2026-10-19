@@ -59,6 +59,26 @@ class ClientTests(unittest.TestCase):
             client.entities(['Q1'])
 
     @patch('raw_wikidata.time.sleep')
+    def test_default_retry_budget_survives_lag_beyond_the_old_six_attempts(self, sleep):
+        lag = {'error': {'code': 'maxlag', 'info': 'Lagged'}}
+        client = self.client(*[response(lag) for _ in range(6)],
+                             response({'entities': {'Q1': entity('Q1')}}))
+        self.assertEqual(client.entities(['Q1'])['Q1']['id'], 'Q1')
+        self.assertEqual(client.session.get.call_count, 7)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [5, 10, 20, 40, 80, 120])
+        for call in client.session.get.call_args_list:
+            self.assertEqual(call.kwargs['params']['maxlag'], 5)
+
+    @patch('raw_wikidata.time.sleep')
+    def test_default_retry_budget_still_fails_during_a_persistent_outage(self, sleep):
+        lag = {'error': {'code': 'maxlag', 'info': 'Lagged'}}
+        client = self.client(*[response(lag) for _ in range(10)])
+        with self.assertRaisesRegex(RuntimeError, 'after 10 attempts: maxlag'):
+            client.entities(['Q1'])
+        self.assertEqual(client.session.get.call_count, 10)
+        self.assertEqual(sum(call.args[0] for call in sleep.call_args_list), 635)
+
+    @patch('raw_wikidata.time.sleep')
     def test_transport_timeout_is_retried(self, sleep):
         client = self.client(requests.Timeout('timeout'), response({'entities': {'Q1': entity('Q1')}}))
         self.assertEqual(client.entities(['Q1'])['Q1']['id'], 'Q1')

@@ -40,8 +40,10 @@ def get_correction_info(lgd_entry):
 
     loc_in = f'Q{INDIA_ID}'
 
-    i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
-    inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
+    inception = None
+    if lgd_entry.get('Effective Date'):
+        i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
+        inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
     correction_info = {
         'label': label,
         'desc': desc,

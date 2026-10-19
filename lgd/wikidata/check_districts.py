@@ -100,8 +100,10 @@ def get_correction_info(lgd_entry):
         g_wd_state_map_rev = {v:k for k,v in wd_state_map.items()}
     loc_in = g_wd_state_map_rev[scode]
 
-    i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
-    inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
+    inception = None
+    if lgd_entry.get('Effective Date'):
+        i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
+        inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
     correction_info = {
         'label': label,
         'desc': desc,

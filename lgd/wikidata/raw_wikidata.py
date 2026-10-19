@@ -18,7 +18,9 @@ USER_AGENT = 'LGD-Wikidata-Sync/0.1 (https://github.com/ramSeraph/opendata)'
 
 
 class WikidataClient:
-    def __init__(self, *, maxlag=5, interval=1.0, attempts=6):
+    def __init__(self, *, maxlag=5, interval=1.0, attempts=10):
+        # Daily runs can wait through a short service outage: the default
+        # backoff spans about 11 minutes; Retry-After can extend these waits.
         self.session = requests.Session()
         self.session.headers['User-Agent'] = USER_AGENT
         self.maxlag = maxlag

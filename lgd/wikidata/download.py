@@ -2,7 +2,7 @@ import sys
 from raw_wikidata import download_query
 
 def get_data(repo, qid, fname):
-    QUERY = f"SELECT ?item WHERE {{ ?item wdt:P31/wdt:P279* wd:{qid}. }}"
+    QUERY = f"SELECT DISTINCT ?item WHERE {{ ?item wdt:P31/wdt:P279* wd:{qid}. }}"
     return download_query(QUERY, fname)
 
 

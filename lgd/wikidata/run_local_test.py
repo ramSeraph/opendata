@@ -95,7 +95,7 @@ def main():
         print(f'Discovering {dataset}...', flush=True)
         before = time.monotonic()
         count = raw_wikidata.download_query(
-            f'SELECT ?item WHERE {{ ?item wdt:P31/wdt:P279* wd:{DATASETS[dataset]}. }}',
+            f'SELECT DISTINCT ?item WHERE {{ ?item wdt:P31/wdt:P279* wd:{DATASETS[dataset]}. }}',
             f'data/{dataset}.jsonl')
         results['downloads'][dataset] = {'count': count, 'seconds': round(time.monotonic() - before, 2)}
         print(json.dumps({dataset: results['downloads'][dataset]}), flush=True)

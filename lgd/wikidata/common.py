@@ -764,7 +764,8 @@ def base_entity_checks(entity_type=None,
                        lgd_get_effective_date=True, lgd_code_type=None,
                        check_expected_located_in_fn=None,
                        wd_fname=None, wd_filter_fn=lambda x:True,
-                       name_prefix_drops=[], name_suffix_drops=[], name_match_threshold=0.0):
+                       name_prefix_drops=[], name_suffix_drops=[], name_match_threshold=0.0,
+                       multiple_instance_of_exceptions=None):
 
     report = {
         'not_in_india': [],
@@ -832,7 +833,8 @@ def base_entity_checks(entity_type=None,
 
 
         inst_of_ids = get_instance_of_ids(v)
-        if len(inst_of_ids) != 1:
+        allowed_inst_of_ids = (multiple_instance_of_exceptions or {}).get(k)
+        if len(inst_of_ids) != 1 and set(inst_of_ids) != allowed_inst_of_ids:
             print(f'multiple instance of {label}({k}): {inst_of_ids}')
             report['multiple_instance_of'].append({'wikidata_id': k,
                                                    'wikidata_label': label, 

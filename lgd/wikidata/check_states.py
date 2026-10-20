@@ -9,6 +9,13 @@ from filters import filter_state
 from suffixes import STATE_PREFIXES, STATE_SUFFIXES
 
 
+# Delhi is both a union territory of India and a capital district or territory.
+# Only this complete combination is allowed; other extra types remain reportable.
+MULTIPLE_INSTANCE_OF_EXCEPTIONS = {
+    'Q9357528': {UT_ID, 395994},
+}
+
+
 def hierarchy_check(wd_fname=None, wd_filter_fn=None):
 
     report = { 'wrong_hierarchy': [] }
@@ -65,7 +72,8 @@ if __name__ == '__main__':
                                 lgd_code_type='state',
                                 check_expected_located_in_fn=lambda x: { 'ok': True },
                                 wd_fname=wd_fname, wd_filter_fn=filter_state,
-                                name_prefix_drops=STATE_PREFIXES, name_suffix_drops=STATE_SUFFIXES)
+                                name_prefix_drops=STATE_PREFIXES, name_suffix_drops=STATE_SUFFIXES,
+                                multiple_instance_of_exceptions=MULTIPLE_INSTANCE_OF_EXCEPTIONS)
 
     report.update(hierarchy_check(wd_fname=wd_fname, wd_filter_fn=filter_state))
     pprint(report)

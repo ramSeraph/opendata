@@ -60,6 +60,12 @@ function renderSections(list, data) {
 
 function showPage(entity) {
   const div = getMainDiv();
+  const navigation = document.createElement('p');
+  const backLink = document.createElement('a');
+  backLink.href = window.location.pathname;
+  backLink.textContent = '← All reports';
+  navigation.appendChild(backLink);
+  div.appendChild(navigation);
   const reportType = capitalizeFirstLetter(entity);
   div.insertAdjacentHTML('beforeend', `<h1>${reportType} Report:</h1>`);
   div.insertAdjacentHTML('beforeend', '<ul id="sectionlist"></ul>');

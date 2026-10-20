@@ -2,16 +2,16 @@ import contextlib
 import io
 import json
 import os
-from pathlib import Path
 import runpy
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
-
-import requests
 
 import check_subdistricts as checker
 import common
+import constants
+import requests
 from raw_wikidata import write_records
 from test_division_reports import entity, item
 
@@ -27,20 +27,20 @@ class SubdistrictReportTests(unittest.TestCase):
         self.enterContext(patch('requests.sessions.Session.request', side_effect=AssertionError('Unexpected network request')))
         Path('data/lgd').mkdir(parents=True)
         write_records(Path('data/districts.jsonl'), {
-            f'Q{qid}': entity(f'Q{qid}', label, {'P31': [item(common.DIST_ID)], 'P12746': [code]})
+            f'Q{qid}': entity(f'Q{qid}', label, {'P31': [item(constants.DIST_ID)], 'P12746': [code]})
             for qid, label, code in [(2001, 'Expected district', '100'), (2002, 'Other district', '200')]
         })
         write_records(Path('data/subdivisions.jsonl'), {})
-        expected_type = int(common.state_info['6']['wd_id'][1:])
-        wrong_type = int(common.state_info['9']['wd_id'][1:])
+        expected_type = int(constants.state_info['6']['wd_id'][1:])
+        wrong_type = int(constants.state_info['9']['wd_id'][1:])
         write_records(Path('data/subdistrict_types.jsonl'), {
             f'Q{expected_type}': entity(f'Q{expected_type}', 'Haryana tehsil', {}),
             f'Q{wrong_type}': entity(f'Q{wrong_type}', 'UP tehsil', {}),
-            **{alt['wd_id']: entity(alt['wd_id'], alt['name'], {}) for alt in common.state_info['6'].get('alts', [])},
+            **{alt['wd_id']: entity(alt['wd_id'], alt['name'], {}) for alt in constants.state_info['6'].get('alts', [])},
         })
         write_records(Path('data/subdistricts.jsonl'), {
             f'Q{qid}': entity(f'Q{qid}', f'Subdistrict {code}', {
-                'P31': [item(kind)], 'P131': [item(parent)], common.P_LGD_SUBDIST_CODE: [code],
+                'P31': [item(kind)], 'P131': [item(parent)], constants.P_LGD_SUBDIST_CODE: [code],
             }) for qid, code, kind, parent in [(5001, '1', expected_type, 2002), (5002, '2', wrong_type, 2001), (5003, '3', expected_type, 2001)]
         })
         Path(checker.lgd_fname).write_text(
@@ -56,7 +56,22 @@ class SubdistrictReportTests(unittest.TestCase):
     def test_type_check_uses_subdistrict_codes_and_finds_wrong_state_type(self):
         rows = checker.inst_of_check()['wrong_inst_of']
         self.assertEqual([row['wikidata_id'] for row in rows], ['Q5002'])
-        self.assertEqual(rows[0]['expected_inst_ofs'][0]['id'], common.state_info['6']['wd_id'])
+        self.assertEqual(rows[0]['expected_inst_ofs'][0]['id'], constants.state_info['6']['wd_id'])
+
+    def test_subdivision_without_a_parent_does_not_crash_hierarchy_check(self):
+        from raw_wikidata import read_records
+
+        records = read_records(Path(checker.wd_fname))
+        records['Q5003']['claims']['P131'][0]['mainsnak']['datavalue']['value'] = item(3001)
+        write_records(Path(checker.wd_fname), records)
+        write_records(Path('data/subdivisions.jsonl'), {
+            'Q3001': entity('Q3001', 'Unparented subdivision', {
+                'P31': [item(constants.SUBDIV_ID)],
+            }),
+        })
+        rows = checker.hierarchy_check()['wrong_hierarchy']
+        self.assertEqual([row['wikidata_id'] for row in rows], ['Q5001', 'Q5003'])
+        self.assertEqual(rows[1]['current'][0]['id'], 'Q3001')
 
     def test_complete_report_survives_an_effective_date_http_failure(self):
         Path(checker.lgd_fname).write_text(

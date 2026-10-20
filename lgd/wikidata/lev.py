@@ -1,8 +1,6 @@
 # Source: https://github.com/devdatalab/masala-merge
 # Modified to include some extra pairings
 
-import string
-
 # specify single-letter pairs that have a low cost match.
 # specify each one twice, i.e. both directions so can be a fast lookup
 pair_1to1 = set(['YE', 'EY', 'UW', 'WU', 'DT', 'TD', 'AE', 'AI', 'AO', 'AU', 'EA', 'EI', 'EO', 'EU', 'IA', 'IE', 'IO', 'IU', 'OA', 'OE', 'OI', 'OU', 'UA', 'UE', 'UI', 'UO', 'SZ', 'ZS', 'BV', 'VB', 'OW', 'WO', 'YI', 'IY', 'RD', 'DR', 'CK', 'KC', 'CS', 'SC', 'GJ', 'JG', 'ZJ', 'JZ', 'XZ', 'ZX', 'XS', 'SX', 'XJ', 'JS', 'SZ', 'ZS', 'KQ', 'QK', 'WV', 'VW', 'BV', 'VB', 'PF', 'FP', 'KG', 'GK'])
@@ -187,25 +185,3 @@ def masala_levenshtein(str1, str2):
         if min_dist >= MIN_DIST_FILTER: return MIN_DIST_FILTER
 
     return matrix[l2][l1]
-
-def get_digits(s):
-    digits = ""
-    for c in s:
-        # if this is a digit (ascii value between 48 and 57)
-        if ord(c) >= 48 and ord(c) <= 57:
-            digits += c
-    return digits
-
-
-#calculates additional cost of comparison between two string.
-#returns additional cost
-def digit_compare(string1, string2):
-
-    first_digits = get_digits(string1)
-    second_digits = get_digits(string1)
-
-    # run levenshtein again on just the digit strings
-    digit_penalty = digit_cost * levenshtein(first_digits, second_digits)
-
-    # return digit penalty
-    return digit_penalty

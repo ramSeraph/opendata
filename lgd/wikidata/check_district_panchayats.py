@@ -2,17 +2,20 @@ import csv
 from pprint import pprint
 
 from common import (
-    base_entity_checks, write_report,
-    get_label, get_lgd_codes, state_info,
-    get_located_in_ids, get_instance_of_ids,
-    get_wd_entity_lgd_mapping, get_coextensive_ids,
+    base_entity_checks,
+    get_entry_from_wd_id,
+    get_label,
+    get_lgd_codes,
+    get_lgd_data,
+    get_located_in_ids,
     get_overlap_ids,
-    get_wd_data, get_lgd_data, get_entry_from_wd_id,
-    DIST_COUNCIL_OF_INDIA_ID, P_LGD_LOCAL_BODY_CODE
+    get_wd_data,
+    get_wd_entity_lgd_mapping,
+    invert_lgd_mapping,
+    write_report,
 )
-
-from filters import filter_state, filter_district_panchayat, filter_district
-
+from constants import DIST_COUNCIL_OF_INDIA_ID, P_LGD_LOCAL_BODY_CODE, state_info
+from filters import filter_district, filter_district_panchayat, filter_state
 from suffixes import DISTRICT_PANCHAYAT_PREFIXES, DISTRICT_PANCHAYAT_SUFFIXES
 
 lgd_fname = 'data/lgd/pri_local_bodies.csv'
@@ -36,37 +39,15 @@ def get_district_panchayat_and_district_lgd_mappings():
             d_to_dp[d_code].append(dp_code)
     return (dp_to_d, d_to_dp)
 
-g_dp_to_d = None
-g_d_to_dp = None
-
-def get_coextensive_district(dp_code):
-    global g_dp_to_d
-    global g_d_to_dp
-
-    if g_dp_to_d is None:
-        g_dp_to_d, g_d_to_dp = get_district_panchayat_and_district_lgd_mappings()
-
-    dist_codes = g_dp_to_d[dp_code]
-    if len(dist_codes) != 1:
-        return None
-    dist_code = dist_codes[0]
-    dp_codes_for_dist = g_d_to_dp[dist_code]
-    if len(dp_codes_for_dist) != 1:
-        return None
-    return dist_code
-
-
 def is_lgd_dist_panchayat(lgd_entry):
-    if lgd_entry['Localbody Type Code'] == '1':
-        return True
-    return False
+    return lgd_entry['Localbody Type Code'] == '1'
 
 
 def hierarchy_check():
     report = { 'wrong_hierarchy': [] }
     
     wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
-    wd_state_map_rev = {v:k for k,v in wd_state_map.items() }
+    wd_state_map_rev = invert_lgd_mapping(wd_state_map)
 
     lgd_dist_panchayat_data = get_lgd_data(lgd_fname, lgd_id_key, filter_fn=is_lgd_dist_panchayat)
 
@@ -109,25 +90,18 @@ def hierarchy_check():
 
 def suffix_check():
     report = { 'wrong_suffix': [] }
-    by_wid = {}
-    for s_code, e in state_info.items():
-        e['state_code'] = s_code
-        wid = e['wd_id']
-        by_wid[wid] = e
-
     wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
     filtered = get_wd_data(wd_fname, filter_district_panchayat)
     for k,v in filtered.items():
-        inst_of_ids = get_instance_of_ids(v)
-        if len(inst_of_ids) != 1:
+        parent_ids = get_located_in_ids(v)
+        if len(parent_ids) != 1:
             continue
-        inst_of_wid = f'Q{inst_of_ids[0]}'
-        if inst_of_wid not in wd_state_map:
+        state_lgd_code = wd_state_map.get(f'Q{parent_ids[0]}')
+        if state_lgd_code not in state_info:
             continue
-        state_lgd_code = wd_state_map[inst_of_wid]
         info = state_info[state_lgd_code]
         expected_suffix = info.get('dp_suffix', None)
-        if expected_suffix is None:
+        if not expected_suffix:
             continue
         label = get_label(v)
         if label.upper().endswith(f' {expected_suffix.upper()}'):
@@ -157,11 +131,9 @@ def get_correction_info(lgd_entry):
 
     if g_wd_state_map_rev is None:
         wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
-        g_wd_state_map_rev = {v:k for k,v in wd_state_map.items()}
+        g_wd_state_map_rev = invert_lgd_mapping(wd_state_map)
     loc_in = g_wd_state_map_rev.get(scode)
 
-    #i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
-    #inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
     correction_info = {
         'label': label,
         'desc': desc,
@@ -178,9 +150,9 @@ def get_correction_info(lgd_entry):
 def territory_overlaps_check():
     report = { 'mismatch_territory_overlaps': [] }
     wd_dist_map = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district, 'district')
-    wd_dist_map_rev = {v:k for k,v in wd_dist_map.items()}
+    wd_dist_map_rev = invert_lgd_mapping(wd_dist_map)
     lgd_dist_data = get_lgd_data('data/lgd/districts.csv', 'District Code')
-    dp_to_d, d_to_dp = get_district_panchayat_and_district_lgd_mappings()
+    dp_to_d, _ = get_district_panchayat_and_district_lgd_mappings()
     filtered = get_wd_data(wd_fname, filter_district_panchayat)
     for k,v in filtered.items():
         label = get_label(v)
@@ -214,55 +186,6 @@ def territory_overlaps_check():
         report['mismatch_territory_overlaps'].append(entry)
     return report
    
-def coextensiveness_check():
-    report = {'muliple_coextensive_withs': [],
-              'missing_coextensive_with': [],
-              'wrong_coextensive_with': [],
-              'missing_rev_coextensive_with': []}
-
-    wd_dist_map = get_wd_entity_lgd_mapping('data/districts.jsonl', filter_district, 'district')
-    wd_dist_map_rev = {v:k for k,v in wd_dist_map.items()}
-    filtered_dists = get_wd_data('data/districts.jsonl', filter_district)
-    filtered = get_wd_data(wd_fname, filter_district_panchayat)
-    for k,v in filtered.items():
-        label = get_label(v)
-        lgd_codes = get_lgd_codes(v)
-        if len(lgd_codes) != 1:
-            continue
-        lgd_code = lgd_codes[0]
-        dcode = get_coextensive_district(lgd_code)
-        d_wd_id = None
-        if dcode is not None:
-            d_wd_id = wd_dist_map_rev[dcode]
-            dist_v = filtered_dists[d_wd_id]
-            d_coex_ids = get_coextensive_ids(dist_v)
-            if k[1:] not in d_coex_ids:
-                report['missing_rev_coextensive_with'].append({ 'wikidata_id': k, 'wikidata_label': label,
-                                                                'expected_in': get_entry_from_wd_id(d_wd_id[1:]) })
-
-        coex_ids = get_coextensive_ids(v)
-        if len(coex_ids) == 0:
-            if dcode is None:
-                continue
-            report['missing_coextensive_with'].append({ 'wikidata_id': k, 'wikidata_label': label,
-                                                        'expected': get_entry_from_wd_id(d_wd_id[1:]) })
-            continue
-        if len(coex_ids) > 1:
-            report['multiple_coextensive_with'].append({ 'wikidata_id': k, 'wikidata_label': label,
-                                                         'current': [ get_entry_from_wd_id(e) for e in coex_ids ] })
-            continue
-
-        coex_id = coex_ids[0]
-        coex_wd_id = f'Q{coex_id}'
-        if coex_wd_id == d_wd_id:
-            continue
-
-        report['wrong_coextensive_with'].append({ 'wikidata_id': k, 'wikidata_label': label,
-                                                  'current': get_entry_from_wd_id(coex_id),
-                                                  'expected': get_entry_from_wd_id(d_wd_id[1:]) })
-
-    return report
-
 wd_state_data = None
 def check_if_located_in_state(wid):
     global wd_state_data
@@ -292,8 +215,6 @@ if __name__ == '__main__':
     report.update(hierarchy_check())
     report.update(suffix_check())
     report.update(territory_overlaps_check())
-    #report.update(coextensiveness_check())
-    #report.update(inst_of_check())
     pprint(report)
     write_report(report, 'district_panchayats.json')
 

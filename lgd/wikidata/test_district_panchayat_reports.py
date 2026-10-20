@@ -3,15 +3,16 @@ import csv
 import io
 import json
 import os
-from pathlib import Path
 import runpy
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import check_district_panchayats as checker
 import common
-from raw_wikidata import write_records
+import constants
+from raw_wikidata import read_records, write_records
 from test_division_reports import entity, item
 
 
@@ -28,27 +29,27 @@ class DistrictPanchayatReportTests(unittest.TestCase):
         Path('data/lgd').mkdir(parents=True)
         write_records(Path('data/states.jsonl'), {
             'Q1498': entity('Q1498', 'Uttar Pradesh', {
-                'P31': [item(common.STATE_ID)], 'P12747': ['9'], 'P1366': [item(1499)],
+                'P31': [item(constants.STATE_ID)], 'P12747': ['9'], 'P1366': [item(1499)],
             }),
             'Q1174': entity('Q1174', 'Haryana', {
-                'P31': [item(common.STATE_ID)], 'P12747': ['6'],
+                'P31': [item(constants.STATE_ID)], 'P12747': ['6'],
             }),
         })
         write_records(Path('data/districts.jsonl'), {
             'Q2001': entity('Q2001', 'Known district', {
-                'P31': [item(common.DIST_ID)], 'P12746': ['100'],
+                'P31': [item(constants.DIST_ID)], 'P12746': ['100'],
             }),
             'Q2002': entity('Q2002', 'Unmapped district', {
-                'P31': [item(common.DIST_ID)],
+                'P31': [item(constants.DIST_ID)],
             }),
         })
         write_records(Path('data/district_panchayats.jsonl'), {
             f'Q{qid}': entity(f'Q{qid}', f'Example {code}', {
-                'P31': [item(common.DIST_COUNCIL_OF_INDIA_ID)],
-                'P17': [item(common.INDIA_ID)],
+                'P31': [item(constants.DIST_COUNCIL_OF_INDIA_ID)],
+                'P17': [item(constants.INDIA_ID)],
                 'P131': [item(parent)],
-                common.P_LGD_LOCAL_BODY_CODE: [code],
-                common.P_TERRITORY_OVERLAPS: [item(2002)],
+                constants.P_LGD_LOCAL_BODY_CODE: [code],
+                constants.P_TERRITORY_OVERLAPS: [item(2002)],
             }) for qid, code, parent in [(4001, '101', 1498), (4002, '102', 1498), (4003, '103', 1174)]
         })
         fields = ['Localbody Code', 'Localbody Name (In English)', 'Localbody Type Code', 'State Code', 'State Name']
@@ -101,6 +102,15 @@ class DistrictPanchayatReportTests(unittest.TestCase):
         self.assertIsNone(report['missing'][0]['correction_info']['loc_in'])
         self.assertEqual(report['wrong_hierarchy'][0]['unresolved_state_code'], '9')
         self.assertEqual(len(report['mismatch_territory_overlaps']), 3)
+
+    def test_suffix_is_selected_from_the_parent_state(self):
+        rows = checker.suffix_check()['wrong_suffix']
+        self.assertEqual([row['wikidata_id'] for row in rows], ['Q4003'])
+        self.assertEqual(rows[0]['expected_suffix'], constants.state_info['6']['dp_suffix'])
+        records = read_records(Path(checker.wd_fname))
+        records['Q4003']['labels']['en']['value'] += ' ' + rows[0]['expected_suffix']
+        write_records(Path(checker.wd_fname), records)
+        self.assertEqual(checker.suffix_check()['wrong_suffix'], [])
 
 
 if __name__ == '__main__':

@@ -2,18 +2,18 @@ import contextlib
 import io
 import json
 import os
-from pathlib import Path
 import runpy
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import check_states
 import common
+import constants
 from filters import filter_state
 from raw_wikidata import write_records
 from test_division_reports import entity, item
-
 
 CAPITAL_DISTRICT_OR_TERRITORY = 395994
 
@@ -30,8 +30,8 @@ class StateReportTests(unittest.TestCase):
         self.enterContext(patch.object(common, 'page_cache', {
             qid: {'id': f'Q{qid}', 'label': label}
             for qid, label in {
-                common.UT_ID: 'union territory of India',
-                common.STATE_ID: 'state of India',
+                constants.UT_ID: 'union territory of India',
+                constants.STATE_ID: 'state of India',
                 CAPITAL_DISTRICT_OR_TERRITORY: 'capital district or territory',
                 56061: 'administrative territorial entity',
             }.items()
@@ -43,9 +43,9 @@ class StateReportTests(unittest.TestCase):
         write_records(Path('data/states.jsonl'), {
             qid: entity(qid, label, {
                 'P31': [item(kind) for kind in types],
-                'P17': [item(common.INDIA_ID)],
-                'P131': [item(common.INDIA_ID)],
-                common.P_LGD_STATE_CODE: ['7'],
+                'P17': [item(constants.INDIA_ID)],
+                'P131': [item(constants.INDIA_ID)],
+                constants.P_LGD_STATE_CODE: ['7'],
             }),
         })
         Path('data/lgd/states.csv').write_text(
@@ -55,18 +55,18 @@ class StateReportTests(unittest.TestCase):
 
     def test_delhi_accepts_its_union_territory_and_capital_territory_types(self):
         for types in [
-            [common.UT_ID],
-            [common.UT_ID, CAPITAL_DISTRICT_OR_TERRITORY],
-            [CAPITAL_DISTRICT_OR_TERRITORY, common.UT_ID],
+            [constants.UT_ID],
+            [constants.UT_ID, CAPITAL_DISTRICT_OR_TERRITORY],
+            [CAPITAL_DISTRICT_OR_TERRITORY, constants.UT_ID],
         ]:
             with self.subTest(types=types):
                 self.assertTrue(all(not rows for rows in self.report(types).values()))
 
     def test_unexpected_delhi_types_remain_reported(self):
         for types in [
-            [common.UT_ID, CAPITAL_DISTRICT_OR_TERRITORY, 56061],
-            [common.UT_ID, 56061],
-            [common.STATE_ID, CAPITAL_DISTRICT_OR_TERRITORY],
+            [constants.UT_ID, CAPITAL_DISTRICT_OR_TERRITORY, 56061],
+            [constants.UT_ID, 56061],
+            [constants.STATE_ID, CAPITAL_DISTRICT_OR_TERRITORY],
         ]:
             with self.subTest(types=types):
                 rows = self.report(types)['multiple_instance_of']
@@ -77,12 +77,12 @@ class StateReportTests(unittest.TestCase):
                 )
 
     def test_other_states_do_not_inherit_delhis_exception(self):
-        rows = self.report([common.UT_ID, CAPITAL_DISTRICT_OR_TERRITORY],
+        rows = self.report([constants.UT_ID, CAPITAL_DISTRICT_OR_TERRITORY],
                            qid='Q1174')['multiple_instance_of']
         self.assertEqual([row['wikidata_id'] for row in rows], ['Q1174'])
 
     def test_base_checker_remains_strict_without_the_state_exception(self):
-        self.report([common.UT_ID, CAPITAL_DISTRICT_OR_TERRITORY])
+        self.report([constants.UT_ID, CAPITAL_DISTRICT_OR_TERRITORY])
         report = common.base_entity_checks(
             has_lgd=False, wd_fname='data/states.jsonl', wd_filter_fn=filter_state,
             check_expected_located_in_fn=lambda _: {'ok': True},

@@ -1,15 +1,20 @@
 from pprint import pprint
-from datetime import datetime
 
 from common import (
-    base_entity_checks, write_report,
-    get_label, get_lgd_codes,
-    get_located_in_ids, get_wd_entity_lgd_mapping,
-    get_wd_data, get_lgd_data, get_entry_from_wd_id,
-    P_LGD_DIST_CODE
+    base_entity_checks,
+    correction_inception,
+    get_entry_from_wd_id,
+    get_label,
+    get_lgd_codes,
+    get_lgd_data,
+    get_located_in_ids,
+    get_wd_data,
+    get_wd_entity_lgd_mapping,
+    invert_lgd_mapping,
+    write_report,
 )
-
-from filters import filter_district, filter_state, filter_division
+from constants import DIST_ID, P_LGD_DIST_CODE
+from filters import filter_district, filter_division, filter_state
 from suffixes import DISTRICT_PREFIXES, DISTRICT_SUFFIXES
 
 lgd_fname = 'data/lgd/districts.csv'
@@ -21,20 +26,14 @@ def hierarchy_check():
     report = { 'wrong_hierarchy': [] }
 
     wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
-    wd_state_map_rev = {v:k for k,v in wd_state_map.items() }
+    wd_state_map_rev = invert_lgd_mapping(wd_state_map)
 
     filtered_divisions = get_wd_data('data/divisions.jsonl', filter_division)
-    for k,v in filtered_divisions.items():
-        located_in_ids = get_located_in_ids(v)
-        if len(located_in_ids) != 1:
-            continue
-        v['super_id'] = located_in_ids[0]
-
     lgd_dist_data = get_lgd_data(lgd_fname, lgd_id_key)
 
     filtered = get_wd_data(wd_fname, filter_district)
     for k,v in filtered.items():
-        lgd_codes = get_lgd_codes(v)
+        lgd_codes = get_lgd_codes(v, code_type='district')
         if len(lgd_codes) != 1:
             continue
         lgd_code = lgd_codes[0]
@@ -42,7 +41,16 @@ def hierarchy_check():
             continue
         lgd_entry = lgd_dist_data[lgd_code]
         expected_lgd_state_code = lgd_entry['State Code']
-        expected_state_wd_id = wd_state_map_rev[expected_lgd_state_code]
+        expected_state_wd_id = wd_state_map_rev.get(expected_lgd_state_code)
+        if expected_state_wd_id is None:
+            report['wrong_hierarchy'].append({
+                'wikidata_id': k,
+                'wikidata_label': get_label(v),
+                'current': [get_entry_from_wd_id(i) for i in get_located_in_ids(v)],
+                'expected': [{'label': f"{lgd_entry['State Name (In English)']} (LGD state {expected_lgd_state_code}; Wikidata mapping unresolved)"}],
+                'unresolved_state_code': expected_lgd_state_code,
+            })
+            continue
         expected_state_id = int(expected_state_wd_id[1:])
 
         located_in_ids = get_located_in_ids(v)
@@ -53,8 +61,9 @@ def hierarchy_check():
         state_id = None
         hierarchy = [ parent_id ]
         if parent_wd_id in filtered_divisions:
-            state_id = filtered_divisions[parent_wd_id]['super_id']
-            hierarchy = [ state_id ] + hierarchy
+            state_ids = get_located_in_ids(filtered_divisions[parent_wd_id])
+            state_id = state_ids[0] if len(state_ids) == 1 else None
+            hierarchy = state_ids + hierarchy
         else:
             state_id = parent_id
         if f'Q{state_id}' not in wd_state_map or state_id != expected_state_id:
@@ -93,17 +102,14 @@ def get_correction_info(lgd_entry):
     sname = lgd_entry['State Name (In English)']
     desc = f'district in {sname}, India'
 
-    inst_of = 'Q{DIST_ID}'
+    inst_of = f'Q{DIST_ID}'
 
     if g_wd_state_map_rev is None:
         wd_state_map = get_wd_entity_lgd_mapping('data/states.jsonl', filter_state, 'state')
-        g_wd_state_map_rev = {v:k for k,v in wd_state_map.items()}
-    loc_in = g_wd_state_map_rev[scode]
+        g_wd_state_map_rev = invert_lgd_mapping(wd_state_map)
+    loc_in = g_wd_state_map_rev.get(scode)
 
-    inception = None
-    if lgd_entry.get('Effective Date'):
-        i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
-        inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
+    inception = correction_inception(lgd_entry)
     correction_info = {
         'label': label,
         'desc': desc,
@@ -113,6 +119,8 @@ def get_correction_info(lgd_entry):
         'lgd_code': lgd_entry['lgd_code'],
         'lgd_code_prop': P_LGD_DIST_CODE,
     }
+    if loc_in is None:
+        correction_info['unresolved_parent'] = f'{sname} (LGD state {scode})'
     return correction_info
 
 

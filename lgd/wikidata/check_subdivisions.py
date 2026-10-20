@@ -1,13 +1,19 @@
 from pprint import pprint
 
 from common import (
-    base_entity_checks, write_report,
-    get_label, get_located_in_ids, get_instance_of_ids,
-    get_wd_entity_lgd_mapping, get_wd_data,
-    get_entry_from_wd_id, get_lgd_data, state_info, get_contains_ids
+    base_entity_checks,
+    get_contains_ids,
+    get_entry_from_wd_id,
+    get_instance_of_ids,
+    get_label,
+    get_lgd_data,
+    get_located_in_ids,
+    get_wd_data,
+    get_wd_entity_lgd_mapping,
+    write_report,
 )
-
-from filters import filter_district, filter_subdivision, filter_subdistrict
+from constants import state_info
+from filters import filter_district, filter_subdistrict, filter_subdivision
 from suffixes import SUBDIVISION_PREFIXES, SUBDIVISION_SUFFIXES
 
 wd_fname = 'data/subdivisions.jsonl'
@@ -79,13 +85,7 @@ def inst_of_check():
 
 def suffix_check():
     report = { 'wrong_suffix': [] }
-    by_wid = {}
-    for s_code, e in state_info.items():
-        e['state_code'] = s_code
-        if 'wd_subdiv_id' not in e:
-            continue
-        wid = e['wd_subdiv_id']
-        by_wid[wid] = e
+    by_wid = {info['wd_subdiv_id']: info for info in state_info.values() if 'wd_subdiv_id' in info}
 
     filtered = get_wd_data(wd_fname, filter_subdivision)
     for k,v in filtered.items():

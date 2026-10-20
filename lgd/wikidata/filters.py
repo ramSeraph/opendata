@@ -1,9 +1,14 @@
 from common import is_current_instance_of
-from common import (
-   STATE_ID, UT_ID,
-   ALL_DIV_IDS, DIST_ID, DIST_COUNCIL_OF_INDIA_ID,
-   ALL_SUBDIV_IDS, ALL_SUBDIST_IDS, ALL_BLOCK_IDS,
-   BLOCK_PANCHAYAT_ID
+from constants import (
+    ALL_BLOCK_IDS,
+    ALL_DIV_IDS,
+    ALL_SUBDIST_IDS,
+    ALL_SUBDIV_IDS,
+    BLOCK_PANCHAYAT_ID,
+    DIST_COUNCIL_OF_INDIA_ID,
+    DIST_ID,
+    STATE_ID,
+    UT_ID,
 )
 
 

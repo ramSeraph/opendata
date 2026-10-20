@@ -1,14 +1,15 @@
 import contextlib
 import io
 import os
-from pathlib import Path
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import check_divisions
 import common
-from raw_wikidata import write_records
+import constants
+from raw_wikidata import read_records, write_records
 
 
 def entity(qid, label, claims):
@@ -41,27 +42,27 @@ class DivisionReportTests(unittest.TestCase):
         Path('data/lgd').mkdir(parents=True)
         write_records(Path('data/states.jsonl'), {
             'Q1498': entity('Q1498', 'Uttar Pradesh', {
-                'P31': [item(common.STATE_ID)], 'P12747': ['9'], 'P1366': [item(1499)],
+                'P31': [item(constants.STATE_ID)], 'P12747': ['9'], 'P1366': [item(1499)],
             }),
             'Q1174': entity('Q1174', 'Haryana', {
-                'P31': [item(common.STATE_ID)], 'P12747': ['6'],
+                'P31': [item(constants.STATE_ID)], 'P12747': ['6'],
             }),
         })
         self.divisions = {
             'Q1001': entity('Q1001', 'Example UP division', {
-                'P31': [item(common.DIV_ID)], 'P131': [item(1498)],
+                'P31': [item(constants.DIV_ID)], 'P131': [item(1498)],
             }),
             'Q1002': entity('Q1002', 'Example Haryana division', {
-                'P31': [item(common.DIV_ID)], 'P131': [item(1174)],
+                'P31': [item(constants.DIV_ID)], 'P131': [item(1174)],
             }),
         }
         write_records(Path('data/divisions.jsonl'), self.divisions)
         write_records(Path('data/districts.jsonl'), {
             'Q2001': entity('Q2001', 'Example Haryana district', {
-                'P31': [item(common.DIST_ID)], 'P12746': ['1'],
+                'P31': [item(constants.DIST_ID)], 'P12746': ['1'],
             }),
             'Q2002': entity('Q2002', 'Example UP district', {
-                'P31': [item(common.DIST_ID)], 'P12746': ['2'],
+                'P31': [item(constants.DIST_ID)], 'P12746': ['2'],
             }),
         })
         Path('data/lgd/states.csv').write_text(
@@ -89,6 +90,23 @@ class DivisionReportTests(unittest.TestCase):
             'element': {'id': 'Q2002', 'label': 'Example UP district'},
             'child': {'id': 'Q1002', 'label': 'Example Haryana division'},
         }])
+
+    def test_state_without_an_lgd_code_does_not_crash_dependent_checks(self):
+        states = read_records(Path('data/states.jsonl'))
+        del states['Q1174']['claims']['P12747']
+        write_records(Path('data/states.jsonl'), states)
+        self.assertEqual(check_divisions.inst_of_check()['wrong_inst_of'], [])
+        self.assertEqual(check_divisions.contains_completeness_check()['mismatch_in_contains'], [])
+
+    def test_district_without_an_lgd_code_does_not_crash_inverse_check(self):
+        districts = read_records(Path('data/districts.jsonl'))
+        del districts['Q2001']['claims']['P12746']
+        write_records(Path('data/districts.jsonl'), districts)
+        self.divisions['Q1002']['claims']['P150'] = [
+            {'rank': 'normal', 'mainsnak': {'datavalue': {'value': item(2001)}}},
+        ]
+        write_records(Path('data/divisions.jsonl'), self.divisions)
+        self.assertEqual(check_divisions.contains_inverse_check()['missing_contained_in'], [])
 
 
 if __name__ == '__main__':

@@ -1,12 +1,11 @@
 [project]
 name = "wikidata"
 version = "0.1.0"
-description = "Add your description here"
+description = "Compare Indian administrative entities in LGD and Wikidata"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "bs4>=0.0.2",
-    "pywikibot>=10.0.0",
+    "beautifulsoup4>=4.12.3",
     "requests>=2.32.3",
     "unidecode>=1.3.8",
 ]

@@ -1,17 +1,20 @@
 from pprint import pprint
 
 from common import (
-    base_entity_checks, write_report,
-    get_label, get_located_in_ids, get_instance_of_ids,
-    get_wd_entity_lgd_mapping, get_wd_data,
-    get_entry_from_wd_id, state_info, get_contains_ids,
-    get_lgd_data
+    base_entity_checks,
+    get_contains_ids,
+    get_entry_from_wd_id,
+    get_instance_of_ids,
+    get_label,
+    get_lgd_data,
+    get_located_in_ids,
+    get_wd_data,
+    get_wd_entity_lgd_mapping,
+    write_report,
 )
-
-from filters import filter_state, filter_division, filter_district
-
+from constants import state_info
+from filters import filter_district, filter_division, filter_state
 from suffixes import DIVISION_PREFIXES, DIVISION_SUFFIXES
-
 
 wd_fname = 'data/divisions.jsonl'
 def hierarchy_check():
@@ -66,7 +69,9 @@ def inst_of_check():
         if parent_wid not in state_mapping:
             continue
 
-        info = state_info[state_mapping[parent_wid]]
+        info = state_info.get(state_mapping[parent_wid])
+        if info is None:
+            continue
         if 'wd_div_id' in info:
             wd_div_id = info['wd_div_id']
             expected_inst_of_id = int(wd_div_id[1:])
@@ -145,7 +150,9 @@ def contains_inverse_check():
 
     for d_wid in missing_in_contained:
         d_lgd_code = dist_mapping[d_wid]
-        d_lgd_entry = lgd_dist_data[d_lgd_code]
+        d_lgd_entry = lgd_dist_data.get(d_lgd_code)
+        if d_lgd_entry is None:
+            continue
         scode = d_lgd_entry['State Code']
         sinfo = state_info[scode]
         expected_in_main_hierarchy = sinfo.get('divs_in_main_hierarchy', True)
@@ -195,7 +202,9 @@ def contains_completeness_check():
             # cannot be compared with LGD without a state mapping.
             continue
         scode = state_mapping[parent_wid]
-        lgd_entry = lgd_state_data[scode]
+        lgd_entry = lgd_state_data.get(scode)
+        if lgd_entry is None:
+            continue
         state_code = lgd_entry['State Code']
         state_name = lgd_entry['State Name (In English)']
         contains_ids = get_contains_ids(v)
@@ -210,7 +219,7 @@ def contains_completeness_check():
 
     for scode, info in dists_by_state_from_divs.items():
         dists_in_divs = set(info['entries'])
-        all_state_dists = set([ e['id'] for e in dists_by_state[scode]['entries'] ])
+        all_state_dists = {e['id'] for e in dists_by_state.get(scode, {}).get('entries', [])}
         missing_in_divs = all_state_dists - dists_in_divs
         extra_in_divs = dists_in_divs - all_state_dists
         if len(missing_in_divs) > 0 or len(extra_in_divs) > 0:
@@ -240,7 +249,7 @@ if __name__ == '__main__':
     report = base_entity_checks(entity_type='division',
                                 has_lgd=False,
                                 check_expected_located_in_fn=check_if_located_in_state,
-                                name_suffix_drops=DIVISION_PREFIXES, name_prefix_drops=DIVISION_SUFFIXES,
+                                name_prefix_drops=DIVISION_PREFIXES, name_suffix_drops=DIVISION_SUFFIXES,
                                 wd_fname=wd_fname, wd_filter_fn=filter_division)
     report.update(hierarchy_check())
     report.update(suffix_check())

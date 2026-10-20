@@ -1,427 +1,43 @@
-import re
-import csv
 import copy
+import csv
 import json
+import re
 import time
-from pathlib import Path
+from collections import Counter
 from datetime import datetime
+from pathlib import Path
 
 import requests
-from requests.models import PreparedRequest
 import unidecode
-from raw_wikidata import client, download_query
 from bs4 import BeautifulSoup
-
+from constants import (
+    INDIA_ID,
+    P_CENSUS_CODE,
+    P_COEXTENSIVE_WITH,
+    P_CONTAINS,
+    P_COORDINATE_LOCATION,
+    P_COUNTRY,
+    P_DISSOLVED,
+    P_END_TIME,
+    P_INSTANCE_OF,
+    P_LGD_BLOCK_CODE,
+    P_LGD_DIST_CODE,
+    P_LGD_LOCAL_BODY_CODE,
+    P_LGD_STATE_CODE,
+    P_LGD_SUBDIST_CODE,
+    P_LGD_VILLAGE_CODE,
+    P_LOCATED_IN,
+    P_REPLACED_BY,
+    P_TERRITORY_OVERLAPS,
+    PROPOSED_ENTITY,
+)
 from lev import masala_levenshtein
+from raw_wikidata import client
+from requests.models import PreparedRequest
 
-st_himachal = { "name": "Himachal pradesh", "suffix": "Subtehsil", "type": "Subtehsil", "wd_id": "Q123264643" }
-st_haryana = { "name": "Haryana", "suffix": "Subtehsil", "type": "Subtehsil", "wd_id": "Q123264644" }
-state_info = {
-    "35": {
-        "name": "Andaman And Nicobar Islands",
-        "suffix": "Tehsil",
-        "type": "Tehsil", 
-        "wd_id": "Q122987709", 
-        "dp_suffix": "Zilla Parishad",
-        "bp_suffix": "Panchayat Samiti",
-    },
-    "28": {
-        "name": "Andhra Pradesh",
-        "suffix": "Mandal",
-        "type": "Tehsil",
-        "wd_id": "Q122987710",
-        "wd_block_id": "Q122987710",
-        "wd_subdiv_id": "Q125626445",
-        "subdiv_label_suffix": "revenue division",
-        "dp_suffix": "Zilla Parishad",
-        "bp_suffix": "Mandal Panchayat",
-    },
-    "12": {
-        "name": "Arunachal Pradesh",
-        "suffix": "Circle",
-        "type": "Tehsil", 
-        "long": "Circle",
-        "wd_id": "Q122987711",
-        "wd_div_id": "Q125907363",
-        "divs_in_main_hierarchy": False,
-        "dp_suffix": "Zilla Parishad",
-    },
-    "18": {
-        "name": "Assam",
-        "suffix": "Circle",
-        "type": "Tehsil",
-        "long": "Circle",
-        "wd_id": "Q122987712",
-        "wd_div_id": "Q125907354",
-        "wd_block_id": "Q123009185",
-        "dp_suffix": "Zilla Parishad",
-        "bp_suffix": "Anchalik Panchayat",
-    },
-    "10": {
-        "name": "Bihar",
-        "suffix": "Block",
-        "type": "Block",
-        "wd_id": "Q122987713",
-        "wd_div_id": "Q125907353",
-        "wd_subdiv_id": "Q125631936",
-        "dp_suffix": "Zilla Parishad",
-        "bp_suffix": "Panchayat Samiti",
-    }, # tehsils exist and are called aanchals
-    "4": { 
-        "name": "Chandigarh",
-        "suffix": "Tehsil",
-        "type": "Tehsil",
-        "wd_id": "Q122987714",
-        "dp_suffix": "Zilla Parishad",
-        "bp_suffix": "Panchayat Samiti",
-    }, # TODO: check 
-    "22": {
-        "name": "Chhattisgarh",
-        "suffix": "Tehsil",
-        "type": "Tehsil",
-        "wd_id": "Q122987715", 
-        "wd_div_id": "Q125907349",
-        "wd_block_id": "Q123009223",
-        "dp_suffix": "Zilla Panchayat",
-        "bp_suffix": "Janpad Panchayat",
-     }, # TODO: check 
-    "7": {
-        "name": "Delhi",
-        "suffix": "Tehsil",
-        "type": "Tehsil",
-        "wd_id": "Q122987716",
-        "wd_div_id": "Q125907356",
-    }, # TODO: check 
-    "30": {
-        "name": "Goa",
-        "suffix": "Taluk",
-        "type": "Tehsil",
-        "wd_id": "Q122987717",
-        "dp_suffix": "Zilla Panchayat",
-     },
-    "24": {
-        "name": "Gujarat",
-        "suffix": "Taluka",
-        "type": "Tehsil",
-        "wd_id": "Q122987718",
-        "wd_subdiv_id": "Q125923559",
-        "dp_suffix": "District Panchayat",
-        "bp_suffix": "Taluk Panchayat",
-    }, # TODO: check 
-    "6": {
-        "name": "Haryana",
-        "suffix": "Tehsil",
-        "type": "Tehsil",
-        "wd_id": "Q122987719",
-        "wd_div_id": "Q125907351",
-        "wd_block_id": "Q126118370",
-        "alts": [ st_haryana ],
-        "dp_suffix": "Zilla Panchayat",
-        "bp_suffix": "Panchayat Samiti",
-    }, # TODO: check 
-    "2": {
-        "name": "Himachal Pradesh",
-        "suffix": "Tehsil",
-        "type": "Tehsil",
-        "wd_id": "Q122987720",
-        "wd_div_id": "Q125907359",
-        "divs_in_main_hierarchy": False,
-        "alts": [ st_himachal ],
-        "dp_suffix": "Zilla Panchayat",
-        "bp_suffix": "Panchayat Samiti",
-    },
-    "1": {
-        "name": "Jammu And Kashmir",
-        "suffix": "Tehsil",
-        "type": "Tehsil",
-        "wd_id": "Q122987721",
-        "wd_div_id": "Q125907352",
-        "dp_suffix": "District Planning and Development Board",
-        "bp_suffix": "Block Development Council",
-    }, # TODO: check 
-    "20": {
-        "name": "Jharkhand",
-        "suffix": "Block",
-        "type": "Block",
-        "wd_id": "Q122987723",
-        "wd_subdiv_id": "Q125919353",
-        "wd_div_id": "Q125907347",
-        "dp_suffix": "Zilla Panchayat",
-        "bp_suffix": "Panchayat Samiti",
-    }, # TODO: check 
-    "29": {
-        "name": "Karnataka",
-        "suffix": "Taluk",
-        "type": "Tehsil",
-        "wd_id": "Q122987724",
-        "wd_div_id": "Q125907360",
-        "dp_suffix": "Zilla Panchayat",
-        "bp_suffix": "Taluka Panchayat",
-    }, # TODO: check 
-    "32": {
-        "name": "Kerala",
-        "suffix": "Taluk",
-        "type": "Tehsil",
-        "wd_id": "Q7680362",
-        "wd_subdiv_id": "Q125627541",
-        "subdiv_label_suffix": "revenue division",
-        "dp_suffix": "District Panchayat",
-        "bp_suffix": "Block Panchayat",
-    }, # TODO: check 
-    "37": {
-        "name": "Ladakh",
-        "suffix": "Tehsil",
-        "type": "Tehsil",
-        "wd_id": "Q122987726",
-        "wd_div_id": "Q125907364",
-        "divs_in_main_hierarchy": False,
-        "dp_suffix": "District Planning and Development Board",
-        "bp_suffix": "Block Development Council",
-    }, # TODO: check 
-    "31": { 
-        "name": "Lakshadweep",
-        "suffix": "Subdivision",
-        "type": "Subdivision",
-        "wd_id": "Q122987727",
-        "dp_suffix": "Zilla Panchayat",
-    },
-    "23": {
-        "name": "Madhya Pradesh",
-        "suffix": "Tehsil",
-        "type": "Tehsil",
-        "wd_id": "Q122987728",
-        "wd_div_id": "Q124669069",
-        "wd_block_id": "Q125750771",
-        "dp_suffix": "Zilla Panchayat",
-        "bp_suffix": "Janpad Panchayat",
-    }, # TODO: check 
-    "27": {
-        "name": "Maharashtra",
-        "suffix": "Taluka",
-        "type": "Tehsil",
-        "wd_id": "Q13119795",
-        "wd_div_id": "Q125907357",
-        "wd_subdiv_id": "Q125918906",
-        "dp_suffix": "Zilla Parishad",
-        "bp_suffix": "Block Panchayat",
-    }, # TODO: check 
-    "14": {
-        "name": "Manipur",
-        "suffix": "Subdivision",
-        "type": "Subdivision",
-        "wd_id": "Q122987729",
-        # no divisions?
-        "dp_suffix": "Zilla Parishad",
-    },
-    "17": {
-        "name": "Meghalaya",
-        "suffix": "Block",
-        "type": "Block",
-        "wd_id": "Q122987730",
-        "wd_div_id": "Q125907362",
-        "divs_in_main_hierarchy": False,
-    }, # C. & R. D. Block R is for Rural?
-    "15": {
-        "name": "Mizoram",
-        "suffix": "Block",
-        "type": "Block",
-        "long": "Rural Development Block",
-        "wd_id": "Q122987731",
-    }, # Rural Development Block
-    "13": {
-        "name": "Nagaland",
-        "suffix": "Circle",
-        "type": "Tehsil",
-        "wd_id": "Q122987732",
-        "wd_div_id": "Q125907369",
-        "divs_in_main_hierarchy": False,
-    },
-    "21": {
-        "name": "Odisha",
-        "suffix": "Police Station",
-        "label_suffix": "P.S.",
-        "type": "Police Station",
-        "wd_id": "Q122986857",
-        "wd_div_id": "Q125907355",
-        "wd_block_id": "Q61863384",
-        "wd_subdiv_id": "Q60843390",
-        "dp_suffix": "Zilla Parishad",
-        "bp_suffix": "Panchayat Samiti",
-    }, # Tehsils exist, Police station maps are available in the Census Atlas
-    "34": {
-        "name": "Puducherry",
-        "suffix": "Taluk",
-        "type": "Tehsil",
-        "wd_id": "Q122987733",
-        "bp_suffix": "Commune Panchayat",
-    },
-    "3": {
-        "name": "Punjab",
-        "suffix": "Tehsil",
-        "type": "Tehsil",
-        "wd_id": "Q122987734",
-        "wd_div_id": "Q125907365",
-        "wd_block_id": "Q123200469",
-        "dp_suffix": "Zilla Parishad",
-        "bp_suffix": "Panchayat Samiti",
-    }, # TODO: check 
-    "8": {
-        "name": "Rajasthan",
-        "suffix": "Tehsil",
-        "type": "Tehsil",
-        "wd_id": "Q122987735",
-        "wd_div_id": "Q125907350",
-        "wd_block_id": "Q123009239",
-        "dp_suffix": "Zilla Panchayat",
-        "bp_suffix": "Block Panchayat",
-    }, # TODO: check 
-    "11": {
-        "name": "Sikkim",
-        "suffix": "Subdivision",
-        "type": "Subdivision",
-        "wd_id": "Q122956696",
-        "dp_suffix": "Zilla Panchayat",
-    }, # revenue circles exist
-    "33": {
-        "name": "Tamil Nadu",
-        "suffix": "Taluk",
-        "type": "Tehsil",
-        "wd_id": "Q122987736",
-        "wd_block_id": "Q123009250",
-        "wd_subdiv_id": "Q125626392",
-        "subdiv_label_suffix": "division",
-        "dp_suffix": "Zilla Panchayat",
-        "bp_suffix": "Panchayat Samiti",
-    }, # TODO: check
-    "36": {
-        "name": "Telangana",
-        "suffix": "Mandal",
-        "type": "Tehsil",
-        "wd_id": "Q122987738",
-        "wd_block_id": "Q122987738",
-        "wd_subdiv_id": "Q125626476",
-        "subdiv_label_suffix": "revenue division",
-        "dp_suffix": "Zilla Parishad",
-        "bp_suffix": "Mandal Panchayat",
-    }, # TODO: check 
-    "38": {
-        "name": "The Dadra And Nagar Haveli And Daman And Diu",
-        "suffix": "Taluk",
-        "type": "Tehsil",
-        "wd_id": "Q122987739",
-        "dp_suffix": "Zilla Parishad",
-    }, # TODO: check 
-    "16": {
-        "name": "Tripura",
-        "suffix": "Subdivision",
-        "type": "Subdivision",
-        #"long": "Development Block",
-        "wd_id": "Q126201439",
-        "wd_block_id": "Q122987740",
-        "dp_suffix": "Zilla Panchayat",
-        "bp_suffix": "Block Panchayat",
-    }, # Development Block
-    "5": {
-        "name": "Uttarakhand",
-        "suffix": "Tehsil",
-        "type": "Tehsil",
-        "wd_id": "Q122987741",
-        "wd_subdiv_id": "Q125919325",
-        "wd_div_id": "Q125907368",
-        "wd_block_id": "Q123009294",
-        "dp_suffix": "Zilla Panchayat",
-        "bp_suffix": "Kshetra Panchayat",
-    },
-    "9": {
-        "name": "Uttar Pradesh",
-        "suffix": "Tehsil",
-        "type": "Tehsil",
-        "wd_id": "Q122987742",
-        "wd_div_id": "Q125907346",
-        "wd_block_id": "Q123009286",
-        "wd_sd_id": "Q125631953",
-        "dp_suffix": "Zilla Panchayat",
-        "bp_suffix": "Kshetra Panchayat",
-    },
-    "19": {
-        "name": "West Bengal",
-        "suffix": "Block",
-        "type": "Block",
-        "wd_id": "Q122987743",
-        "wd_div_id": "Q5284624",
-        "wd_subdiv_id": "Q13058507",
-        "dp_suffix": "Zilla Panchayat",
-        "bp_suffix": "Panchayat Samiti",
-    },
-}
-
-SUBDIST_ID = 105626471
-TEHSIL_ID = 817477
-TEHSIL_INDIA_ID = 7694920
-CD_BLOCK_INDIA_ID = 2775236
-
-SUBDIV_ID = 7631016
-SUBDIV_REVENUE = 24943410
-ALL_SUBDIV_IDS = [ SUBDIV_ID, SUBDIV_REVENUE ] +\
-        [ int(v['wd_subdiv_id'][1:]) for v in state_info.values() if 'wd_subdiv_id' in v ] +\
-        [ int(v['wd_id'][1:]) for v in state_info.values() if v['type'] == 'Subdivision' ]
-
-SUBDIST_IDS = [ int(v['wd_id'][1:]) for v in state_info.values() ]
-
-SUBTEHSIL_IDS = [ 123264644, 123264643 ]
-
-ALL_SUBDIST_IDS = [ SUBDIST_ID, TEHSIL_ID, TEHSIL_INDIA_ID ] + SUBDIST_IDS + SUBTEHSIL_IDS
-
-ALL_TEHSIL_IDS = [  SUBDIST_ID, TEHSIL_ID, TEHSIL_INDIA_ID ] + [ int(v['wd_id'][1:]) for v in state_info.values() if v['type'] == 'Tehsil' ] 
-
-ALL_BLOCK_IDS = [ CD_BLOCK_INDIA_ID ] + [ int(v['wd_id'][1:]) for v in state_info.values() if v['type'] == 'Block' ] +  [ int(v['wd_block_id'][1:]) for v in state_info.values() if 'wd_block_id' in v ] 
-
-DIST_COUNCIL_OF_INDIA_ID = 2758248
-BLOCK_PANCHAYAT_ID = 4927168
-
-VILLAGE_IN_INDIA_ID = 56436498
-CENSUS_TOWN_IN_INDIA_ID = 16830604
-CENSUS_TOWN = 587144
-ALL_VILLAGE_IDS = [ VILLAGE_IN_INDIA_ID, CENSUS_TOWN_IN_INDIA_ID ]
-
-P_INSTANCE_OF = 'P31'
-P_SUBCLASS_OF = 'P279'
-P_REPLACED_BY = 'P1366'
-P_DISSOLVED = 'P576'
-P_COUNTRY = 'P17'
-P_LOCATED_IN = 'P131'
-P_COORDINATE_LOCATION = 'P625'
-P_COEXTENSIVE_WITH = 'P3403'
-P_TERRITORY_OVERLAPS = 'P3179'
-P_CONTAINS = 'P150'
-
-
-P_LGD_LOCAL_BODY_CODE = 'P6425'
-P_LGD_STATE_CODE = 'P12747'
-P_LGD_DIST_CODE = 'P12746'
-P_LGD_SUBDIST_CODE = 'P12748'
-P_LGD_BLOCK_CODE = 'P12717'
-P_LGD_VILLAGE_CODE = 'P12745'
-P_CENSUS_CODE = 'P5578'
-P_END_TIME = 'P582'
-
-STATE_ID = 12443800
-UT_ID = 467745 
-INDIA_ID = 668
-PAK_ID = 843
-DIST_ID = 1149652
-DIV_ID = 1230708
-ALL_DIV_IDS = [ DIV_ID ] + [ int(v['wd_div_id'][1:]) for v in state_info.values() if 'wd_div_id' in v ]
-PROPOSED_ENTITY = 64728694
-FORMER_ENTITY = 15893266
-
-LGD_URL="https://lgdirectory.gov.in/downloadDirectory.do?"
-LGD_REF_ITEM = 'Q125923171'
-P_STATED_IN = 'P248'
-
-transilterator = None
+transliterator = None
 def get_label_translit(v):
-    global transilterator
+    global transliterator
     label = get_label(v)
     if label != 'NA':
         return label
@@ -436,13 +52,12 @@ def get_label_translit(v):
         if k in ['vi', 'nl', 'ca', 'ceb', 'it', 'es', 'hif', 'ms', 'de', 'fr', 'pl', 'sv', 'da', 'cs']:
             en_label = unidecode.unidecode(label)
             continue
-        if transilterator is None:
-            transilterator = CachedTransliterator()
-        if not transilterator.is_lang_supported(k):
+        if transliterator is None:
+            transliterator = CachedTransliterator()
+        if not transliterator.is_lang_supported(k):
             unsup_langs.append(k)
         else:
-            en_label = transilterator.transliterate(k, label)
-            #print(f'transilterated {label=} to {en_label=}')
+            en_label = transliterator.transliterate(k, label)
             break
     if en_label is None:
         print(f'unsupported langs found: {unsup_langs}')
@@ -457,54 +72,47 @@ def get_label(v, lang='en'):
     elif 'mul' in labels:
         label = labels['mul']['value']
     else:
-        #print('labels:', labels)
         label = 'NA'
     return label
 
 
+def get_claim_values(v, prop, *, current_only=False):
+    """Read concrete values, ignoring Wikidata's unknown/no-value snaks."""
+    values = []
+    for claim in v.get('claims', {}).get(prop, []):
+        if current_only and not is_claim_current(claim):
+            continue
+        datavalue = claim.get('mainsnak', {}).get('datavalue')
+        if datavalue is not None:
+            values.append(datavalue['value'])
+    return values
+
+
 def get_census_code(v):
-    census_code = 'NA'
-    claims = v['claims'].get(P_CENSUS_CODE, None)
-    if claims is None:
-        return census_code
-    for c in claims:
-        census_code = c['mainsnak']['datavalue']['value']
-    return census_code
+    codes = get_census_codes(v)
+    return codes[-1] if codes else 'NA'
+
 
 def get_census_codes(v):
-    census_codes = []
-    claims = v['claims'].get(P_CENSUS_CODE, None)
-    if claims is None:
-        return census_codes
-    for c in claims:
-        census_codes.append(c['mainsnak']['datavalue']['value'])
-    return census_codes
+    return get_claim_values(v, P_CENSUS_CODE)
 
+
+LGD_CODE_PROPERTIES = {
+    'localbody': P_LGD_LOCAL_BODY_CODE,
+    'state': P_LGD_STATE_CODE,
+    'district': P_LGD_DIST_CODE,
+    'subdistrict': P_LGD_SUBDIST_CODE,
+    'block': P_LGD_BLOCK_CODE,
+    'village': P_LGD_VILLAGE_CODE,
+}
 
 
 def get_lgd_codes(v, code_type='localbody'):
-    if code_type == 'localbody':
-        LGD_CODE_PROP = P_LGD_LOCAL_BODY_CODE
-    elif code_type == 'state':
-        LGD_CODE_PROP = P_LGD_STATE_CODE
-    elif code_type == 'district':
-        LGD_CODE_PROP = P_LGD_DIST_CODE
-    elif code_type == 'subdistrict':
-        LGD_CODE_PROP = P_LGD_SUBDIST_CODE
-    elif code_type == 'block':
-        LGD_CODE_PROP = P_LGD_BLOCK_CODE
-    elif code_type == 'village':
-        LGD_CODE_PROP = P_LGD_VILLAGE_CODE
-    else:
-        raise Exception('unknown lgd type ' + code_type)
-    lgd_codes = []
-    claims = v['claims'].get(LGD_CODE_PROP, None)
-    if claims is None:
-        return lgd_codes
-    for c in claims:
-        lgd_code = c['mainsnak']['datavalue']['value']
-        lgd_codes.append(lgd_code)
-    return lgd_codes
+    try:
+        prop = LGD_CODE_PROPERTIES[code_type]
+    except KeyError:
+        raise ValueError(f'unknown LGD type {code_type!r}') from None
+    return get_claim_values(v, prop)
  
 
 def is_claim_current(c):
@@ -522,19 +130,9 @@ def is_inactive(v):
 def is_current_instance_of(v, inst_types):
     if is_inactive(v):
         return False
-    inst_claims = v['claims'][P_INSTANCE_OF]
-    still_valid = False
-    for c in inst_claims:
-        inst_of = c['mainsnak']['datavalue']['value']['numeric-id'] 
-        if inst_of == PROPOSED_ENTITY:
-            return False
-        if inst_of not in inst_types:
-            continue
-        if still_valid:
-            continue
-        if is_claim_current(c):
-            still_valid = True
-    return still_valid
+    if any(value['numeric-id'] == PROPOSED_ENTITY for value in get_claim_values(v, P_INSTANCE_OF)):
+        return False
+    return any(number in inst_types for number in get_instance_of_ids(v))
 
 
 def get_aliases(v):
@@ -544,13 +142,8 @@ def get_aliases(v):
 def get_coordinates(v):
     if is_inactive(v):
         return []
-    coordinates = []
-    coord_claims = v['claims'].get(P_COORDINATE_LOCATION, [])
-
-    for c in coord_claims:
-        val = c['mainsnak']['datavalue']['value']
-        coordinates.append([val['longitude'], val['longitude']])
-    return coordinates
+    return [[value['longitude'], value['latitude']]
+            for value in get_claim_values(v, P_COORDINATE_LOCATION)]
 
 def clean_string(s, prefix_drops, suffix_drops):
     s = unidecode.unidecode(s)
@@ -577,7 +170,7 @@ def get_distance(s1, s2, prefix_drops, suffix_drops):
     return dist
 
 
-def get_best_match(name, v, prefix_drops=[], suffix_drops=[], translit=False):
+def get_best_match(name, v, prefix_drops=(), suffix_drops=(), translit=False):
     if translit:
         label = get_label_translit(v)
     else:
@@ -586,49 +179,30 @@ def get_best_match(name, v, prefix_drops=[], suffix_drops=[], translit=False):
     label_dist = get_distance(name, label, prefix_drops, suffix_drops)
     out_dist = label_dist
     out = label
-    #print(f'{label=} {label_dist:}')
     for alias in aliases:
         alias_dist = get_distance(name, alias, prefix_drops, suffix_drops)
         if alias_dist < out_dist:
             out = alias
             out_dist = alias_dist
-        #print(f'\t{alias=} {alias_dist:}')
     return out, out_dist
 
 
 def is_in_india(v):
-    country_claims = v['claims'].get(P_COUNTRY, [])
-    for c in country_claims:
-        country_id = c['mainsnak']['datavalue']['value']['numeric-id'] 
-        if country_id == INDIA_ID:
-            return True
-    return False
+    return any(value['numeric-id'] == INDIA_ID for value in get_claim_values(v, P_COUNTRY))
 
-def get_contains_ids(v):
+
+def get_current_item_ids(v, prop):
     if is_inactive(v):
         return []
-    inst_claims = v['claims'].get(P_CONTAINS, [])
-    ids = []
-    for c in inst_claims:
-        if not is_claim_current(c):
-            continue
-        inst_of = c['mainsnak']['datavalue']['value']['numeric-id'] 
-        ids.append(inst_of)
-    return ids
+    return [value['numeric-id'] for value in get_claim_values(v, prop, current_only=True)]
+
+
+def get_contains_ids(v):
+    return get_current_item_ids(v, P_CONTAINS)
 
 
 def get_instance_of_ids(v):
-    if is_inactive(v):
-        return []
-    claims = v.get('claims', {})
-    inst_claims = claims.get(P_INSTANCE_OF, [])
-    ids = []
-    for c in inst_claims:
-        if not is_claim_current(c):
-            continue
-        inst_of = c['mainsnak']['datavalue']['value']['numeric-id'] 
-        ids.append(inst_of)
-    return ids
+    return get_current_item_ids(v, P_INSTANCE_OF)
 
 def get_all_located_id_ranks(v):
     if is_inactive(v):
@@ -642,41 +216,14 @@ def get_all_located_id_ranks(v):
 
 
 def get_located_in_ids(v):
-    if is_inactive(v):
-        return []
-    loc_claims = v['claims'].get(P_LOCATED_IN, [])
-    ids = []
-    for c in loc_claims:
-        if not is_claim_current(c):
-            continue
-        loc_in = c['mainsnak']['datavalue']['value']['numeric-id'] 
-        ids.append(loc_in)
-    return ids
+    return get_current_item_ids(v, P_LOCATED_IN)
 
 def get_coextensive_ids(v):
-    if is_inactive(v):
-        return []
-    coex_claims = v['claims'].get(P_COEXTENSIVE_WITH, [])
-    ids = []
-    for c in coex_claims:
-        if not is_claim_current(c):
-            continue
-        coex_with = c['mainsnak']['datavalue']['value']['numeric-id'] 
-        ids.append(coex_with)
-    return ids
+    return get_current_item_ids(v, P_COEXTENSIVE_WITH)
 
 
 def get_overlap_ids(v):
-    if is_inactive(v):
-        return []
-    overlap_claims = v['claims'].get(P_TERRITORY_OVERLAPS, [])
-    ids = []
-    for c in overlap_claims:
-        if not is_claim_current(c):
-            continue
-        overlap = c['mainsnak']['datavalue']['value']['numeric-id'] 
-        ids.append(overlap)
-    return ids
+    return get_current_item_ids(v, P_TERRITORY_OVERLAPS)
 
 def get_lgd_data(fname, key, filter_fn=None):
     lgd_data = {}
@@ -706,10 +253,8 @@ def get_wd_data(fname, filter_fn):
 
 
 page_cache = None
-repo = None
 
 def get_entry_from_wd_id(wd_num_id):
-    global repo
     global page_cache
 
     wd_num_id = int(wd_num_id)
@@ -764,7 +309,7 @@ def base_entity_checks(entity_type=None,
                        lgd_get_effective_date=True, lgd_code_type=None,
                        check_expected_located_in_fn=None,
                        wd_fname=None, wd_filter_fn=lambda x:True,
-                       name_prefix_drops=[], name_suffix_drops=[], name_match_threshold=0.0,
+                       name_prefix_drops=(), name_suffix_drops=(), name_match_threshold=0.0,
                        multiple_instance_of_exceptions=None):
 
     report = {
@@ -800,7 +345,6 @@ def base_entity_checks(entity_type=None,
 
     seen = {}
     for k,v in filtered.items():
-        #census_code = get_census_code(v)
         if has_lgd:
             lgd_codes = get_lgd_codes(v, code_type=lgd_code_type)
         else:
@@ -887,7 +431,6 @@ def base_entity_checks(entity_type=None,
             })
         else:
             seen[lgd_code] = (k, label)
-            #print(lgd_name)
             match, match_dist = get_best_match(lgd_name, v,
                                                prefix_drops=name_prefix_drops,
                                                suffix_drops=name_suffix_drops,
@@ -908,7 +451,7 @@ def base_entity_checks(entity_type=None,
     all_lgd_ids = set(lgd_data.keys())
     missing_in_wikidata = all_lgd_ids - set(seen.keys())
     if len(missing_in_wikidata) > 0:
-        for lgd_id in missing_in_wikidata:
+        for lgd_id in sorted(missing_in_wikidata):
             lgd_entry = lgd_data[lgd_id]
             lgd_entry_out = create_ext_lgd_entry(lgd_entry)
             url_info = lgd_url_fn(lgd_id)
@@ -942,6 +485,19 @@ def get_wd_entity_lgd_mapping(wd_fname, wd_filter_fn, lgd_code_type):
         mapping[k] = lgd_codes[0]
 
     return mapping
+
+
+def invert_lgd_mapping(mapping):
+    """Only resolve an LGD code when exactly one Wikidata item owns it."""
+    counts = Counter(mapping.values())
+    return {code: qid for qid, code in mapping.items() if code != 'NA' and counts[code] == 1}
+
+
+def correction_inception(lgd_entry):
+    date = lgd_entry.get('Effective Date')
+    if not date:
+        return None
+    return datetime.strptime(date, '%d%b%Y').strftime('+%Y-%m-%dT00:00:00Z/11')
 
 
 
@@ -983,7 +539,3 @@ def get_effective_date(url, params):
             except ValueError as error:
                 raise ValueError('LGD Effective Date is empty or invalid') from error
     raise ValueError('LGD page has no Effective Date')
-
-def get_data_for_query(query, fname):
-    return download_query(query, fname)
-

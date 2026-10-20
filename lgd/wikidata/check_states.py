@@ -1,13 +1,17 @@
 from pprint import pprint
-from datetime import datetime
 
-from common import base_entity_checks, get_wd_data, get_located_in_ids, write_report, get_entry_from_wd_id, get_label
-
-from common import INDIA_ID, STATE_ID, UT_ID, P_LGD_STATE_CODE
-
+from common import (
+    base_entity_checks,
+    correction_inception,
+    get_entry_from_wd_id,
+    get_label,
+    get_located_in_ids,
+    get_wd_data,
+    write_report,
+)
+from constants import INDIA_ID, P_LGD_STATE_CODE, STATE_ID, UT_ID
 from filters import filter_state
 from suffixes import STATE_PREFIXES, STATE_SUFFIXES
-
 
 # Delhi is both a union territory of India and a capital district or territory.
 # Only this complete combination is allowed; other extra types remain reportable.
@@ -47,10 +51,7 @@ def get_correction_info(lgd_entry):
 
     loc_in = f'Q{INDIA_ID}'
 
-    inception = None
-    if lgd_entry.get('Effective Date'):
-        i_date = datetime.strptime(lgd_entry['Effective Date'], '%d%b%Y')
-        inception = i_date.strftime('+%Y-%m-%dT00:00:00Z/11')
+    inception = correction_inception(lgd_entry)
     correction_info = {
         'label': label,
         'desc': desc,

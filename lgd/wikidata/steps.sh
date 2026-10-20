@@ -1,9 +1,8 @@
 #!/bin/bash
-set -aeux
+set -euo pipefail
 
-script_dir=$(dirname "$0")
+cd -- "$(dirname -- "$0")"
 uname_out="$(uname -s)"
-RUNNER="uv run"
 
 conv_date() {
   if [[ $uname_out == "Darwin" ]]; then
@@ -52,75 +51,19 @@ get_lgd_files() {
   cd -
 }
 
-verify_states() {
-  $RUNNER ${script_dir}/download.py state
-  $RUNNER ${script_dir}/check_states.py
-  
-}
-
-verify_divisions() {
-  $RUNNER ${script_dir}/download.py state
-  $RUNNER ${script_dir}/download.py division
-  $RUNNER ${script_dir}/download.py district
-  $RUNNER ${script_dir}/check_divisions.py
-}
-
-verify_districts() {
-  $RUNNER ${script_dir}/download.py state
-  $RUNNER ${script_dir}/download.py division
-  $RUNNER ${script_dir}/download.py district
-  $RUNNER ${script_dir}/check_districts.py
-}
-
-verify_subdivisions() {
-  $RUNNER ${script_dir}/download.py district
-  $RUNNER ${script_dir}/download.py subdivision
-  $RUNNER ${script_dir}/download.py subdistrict
-  $RUNNER ${script_dir}/check_subdivisions.py
-}
-
-verify_subdistricts() {
-  $RUNNER ${script_dir}/download.py district
-  $RUNNER ${script_dir}/download.py subdivision
-  $RUNNER ${script_dir}/download.py subdistrict
-  $RUNNER ${script_dir}/check_subdistricts.py
-}
-
-verify_blocks() {
-  $RUNNER ${script_dir}/download.py district
-  $RUNNER ${script_dir}/download.py subdivision
-  $RUNNER ${script_dir}/download.py block
-  $RUNNER ${script_dir}/check_blocks.py
-}
-
-verify_district_panchayats() {
-  $RUNNER ${script_dir}/download.py state
-  $RUNNER ${script_dir}/download.py district
-  $RUNNER ${script_dir}/download.py district_panchayat
-  $RUNNER ${script_dir}/check_district_panchayats.py
-}
-
-verify_block_panchayats() {
-  $RUNNER ${script_dir}/download.py state
-  $RUNNER ${script_dir}/download.py district_panchayat
-  $RUNNER ${script_dir}/download.py block_panchayat
-  $RUNNER ${script_dir}/check_block_panchayats.py
-}
-
-source ${script_dir}/files.sh
+source ./files.sh
 
 get_lgd_files
 
-verify_states
-verify_divisions
-verify_districts
-verify_subdivisions
-verify_subdistricts
-#verify_blocks
-verify_district_panchayats
-#verify_block_panchayats
+datasets=(states divisions districts subdivisions subdistricts district_panchayats)
 
-$RUNNER ${script_dir}/collect_status.py
+# Fetch shared inputs once before running the reports that depend on them.
+for dataset in "${datasets[@]}"; do
+  uv run download.py "$dataset"
+done
 
+for dataset in "${datasets[@]}"; do
+  uv run "check_${dataset}.py"
+done
 
-
+uv run collect_status.py

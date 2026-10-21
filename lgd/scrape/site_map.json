@@ -660,10 +660,9 @@
   },
   {
     "dropdown": [ "Download Directory", "Department/Organization", "Administrative Unit Level Wise Administrative Unit Entity", "Central" ],
-    "comp": "IGNORE",
+    "comp": "CENTRAL_ADMIN_DEPT_UNITS",
     "desc": "list of all central adminstrative department units",
     "file": "central_admin_dept_units.csv",
-    "ignore_reason": "CENTRAL_ADMIN_DEPT_UNITS broken",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial number" },
       "Admin Unit Entity Code": { "action": "KEEP", "description": "Admin Unit Entity LGD Code" },
@@ -686,10 +685,9 @@
   },
   {
     "dropdown": [ "Download Directory", "Department/Organization", "Administrative Unit Level Wise Administrative Unit Entity", "State" ],
-    "comp": "IGNORE",
+    "comp": "STATE_ADMIN_DEPT_UNITS",
     "desc": "list of all state adminstrative department units",
     "file": "state_admin_dept_units.csv",
-    "ignore_reason": "STATE_ADMIN_DEPT_UNITS broken",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial number" },
       "Admin Unit Entity Code": { "action": "KEEP", "description": "Admin Unit Entity LGD Code" },

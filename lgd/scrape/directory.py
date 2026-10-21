@@ -300,6 +300,22 @@ class OrgWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
         self.downloader_items = downloader_items
 
 
+class AdminUnitDirectoryDownloader(DirectoryDownloader):
+    REPORT_FIELDS = {'S.No.', 'Admin Unit Entity Code', 'Admin Unit Entity Name',
+                     'Admin Unit Entity Name (Local)'}
+
+    def get_records(self):
+        records = super().get_records()
+        for serial, row in enumerate(records, 1):
+            # A workbook's title row is not its header. Fail visibly if the
+            # layout changes again instead of dropping rows without unit codes.
+            if set(row) != self.REPORT_FIELDS:
+                raise ValueError(f'Unexpected administrative-unit header: {list(row)}')
+            if row['S.No.'] != str(serial) or not row['Admin Unit Entity Code'].isdigit():
+                raise ValueError(f'Invalid administrative-unit row {serial}: {row!r}')
+        return records
+
+
 class AdminDeptWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
     def __init__(self, **kwargs):
         kwargs = add_defaults_to_args({'depends_on': ''}, kwargs)
@@ -334,11 +350,14 @@ class AdminDeptWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
             csv_path = Path(self.csv_filename)
             csv_filename_s = '{}_{}{}'.format(csv_path.stem, admin_dept_code, csv_path.suffix)
             post_data_extra = copy.copy(self.post_data_extra)
+            # This is only a display label. LGD returns HTTP 404 for some
+            # supplied names (including PWD and DIG); retain the neutral label
+            # and enrich the downloaded rows with the actual level name below.
             post_data_extra.update({'entityCodes': ['35', state_code, '', admin_dept_code],
                                     'lbl': 'FOOBAR',
                                     'fromDate2': from_str,
                                     'toDate2': to_str})
-            downloader = DirectoryDownloader(name='{}_{}'.format(self.name, admin_dept_code),
+            downloader = AdminUnitDirectoryDownloader(name='{}_{}'.format(self.name, admin_dept_code),
                                              base_name=self.name,
                                              desc='{} for admin dept {}({}) of {}({})'\
                                                   .format(self.desc, admin_dept_name, admin_dept_code,
@@ -346,9 +365,19 @@ class AdminDeptWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
                                              csv_filename=csv_filename_s,
                                              ctx=self.ctx,
                                              transform=self.transform,
+                                             download_types=self.download_types,
+                                             xlsx_conv_args=self.xlsx_conv_args,
+                                             odt_conv_args=self.odt_conv_args,
+                                             excel_conv_args=self.excel_conv_args,
                                              post_data_extra=post_data_extra)
             downloader_items.append(DownloaderItem(downloader=downloader, record=r))
         self.downloader_items = downloader_items
+
+    def combine_records(self):
+        records = super().combine_records()
+        if not records:
+            raise ValueError(f'No populated administrative-unit exports for {self.name}')
+        return records
 
 
 class ConstituencyWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
@@ -750,35 +779,19 @@ def get_all_directory_downloaders(ctx):
                                                   }))
 
 
-    # TODO; broken.. needs to be checked
-    #downloaders.append(AdminDeptWiseDirectoryDownloader(name='CENTRAL_ADMIN_DEPT_UNITS',
-    #                                                    depends_on='CENTRAL_ADMIN_DEPTS',
-    #                                                    ctx=ctx,
-    #                                                    download_types=['odt'],
-    #                                                    transform=['ignore_if_empty_field', 'Admin Unit Entity Code'],
-    #                                                    post_data_extra={
-    #                                                          'rptFileName': 'adminUnitLevelAdminUnitEntity',
-    #                                                          'state': '0',
-    #                                                    },
-    #                                                    enrichers={
-    #                                                        'Admin Department Name': 'adminLevelNameEng',
-    #                                                        'Admin Department Code': 'adminUnitCode',
-    #                                                    }))
-    #downloaders.append(AdminDeptWiseDirectoryDownloader(name='STATE_ADMIN_DEPT_UNITS',
-    #                                                    depends_on='STATE_ADMIN_DEPTS',
-    #                                                    ctx=ctx,
-    #                                                    download_types=['odt'],
-    #                                                    transform=['ignore_if_empty_field', 'Admin Unit Entity Code'],
-    #                                                    post_data_extra={
-    #                                                          'rptFileName': 'adminUnitLevelAdminUnitEntity',
-    #                                                          'state': 'on'
-    #                                                    },
-    #                                                    enrichers={
-    #                                                        'Admin Department Name': 'adminLevelNameEng',
-    #                                                        'Admin Department Code': 'adminUnitCode',
-    #                                                        'State Name': 'State Name',
-    #                                                        'State Code': 'State Code'
-    #                                                    }))
+    for scope in ('CENTRAL', 'STATE'):
+        enrichers = {'Admin Department Name': 'adminLevelNameEng',
+                     'Admin Department Code': 'adminUnitCode'}
+        if scope == 'STATE':
+            enrichers.update({'State Name': 'State Name', 'State Code': 'State Code'})
+        downloaders.append(AdminDeptWiseDirectoryDownloader(
+            name=f'{scope}_ADMIN_DEPT_UNITS', depends_on=f'{scope}_ADMIN_DEPTS',
+            ctx=ctx, download_types=['xls'],
+            # LGD now responds to the xls option with XLSX: title, header, data.
+            xlsx_conv_args={'header_row_span': 1},
+            post_data_extra={'rptFileName': 'adminUnitLevelAdminUnitEntity',
+                             'state': '0' if scope == 'CENTRAL' else 'on'},
+            enrichers=enrichers))
 
     return downloaders
 

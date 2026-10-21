@@ -30,6 +30,7 @@ for their descriptions and fields.
 | `BLOCKS` | `blocks.csv` |
 | `BLOCK_VILLAGES` | `villages_by_blocks.csv` |
 | `CENTRAL_ADMIN_DEPTS` | `central_admin_depts.csv` |
+| `CENTRAL_ADMIN_DEPT_UNITS` | `central_admin_dept_units.csv` |
 | `CENTRAL_ORG_DESIGNATIONS` | `central_org_designations.csv` |
 | `CENTRAL_ORG_DETAILS` | `central_orgs.csv` |
 | `CENTRAL_ORG_UNITS` | `central_org_units.csv` |
@@ -47,6 +48,7 @@ for their descriptions and fields.
 | `PRI_LOCAL_BODY_WARDS` | `pri_local_body_wards.csv` |
 | `STATES` | `states.csv` |
 | `STATE_ADMIN_DEPTS` | `state_admin_depts.csv` |
+| `STATE_ADMIN_DEPT_UNITS` | `state_admin_dept_units.csv` |
 | `STATE_ORG_DESIGNATIONS` | `state_org_designations.csv` |
 | `STATE_ORG_DETAILS` | `state_orgs.csv` |
 | `STATE_ORG_UNITS` | `state_org_units.csv` |

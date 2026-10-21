@@ -19,6 +19,8 @@ from .base import (INCORRECT_CAPTCHA_MESSAGE,
                    RUN_FOR_PREV_DAY)
 from .conversion_helper import records_from_excel, records_from_htm
 from .transactions import TransactionsDownloader
+from .org_coverage import AllOrganizationCoverageDownloader
+from .org_details import AllOrganizationDetailsDownloader
 
 logger = logging.getLogger(__name__)
 
@@ -474,5 +476,7 @@ def get_all_report_downloaders(ctx):
     #                                           ctx=ctx,
     #                                           num_dates=4000))
     downloaders.append(TransactionsDownloader(name='TRANSACTIONS', ctx=ctx))
+    downloaders.append(AllOrganizationCoverageDownloader(name='ORG_UNIT_COVERAGE', ctx=ctx))
+    downloaders.append(AllOrganizationDetailsDownloader(name='ORG_UNIT_DETAILS', ctx=ctx))
 
     return downloaders

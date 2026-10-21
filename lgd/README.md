@@ -41,6 +41,8 @@ for their descriptions and fields.
 | `DISTRICTS` | `districts.csv` |
 | `DISTRICT_PANCHAYATS` | `district_panchayats.csv` |
 | `INVALIDATED_VILLAGES` | `invalidated_census_villages.csv` |
+| `ORG_UNIT_COVERAGE` | `org_unit_coverage.csv` |
+| `ORG_UNIT_DETAILS` | `org_unit_details.csv` |
 | `PANCHAYAT_MAPPINGS` | `gp_mapping.csv` |
 | `PINCODE_URBAN` | `pincode_urban.csv` |
 | `PINCODE_VILLAGES` | `pincode_villages.csv` |

@@ -910,8 +910,28 @@
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Organization Unit" ],
-    "comp": "IGNORE",
-    "ignore_reason": "Needs Review, covered elsewhere"
+    "comp": "ORG_UNIT_DETAILS",
+    "desc": "reported organization-unit details including office contacts, addresses and organization-specific codes; not a complete unit census",
+    "file": "org_unit_details.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number within the organization report" },
+      "Parent Org Unit Code": { "action": "KEEP", "description": "Reported parent organization unit LGD code" },
+      "Parent Org Unit Name": { "action": "KEEP", "description": "Reported parent organization unit name" },
+      "Org Unit Code": { "action": "KEEP", "description": "Organization unit LGD code" },
+      "Org Unit Name (In English)": { "action": "KEEP", "description": "Reported organization unit name; this report often uppercases it" },
+      "Org Specific Code": { "action": "KEEP", "description": "Organization-specific unit code, preserved as text" },
+      "Organization Email ID": { "action": "KEEP", "description": "Reported office email address" },
+      "Organization Contact Number": { "action": "KEEP", "description": "Reported office contact number, preserved as text" },
+      "Organization Address": { "action": "KEEP", "description": "Reported office address, including source placeholders" },
+      "Entity Type": { "action": "KEEP", "description": "Administrative level code of the entity where the unit is located" },
+      "Entity Type Name": { "action": "KEEP", "description": "Reported administrative level name" },
+      "Entity Code": { "action": "KEEP", "description": "LGD code of the entity where the unit is located" },
+      "Entity Name": { "action": "KEEP", "description": "Reported name of the unit's location" },
+      "Base Organization Code": { "action": "KEEP", "description": "Organization LGD code" },
+      "Base Organization Name": { "action": "KEEP", "description": "Organization name" },
+      "State Code": { "action": "KEEP", "description": "Organization's state code; 0 for central organizations" },
+      "State Name": { "action": "KEEP", "description": "Organization's state name; India for central organizations" }
+    }
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Nomenclature of Sub-District" ],
@@ -1099,12 +1119,31 @@
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Organization Unit Hierarchy of Department" ],
     "comp": "IGNORE",
-    "ignore_reason": "covered elsewhere"
+    "ignore_reason": "Covered by state/central organization-unit exports: all 153105 parent links in 93 populated reports matched in the full 288-selection audit on 21 October 2026."
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Organization Unit Coverage Details" ],
-    "comp": "IGNORE",
-    "ignore_reason": "Needs Review"
+    "comp": "ORG_UNIT_COVERAGE",
+    "desc": "reported geographic coverage of central and state organization units; missing units or blank coverage do not establish deletions",
+    "file": "org_unit_coverage.csv",
+    "fields": {
+      "Org Unit Code": { "action": "KEEP", "description": "Organization unit LGD code" },
+      "Org Unit Name (In English)": { "action": "KEEP", "description": "Reported organization unit name" },
+      "Entity Code": { "action": "KEEP", "description": "Entity where the unit is located, distinct from its covered entities" },
+      "Entity Name": { "action": "KEEP", "description": "Reported name of the unit's location" },
+      "Org Specific Code": { "action": "KEEP", "description": "Organization-specific unit code, preserved as text" },
+      "Covered Entity Code": { "action": "KEEP", "description": "Covered entity LGD code; interpret together with its type" },
+      "Covered Entity Name": { "action": "KEEP", "description": "Covered entity name" },
+      "Covered Entity Type": { "action": "KEEP", "description": "Reported covered entity type" },
+      "Coverage Type": { "action": "KEEP", "description": "F for fully mapped, P for partly mapped; blank when no details are reported" },
+      "Coverage Details Reported": { "action": "KEEP", "description": "true for a supplied coverage link, false when the unit has no coverage details in this report" },
+      "Report Org Located Level Code": { "action": "KEEP", "description": "Level selected for this report, not the level of every returned unit" },
+      "Report Org Level Specific Name": { "action": "KEEP", "description": "Name of the selected report level" },
+      "Base Organization Code": { "action": "KEEP", "description": "Organization LGD code" },
+      "Base Organization Name": { "action": "KEEP", "description": "Organization name" },
+      "State Code": { "action": "KEEP", "description": "Organization's state code; 0 for central organizations" },
+      "State Name": { "action": "KEEP", "description": "Organization's state name; India for central organizations" }
+    }
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Urban Locality" ],
@@ -1129,7 +1168,7 @@
   {
     "dropdown":  [ "Local Government Directory (LGD) Reports", "Report on State wise Administrative Units & Panchayati Raj Institutions" ],
     "comp": "IGNORE",
-    "ignore_reason": "General Overview"
+    "ignore_reason": "Aggregate statewise counts of districts, subdistricts, blocks, villages and local-body types already collected in entity exports."
   },
   {
     "dropdown": [ "Local Government Directory (LGD) Reports", "Report on Financial Year wise Count of Gram Panchayats" ],

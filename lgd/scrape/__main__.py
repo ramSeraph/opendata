@@ -2,6 +2,7 @@ import copy
 import json
 import glob
 import logging
+import os
 import subprocess
 
 
@@ -77,12 +78,40 @@ class Joiner:
 
  
    
-def run_on_threads(graph, dmap, num_parallel, use_procs, params):
+def get_run_status(graph, comps_done, comps_in_error):
+    return {
+        'done': sorted(comps_done),
+        'error': sorted(comps_in_error),
+        'left': sorted(set(graph) - (comps_done | comps_in_error)),
+    }
+
+
+def save_run_status(status_outfile, graph, comps_done, comps_in_error):
+    if status_outfile is None:
+        return
+    destination = Path(status_outfile)
+    temporary = destination.with_name(destination.name + '.tmp')
+    # Only the scheduler writes this file. Keep the last complete checkpoint
+    # visible to the uploader even if writing the next one is interrupted.
+    try:
+        with temporary.open('w', encoding='utf-8') as output:
+            json.dump(get_run_status(graph, comps_done, comps_in_error), output)
+            output.flush()
+            os.fsync(output.fileno())
+        temporary.replace(destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def run_on_threads(graph, dmap, num_parallel, use_procs, params, status_outfile=None):
     ts = TopologicalSorter(graph)
     ts.prepare()
     fut_to_comp = {}
     comps_in_error = set()
     comps_done = set()
+    # Reset any previous run's status before starting downloads. Cached CSVs
+    # are recorded again when their downloader completes its normal checks.
+    save_run_status(status_outfile, graph, comps_done, comps_in_error)
     has_changes = True
     if use_procs:
         executor = ProcessPoolExecutor(max_workers=num_parallel,
@@ -140,6 +169,7 @@ def run_on_threads(graph, dmap, num_parallel, use_procs, params):
                     comps_done.add(comp)
                 else:
                     comps_in_error.add(comp)
+                save_run_status(status_outfile, graph, comps_done, comps_in_error)
 
             if fatal_error:
                 logger.error('Broken Pool encountered.. closing task pool')
@@ -361,12 +391,11 @@ def run(params, mode,
         logger.info(f'going to run comps: {comps_to_run_expanded}')
         graph_to_run = {d.name:d.deps for d in all_downloaders if d.name in comps_to_run_expanded}
 
-        if mode == Mode.RUN:
-            comps_done, comps_in_error = run_on_threads(graph_to_run, dmap, num_parallel, use_procs, params)
+        comps_done, comps_in_error = run_on_threads(
+            graph_to_run, dmap, num_parallel, use_procs, params,
+            status_outfile=status_outfile)
 
-        result = { 'done': list(comps_done), 'error': list(comps_in_error), 'left': list(comps_to_run_expanded - (comps_done | comps_in_error)) }
-        if status_outfile is not None:
-            Path(status_outfile).write_text(json.dumps(result))
+        result = get_run_status(graph_to_run, comps_done, comps_in_error)
 
         if archive_data:
             success = archive_all_data(all_downloaders)
@@ -427,7 +456,7 @@ if __name__ == '__main__':
     parser.add_argument('--captcha-model-dir', help='location of the directory with tesseract models', type=str)
     parser.add_argument('--archive-data', help='archive data into a zip file and delete the staging files', action='store_true')
     parser.add_argument('--save-intermediates', help='save intermediate files before converting to csv, in the temp dir', action='store_true')
-    parser.add_argument('--save-status', help='save the final status of the run to a json file', type=str)
+    parser.add_argument('--save-status', help='atomically save progress after each completed component to a json file', type=str)
     parser.add_argument('--transactions-start-date', help='first transaction backfill date (YYYY-MM-DD)', type=str)
 
     parser.add_argument('-l', '--log-level', help='Set the logging level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], type=str)

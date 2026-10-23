@@ -102,6 +102,7 @@ class DailyPlanTests(unittest.TestCase):
         releases = [dict(id=7, tag='lgd-latest', number=0, assets=names)]
         plan = daily.allocate({'STATES': item}, releases, '23Oct2026')
         self.assertEqual(plan['STATES']['release_id'], 7)
+        self.assertEqual(plan['STATES']['asset_name'], 'states.23Oct2026.csv.7z')
         self.assertEqual(len(releases), 1)
 
     def test_date_is_stable_across_jobs_and_explicit_dates_still_work(self):
@@ -197,6 +198,85 @@ class DailyPlanTests(unittest.TestCase):
                     else:
                         daily.download_prerequisite(github, asset, Path('target'))
                         self.assertEqual(github.download.call_args.args[0], candidate)
+
+
+@unittest.skipUnless(shutil.which('jq'), 'jq is required for the runner preflight')
+class PublishedPreflightTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.output = self.root / 'outputs'
+        self.calls = self.root / 'calls'
+        self.pages = self.root / 'pages.json'
+        self.script = Path(__file__).resolve().parents[1] / 'utils/check_published_component.sh'
+        gh = self.root / 'gh'
+        gh.write_text('''#!/bin/bash
+printf '%s\\n' "$*" >> "$TEST_CALLS"
+if [[ "${TEST_API_FAILURE:-}" == true ]]; then exit 1; fi
+cat "$TEST_PAGES"
+''')
+        gh.chmod(0o755)
+        self.env = dict(os.environ, PATH=f'{self.root}:{os.environ["PATH"]}',
+                        TEST_CALLS=str(self.calls), TEST_PAGES=str(self.pages),
+                        GITHUB_REPOSITORY='owner/repo', GITHUB_OUTPUT=str(self.output),
+                        LGD_COMPONENT='STATES', LGD_COLLECTION_DATE='23Oct2026',
+                        LGD_ASSIGNMENT=json.dumps(dict(release_id=7,
+                            asset_name='states.23Oct2026.csv.7z')))
+        self.asset = dict(id=17, name='states.23Oct2026.csv.7z', state='uploaded', size=100,
+                          digest='sha256:' + 'a' * 64)
+
+    def check(self, pages, **env):
+        self.pages.write_text(json.dumps(pages))
+        return subprocess.run(['bash', str(self.script)], env=dict(self.env, **env),
+                              capture_output=True, text=True)
+
+    def test_completed_asset_on_later_page_emits_the_normal_dependency_receipt(self):
+        result = self.check([[dict(self.asset, name='states.22Oct2026.csv.7z')], [self.asset]])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        key, value = self.output.read_text().strip().split('=', 1)
+        self.assertEqual(key, 'published')
+        self.assertEqual(json.loads(value), daily.published_receipt(
+            Mock(), 'STATES', '23Oct2026', self.asset))
+        self.assertEqual(self.calls.read_text().strip(),
+                         'api repos/owner/repo/releases/7/assets?per_page=100 --paginate --slurp')
+
+    def test_missing_placeholder_and_legacy_assets_continue_without_receipt(self):
+        for assets in ([], [dict(self.asset, name='states.22Oct2026.csv.7z')],
+                       [dict(self.asset, state='starter', size=0)],
+                       [dict(self.asset, digest=None)]):
+            with self.subTest(assets=assets):
+                result = self.check([assets])
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertFalse(self.output.exists())
+
+    def test_partial_ambiguous_or_failed_api_results_never_emit_success(self):
+        for assets, env in (([dict(self.asset, state='starter')], {}),
+                            ([dict(self.asset, size=0)], {}),
+                            ([self.asset, self.asset], {}),
+                            ([self.asset], {'TEST_API_FAILURE': 'true'}),
+                            ([self.asset], {'LGD_COLLECTION_DATE': '24Oct2026'})):
+            with self.subTest(assets=assets, env=env):
+                result = self.check([assets], **env)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(self.output.exists())
+
+    def test_transactions_always_take_the_cumulative_update_path(self):
+        result = self.check([[self.asset]], LGD_COMPONENT='TRANSACTIONS')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(self.output.exists())
+        self.assertFalse(self.calls.exists())
+
+    def test_reused_receipt_gates_every_expensive_step_and_remains_a_job_output(self):
+        workflow = generator.WORKFLOW.with_name('lgd_component.yml').read_text()
+        steps = workflow.split('  Component:\n', 1)[1].split('      - ')[1:]
+        preflight = next(i for i, step in enumerate(steps) if 'id: published\n' in step)
+        for step in steps[preflight + 1:]:
+            self.assertIn("steps.published.outputs.published == ''", step)
+        self.assertIn('published: ${{ steps.published.outputs.published || steps.run.outputs.published }}',
+                      workflow)
+        self.assertNotIn('uv ', steps[preflight])
+        self.assertNotIn('python', steps[preflight])
 
 
 @unittest.skipUnless(shutil.which('7z'), '7z is required for release handoffs')

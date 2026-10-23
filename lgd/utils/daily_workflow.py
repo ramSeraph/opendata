@@ -108,7 +108,8 @@ def allocate(items, releases, collection_date):
                 releases.append(release)
                 counts[release['tag']] = 0
             counts[release['tag']] += 1
-        plan[name] = dict(release_id=release['id'], release_tag=release['tag'])
+        plan[name] = dict(release_id=release['id'], release_tag=release['tag'],
+                          asset_name=filename)
     return plan
 
 

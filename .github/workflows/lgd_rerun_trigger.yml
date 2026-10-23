@@ -12,3 +12,5 @@ jobs:
     with:
       alert-title: "LGD Daily Run failed"
       num-attempts: 3
+      retry-timeouts: true
+      failed-jobs-only: true

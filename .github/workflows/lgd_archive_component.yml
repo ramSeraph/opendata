@@ -1,0 +1,65 @@
+name: LGD Archive Component
+
+on:
+  workflow_call:
+    inputs:
+      item:
+        type: string
+        required: true
+
+jobs:
+  Compress:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+    outputs:
+      receipt: ${{ steps.archive.outputs.receipt }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      LGD_ARCHIVE_ITEM: ${{ inputs.item }}
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - name: Setup swap
+        uses: pierotofy/set-swap-space@v1.0
+        with:
+          swap-size-gb: 10
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: lgd/uv.lock
+      - name: Restore completed compression checkpoint
+        uses: actions/cache/restore@v4
+        with:
+          path: lgd/data/combined/*.7z
+          key: lgd-archive-component-v1-${{ fromJSON(inputs.item).month }}-${{ fromJSON(inputs.item).prefix }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: lgd-archive-component-v1-${{ fromJSON(inputs.item).month }}-${{ fromJSON(inputs.item).prefix }}-
+      - name: Compress and verify published archive
+        id: archive
+        timeout-minutes: 225
+        working-directory: lgd
+        run: uv run python -m utils.archive_workflow compress
+      - name: Save completed compression checkpoint
+        if: ${{ always() && steps.archive.outcome != 'success' }}
+        timeout-minutes: 10
+        uses: actions/cache/save@v4
+        with:
+          path: lgd/data/combined/*.7z
+          key: lgd-archive-component-v1-${{ fromJSON(inputs.item).month }}-${{ fromJSON(inputs.item).prefix }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+  Finalize:
+    needs: Compress
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    # Compression has no concurrency cap. Only shared metadata is serialized.
+    concurrency:
+      group: lgd-archive-metadata
+      queue: max
+    env:
+      GH_TOKEN: ${{ github.token }}
+      LGD_ARCHIVE_ITEM: ${{ inputs.item }}
+      LGD_ARCHIVE_RECEIPT: ${{ needs.Compress.outputs.receipt }}
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - uses: astral-sh/setup-uv@v5
+      - name: Update mapping, then retire verified daily assets
+        working-directory: lgd
+        run: uv run python -m utils.archive_workflow finalize

@@ -1,0 +1,91 @@
+name: LGD Component
+
+on:
+  workflow_call:
+    inputs:
+      component:
+        required: true
+        type: string
+      collection-date:
+        required: true
+        type: string
+      slot:
+        required: true
+        type: number
+      assignment:
+        required: true
+        type: string
+      prerequisites:
+        required: true
+        type: string
+    outputs:
+      published:
+        description: Exact release asset and checksum for dependent jobs
+        value: ${{ jobs.Component.outputs.published }}
+
+jobs:
+  Component:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+    permissions:
+      contents: write
+    concurrency:
+      group: lgd-component-slot-${{ inputs.slot }}
+      queue: max
+    outputs:
+      published: ${{ steps.run.outputs.published }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      LGD_COLLECTION_DATE: ${{ inputs.collection-date }}
+      LGD_ASSIGNMENT: ${{ inputs.assignment }}
+      LGD_NEEDS: ${{ inputs.prerequisites }}
+      LGD_COMPONENT: ${{ inputs.component }}
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - name: Setup swap
+        uses: pierotofy/set-swap-space@v1.0
+        with:
+          swap-size-gb: 10
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: lgd/uv.lock
+      - name: Restore tesseract models
+        uses: actions/cache/restore@v4.2.2
+        id: models
+        with:
+          path: lgd/data/captcha/models/
+          key: lgd-tesseract-models-gcs-v2
+      - name: Download tesseract models
+        if: steps.models.outputs.cache-hit != 'true'
+        working-directory: lgd
+        run: utils/download_captcha_models.sh data/captcha/models
+      - name: Cache tesseract models
+        if: steps.models.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: lgd/data/captcha/models/
+          key: lgd-tesseract-models-gcs-v2
+      - name: Install packages
+        timeout-minutes: 5
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr p7zip-full
+      - name: Restore this component's unfinished children
+        uses: actions/cache/restore@v4
+        with:
+          path: lgd/data/raw/
+          key: lgd-component-v1-${{ github.run_id }}-${{ inputs.component }}-${{ github.run_attempt }}
+          restore-keys: lgd-component-v1-${{ github.run_id }}-${{ inputs.component }}-
+      - name: Fetch prerequisites, scrape and publish component
+        id: run
+        timeout-minutes: 225
+        working-directory: lgd
+        run: uv run python -m utils.daily_workflow run "$LGD_COMPONENT"
+      - name: Save unfinished component checkpoints
+        if: ${{ always() && steps.run.outcome != 'success' }}
+        timeout-minutes: 10
+        uses: actions/cache/save@v4
+        with:
+          path: lgd/data/raw/
+          key: lgd-component-v1-${{ github.run_id }}-${{ inputs.component }}-${{ github.run_attempt }}

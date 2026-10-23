@@ -1,70 +1,69 @@
 name: LGD Monthly Compression
 
 concurrency:
-  group: lgd-release-archiving
-  cancel-in-progress: false
+  group: lgd-raw-releases
+  queue: max
 
-on: 
+on:
   schedule:
     - cron: '0 0 1 * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
 
 jobs:
-  Run-LGD-Compression:
-    # Leave time to save the cache after the four-hour compression cutoff.
-    timeout-minutes: 255
+  Prepare:
     runs-on: ubuntu-22.04
-    env:
-      GH_TOKEN: ${{ github.token }}
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      has-work: ${{ steps.plan.outputs.has-work }}
     steps:
-      - name: Setup swap
-        uses: pierotofy/set-swap-space@v1.0
-        with:
-          swap-size-gb: 10
-
       - uses: actions/checkout@v4.1.7
+      - uses: astral-sh/setup-uv@v5
+      - name: Discover datasets and reserve release destinations
+        id: plan
+        working-directory: lgd
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LGD_ARCHIVE_NUM_MONTHS_BACK: ${{ vars.LGD_ARCHIVE_NUM_MONTHS_BACK }}
+        run: uv run python -m utils.archive_workflow prepare
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
+  Archives:
+    needs: Prepare
+    if: needs.Prepare.outputs.has-work == 'true'
+    strategy:
+      fail-fast: false
+      # No max-parallel: archive jobs do not request data from LGD.
+      matrix: ${{ fromJSON(needs.Prepare.outputs.matrix) }}
+    uses: ./.github/workflows/lgd_archive_component.yml
+    with:
+      item: ${{ toJSON(matrix) }}
 
-      - name: Get current date
-        run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
-        id: date
-
-      - name: Restore run data from cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            lgd/data/combined/*.7z
-          key:  lgd-archive-data-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
-          restore-keys: |
-            lgd-archive-data-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-
-            lgd-archive-data-v1-${{ steps.date.outputs.date }}-
-
-      - name: Compress data
-        run: |
-          cd lgd
-          num_months_back="${{ vars.LGD_ARCHIVE_NUM_MONTHS_BACK }}"
-          uv run utils/get_prev_month_year.py month_year.txt $num_months_back
-          uv run utils/archive_prev_month.py $(cat month_year.txt)
-        timeout-minutes: 240
-
-      - name: Save run data to cache
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            lgd/data/combined/*.7z
-          key:  lgd-archive-data-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
+  Update-Listing:
+    needs: [Prepare, Archives]
+    if: ${{ always() && needs.Prepare.result == 'success' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4.1.7
+      - uses: astral-sh/setup-uv@v5
+      - name: Redistribute remaining daily assets and refresh indexes
+        working-directory: lgd
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: uv run python -m utils.archive_workflow settle
 
   BuildDocs:
-    # Publish completed archives even if a later component failed or timed out.
-    if: ${{ !cancelled() }}
-    needs: Run-LGD-Compression
+    needs: Update-Listing
+    if: ${{ always() && needs.Update-Listing.result == 'success' }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     uses: ./.github/workflows/docs.yml
     secrets: inherit
-
- 

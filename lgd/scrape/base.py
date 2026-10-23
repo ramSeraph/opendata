@@ -205,6 +205,11 @@ def get_local_context(params):
 
 def get_date_str(date=None):
     if date is None:
+        # Distributed jobs and retries must use the same collection date,
+        # including when a job crosses midnight. Explicit dates still win.
+        collection_date = os.environ.get('LGD_COLLECTION_DATE')
+        if collection_date:
+            return datetime.strptime(collection_date, '%d%b%Y').strftime('%d%b%Y')
         date = datetime.today()
         if RUN_FOR_PREV_DAY:
             date = date - timedelta(days=RUN_FOR_PREV_DAY)

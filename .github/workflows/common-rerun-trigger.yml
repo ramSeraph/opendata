@@ -14,6 +14,10 @@ on:
         description: 'Also retry timeouts, including cancellations with a timeout annotation'
         type: boolean
         default: false
+      failed-jobs-only:
+        description: 'Retry only failed jobs and their dependents, preserving successful DAG jobs'
+        type: boolean
+        default: false
 
 jobs:
   Rerun-Attempter:
@@ -86,7 +90,11 @@ jobs:
           RERUN_URL: ${{ github.event.workflow_run.rerun_url }}
           RERUN_USER: ${{ github.repository_owner }}
           RERUN_TOKEN: ${{ secrets.RERUN_PAT }}
+          RERUN_FAILED_ONLY: ${{ inputs.failed-jobs-only }}
         run: |
+          if [[ "${RERUN_FAILED_ONLY:-false}" == true ]]; then
+            RERUN_URL="${RERUN_URL}-failed-jobs"
+          fi
           curl --fail-with-body -X POST -u "$RERUN_USER:$RERUN_TOKEN" "$RERUN_URL"
 
   Alert-Sender:

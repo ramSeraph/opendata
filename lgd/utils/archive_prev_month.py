@@ -19,12 +19,10 @@ def run_external(cmd):
         raise Exception(f'command {cmd} failed with exit code: {res.returncode}')
 
 def get_all_releases():
-    run_external('sh -c "gh release list --limit 100 --json tagName > tags.json"')
-    tfile = Path('tags.json')
-    data = json.loads(tfile.read_text())
-    tfile.unlink()
-    releases = [ r['tagName'] for r in data ]
-    return releases
+    result = subprocess.run(['gh', 'api', '--paginate', '--slurp',
+                             'repos/{owner}/{repo}/releases?per_page=100'],
+                            check=True, capture_output=True, text=True)
+    return [r['tag_name'] for page in json.loads(result.stdout) for r in page]
 
 def get_all_archive_names(releases):
     fnames = {}
@@ -66,7 +64,15 @@ def get_release_asset(release, name):
     assets = [asset for asset in json.loads(result.stdout)['assets'] if asset['name'] == name]
     if len(assets) > 1:
         raise ValueError(f'Multiple assets named {name} in {release}')
-    return assets[0] if assets else None
+    if not assets:
+        return None
+    # gh release view omits digest, even for uploads that have a SHA-256 in
+    # the REST API. Fetch the asset itself so verification can use that hash.
+    result = subprocess.run(['gh', 'api', assets[0]['apiUrl']],
+                            check=True, capture_output=True, text=True)
+    asset = json.loads(result.stdout)
+    asset['apiUrl'] = asset['url']
+    return asset
 
 
 def require_uploaded(asset, name):
@@ -185,7 +191,7 @@ def download_published_archive(archive, release, file_names):
 
 def refresh_indexes():
     for release in ('lgd-archive', 'lgd-latest'):
-        run_external(f"uvx --from gh-release-tools generate-lists -r '{release}' -e '.7z'")
+        run_external(f"uv run --with gh-release-tools==0.1.14 python utils/release_helper.py generate-lists -r '{release}' -e '.7z'")
 
 def upload_to_archive(fname, counts, archive_releases):
     monthly_archive_name = Path(fname).name
@@ -353,6 +359,59 @@ def update_mapping(prefix, dates):
         destination.unlink(missing_ok=True)
         backup.unlink(missing_ok=True)
 
+def prepare_monthly_archive(prefix, dates, month_year, all_archives_mapping,
+                            all_monthly_archives_mapping, archive_counts,
+                            archive_releases, zipping_dir, target_release=None):
+    """Build/reuse and verify one published archive without deleting daily data."""
+    monthly_archive_name = f'{prefix}.{month_year}.7z'
+    prefix_file = Path(f'data/combined/{monthly_archive_name}')
+    asset_names = [f'{prefix}.{d}.csv.7z' for d in dates]
+    to_zip = [zipping_dir / f'{prefix}.{d}.csv' for d in dates]
+    file_names = [file.name for file in to_zip]
+    published_release = all_monthly_archives_mapping.get(monthly_archive_name)
+
+    if prefix_file.exists():
+        try:
+            validate_archive_files(prefix_file, file_names, allow_extra=bool(published_release))
+            test_archive_integrity(prefix_file)
+        except (subprocess.CalledProcessError, ValueError):
+            print(f'discarding incomplete cached archive {prefix_file}')
+            prefix_file.unlink()
+
+    if published_release and remove_empty_upload(published_release, monthly_archive_name):
+        archive_counts[published_release] -= 1
+        published_release = None
+
+    if published_release:
+        # Complete mapping/deletion/index work interrupted after an upload.
+        # Check the actual archive before deleting any remaining daily files.
+        if prefix_file.exists():
+            verify_published_file(prefix_file, published_release)
+        else:
+            download_published_archive(prefix_file, published_release, file_names)
+    else:
+        if not prefix_file.exists():
+            for file, zname in zip(to_zip, asset_names):
+                # Refresh staging files from older versions as well: their
+                # extraction may have been interrupted before atomic writes.
+                zfile = zipping_dir / zname
+                rname = all_archives_mapping[zname]
+                download_asset(zfile, rname, zname)
+                extract_daily_archive(zfile, file)
+                zfile.unlink()
+            compress_archive(prefix_file, to_zip, zipping_dir)
+
+        if target_release is None:
+            published_release = upload_to_archive(str(prefix_file), archive_counts, archive_releases)
+        else:
+            # Matrix workers receive reserved destinations from a single planner.
+            run_external(shlex.join(['gh', 'release', 'upload', target_release, str(prefix_file)]))
+            published_release = target_release
+        verify_published_file(prefix_file, published_release)
+
+    return prefix_file, published_release, to_zip
+
+
 def archive_month(month_year):
     releases = get_all_releases()
 
@@ -377,47 +436,10 @@ def archive_month(month_year):
     zipping_dir.mkdir(exist_ok=True, parents=True)
 
     for prefix, dates in by_file.items():
-        monthly_archive_name = f'{prefix}.{month_year}.7z'
-        prefix_file = Path(f'data/combined/{monthly_archive_name}')
+        prefix_file, published_release, to_zip = prepare_monthly_archive(
+            prefix, dates, month_year, all_archives_mapping, all_monthly_archives_mapping,
+            archive_counts, archive_releases, zipping_dir)
         asset_names = [f'{prefix}.{d}.csv.7z' for d in dates]
-        to_zip = [zipping_dir / f'{prefix}.{d}.csv' for d in dates]
-        file_names = [file.name for file in to_zip]
-        published_release = all_monthly_archives_mapping.get(monthly_archive_name)
-
-        if prefix_file.exists():
-            try:
-                validate_archive_files(prefix_file, file_names, allow_extra=bool(published_release))
-                test_archive_integrity(prefix_file)
-            except (subprocess.CalledProcessError, ValueError):
-                print(f'discarding incomplete cached archive {prefix_file}')
-                prefix_file.unlink()
-
-        if published_release and remove_empty_upload(published_release, monthly_archive_name):
-            archive_counts[published_release] -= 1
-            published_release = None
-
-        if published_release:
-            # Complete mapping/deletion/index work interrupted after an upload.
-            # Check the actual archive before deleting any remaining daily files.
-            if prefix_file.exists():
-                verify_published_file(prefix_file, published_release)
-            else:
-                download_published_archive(prefix_file, published_release, file_names)
-        else:
-            if not prefix_file.exists():
-                for file, zname in zip(to_zip, asset_names):
-                    # Refresh staging files from older versions as well: their
-                    # extraction may have been interrupted before atomic writes.
-                    zfile = zipping_dir / zname
-                    rname = all_archives_mapping[zname]
-                    download_asset(zfile, rname, zname)
-                    extract_daily_archive(zfile, file)
-                    zfile.unlink()
-                compress_archive(prefix_file, to_zip, zipping_dir)
-
-            published_release = upload_to_archive(str(prefix_file), archive_counts, archive_releases)
-            verify_published_file(prefix_file, published_release)
-
         update_mapping(prefix, dates)
 
         print('deleting already archived files from latest release')

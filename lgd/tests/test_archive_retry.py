@@ -98,22 +98,23 @@ sys.exit(result.returncode)
         workflow = Path(__file__).resolve().parents[2] / '.github/workflows/common-rerun-trigger.yml'
         step = workflow.read_text().split('      - name: Call Rerun API\n', 1)[1].split('  Alert-Sender:', 1)[0]
         script = textwrap.dedent(step.split('        run: |\n', 1)[1])
-        for exit_code in (0, 22):
-            with self.subTest(exit_code=exit_code), tempfile.TemporaryDirectory() as tmp:
+        for exit_code, failed_only in ((0, False), (22, False), (0, True), (22, True)):
+            with self.subTest(exit_code=exit_code, failed_only=failed_only), tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
                 curl = root / 'curl'
                 curl.write_text('#!/usr/bin/env python3\nimport json, sys\nprint(json.dumps(sys.argv[1:]))\n'
                                 f'sys.exit({exit_code})\n')
                 curl.chmod(0o755)
                 env = dict(os.environ, PATH=f'{root}:{os.environ["PATH"]}',
-                           RERUN_URL='https://api.github.com/repos/owner/repo/actions/runs/123/rerun',
-                           RERUN_USER='owner', RERUN_TOKEN='fake-token')
+                           RERUN_URL='https://api.github.com/repos/owner-name/repo-name/actions/runs/123/rerun',
+                           RERUN_USER='owner', RERUN_TOKEN='fake-token',
+                           RERUN_FAILED_ONLY=str(failed_only).lower())
                 result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', script],
                                         env=env, capture_output=True, text=True)
                 self.assertEqual(result.returncode, exit_code, result.stderr)
                 args = json.loads(result.stdout)
                 self.assertIn('--fail-with-body', args)
-                self.assertEqual(args[-1], env['RERUN_URL'])
+                self.assertEqual(args[-1], env['RERUN_URL'] + ('-failed-jobs' if failed_only else ''))
 
 
 if __name__ == '__main__':

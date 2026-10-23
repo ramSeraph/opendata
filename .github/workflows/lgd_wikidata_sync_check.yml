@@ -18,11 +18,12 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v7.0.1
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.3.2
         with:
+          prune-cache: true
           version: "latest"
           enable-cache: true
           cache-dependency-glob: 'lgd/wikidata/pyproject.toml'
@@ -34,7 +35,7 @@ jobs:
         id: date
 
       - name: Restore daily run data from cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6.1.0
         with:
           path: |
             lgd/wikidata/data/
@@ -63,7 +64,7 @@ jobs:
 
       - name: Save daily run data to cache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6.1.0
         with:
           path: |
             lgd/wikidata/data/

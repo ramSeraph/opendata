@@ -17,17 +17,18 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       LGD_ARCHIVE_ITEM: ${{ inputs.item }}
     steps:
-      - uses: actions/checkout@v4.1.7
+      - uses: actions/checkout@v7.0.1
       - name: Setup swap
         uses: pierotofy/set-swap-space@v1.0
         with:
           swap-size-gb: 10
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v10.3.2
         with:
+          prune-cache: true
           enable-cache: true
           cache-dependency-glob: lgd/uv.lock
       - name: Restore completed compression checkpoint
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6.1.0
         with:
           path: lgd/data/combined/*.7z
           key: lgd-archive-component-v1-${{ fromJSON(inputs.item).month }}-${{ fromJSON(inputs.item).prefix }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -40,7 +41,7 @@ jobs:
       - name: Save completed compression checkpoint
         if: ${{ always() && steps.archive.outcome != 'success' }}
         timeout-minutes: 10
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6.1.0
         with:
           path: lgd/data/combined/*.7z
           key: lgd-archive-component-v1-${{ fromJSON(inputs.item).month }}-${{ fromJSON(inputs.item).prefix }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -58,8 +59,10 @@ jobs:
       LGD_ARCHIVE_ITEM: ${{ inputs.item }}
       LGD_ARCHIVE_RECEIPT: ${{ needs.Compress.outputs.receipt }}
     steps:
-      - uses: actions/checkout@v4.1.7
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          prune-cache: true
       - name: Update mapping, then retire verified daily assets
         working-directory: lgd
         run: uv run python -m utils.archive_workflow finalize

@@ -26,11 +26,12 @@ jobs:
     outputs:
       changes: ${{ steps.monitor-changes.outputs.changes }}
     steps:
-      - uses: actions/checkout@v4.1.7
+      - uses: actions/checkout@v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.3.2
         with:
+          prune-cache: true
           enable-cache: true
           cache-dependency-glob: lgd/uv.lock
 
@@ -39,7 +40,7 @@ jobs:
         id: date
 
       - name: Restore Cached changes
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6.1.0
         with:
           path: lgd/data/raw
           key: LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}
@@ -62,7 +63,7 @@ jobs:
         timeout-minutes: 5
 
       - name: Save Cached changes
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6.1.0
         if: always()
         with:
           path: lgd/data/raw
@@ -158,7 +159,7 @@ jobs:
         run: echo "date=$(date +'%d%b%Y')" >> $GITHUB_OUTPUT
         id: date
       - name: Restore cached changes
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6.1.0
         with:
           path: lgd/data/raw
           key: LGD-Monitor-Changes-v1-${{ steps.date.outputs.date }}-${{ github.run_number }}-${{ github.run_attempt }}

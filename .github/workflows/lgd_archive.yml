@@ -23,8 +23,10 @@ jobs:
       matrix: ${{ steps.plan.outputs.matrix }}
       has-work: ${{ steps.plan.outputs.has-work }}
     steps:
-      - uses: actions/checkout@v4.1.7
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          prune-cache: true
       - name: Discover datasets and reserve release destinations
         id: plan
         working-directory: lgd
@@ -50,8 +52,10 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 240
     steps:
-      - uses: actions/checkout@v4.1.7
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          prune-cache: true
       - name: Redistribute remaining daily assets and refresh indexes
         working-directory: lgd
         env:

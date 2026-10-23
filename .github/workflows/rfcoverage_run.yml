@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup python
         uses: actions/setup-python@v5.1.1
@@ -23,7 +23,7 @@ jobs:
           python-version: '3.10'
 
       - name: Restore pip data from cache
-        uses: actions/cache@v4.0.2
+        uses: actions/cache@v6.1.0
         with:
           path: ./.venv/
           key: $venv-${{ hashFiles('rfcoverage/requirements.txt') }}

@@ -41,17 +41,18 @@ jobs:
       LGD_NEEDS: ${{ inputs.prerequisites }}
       LGD_COMPONENT: ${{ inputs.component }}
     steps:
-      - uses: actions/checkout@v4.1.7
+      - uses: actions/checkout@v7.0.1
       - name: Setup swap
         uses: pierotofy/set-swap-space@v1.0
         with:
           swap-size-gb: 10
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v10.3.2
         with:
+          prune-cache: true
           enable-cache: true
           cache-dependency-glob: lgd/uv.lock
       - name: Restore tesseract models
-        uses: actions/cache/restore@v4.2.2
+        uses: actions/cache/restore@v6.1.0
         id: models
         with:
           path: lgd/data/captcha/models/
@@ -62,7 +63,7 @@ jobs:
         run: utils/download_captcha_models.sh data/captcha/models
       - name: Cache tesseract models
         if: steps.models.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6.1.0
         with:
           path: lgd/data/captcha/models/
           key: lgd-tesseract-models-gcs-v2
@@ -72,7 +73,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y tesseract-ocr p7zip-full
       - name: Restore this component's unfinished children
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6.1.0
         with:
           path: lgd/data/raw/
           key: lgd-component-v1-${{ github.run_id }}-${{ inputs.component }}-${{ github.run_attempt }}
@@ -85,7 +86,7 @@ jobs:
       - name: Save unfinished component checkpoints
         if: ${{ always() && steps.run.outcome != 'success' }}
         timeout-minutes: 10
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6.1.0
         with:
           path: lgd/data/raw/
           key: lgd-component-v1-${{ github.run_id }}-${{ inputs.component }}-${{ github.run_attempt }}

@@ -26,9 +26,10 @@ jobs:
       date: ${{ steps.plan.outputs.date }}
       plan: ${{ steps.plan.outputs.plan }}
     steps:
-      - uses: actions/checkout@v4.1.7
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
         with:
+          prune-cache: true
           enable-cache: true
           cache-dependency-glob: lgd/uv.lock
       - name: Check generated dependency graph
@@ -51,8 +52,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4.1.7
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          prune-cache: true
       - name: Refresh shared release listing after all uploads
         working-directory: lgd
         env:

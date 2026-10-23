@@ -63,6 +63,16 @@ class IntermittentFailureException(Exception):
     pass
 
 
+def describe_report_page(soup):
+    """Bounded visible page markers, without hidden CSRF/captcha input values."""
+    title = soup.find('title')
+    return {
+        'title': title.get_text(' ', strip=True)[:160] if title else None,
+        'headings': [node.get_text(' ', strip=True)[:160] for node in soup.select('h3.card-title')[:3]],
+        'labels': [node.get_text(' ', strip=True)[:240] for node in soup.select('div.control-label')[:3]],
+    }
+
+
 def get_csrf_token_from_base_page(soup):
     lgd_features_section = soup.find('section', { "id" : "hero" })
     if lgd_features_section is None:

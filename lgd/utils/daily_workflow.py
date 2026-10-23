@@ -27,15 +27,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_JOBS = 3
 WORKERS_PER_JOB = 10
-ORGANIZATION_WORKERS_PER_JOB = 20
-ORGANIZATION_COMPONENTS = frozenset({
-    'CENTRAL_ORG_DETAILS', 'STATE_ORG_DETAILS',
-    'CENTRAL_ORG_UNITS', 'STATE_ORG_UNITS',
-    'CENTRAL_ORG_DESIGNATIONS', 'STATE_ORG_DESIGNATIONS',
-    'CENTRAL_ADMIN_DEPTS', 'STATE_ADMIN_DEPTS',
-    'CENTRAL_ADMIN_DEPT_UNITS', 'STATE_ADMIN_DEPT_UNITS',
-    'ORG_UNIT_COVERAGE', 'ORG_UNIT_DETAILS',
-})
 RELEASE_CAPACITY = 990  # Leave space below GitHub's 1,000-asset limit for indexes.
 RELEASE_PATTERN = re.compile(r'lgd-latest(?:-extra([1-9][0-9]*))?')
 
@@ -235,8 +226,7 @@ def scrape_component(component):
     if missing:
         raise ValueError(f'Missing released prerequisites: {missing}')
     CaptchaHelper.check_models(downloader.ctx.params.captcha_model_dir)
-    workers = (ORGANIZATION_WORKERS_PER_JOB if component in ORGANIZATION_COMPONENTS
-               else WORKERS_PER_JOB)
+    workers = WORKERS_PER_JOB
     logger.info('Running %s with up to %s child downloads', component, workers)
     done, errors = run_on_threads({component: []}, items, workers, True,
                                  downloader.ctx.params, status_outfile='status.json')

@@ -4,12 +4,13 @@ import time
 import copy
 import logging
 
+from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from pathlib import Path
 from .base import (INCORRECT_CAPTCHA_MESSAGE,
                    DownloaderItem, BaseDownloader,
                    IntermittentFailureException,
-                   MultiDownloader, add_defaults_to_args)
+                   MultiDownloader, add_defaults_to_args, describe_report_page)
 from .conversion_helper import (records_from_excel, records_from_xslx,
                                 unzip_single, records_from_odt,
                                 records_from_htm)
@@ -19,6 +20,11 @@ logger = logging.getLogger(__name__)
 
 class CaptchaFailureException(Exception):
     pass
+
+
+class UnexpectedDirectoryPage(ValueError):
+    """LGD returned neither a downloadable report nor a captcha rejection."""
+
 
 def merge_file(old_file, mod_file, tgt_file):
     #TODO: write this
@@ -79,7 +85,10 @@ class DirectoryDownloader(BaseDownloader):
                 if self.ctx.params.save_failed_html:
                     with open('failed.html', 'w') as f:
                         f.write(web_data.text)
-                raise Exception('Non-captcha failure in request')
+                markers = describe_report_page(BeautifulSoup(web_data.content, 'html.parser'))
+                raise UnexpectedDirectoryPage('Non-captcha failure in request; '
+                    f'HTTP {web_data.status_code}; content_type={web_data.headers.get("Content-Type")!r}; '
+                    f'bytes={len(web_data.content)}; {markers!r}')
     
             self.captcha_helper.mark_failure()
             raise CaptchaFailureException()
@@ -143,18 +152,27 @@ class DirectoryDownloader(BaseDownloader):
     def get_records(self):
         download_types = copy.copy(self.download_types)
         max_captcha_retries = self.ctx.params.captcha_retries
+        recovered_session = False
         while True:
             download_type = download_types.pop(0)
             try:
                 count = 0
                 while True:
-                    count += 1
                     try:
                         return self.make_request(download_type)
                     except CaptchaFailureException:
+                        count += 1
                         if count > max_captcha_retries:
-                            raise Exception('captcha failed for {max_captcha_retries} tries')
+                            raise Exception(f'captcha failed after {count} attempts')
                         time.sleep(1)
+                    except UnexpectedDirectoryPage as ex:
+                        if recovered_session:
+                            raise
+                        recovered_session = True
+                        logger.warning('%s returned an unexpected page; retrying once in 5 seconds '
+                                       'with a fresh session: %s', self.name, ex)
+                        self.ctx.reset_session()
+                        time.sleep(5)
             except IntermittentFailureException as ex:
                 raise ex
             except Exception as ex:

@@ -6,15 +6,17 @@ units and blank coverage must not be interpreted as deleted units/relationships.
 
 import logging
 import re
+import time
 
 from collections import defaultdict, deque
+from html import escape, unescape
 from pathlib import Path
 from urllib.parse import urlencode, urlsplit
 
 from bs4 import BeautifulSoup
 
 from .base import (BaseDownloader, DownloaderItem, MultiDownloader,
-                   INCORRECT_CAPTCHA_MESSAGE)
+                   INCORRECT_CAPTCHA_MESSAGE, describe_report_page)
 from .dwr import DwrCaller
 
 
@@ -27,6 +29,37 @@ UNIT_FIELDS = ['Org Unit Code', 'Org Unit Name (In English)', 'Entity Code',
 LINK_FIELDS = ['Covered Entity Code', 'Covered Entity Name',
                'Covered Entity Type', 'Coverage Type']
 CLAIM = re.compile(r'([0-9]+)%([^%]*)%([^%]*)%([FP])(?=,|$)')
+COVERAGE_INPUT = re.compile(
+    r'(?P<prefix><input\s+type=(?P<type_quote>[\'"])hidden(?P=type_quote)\s+value=)'
+    r'(?P<quote>[\'"])(?P<value>[^<]*?)(?P=quote)'
+    r'(?P<suffix>\s+id=(?P<id_quote>[\'"])(?P<code>[0-9]+)(?P=id_quote)\s*/?>)',
+    re.IGNORECASE)
+
+
+class UnexpectedCoveragePage(ValueError):
+    """A response that is neither a report nor LGD's validated empty layout."""
+
+
+def escape_coverage_input_quotes(content):
+    """Recover quoted names in LGD's known hidden-input template.
+
+    LGD writes the value before the numeric unit id and does not escape quotes
+    in entity names (e.g. Kathaghar "A"). The trailing id bounds the complete
+    payload. Do this before HTML parsing, which otherwise truncates the value
+    and can even accept a complete prefix while silently losing later claims.
+    Never match across another tag or guess a different input layout.
+    """
+    text = content.decode('utf-8') if isinstance(content, bytes) else content
+
+    def repair(match):
+        quote, value = match['quote'], match['value']
+        if quote not in value:
+            return match[0]
+        logger.warning('Recovering unescaped quotes in coverage input for unit %s', match['code'])
+        return (match['prefix'] + quote + escape(unescape(value), quote=True)
+                + quote + match['suffix'])
+
+    return COVERAGE_INPUT.sub(repair, text)
 
 
 def parse_coverage_claims(value, unit_code):
@@ -50,7 +83,7 @@ def parse_coverage_claims(value, unit_code):
 
 
 def parse_coverage_report(content):
-    soup = BeautifulSoup(content, 'html.parser')
+    soup = BeautifulSoup(escape_coverage_input_quotes(content), 'html.parser')
     table = soup.find('table', id='tableRecords')
     if table is None:
         form = soup.find('form', id='capchForm')
@@ -63,7 +96,11 @@ def parse_coverage_report(content):
                     and empty
                     and not any(node['id'].isdigit() for node in soup.find_all('input', id=True))):
                 return []
-        raise ValueError('Organization coverage report has no result table')
+        # A 200 response may still be the initial form or an LGD error page.
+        # Include the visible report markers, without cookies/hidden tokens,
+        # so a future failure can be distinguished from a valid empty report.
+        raise UnexpectedCoveragePage('Organization coverage report has no result table; '
+                                     f'report_form={form is not None}; {describe_report_page(soup)!r}')
     rows = table.find_all('tr')
     if not rows or [c.get_text(' ', strip=True) for c in rows[0].find_all('th')] != HEADERS:
         raise ValueError('Unexpected organization coverage header')
@@ -164,6 +201,19 @@ class OrganizationCoverageDownloader(BaseDownloader):
         return records
 
     def get_level_records(self, level):
+        for attempt in range(2):
+            try:
+                return self._get_level_records(level)
+            except UnexpectedCoveragePage as error:
+                if attempt:
+                    raise
+                logger.warning('Organization %s, level %s returned an unexpected page; '
+                               'retrying once in 5 seconds with a fresh session: %s',
+                               self.organization['Organization Code'], level['orgLocatedLevelCode'], error)
+                self.ctx.reset_session()
+                time.sleep(5)
+
+    def _get_level_records(self, level):
         org = self.organization
         token = self.ctx.csrf_token_reports
         url = self.base_url + '/adminEntityCoverageDetails.do'

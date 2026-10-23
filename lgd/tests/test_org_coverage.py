@@ -7,7 +7,7 @@ import requests
 from scrape import get_all_downloaders
 from scrape.base import BaseDownloader, Context, Params
 from scrape.org_coverage import (HEADERS, OrganizationCoverageDownloader,
-                                 parse_coverage_report, root_levels)
+                                 UnexpectedCoveragePage, parse_coverage_report, root_levels)
 from scrape.site_map import get_known_site_map
 
 
@@ -48,6 +48,45 @@ def empty_report():
 
 
 class CoverageParsingTests(unittest.TestCase):
+    def test_source_unescaped_quotes_preserve_names_and_the_remaining_claims(self):
+        claims = (',370%Rayagada%District%P,425760%Kathaghar "A"%Village%F'
+                  ',425761%Kathaghar "B"%Village%F,425874%Bhramarajod%Village%F')
+        html = report(claims).replace(
+            '<input id="1432644" type="hidden" value="' + claims + '">',
+            '<input type="hidden" value="' + claims + '" id="1432644"/>')
+        rows = parse_coverage_report(html.encode())
+        self.assertEqual([r['Covered Entity Code'] for r in rows],
+                         ['370', '425760', '425761', '425874'])
+        self.assertEqual([r['Covered Entity Name'] for r in rows],
+                         ['Rayagada', 'Kathaghar "A"', 'Kathaghar "B"', 'Bhramarajod'])
+        self.assertEqual([r['Covered Entity Type'] for r in rows],
+                         ['District', 'Village', 'Village', 'Village'])
+
+    def test_quote_recovery_preserves_html_entities_and_single_quoted_attributes(self):
+        for quote, source_name, expected_name in [
+            ('"', 'Ward "A &amp; B"', 'Ward "A & B"'),
+            ("'", "Officer's area &amp; ward", "Officer's area & ward"),
+            ('"', 'Ward &quot;A&quot;', 'Ward "A"'),
+        ]:
+            with self.subTest(quote=quote, name=source_name):
+                claims = ',1%' + source_name + '%Village%F'
+                html = report(claims)
+                source_input = html[:html.index('<table')]
+                template = f'<input type="hidden" value={quote}{claims}{quote} id="1432644"/>'
+                # A neighboring, noncoverage hidden input is not part of this payload.
+                html = '<input type="hidden" value="unrelated" id="label"/>' + html.replace(source_input, template)
+                row, = parse_coverage_report(html)
+                self.assertEqual(row['Covered Entity Name'], expected_name)
+
+    def test_quote_recovery_does_not_accept_a_truncated_claim(self):
+        for claims in [',1%Ward "A"', ',1%Ward "A"%Village%F,broken',
+                       ',1%Ward "A"%Village%invalid']:
+            html = report(claims)
+            source_input = html[:html.index('<table')]
+            html = html.replace(source_input, f'<input type="hidden" value="{claims}" id="1432644"/>')
+            with self.subTest(claims=claims), self.assertRaisesRegex(ValueError, 'Malformed coverage claim'):
+                parse_coverage_report(html)
+
     def test_all_links_and_location_are_distinct(self):
         rows = parse_coverage_report(report())
         self.assertEqual([r['Covered Entity Code'] for r in rows], ['18', '287'])
@@ -103,6 +142,15 @@ class CoverageParsingTests(unittest.TestCase):
                      empty + report().replace('S.No.', 'Unexpected Header')]:
             with self.subTest(html=html), self.assertRaises(ValueError):
                 parse_coverage_report(html)
+
+    def test_missing_table_error_exposes_visible_markers_without_hidden_tokens(self):
+        html = (empty_report().replace('Data Not Found', 'Please select an organization')
+                + '<input type="hidden" name="OWASP_CSRFTOKEN" value="private-token">')
+        with self.assertRaises(ValueError) as failure:
+            parse_coverage_report(html)
+        self.assertIn('Please select an organization', str(failure.exception))
+        self.assertIn('report_form=True', str(failure.exception))
+        self.assertNotIn('private-token', str(failure.exception))
 
     def test_missing_entity_type_preserves_incomplete_claim(self):
         # ORG_UNIT_COVERAGE_20_835 reported this claim for unit 1346744.
@@ -187,6 +235,82 @@ class CoverageDownloaderTests(unittest.TestCase):
         params = Params()
         params.base_raw_dir = self.temp
         self.ctx = Context(params)
+        self.sleep = self.enterContext(patch('scrape.org_coverage.time.sleep'))
+
+    def test_unexpected_page_recovery_replaces_session_tokens_and_captcha(self):
+        old = self.ctx._session = Mock()
+        self.ctx._csrf_token_reports = 'old-report'
+        self.ctx.script_session_id = 'old-dwr/page'
+        self.ctx.script_batch_id = 7
+        self.ctx.dwr_session_id = 'old-dwr'
+        fresh = Mock()
+        def response(html):
+            value = requests.Response()
+            value.status_code = 200
+            value._content = html.encode()
+            return value
+        home = ('<section id="hero"><a href="downloadDirectory.do?OWASP_CSRFTOKEN=new-download">'
+                'Download Directory</a></section><div id="reports-model">'
+                '<a href="report.do?OWASP_CSRFTOKEN=new-report">Report</a></div>')
+        old.get.return_value = response('<form/>')
+        old.post.return_value = response('<html><title>Temporarily unavailable</title></html>')
+        fresh.get.side_effect = [response(home), response('<form/>')]
+        fresh.post.return_value = response(report())
+        child = OrganizationCoverageDownloader(
+            name='recovery', base_name='ORG_UNIT_COVERAGE', ctx=self.ctx,
+            organization={'Organization Code': '2844', 'Organization Name': 'Water Resources',
+                          'State Code': '30', 'State Name': 'Goa'})
+        level = {'orgLocatedLevelCode': 6405, 'parentOrgLocatedLevelCode': 0,
+                 'orgLevelSpecificName': 'Water Resources'}
+        with patch('scrape.org_coverage.DwrCaller.call', return_value=[level]), \
+                patch('scrape.base.requests.session', return_value=fresh), \
+                patch.object(child.captcha_helper, 'get_code', side_effect=['old-answer', 'new-answer']) as captcha:
+            child.download()
+        self.assertTrue(child.is_done())
+        self.assertEqual(len(list(child.retrieve_records())), 2)
+        old.close.assert_called_once_with()
+        self.sleep.assert_called_once_with(5)
+        self.assertEqual((old.post.call_count, fresh.post.call_count), (1, 1))
+        self.assertEqual(fresh.get.call_count, 2)  # home tokens, then report form
+        self.assertEqual(self.ctx.script_session_id, '')
+        self.assertIsNone(self.ctx.dwr_session_id)
+        self.assertEqual(self.ctx.script_batch_id, 0)
+        for session, token, answer in [(old, 'old-report', 'old-answer'),
+                                       (fresh, 'new-report', 'new-answer')]:
+            sent = session.post.call_args.kwargs['data']
+            self.assertEqual(sent['OWASP_CSRFTOKEN'], token)
+            self.assertEqual(sent['captchaAnswer'], answer)
+            self.assertEqual((sent['stateCode'], sent['depatmentCode'], sent['orgLocatedLevelCode']),
+                             ('30', '2844', '6405'))
+        self.assertIn('old-report', captcha.call_args_list[0].args[0])
+        self.assertIn('new-report', captcha.call_args_list[1].args[0])
+
+    def test_persistent_unexpected_page_is_bounded_and_never_checkpointed(self):
+        child = OrganizationCoverageDownloader(
+            name='persistent-error', base_name='ORG_UNIT_COVERAGE', ctx=self.ctx,
+            organization={'Organization Code': '2844', 'Organization Name': 'Water Resources'})
+        level = {'orgLocatedLevelCode': 6405, 'parentOrgLocatedLevelCode': 0,
+                 'orgLevelSpecificName': 'Water Resources'}
+        with patch('scrape.org_coverage.DwrCaller.call', return_value=[level]), \
+                patch.object(child, '_get_level_records', side_effect=UnexpectedCoveragePage('missing table')) as request, \
+                patch.object(self.ctx, 'reset_session', wraps=self.ctx.reset_session) as reset:
+            with self.assertRaisesRegex(UnexpectedCoveragePage, 'missing table'):
+                child.download()
+        self.assertEqual(request.call_count, 2)
+        reset.assert_called_once_with()
+        self.assertFalse(child.is_done())
+        self.sleep.assert_called_once_with(5)
+
+    def test_malformed_report_does_not_trigger_session_retry(self):
+        child = OrganizationCoverageDownloader(
+            name='malformed', base_name='ORG_UNIT_COVERAGE', ctx=self.ctx,
+            organization={'Organization Code': '798', 'Organization Name': 'Revenue'})
+        with patch.object(child, '_get_level_records', side_effect=ValueError('Malformed coverage claim')) as request, \
+                patch.object(self.ctx, 'reset_session') as reset:
+            with self.assertRaisesRegex(ValueError, 'Malformed coverage claim'):
+                child.get_level_records({'orgLocatedLevelCode': 1619})
+        request.assert_called_once()
+        reset.assert_not_called()
 
     def test_registration_partitioning_and_serialization(self):
         parent = next(d for d in get_all_downloaders(self.ctx)

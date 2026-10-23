@@ -130,17 +130,10 @@ class DailyPlanTests(unittest.TestCase):
                 daily.scrape_component('VILLAGES')
             scheduler.assert_not_called()
 
-    def test_only_organization_and_department_jobs_use_twenty_workers(self):
+    def test_all_components_including_organizations_use_ten_workers(self):
         items = daily.downloaders()
-        higher_limit = {
-            'CENTRAL_ORG_DETAILS', 'STATE_ORG_DETAILS',
-            'CENTRAL_ORG_UNITS', 'STATE_ORG_UNITS',
-            'CENTRAL_ORG_DESIGNATIONS', 'STATE_ORG_DESIGNATIONS',
-            'CENTRAL_ADMIN_DEPTS', 'STATE_ADMIN_DEPTS',
-            'CENTRAL_ADMIN_DEPT_UNITS', 'STATE_ADMIN_DEPT_UNITS',
-            'ORG_UNIT_COVERAGE', 'ORG_UNIT_DETAILS',
-        }
-        self.assertTrue(higher_limit <= items.keys())
+        self.assertTrue({'ORG_UNIT_COVERAGE', 'ORG_UNIT_DETAILS', 'STATE_ORG_UNITS',
+                         'STATE_ADMIN_DEPT_UNITS', 'CENTRAL_ADMIN_DEPTS'} <= items.keys())
         for name in items:
             with self.subTest(component=name):
                 downloader = Mock()
@@ -150,8 +143,7 @@ class DailyPlanTests(unittest.TestCase):
                         patch('scrape.captcha_helper.CaptchaHelper.check_models'), \
                         patch.object(daily, 'setup_logging'):
                     self.assertEqual(daily.scrape_component(name), 0)
-                self.assertEqual(scheduler.call_args.args[2:4],
-                                 (20 if name in higher_limit else 10, True))
+                self.assertEqual(scheduler.call_args.args[2:4], (10, True))
 
     def test_deadline_kills_process_group_before_returning_to_cache_step(self):
         process = Mock(pid=12345)

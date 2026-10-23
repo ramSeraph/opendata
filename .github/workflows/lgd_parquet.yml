@@ -1,0 +1,158 @@
+name: LGD Daily Parquet
+
+on:
+  workflow_run:
+    workflows: [LGD Daily Run]
+    types: [completed]
+    branches: [master]
+  schedule:
+    - cron: '45 1 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Publish available reports or recover discovery metadata
+        type: choice
+        options: [update, recover]
+        default: update
+      datasets:
+        description: Space-separated dataset names (blank selects all supported reports)
+        type: string
+
+# Workers publish distinct assets; only the final job changes discovery metadata.
+# Recovery uses the same lock. Workflows never create Git commits.
+concurrency:
+  group: lgd-parquet-publication
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: lgd
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  prepare:
+    if: >-
+      github.repository == 'ramSeraph/opendata' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.head_repository.full_name == github.repository &&
+        github.event.workflow_run.head_branch == github.event.repository.default_branch)) &&
+      (github.event_name != 'workflow_dispatch' || github.ref_name == github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      has_work: ${{ steps.plan.outputs.has_work }}
+      commit: ${{ steps.pin.outputs.commit }}
+      artifact: ${{ steps.pin.outputs.artifact }}
+      mode: ${{ steps.pin.outputs.mode }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Pin this attempt
+        id: pin
+        env:
+          MODE: ${{ inputs.mode || 'update' }}
+        run: |
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "artifact=parquet-plan-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+      - name: Discover new reports before installing conversion dependencies
+        id: plan
+        if: steps.pin.outputs.mode == 'update'
+        env:
+          DATASETS: ${{ inputs.datasets }}
+        run: |
+          options=()
+          if [[ -n "$DATASETS" ]]; then
+            read -r -a datasets <<< "$DATASETS"
+            options=(--datasets "${datasets[@]}")
+          fi
+          python -m utils.parquet_workflow prepare "${options[@]}"
+      - uses: actions/upload-artifact@v7.0.2
+        if: steps.pin.outputs.mode == 'update'
+        with:
+          name: ${{ steps.pin.outputs.artifact }}
+          path: lgd/data/parquet-publication/plan.json
+          if-no-files-found: error
+          retention-days: 14
+
+  convert:
+    needs: prepare
+    if: needs.prepare.outputs.has_work == 'true'
+    strategy:
+      fail-fast: false
+      # No parallelism cap: conversion reads GitHub assets, not LGD reports.
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: ${{ needs.prepare.outputs.artifact }}
+          path: lgd/data/parquet-publication
+      - name: Reuse a completed upload before installing dependencies
+        id: completed
+        env:
+          DATASET: ${{ matrix.dataset }}
+        run: python -m utils.parquet_workflow check --dataset "$DATASET"
+      - uses: astral-sh/setup-uv@v10.3.2
+        if: steps.completed.outputs.done != 'true'
+        with:
+          enable-cache: true
+          cache-dependency-glob: lgd/utils/parquet_workflow.py
+      - name: Install archive reader
+        if: steps.completed.outputs.done != 'true'
+        timeout-minutes: 5
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y 7zip
+          if ! command -v 7z >/dev/null; then
+            sevenzip_path=$(command -v 7zz)
+            sudo ln -s "$sevenzip_path" /usr/local/bin/7z
+          fi
+      - name: Convert, verify and upload this report
+        if: steps.completed.outputs.done != 'true'
+        timeout-minutes: 225
+        env:
+          DATASET: ${{ matrix.dataset }}
+        # The standalone publisher needs no scraper, history or Iceberg packages.
+        run: >-
+          uv run --no-project --python 3.12 --with duckdb==2.0.0
+          python -m utils.parquet_workflow worker --dataset "$DATASET"
+
+  publish:
+    needs: [prepare, convert]
+    if: always() && needs.prepare.result == 'success'
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v8.0.2
+        if: needs.prepare.outputs.mode == 'update'
+        with:
+          name: ${{ needs.prepare.outputs.artifact }}
+          path: lgd/data/parquet-publication
+      - name: Publish discovery metadata after all workers finish
+        if: needs.prepare.outputs.mode == 'update'
+        run: python -m utils.parquet_workflow publish
+      - name: Recover discovery metadata from verified release files
+        if: needs.prepare.outputs.mode == 'recover'
+        run: python -m utils.parquet_workflow recover

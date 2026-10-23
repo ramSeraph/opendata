@@ -35,6 +35,9 @@ Allow space for the compressed input, DuckDB spill and Parquet output.
 Conversion performs no downloads. Plain CSV and existing gzip CSV inputs use
 the same streaming reader.
 
+The [daily publishing workflow](PUBLISHING.md) discovers source reports in GitHub
+Releases, runs this converter, and publishes dated Parquet files and metadata.
+
 The command prints a JSON receipt containing input and decompressed CSV SHA-256
 hashes, the selected archive member, supplied fields, source/output row counts,
 collapsed rows and output size/hash. Constituency layout diagnostics identify

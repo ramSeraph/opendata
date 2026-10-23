@@ -174,10 +174,14 @@ class OrganizationCoverageDownloader(BaseDownloader):
             'OWASP_CSRFTOKEN': token,
             'state': '1' if 'State Code' in org else '0',
             'stateCode': org.get('State Code', ''),
-            'depatmentCode': org['Organization Code'], 'orgName': org['Organization Name'],
+            'depatmentCode': org['Organization Code'],
             'orgLocatedLevelCode': str(level['orgLocatedLevelCode']),
             'orgUnitCode': str(level['orgLocatedLevelCode']), 'level': '0',
-            'hierarchyList': '', 'hierarchyIdList': level['orgLevelSpecificName'],
+            'hierarchyList': '',
+            # orgName and hierarchyIdList supply display headings. LGD rejects
+            # some real labels with 404 (e.g. PWD Division Office), while the
+            # same code-selected report succeeds without them. Preserve both
+            # original labels in get_records()'s output metadata instead.
         }
         for _ in range(self.ctx.params.captcha_retries + 1):
             fields['captchaAnswer'] = self.captcha_helper.get_code(referer)

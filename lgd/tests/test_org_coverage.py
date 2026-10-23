@@ -301,7 +301,47 @@ class CoverageDownloaderTests(unittest.TestCase):
         self.assertEqual(sent['orgUnitCode'], '452')
         self.assertEqual(sent['stateCode'], '11')
         self.assertEqual(sent['state'], '1')
+        self.assertNotIn('orgName', sent)
+        self.assertNotIn('hierarchyIdList', sent)
+        self.assertEqual(rows[0]['Base Organization Name'], 'Agriculture')
+        self.assertEqual(rows[0]['Report Org Level Specific Name'], 'Agriculture Department')
         self.assertEqual(self.ctx.session.post.call_count, 2)
+
+    def test_heading_rejection_is_avoided_without_changing_selection_or_metadata(self):
+        self.ctx._csrf_token_reports = 'report-token'
+        self.ctx._session = Mock()
+        self.ctx.session.get.return_value = Mock()
+        cases = [('29', '1288', '2829', 'Karnataka Public Works Department', 'PWD Division Office'),
+                 ('8', '978', '2004', 'Public Works Department', 'PWD'),
+                 ('5', '1555', '3513', 'Police', 'DIG Office')]
+        for state, code, level_code, name, heading in cases:
+            with self.subTest(organization=code):
+                child = OrganizationCoverageDownloader(
+                    name=f'heading-{code}', base_name='ORG_UNIT_COVERAGE', ctx=self.ctx,
+                    csv_filename=f'heading-{code}.csv',
+                    organization={'Organization Code': code, 'Organization Name': name,
+                                  'State Code': state, 'State Name': 'Example'})
+                level = {'orgLocatedLevelCode': int(level_code), 'parentOrgLocatedLevelCode': None,
+                         'orgLevelSpecificName': heading}
+
+                def post(url, *, data, **kwargs):
+                    self.assertEqual((data['stateCode'], data['depatmentCode'], data['orgLocatedLevelCode'],
+                                      data['orgUnitCode'], data['level']),
+                                     (state, code, level_code, level_code, '0'))
+                    result = requests.Response()
+                    result.status_code = 404 if data.get('hierarchyIdList') else 200
+                    result._content = report().encode()
+                    return result
+
+                self.ctx.session.post.side_effect = post
+                with patch('scrape.org_coverage.DwrCaller.call', return_value=[level]), \
+                        patch.object(child.captcha_helper, 'get_code', return_value='123456'):
+                    child.download()
+                rows = list(child.retrieve_records())
+                self.assertEqual(len(rows), 2)
+                self.assertTrue(all(r['Base Organization Name'] == name
+                                    and r['Report Org Level Specific Name'] == heading
+                                    and r['Report Org Located Level Code'] == level_code for r in rows))
 
 
 if __name__ == '__main__':

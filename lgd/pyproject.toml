@@ -20,5 +20,8 @@ dependencies = [
     "xlsx2csv>=0.8.4",
 ]
 
+[project.optional-dependencies]
+parquet = ["duckdb>=2.0.0"]
+
 [tool.uv.workspace]
 members = ["wikidata"]

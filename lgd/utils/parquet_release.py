@@ -2,6 +2,7 @@
 
 import json
 import re
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -103,30 +104,30 @@ class GitHub(BaseGitHub):
                     raise ValueError(f'Published asset checksum differs: {name}')
         return asset
 
-    def ensure_release(self, tag, commit):
+    def require_release(self, tag):
         if not RELEASE_PATTERN.fullmatch(tag):
             raise ValueError('Unexpected publication release tag')
         if tag not in self.listed:
             try:
-                self.api('releases', '--method', 'POST', body=dict(
-                    tag_name=tag, target_commitish=commit, name=tag, make_latest='false',
-                    body='LGD Parquet exports. Start with metadata.json in lgd-parquet-latest.'))
-            except Exception:
-                # Other matrix workers may create the same reserved release.
-                self.refresh()
-                if tag not in self.listed:
-                    raise
-            self.refresh()
+                # A manually created release may not yet appear in the listing.
+                release = self.api(f'releases/tags/{tag}')
+            except subprocess.CalledProcessError as error:
+                if 'HTTP 404' in (error.stderr or ''):
+                    raise ValueError(f'Missing release {tag}; create it manually before publishing') from error
+                raise
+            self.listed[tag] = release
+            self.inventory.pop(tag, None)
         release = self.listed[tag]
         if release.get('draft') or release.get('immutable'):
             raise ValueError('Publication release must be public and accept new assets')
+        return release
 
-    def put(self, tag, path, commit, *, mutable=False):
+    def put(self, tag, path, *, mutable=False):
         path = Path(path)
         ref = asset_ref(self.repo, tag, path)
         if mutable and (tag != RELEASE or path.name not in ('metadata.json', 'metadata.previous.json')):
             raise ValueError('Only discovery metadata may be replaced')
-        self.ensure_release(tag, commit)
+        self.require_release(tag)
         existing = self.release_assets(tag, refresh=True).get(path.name)
         if existing and existing['state'] != 'uploaded':
             self.api(f'releases/assets/{existing["id"]}', '--method', 'DELETE')

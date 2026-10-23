@@ -93,8 +93,8 @@ def validate_index(index, repo):
 
 def allocate(client, datasets):
     # Leave room for the two mutable discovery assets and interrupted uploads.
-    counts = {tag: len(client.release_assets(tag)) for tag in client.listed if RELEASE_PATTERN.fullmatch(tag)}
-    counts.setdefault(RELEASE, 0)
+    counts = {tag: len(client.release_assets(tag)) for tag, release in client.listed.items()
+              if RELEASE_PATTERN.fullmatch(tag) and not release.get('draft') and not release.get('immutable')}
     result = {}
     for name in [*sorted(datasets), '_index']:
         slots = 1 if name == '_index' else 2
@@ -102,10 +102,10 @@ def allocate(client, datasets):
                     if counts[tag] + slots <= 980), None)
         if tag is None:
             number = 1
-            while f'lgd-parquet-extra-{number:04}' in counts:
+            while f'lgd-parquet-extra-{number:04}' in client.listed:
                 number += 1
-            tag = f'lgd-parquet-extra-{number:04}'
-            counts[tag] = 0
+            raise ValueError('Insufficient release capacity; create '
+                             f'lgd-parquet-extra-{number:04} manually and prepare a new run')
         counts[tag] += slots
         result[name] = tag
     return result
@@ -116,6 +116,7 @@ def prepare(client, datasets, commit):
         raise ValueError('Select known, nonempty dataset names')
     if not re.fullmatch('[a-f0-9]{40}', commit):
         raise ValueError('Pin a full converter commit')
+    client.require_release(RELEASE)
     parent = client.read_index()
     if parent:
         validate_index(parent, client.repo)
@@ -145,6 +146,8 @@ def prepare(client, datasets, commit):
         except ValueError as error:
             outcomes[name] = dict(status='blocked', reason=str(error))
     allocation = allocate(client, tasks)
+    for tag in set(allocation.values()):
+        client.require_release(tag)
     for name, task in tasks.items():
         task['release'] = allocation[name]
         # Find an already uploaded candidate even if release allocation moved on.
@@ -233,7 +236,7 @@ def worker(client, plan, dataset, work):
                 coverage = event_coverage(connection, parquet, dataset, ledger)
             coverage['source_sha256'] = digest(ledger)
         check_sources(client, source)
-        ref = client.put(task['release'], parquet, plan['commit'])
+        ref = client.put(task['release'], parquet)
         manifest = dict(format_version=1, kind=KIND, dataset=dataset, identity=task['identity'],
                         source=source, converter=plan['converter'], converter_commit=plan['commit'],
                         representation='events' if dataset in EVENTS else 'snapshot',
@@ -244,7 +247,7 @@ def worker(client, plan, dataset, work):
                         csv_sha256=receipt['source']['csv_sha256'], container_sha256=receipt['source']['sha256'])
         path = folder/task['manifest_name']
         write_json(path, manifest)
-        client.put(task['release'], path, plan['commit'])
+        client.put(task['release'], path)
 
 
 def verify_index(client, index):
@@ -262,10 +265,12 @@ def verify_index(client, index):
 def publish(client, plan, work):
     validate_plan(client, plan)
     current = client.read_index()
-    if current and current['generation'] == plan['generation']:
+    same_plan = current is not None and current.get('plan_sha256') == fingerprint(plan)
+    if same_plan:
+        # A previous attempt may have published only the successful workers.
+        # Reconcile newly completed candidates before deciding this is a no-op.
         verify_index(client, current)
-        return current
-    if fingerprint(current) != fingerprint(plan['parent']):
+    elif fingerprint(current) != fingerprint(plan['parent']):
         raise ValueError('Publication parent changed; prepare a fresh plan')
     entries = dict((current or {}).get('datasets', {}))
     for dataset, outcome in plan['outcomes'].items():
@@ -283,19 +288,24 @@ def publish(client, plan, work):
             entries[dataset] = dict(entries.get(dataset, {}), outcome=dict(status='failed', reason=str(error)))
     if current and entries == current['datasets']:
         return current
-    filename = f'metadata.{plan["generation"]}.json'
-    index = dict(format_version=1, kind=KIND, repository=client.repo, generation=plan['generation'],
-                 published_at=datetime.now(timezone.utc).isoformat(), converter_commit=plan['commit'],
+    now = datetime.now(timezone.utc)
+    # Never overwrite the immutable index advertised by the preceding attempt.
+    generation = (now.strftime('%Y-%m-%dT%H%M%SZ')+'.'+uuid.uuid4().hex[:12]
+                  if same_plan else plan['generation'])
+    filename = f'metadata.{generation}.json'
+    index = dict(format_version=1, kind=KIND, repository=client.repo, generation=generation,
+                 plan_sha256=fingerprint(plan),
+                 published_at=now.isoformat(), converter_commit=plan['commit'],
                  immutable_url=f'https://github.com/{client.repo}/releases/download/{plan["index_release"]}/{filename}',
                  previous_index_url=current['immutable_url'] if current else None,
                  datasets=entries, automatic_deletion=False)
     verify_index(client, index)
     work = Path(work)
     write_json(work/filename, index)
-    client.put(plan['index_release'], work/filename, plan['commit'])
+    client.put(plan['index_release'], work/filename)
     if current:
         write_json(work/'metadata.previous.json', current)
-        client.put(RELEASE, work/'metadata.previous.json', plan['commit'], mutable=True)
+        client.put(RELEASE, work/'metadata.previous.json', mutable=True)
     # On first publication our newly uploaded immutable index exists before
     # metadata.json. Distinguish that expected gap from an interrupted old index.
     latest = client.release_assets(RELEASE, refresh=True)
@@ -303,11 +313,12 @@ def publish(client, plan, work):
     if fingerprint(actual) != fingerprint(current):
         raise ValueError('Publication parent changed before index replacement')
     write_json(work/'metadata.json', index)
-    client.put(RELEASE, work/'metadata.json', plan['commit'], mutable=True)
+    client.put(RELEASE, work/'metadata.json', mutable=True)
     return index
 
 
-def recover(client, work, commit):
+def recover(client, work):
+    client.require_release(RELEASE)
     # Prefer complete immutable generations; never guess from a partial worker.
     snapshots = [(a['created_at'], a) for tag in client.listed if RELEASE_PATTERN.fullmatch(tag)
                  for name, a in client.release_assets(tag).items()
@@ -320,7 +331,7 @@ def recover(client, work, commit):
             continue
         path = Path(work)/'metadata.json'
         write_json(path, index)
-        client.put(RELEASE, path, commit, mutable=True)
+        client.put(RELEASE, path, mutable=True)
         return index
     raise ValueError('No verified complete metadata generation is available to recover')
 
@@ -345,7 +356,7 @@ def main():
             output('commit', commit)
         print(json.dumps(dict(convert=sorted(plan['tasks']), outcomes=plan['outcomes']), indent=2))
     elif args.command == 'recover':
-        recover(client, args.work, commit)
+        recover(client, args.work)
     else:
         plan = json.loads(path.read_bytes())
         validate_plan(client, plan)

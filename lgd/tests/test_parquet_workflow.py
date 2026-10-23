@@ -38,6 +38,13 @@ class FakeGitHub:
     def read_json(self, asset):
         return json.loads(self.payloads[asset['id']])
 
+    def require_release(self, tag):
+        if tag not in self.listed:
+            raise ValueError(f'Missing release {tag}; create it manually before publishing')
+        if self.listed[tag].get('draft') or self.listed[tag].get('immutable'):
+            raise ValueError('Publication release must be public and accept new assets')
+        return self.listed[tag]
+
     def read_index(self):
         assets = self.release_assets(RELEASE)
         if 'metadata.json' in assets:
@@ -56,7 +63,8 @@ class FakeGitHub:
             raise ValueError('Reference checksum differs or asset is missing')
         return asset
 
-    def put(self, tag, path, commit, *, mutable=False):
+    def put(self, tag, path, *, mutable=False):
+        self.require_release(tag)
         path = Path(path)
         ref = asset_ref(self.repo, tag, path)
         if path.name in self.release_assets(tag) and not mutable:
@@ -76,6 +84,7 @@ class ParquetWorkflowTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.client = FakeGitHub()
+        self.client.listed[RELEASE] = dict(tag_name=RELEASE, draft=False)
 
     def source(self, day='23Oct2026', payload=b'archive', dataset='states', tag='lgd-latest'):
         return self.client.add(tag, f'{dataset}.{day}.csv.7z', payload)
@@ -84,13 +93,13 @@ class ParquetWorkflowTests(unittest.TestCase):
         task = plan['tasks'][dataset]
         path = self.root/task['parquet_name']
         path.write_bytes(b'parquet '+task['identity'].encode())
-        ref = self.client.put(task['release'], path, COMMIT)
+        ref = self.client.put(task['release'], path)
         manifest = dict(dataset=dataset, identity=task['identity'], source=task['source'],
                         converter=plan['converter'], representation='snapshot', coverage=None,
                         daily=dict(file=ref, observed_on=task['source']['observed_on'], rows=1))
         path = self.root/task['manifest_name']
         path.write_bytes(encoded(manifest))
-        self.client.put(task['release'], path, COMMIT)
+        self.client.put(task['release'], path)
 
     def publish_first(self):
         self.source()
@@ -120,6 +129,22 @@ class ParquetWorkflowTests(unittest.TestCase):
         self.assertEqual(result['datasets']['states']['daily'], old['datasets']['states']['daily'])
         self.assertEqual(result['datasets']['states']['outcome']['status'], 'failed')
         self.assertEqual(result['datasets']['districts']['daily']['observed_on'], '2026-10-24')
+
+    def test_retry_can_finish_a_partially_published_plan_without_overwriting_its_index(self):
+        self.source()
+        self.source(dataset='districts')
+        plan = flow.prepare(self.client, ['states', 'districts'], COMMIT)
+        self.complete(plan, 'states')
+        first = flow.publish(self.client, plan, self.root)
+        self.assertEqual(first['datasets']['districts']['outcome']['status'], 'failed')
+        self.complete(plan, 'districts')
+        second = flow.publish(self.client, plan, self.root)
+        self.assertEqual(second['datasets']['districts']['outcome']['status'], 'updated')
+        self.assertNotEqual(first['immutable_url'], second['immutable_url'])
+        self.assertEqual(second['previous_index_url'], first['immutable_url'])
+        before = len(self.client.uploads)
+        self.assertEqual(flow.publish(self.client, plan, self.root), second)
+        self.assertEqual(len(self.client.uploads), before)
 
     def test_absent_and_older_sources_do_not_advance_or_delete(self):
         old = self.publish_first()
@@ -181,16 +206,46 @@ class ParquetWorkflowTests(unittest.TestCase):
         self.assertEqual(self.client.read_json(self.client.data[RELEASE]['metadata.previous.json']), old)
         self.client.fail_pointer = False
         # Both indexes can have the same upload timestamp; asset IDs break ties.
-        result = flow.recover(self.client, self.root, COMMIT)
+        result = flow.recover(self.client, self.root)
         self.assertEqual(result['datasets']['states']['daily']['observed_on'], '2026-10-24')
 
     def test_capacity_rollover_preserves_latest_pointer_release(self):
         self.client.listed[RELEASE] = dict(draft=False)
         self.client.data[RELEASE] = {str(i): {} for i in range(979)}
+        with self.assertRaisesRegex(ValueError, 'create lgd-parquet-extra-0001 manually'):
+            flow.allocate(self.client, ['states', 'villages'])
+        self.assertEqual(set(self.client.listed), {RELEASE})
+        self.client.listed['lgd-parquet-extra-0001'] = dict(draft=False)
         allocated = flow.allocate(self.client, ['states', 'villages'])
         self.assertEqual(allocated['states'], 'lgd-parquet-extra-0001')
         self.assertEqual(allocated['villages'], 'lgd-parquet-extra-0001')
         self.assertEqual(allocated['_index'], RELEASE)
+
+    def test_prepare_requires_manual_destination_before_discovering_sources(self):
+        self.client.listed.pop(RELEASE)
+        with patch.object(flow, 'inventory', side_effect=AssertionError('Too early for discovery')):
+            with self.assertRaisesRegex(ValueError, 'create it manually'):
+                flow.prepare(self.client, ['states'], COMMIT)
+
+    def test_transport_reports_missing_release_without_attempting_creation(self):
+        client = object.__new__(GitHub)
+        client.listed, client.inventory = {}, {}
+        error = subprocess.CalledProcessError(1, ['gh', 'api'], stderr='gh: Not Found (HTTP 404)')
+        with patch.object(client, 'api', side_effect=error) as api:
+            with self.assertRaisesRegex(ValueError, 'create it manually'):
+                client.require_release(RELEASE)
+        api.assert_called_once_with(f'releases/tags/{RELEASE}')
+
+    def test_transport_reads_manual_release_directly_when_listing_lags(self):
+        client = object.__new__(GitHub)
+        client.listed, client.inventory = {}, {}
+        release = dict(id=42, tag_name=RELEASE, draft=False, immutable=False)
+        with patch.object(client, 'api', return_value=release) as api, \
+                patch.object(client, 'refresh', side_effect=AssertionError('Must not re-list')):
+            self.assertEqual(client.require_release(RELEASE), release)
+            self.assertEqual(client.require_release(RELEASE), release)
+        api.assert_called_once_with(f'releases/tags/{RELEASE}')
+        self.assertEqual(client.listed[RELEASE], release)
 
     def test_event_source_requires_coverage_and_does_not_invent_observation_date(self):
         self.client.add('lgd-latest', 'transactions.csv.7z', b'events')
@@ -230,16 +285,16 @@ class ParquetWorkflowTests(unittest.TestCase):
         path.write_bytes(b'original')
         ref = asset_ref(client.repo, RELEASE, path)
         existing = dict(state='uploaded', size=ref['size'], digest='sha256:'+ref['sha256'])
-        with patch.object(client, 'ensure_release'), \
+        with patch.object(client, 'require_release'), \
                 patch.object(client, 'release_assets', return_value={path.name: existing}), \
                 patch.object(client, 'upload') as upload:
-            self.assertEqual(client.put(RELEASE, path, COMMIT), ref)
+            self.assertEqual(client.put(RELEASE, path), ref)
             upload.assert_not_called()
             path.write_bytes(b'different')
             with self.assertRaises(ValueError):
-                client.put(RELEASE, path, COMMIT)
+                client.put(RELEASE, path)
             with self.assertRaisesRegex(ValueError, 'Only discovery'):
-                client.put(RELEASE, path, COMMIT, mutable=True)
+                client.put(RELEASE, path, mutable=True)
             upload.assert_not_called()
 
     def test_discovery_imports_without_converter_or_history_dependencies(self):

@@ -20,14 +20,18 @@ The stable entry point is:
 https://github.com/ramSeraph/opendata/releases/download/lgd-parquet-latest/metadata.json
 ```
 
-The first successful publication creates this release and its metadata.
+Create the public `lgd-parquet-latest` release manually before the first run.
+The workflow uploads assets to existing releases; it never creates releases or
+tags. Preparation checks the destinations before starting conversion jobs.
 Files use names such as `villages.2026-10-23.<revision>.parquet`. The revision
 identifies the pinned source assets and converter/publisher versions. Each file
 has a companion JSON manifest with the source URLs and checksums, canonical
 schema, row counts, converter commit, and conversion diagnostics.
 
 There is one long-lived latest release, with supplementary
-`lgd-parquet-extra-0001` releases when capacity requires them. Existing published
+`lgd-parquet-extra-0001` releases when capacity requires them. Create these
+manually too: if existing destinations are full, preparation stops with the
+next release name to create, before conversion starts. Existing published
 files retain their URLs. No automatic deletion is performed. Capacity planning
 reserves room under GitHub's [1,000 assets per release and 2 GiB per asset
 limits](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases#storage-and-bandwidth-quotas).
@@ -101,7 +105,9 @@ GitHub replacement is delete/upload, so a short discovery gap is possible;
 readers can retry or use the previous copy. Immutable data remains readable.
 
 Use **Re-run failed jobs** to reuse the pinned plan; workers check for completed
-uploads before installing dependencies. A new dispatch rediscovers sources.
+uploads before installing dependencies. If an earlier attempt already published
+partial results, newly completed datasets are added through a new immutable
+index, preserving the earlier index. A new dispatch rediscovers sources.
 If a pinned raw asset was replaced or moved by archiving, use a new dispatch.
 
 Manual dispatch defaults to `mode=update` with all 39 supported datasets. An

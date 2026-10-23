@@ -1,0 +1,151 @@
+name: Publish lgd-query
+
+on:
+  push:
+    tags: ['lgd-query-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lgd-query-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: lgd-query
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.3.2
+      - name: Build only the reader distribution
+        run: |
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          uv build --out-dir dist
+      - name: Check distribution boundary and version
+        env:
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: uv run --no-project --python 3.12 python tools/check_dist.py --tag "$RELEASE_TAG"
+      - name: Check PyPI metadata
+        run: uv run --no-project --python 3.12 --with twine python -m twine check --strict dist/*
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: lgd-query-dist
+          path: lgd-query/dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  test:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.14']
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: lgd-query-dist
+          path: lgd-query/dist
+      - name: Install and test the built wheel
+        env:
+          TEST_PYTHON: ${{ matrix.python }}
+        run: |
+          uv venv --python "$TEST_PYTHON"
+          wheels=(dist/*.whl)
+          uv pip install --no-cache "${wheels[0]}[cli,duckdb]"
+          .venv/bin/python -m unittest discover -s tests -v
+          .venv/bin/lgd-query --help
+
+  verify-pypi:
+    needs: [build, test]
+    if: github.repository == 'ramSeraph/opendata' && startsWith(github.ref, 'refs/tags/lgd-query-v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: lgd-query-dist
+          path: lgd-query/dist
+      - name: Require identical bytes for any distributions already on PyPI
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 tools/check_dist.py --tag "$RELEASE_TAG" --check-pypi
+
+  publish:
+    needs: verify-pypi
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/project/lgd-query/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: lgd-query-dist
+          path: dist
+      - name: Publish the tested distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.14.3
+        with:
+          skip-existing: true
+
+  github-release:
+    needs: publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: lgd-query-dist
+          path: dist
+      - name: Publish the same distributions on GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python3 lgd-query/tools/check_dist.py dist --tag "$RELEASE_TAG" --require-published
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          version = os.environ['RELEASE_TAG'].removeprefix('lgd-query-v')
+          notes = (
+              f'Python reader library and CLI for public LGD Parquet releases.\n\n'
+              f'Install: `pip install "lgd-query[cli,duckdb]=={version}"`\n\n'
+              f'[PyPI package](https://pypi.org/project/lgd-query/{version}/)\n\n'
+              'The attached wheel and source archive are the same tested files uploaded to PyPI.\n'
+          )
+          Path(os.environ['RUNNER_TEMP'], 'lgd-query-notes.md').write_text(notes)
+          PY
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" dist/* --clobber
+          else
+            gh release create "$RELEASE_TAG" dist/* --verify-tag \
+              --title "lgd-query ${RELEASE_TAG#lgd-query-v}" \
+              --notes-file "$RUNNER_TEMP/lgd-query-notes.md"
+          fi

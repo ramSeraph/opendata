@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lgd-query"
+version = "0.1.0"
+description = "Resolve, download and query public Local Government Directory Parquet releases"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+keywords = ["india", "lgd", "local-government-directory", "parquet", "duckdb"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Topic :: Database",
+]
+
+[project.optional-dependencies]
+duckdb = ["duckdb>=2.0.0"]
+cli = ["rich>=14"]
+
+[project.scripts]
+lgd-query = "lgd_query.cli:main"
+
+[project.urls]
+Repository = "https://github.com/ramSeraph/opendata"
+Documentation = "https://github.com/ramSeraph/opendata/tree/master/lgd-query"
+Issues = "https://github.com/ramSeraph/opendata/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["lgd_query", "lgd_query.*"]
+
+[tool.setuptools.package-data]
+lgd_query = ["py.typed"]

@@ -22,9 +22,11 @@ jobs:
     permissions:
       contents: write
       actions: read
+      checks: write
     outputs:
       date: ${{ steps.plan.outputs.date }}
       plan: ${{ steps.plan.outputs.plan }}
+      capacity: ${{ steps.plan.outputs.capacity }}
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: astral-sh/setup-uv@v10.3.2
@@ -35,7 +37,7 @@ jobs:
       - name: Check generated dependency graph
         working-directory: lgd
         run: uv run python -m utils.generate_daily_workflow --check
-      - name: Assign collection date, release destinations and worker slots
+      - name: Assign collection date, release destinations and shared capacity
         id: plan
         working-directory: lgd
         env:
@@ -47,11 +49,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: STATES
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).STATES.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).STATES) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -59,11 +63,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: DISTRICTS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).DISTRICTS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).DISTRICTS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -71,11 +77,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: SUB_DISTRICTS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).SUB_DISTRICTS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).SUB_DISTRICTS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -83,11 +91,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: BLOCKS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).BLOCKS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).BLOCKS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -95,11 +105,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: TRADITIONAL_LOCAL_BODIES
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).TRADITIONAL_LOCAL_BODIES.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).TRADITIONAL_LOCAL_BODIES) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -107,11 +119,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: URBAN_LOCAL_BODIES
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).URBAN_LOCAL_BODIES.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).URBAN_LOCAL_BODIES) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -119,11 +133,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: URBAN_LOCAL_BODIES_COVERAGE
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).URBAN_LOCAL_BODIES_COVERAGE.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).URBAN_LOCAL_BODIES_COVERAGE) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -131,11 +147,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: DISTRICT_PANCHAYATS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).DISTRICT_PANCHAYATS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).DISTRICT_PANCHAYATS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -143,11 +161,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: CONSTITUENCIES_PARLIAMENT
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).CONSTITUENCIES_PARLIAMENT.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).CONSTITUENCIES_PARLIAMENT) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -155,11 +175,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: CONSTITUENCIES_ASSEMBLY
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).CONSTITUENCIES_ASSEMBLY.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).CONSTITUENCIES_ASSEMBLY) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -167,11 +189,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: PINCODE_VILLAGES
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).PINCODE_VILLAGES.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).PINCODE_VILLAGES) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -179,11 +203,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: PINCODE_URBAN
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).PINCODE_URBAN.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).PINCODE_URBAN) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -191,11 +217,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: CENTRAL_ORG_DETAILS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).CENTRAL_ORG_DETAILS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).CENTRAL_ORG_DETAILS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -203,11 +231,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: CENTRAL_ADMIN_DEPTS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).CENTRAL_ADMIN_DEPTS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).CENTRAL_ADMIN_DEPTS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -215,11 +245,13 @@ jobs:
     needs: [Prepare]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: INVALIDATED_VILLAGES
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).INVALIDATED_VILLAGES.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).INVALIDATED_VILLAGES) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -227,11 +259,13 @@ jobs:
     needs: [Prepare, STATES]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: PANCHAYAT_MAPPINGS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).PANCHAYAT_MAPPINGS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).PANCHAYAT_MAPPINGS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -239,11 +273,13 @@ jobs:
     needs: [Prepare, STATES]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: VILLAGES
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).VILLAGES.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).VILLAGES) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -251,11 +287,13 @@ jobs:
     needs: [Prepare, STATES]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: BLOCK_VILLAGES
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).BLOCK_VILLAGES.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).BLOCK_VILLAGES) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -263,11 +301,13 @@ jobs:
     needs: [Prepare, STATES]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: PRI_LOCAL_BODIES
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).PRI_LOCAL_BODIES.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).PRI_LOCAL_BODIES) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -275,11 +315,13 @@ jobs:
     needs: [Prepare, STATES]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: CONSTITUENCIES_MAPPINGS_URBAN
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).CONSTITUENCIES_MAPPINGS_URBAN.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).CONSTITUENCIES_MAPPINGS_URBAN) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -287,11 +329,13 @@ jobs:
     needs: [Prepare, STATES]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: PRI_LOCAL_BODY_WARDS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).PRI_LOCAL_BODY_WARDS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).PRI_LOCAL_BODY_WARDS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -299,11 +343,13 @@ jobs:
     needs: [Prepare, STATES]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: URBAN_LOCAL_BODY_WARDS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).URBAN_LOCAL_BODY_WARDS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).URBAN_LOCAL_BODY_WARDS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -311,11 +357,13 @@ jobs:
     needs: [Prepare, STATES]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: CONSTITUENCY_COVERAGE
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).CONSTITUENCY_COVERAGE.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).CONSTITUENCY_COVERAGE) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -323,11 +371,13 @@ jobs:
     needs: [Prepare, STATES]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: TLB_VILLAGES
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).TLB_VILLAGES.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).TLB_VILLAGES) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -335,11 +385,13 @@ jobs:
     needs: [Prepare, STATES]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: STATE_ORG_DETAILS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).STATE_ORG_DETAILS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).STATE_ORG_DETAILS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -347,11 +399,13 @@ jobs:
     needs: [Prepare, STATES]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: STATE_ADMIN_DEPTS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).STATE_ADMIN_DEPTS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).STATE_ADMIN_DEPTS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -359,11 +413,13 @@ jobs:
     needs: [Prepare, STATES]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: TRANSACTIONS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).TRANSACTIONS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).TRANSACTIONS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -371,11 +427,13 @@ jobs:
     needs: [Prepare, CENTRAL_ORG_DETAILS]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: CENTRAL_ORG_UNITS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).CENTRAL_ORG_UNITS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).CENTRAL_ORG_UNITS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -383,11 +441,13 @@ jobs:
     needs: [Prepare, CENTRAL_ORG_DETAILS]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: CENTRAL_ORG_DESIGNATIONS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).CENTRAL_ORG_DESIGNATIONS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).CENTRAL_ORG_DESIGNATIONS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -395,11 +455,13 @@ jobs:
     needs: [Prepare, CENTRAL_ADMIN_DEPTS]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: CENTRAL_ADMIN_DEPT_UNITS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).CENTRAL_ADMIN_DEPT_UNITS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).CENTRAL_ADMIN_DEPT_UNITS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -407,11 +469,13 @@ jobs:
     needs: [Prepare, STATE_ORG_DETAILS]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: STATE_ORG_UNITS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).STATE_ORG_UNITS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).STATE_ORG_UNITS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -419,11 +483,13 @@ jobs:
     needs: [Prepare, STATE_ORG_DETAILS]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: STATE_ORG_DESIGNATIONS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).STATE_ORG_DESIGNATIONS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).STATE_ORG_DESIGNATIONS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -431,11 +497,13 @@ jobs:
     needs: [Prepare, CENTRAL_ORG_DETAILS, STATE_ORG_DETAILS]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: ORG_UNIT_COVERAGE
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).ORG_UNIT_COVERAGE.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).ORG_UNIT_COVERAGE) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -443,11 +511,13 @@ jobs:
     needs: [Prepare, CENTRAL_ORG_DETAILS, STATE_ORG_DETAILS]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: ORG_UNIT_DETAILS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).ORG_UNIT_DETAILS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).ORG_UNIT_DETAILS) }}
       prerequisites: ${{ toJSON(needs) }}
 
@@ -455,11 +525,13 @@ jobs:
     needs: [Prepare, STATE_ADMIN_DEPTS]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: STATE_ADMIN_DEPT_UNITS
       collection-date: ${{ needs.Prepare.outputs.date }}
-      slot: ${{ fromJSON(needs.Prepare.outputs.plan).STATE_ADMIN_DEPT_UNITS.slot }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).STATE_ADMIN_DEPT_UNITS) }}
       prerequisites: ${{ toJSON(needs) }}
 

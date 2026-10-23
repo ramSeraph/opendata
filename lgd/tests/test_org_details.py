@@ -115,6 +115,53 @@ class DetailsDownloaderTests(unittest.TestCase):
                 self.assertNotIn('statelabel', sent)
                 self.assertEqual(sent['orgCode'], '697' if state else '')
                 self.assertEqual(sent['orgUnitCode'], '0' if state else '697')
+                self.assertNotIn('orgztn', sent)
+                self.assertEqual(row['Base Organization Name'], 'Revenue')
+
+    def test_problematic_heading_is_omitted_but_original_identity_is_saved(self):
+        cases = [
+            ('32', 'Kerala', '1533', 'PCCF & CWW - To be deleted', '1349622'),
+            ('4', 'Chandigarh', '849', 'Food & Supplies & Consumer Affairs', '1236984'),
+        ]
+        for state, state_name, code, name, unit in cases:
+            with self.subTest(organization=code):
+                org = {'Organization Code': code, 'Organization Name': name,
+                       'State Code': state, 'State Name': state_name}
+                child = OrganizationDetailsDownloader(
+                    name=f'heading-{code}', base_name='ORG_UNIT_DETAILS', ctx=self.ctx,
+                    csv_filename=f'heading-{code}.csv', organization=org)
+                values = ROW.copy()
+                values[3:5] = [unit, name.upper()]
+                values[11:13] = [state, state_name]
+
+                def post(url, *, data, **kwargs):
+                    self.assertEqual((data['code'], data['orgCode']), (state, code))
+                    result = response(report([values]))
+                    if data.get('orgztn'):
+                        result = response('The Specified URL can not be found.')
+                        result.status_code = 404
+                    return result
+
+                self.ctx.session.post.side_effect = post
+                with patch.object(child.captcha_helper, 'get_code', return_value='123456'):
+                    child.download()
+                row, = child.retrieve_records()
+                self.assertEqual(row['Org Unit Code'], unit)
+                self.assertEqual(row['Org Unit Name (In English)'], name.upper())
+                self.assertEqual(row['Base Organization Code'], code)
+                self.assertEqual(row['Base Organization Name'], name)
+
+    def test_unresolved_http_404_still_does_not_produce_an_empty_checkpoint(self):
+        child = OrganizationDetailsDownloader(
+            name='missing', base_name='ORG_UNIT_DETAILS', ctx=self.ctx,
+            organization={'Organization Code': '1', 'Organization Name': 'Example'})
+        result = response('The Specified URL can not be found.')
+        result.status_code = 404
+        self.ctx.session.post.return_value = result
+        with patch.object(child.captcha_helper, 'get_code', return_value='123456'):
+            with self.assertRaises(requests.HTTPError):
+                child.download()
+        self.assertFalse(child.is_done())
 
     def test_successful_http_error_page_is_not_checkpointed_as_empty_data(self):
         child = OrganizationDetailsDownloader(

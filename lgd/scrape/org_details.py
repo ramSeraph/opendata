@@ -81,7 +81,11 @@ class OrganizationDetailsDownloader(BaseDownloader):
             'code': org.get('State Code', '0'),
             'orgCode': org['Organization Code'] if is_state else '',
             'orgUnitCode': '0' if is_state else org['Organization Code'],
-            'orgztn': org['Organization Name'], 'unitLvlDept': 'All', 'orgLevel': 'All',
+            # orgztn is an optional report-heading label, not a selector. Some
+            # real names cause LGD to return 404, including through its own UI
+            # (state/org 32/1533 and 4/849). Codes select the same report without
+            # that label; preserve the original organization name in rows below.
+            'unitLvlDept': 'All', 'orgLevel': 'All',
         }
         for _ in range(self.ctx.params.captcha_retries + 1):
             fields['captchaAnswer'] = self.captcha_helper.get_code(referer)

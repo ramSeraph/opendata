@@ -71,31 +71,36 @@ class DailyPlanTests(unittest.TestCase):
         self.assertNotIn('git commit', generated)
         self.assertNotIn('git push', generated)
         component = generator.WORKFLOW.with_name('lgd_component.yml').read_text()
-        self.assertIn('group: lgd-component-slot-${{ inputs.slot }}\n      queue: max', component)
+        self.assertIn('group: lgd-component-slot-${{ needs.Admit.outputs.slot }}\n      queue: max', component)
+        self.assertIn('group: lgd-component-admission\n      queue: max', component)
+        self.assertIn('    needs: Admit\n', component)
+        self.assertIn('ADMISSION_ATTEMPT', component)
+        self.assertNotIn('      slot:', generated)
+        self.assertIn('capacity-check: ${{ needs.Prepare.outputs.capacity }}', generated)
+        self.assertIn('      actions: read\n      checks: write', generated)
+        retry = generator.WORKFLOW.with_name('lgd_rerun_trigger.yml').read_text()
+        self.assertIn('failed-jobs-only: false', retry)
         self.assertIn('timeout-minutes: 240', component)
         self.assertEqual(daily.WORKERS_PER_JOB, 10)
         self.assertEqual(daily.DEFAULT_MAX_JOBS, 3)
 
-    def test_release_reservations_and_three_slot_bound(self):
+    def test_release_reservations_do_not_preassign_capacity(self):
         items = {f'DATA{i}': Dataset(f'DATA{i}') for i in range(8)}
         old = dict(id=7, tag='lgd-latest', number=0,
                    assets=[{'name': f'older-{i}'} for i in range(daily.RELEASE_CAPACITY - 2)])
         releases = [old]
-        plan = daily.allocate(items, releases, '23Oct2026', 3)
-        self.assertEqual({v['slot'] for v in plan.values()}, {0, 1, 2})
+        plan = daily.allocate(items, releases, '23Oct2026')
+        self.assertTrue(all('slot' not in assignment for assignment in plan.values()))
         self.assertEqual(sum(v['release_tag'] == 'lgd-latest' for v in plan.values()), 2)
         self.assertEqual(sum(v['release_tag'] == 'lgd-latest-extra1' for v in plan.values()), 6)
         self.assertEqual(len(releases), 2)
-        for n in (0, -1, 1000):
-            with self.assertRaises(ValueError):
-                daily.allocate(items, releases, '23Oct2026', n)
 
     def test_existing_asset_keeps_destination_even_when_release_is_full(self):
         item = Dataset('STATES')
         names = [{'name': f'older-{i}'} for i in range(daily.RELEASE_CAPACITY)]
         names.append({'name': 'states.23Oct2026.csv.7z'})
         releases = [dict(id=7, tag='lgd-latest', number=0, assets=names)]
-        plan = daily.allocate({'STATES': item}, releases, '23Oct2026', 3)
+        plan = daily.allocate({'STATES': item}, releases, '23Oct2026')
         self.assertEqual(plan['STATES']['release_id'], 7)
         self.assertEqual(len(releases), 1)
 
@@ -123,6 +128,29 @@ class DailyPlanTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Missing released'):
                 daily.scrape_component('VILLAGES')
             scheduler.assert_not_called()
+
+    def test_only_organization_and_department_jobs_use_twenty_workers(self):
+        items = daily.downloaders()
+        higher_limit = {
+            'CENTRAL_ORG_DETAILS', 'STATE_ORG_DETAILS',
+            'CENTRAL_ORG_UNITS', 'STATE_ORG_UNITS',
+            'CENTRAL_ORG_DESIGNATIONS', 'STATE_ORG_DESIGNATIONS',
+            'CENTRAL_ADMIN_DEPTS', 'STATE_ADMIN_DEPTS',
+            'CENTRAL_ADMIN_DEPT_UNITS', 'STATE_ADMIN_DEPT_UNITS',
+            'ORG_UNIT_COVERAGE', 'ORG_UNIT_DETAILS',
+        }
+        self.assertTrue(higher_limit <= items.keys())
+        for name in items:
+            with self.subTest(component=name):
+                downloader = Mock()
+                downloader.deps = []
+                with patch.object(daily, 'downloaders', return_value={name: downloader}), \
+                        patch('scrape.__main__.run_on_threads', return_value=({name}, set())) as scheduler, \
+                        patch('scrape.captcha_helper.CaptchaHelper.check_models'), \
+                        patch.object(daily, 'setup_logging'):
+                    self.assertEqual(daily.scrape_component(name), 0)
+                self.assertEqual(scheduler.call_args.args[2:4],
+                                 (20 if name in higher_limit else 10, True))
 
     def test_deadline_kills_process_group_before_returning_to_cache_step(self):
         process = Mock(pid=12345)
@@ -184,7 +212,7 @@ class DailyHandoffTests(unittest.TestCase):
         self.addCleanup(env.stop)
         Path('data/raw/23Oct2026').mkdir(parents=True)
         self.remote = FakeGitHub()
-        self.assignment = dict(release_id=1, release_tag='lgd-latest', slot=0)
+        self.assignment = dict(release_id=1, release_tag='lgd-latest')
         self.state = Dataset('STATES')
         self.village = Dataset('VILLAGES', ['STATES'])
         self.items = dict(STATES=self.state, VILLAGES=self.village)

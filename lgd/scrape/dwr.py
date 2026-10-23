@@ -1,5 +1,6 @@
 import logging
 import random
+import re
 import time
 import urllib.parse
 
@@ -8,7 +9,8 @@ from pathlib import Path
 
 from calmjs.parse import es5
 from calmjs.parse.unparsers.extractor import ast_to_dict
-from calmjs.parse.asttypes import FunctionCall
+from calmjs.parse.asttypes import FunctionCall, String
+from calmjs.parse.walkers import Walker
 
 from .base import (DownloaderItem, BaseDownloader,
                    MultiDownloader, add_defaults_to_args)
@@ -171,6 +173,13 @@ class DwrCaller:
         except Exception:
             logger.error('unable to parse {} as js'.format(web_data.text))
             raise
+        # The extractor uses Python literal_eval, which leaves JavaScript's
+        # escaped slash intact. Normalize that escape inside string literals
+        # before extraction. Matching escape pairs preserves actual escaped
+        # backslashes, unlike replacing backslash/slash in decoded values.
+        for node in Walker().filter(js_resp, lambda node: isinstance(node, String)):
+            node.value = re.sub(r'\\.', lambda match: '/' if match[0] == r'\/' else match[0],
+                                node.value, flags=re.DOTALL)
         js_dict = ast_to_dict(js_resp)
         self.raise_on_batch_error(script_name, method_name, js_dict)
         return js_dict

@@ -31,11 +31,15 @@ class GitHub:
         self.repo = os.environ['GITHUB_REPOSITORY']
         self.root = f'repos/{self.repo}'
 
-    def api(self, endpoint, *args, paginate=False):
+    def api(self, endpoint, *args, paginate=False, body=None):
         command = ['gh', 'api', f'{self.root}/{endpoint}', *args]
+        kwargs = {}
+        if body is not None:
+            command.extend(['--input', '-'])
+            kwargs['input'] = json.dumps(body)
         if paginate:
             command.extend(['--paginate', '--slurp'])
-        result = subprocess.run(command, check=True, capture_output=True, text=True, timeout=300)
+        result = subprocess.run(command, check=True, capture_output=True, text=True, timeout=300, **kwargs)
         data = json.loads(result.stdout) if result.stdout else None
         return [item for page in data for item in page] if paginate else data
 

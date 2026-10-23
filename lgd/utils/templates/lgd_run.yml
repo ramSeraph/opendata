@@ -22,9 +22,11 @@ jobs:
     permissions:
       contents: write
       actions: read
+      checks: write
     outputs:
       date: ${{ steps.plan.outputs.date }}
       plan: ${{ steps.plan.outputs.plan }}
+      capacity: ${{ steps.plan.outputs.capacity }}
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: astral-sh/setup-uv@v10.3.2
@@ -35,7 +37,7 @@ jobs:
       - name: Check generated dependency graph
         working-directory: lgd
         run: uv run python -m utils.generate_daily_workflow --check
-      - name: Assign collection date, release destinations and worker slots
+      - name: Assign collection date, release destinations and shared capacity
         id: plan
         working-directory: lgd
         env:

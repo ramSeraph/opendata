@@ -20,10 +20,22 @@ from scrape import get_all_downloaders
 from scrape.base import BaseDownloader, Context, Params, get_date_str, setup_logging
 from scrape.site_map import get_known_site_map
 from .workflow_common import GitHub, digest, output, require_uploaded, verify_download, run_bounded
+from . import component_capacity
 
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_JOBS = 3
 WORKERS_PER_JOB = 10
+ORGANIZATION_WORKERS_PER_JOB = 20
+ORGANIZATION_COMPONENTS = frozenset({
+    'CENTRAL_ORG_DETAILS', 'STATE_ORG_DETAILS',
+    'CENTRAL_ORG_UNITS', 'STATE_ORG_UNITS',
+    'CENTRAL_ORG_DESIGNATIONS', 'STATE_ORG_DESIGNATIONS',
+    'CENTRAL_ADMIN_DEPTS', 'STATE_ADMIN_DEPTS',
+    'CENTRAL_ADMIN_DEPT_UNITS', 'STATE_ADMIN_DEPT_UNITS',
+    'ORG_UNIT_COVERAGE', 'ORG_UNIT_DETAILS',
+})
 RELEASE_CAPACITY = 990  # Leave space below GitHub's 1,000-asset limit for indexes.
 RELEASE_PATTERN = re.compile(r'lgd-latest(?:-extra([1-9][0-9]*))?')
 
@@ -69,10 +81,8 @@ def release_inventory(github):
     return releases
 
 
-def allocate(items, releases, collection_date, max_jobs):
+def allocate(items, releases, collection_date):
     """Reserve unique destinations before uploads start; no concurrent placement."""
-    if not 1 <= max_jobs <= 35:
-        raise ValueError('LGD_MAX_COMPONENT_JOBS must be between 1 and 35')
     counts = {release['tag']: len(release['assets']) for release in releases}
     existing = {}
     requested = {asset_name(item, collection_date) for item in items.values()}
@@ -84,7 +94,7 @@ def allocate(items, releases, collection_date, max_jobs):
                 raise ValueError(f'Duplicate asset across releases: {asset["name"]}')
             existing[asset['name']] = release
     plan = {}
-    for index, (name, downloader) in enumerate(items.items()):
+    for name, downloader in items.items():
         filename = asset_name(downloader, collection_date)
         if name == 'TRANSACTIONS':
             release = releases[0]
@@ -98,8 +108,7 @@ def allocate(items, releases, collection_date, max_jobs):
                 releases.append(release)
                 counts[release['tag']] = 0
             counts[release['tag']] += 1
-        plan[name] = dict(release_id=release['id'], release_tag=release['tag'],
-                          slot=index % max_jobs)
+        plan[name] = dict(release_id=release['id'], release_tag=release['tag'])
     return plan
 
 
@@ -109,9 +118,10 @@ def prepare(github):
     collection_date = datetime.fromisoformat(run['created_at'].replace('Z', '+00:00')) \
         .astimezone(timezone.utc).strftime('%d%b%Y')
     items = downloaders()
+    max_jobs = int(os.environ.get('LGD_MAX_COMPONENT_JOBS') or DEFAULT_MAX_JOBS)
+    component_capacity.validate_limit(max_jobs)
     releases = release_inventory(github)
-    plan = allocate(items, releases, collection_date,
-                    int(os.environ.get('LGD_MAX_COMPONENT_JOBS') or DEFAULT_MAX_JOBS))
+    plan = allocate(items, releases, collection_date)
     for release in releases:
         if release['id'] is None:
             created = github.api('releases', '--method', 'POST', '-f', f'tag_name={release["tag"]}',
@@ -124,6 +134,7 @@ def prepare(github):
                     assignment['release_id'] = created['id']
     output('date', collection_date)
     output('plan', plan)
+    output('capacity', str(component_capacity.create(github, max_jobs)))
 
 
 def extract_csv(archive, member, destination):
@@ -212,7 +223,7 @@ def seed_transactions(github, release_id, downloader):
 
 def scrape_component(component):
     # This subprocess uses the scraper's scheduler, with only the selected
-    # parent in its graph. Its state/organization children share ten workers.
+    # parent in its graph. All its children share the component's worker pool.
     from scrape.__main__ import run_on_threads
     from scrape.captcha_helper import CaptchaHelper
 
@@ -223,7 +234,10 @@ def scrape_component(component):
     if missing:
         raise ValueError(f'Missing released prerequisites: {missing}')
     CaptchaHelper.check_models(downloader.ctx.params.captcha_model_dir)
-    done, errors = run_on_threads({component: []}, items, WORKERS_PER_JOB, True,
+    workers = (ORGANIZATION_WORKERS_PER_JOB if component in ORGANIZATION_COMPONENTS
+               else WORKERS_PER_JOB)
+    logger.info('Running %s with up to %s child downloads', component, workers)
+    done, errors = run_on_threads({component: []}, items, workers, True,
                                  downloader.ctx.params, status_outfile='status.json')
     return 0 if done == {component} and not errors else 1
 

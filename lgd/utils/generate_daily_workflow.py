@@ -20,11 +20,13 @@ def generate(items=None):
     needs: [{needs}]
     permissions:
       contents: write
+      actions: read
+      checks: write
     uses: ./.github/workflows/lgd_component.yml
     with:
       component: {name}
       collection-date: ${{{{ needs.Prepare.outputs.date }}}}
-      slot: ${{{{ fromJSON(needs.Prepare.outputs.plan).{name}.slot }}}}
+      capacity-check: ${{{{ needs.Prepare.outputs.capacity }}}}
       assignment: ${{{{ toJSON(fromJSON(needs.Prepare.outputs.plan).{name}) }}}}
       prerequisites: ${{{{ toJSON(needs) }}}}
 ''')

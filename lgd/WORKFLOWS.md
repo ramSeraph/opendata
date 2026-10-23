@@ -14,17 +14,33 @@ uv run python -m utils.generate_daily_workflow --check
 ```
 
 The preparation job checks this generated file before doing any work. Workflows
-never commit changes. There is one GitHub job per active component, with `needs`
-matching its direct prerequisites. State, organization and department children
-stay inside their component and share ten download workers. A failed component
-blocks its dependents; independent branches continue.
+never commit changes. Each active component has a scraper job and an admission
+job, with the component's `needs` matching its direct prerequisites. State,
+organization and department children stay inside their component. Organization
+and administrative-department
+components share **20 download workers** per job; all other components use
+**10**. The higher limit covers state/central organization details, units and
+designations, administrative departments and their units, and the organization
+unit coverage/detail reports. A failed component blocks its dependents;
+independent branches continue.
 
-`LGD_MAX_COMPONENT_JOBS`, a repository variable, defaults to **3**. Preparation
-assigns components to that many queued concurrency slots. Each slot runs one
-component at a time, giving at most three component jobs and thirty concurrent
-downloads by default. Slot assignment is fixed for a run; an idle slot cannot
-take work assigned to a busy slot. GitHub's `queue: max` preserves pending jobs
-instead of cancelling them as the default concurrency behavior would.
+`LGD_MAX_COMPONENT_JOBS`, a repository variable, defaults to **3**. Once a
+component's prerequisites have succeeded, its admission job reserves any free
+concurrency slot. Components are not assigned to a fixed slot in advance. Each
+slot runs one scraper job at a time, giving at most three scraper jobs. With
+three organization jobs, the maximum is sixty concurrent child downloads; three
+other jobs use at most thirty.
+
+Admission decisions are serialized by a separate concurrency group. At most one
+additional admission runner waits for capacity; it polls GitHub every 15 seconds
+and never contacts LGD. The reservations are stored in one informational GitHub
+check per workflow attempt, requiring `checks: write` for preparation/admission.
+There are no scheduler commits, release assets or external services. A successful
+admission reserves its slot even before its worker is visible in the API. The
+reservation is released only when GitHub reports the worker completed, or when
+the admission failed before a worker was created. Missing jobs do not free a
+slot. Native slot concurrency remains the hard cap, including during failures.
+GitHub's `queue: max` preserves pending admission jobs instead of cancelling them.
 
 Preparation also reserves destinations in `lgd-latest` and its existing
 `-extraN` namespace. A component uploads its completed archive directly to its
@@ -38,15 +54,20 @@ is published before coverage, and retries seed from the currently published
 history before merging additional reports.
 
 One final job refreshes the shared release listing, including after partial
-failure. The daily retry trigger reruns failed jobs and their dependents, up to
-three attempts. Unfinished children are cached separately for each component
-and workflow run; a new day's scrape does not reuse an old day's reports.
+failure. The daily retry trigger reruns the workflow, up to three attempts, so
+each attempt gets fresh capacity reservations. Jobs with completed dated assets
+reuse them without repeating their scrape. The cumulative transactions report
+retains the refresh behavior described above. For manual retries, choose
+**Re-run all jobs**: re-running only failed jobs would reuse successful admission
+outputs from an earlier attempt, and the worker rejects those stale grants.
+Unfinished children are cached separately for each component and workflow run;
+a new day's scrape does not reuse an old day's reports.
 
 The UTC date of the original run is fixed across jobs, retries and midnight.
 `LGD_COLLECTION_DATE` supplies that date to the shared filename/date helper.
 The scraper CLI is unchanged: `python -m scrape` continues to run its local DAG.
-GitHub-specific behavior lives in `utils/daily_workflow.py` and
-`utils/workflow_common.py`.
+GitHub-specific behavior lives in `utils/daily_workflow.py`,
+`utils/component_capacity.py` and `utils/workflow_common.py`.
 
 ## Monthly archive matrix
 
@@ -82,6 +103,9 @@ process group before saving caches. A job that repeatedly cannot finish one
 component within this budget still needs that component split further; a matrix
 does not remove the per-job time limit.
 
+Admission jobs have their own four-hour limit and stop polling after 230
+minutes. Waiting for a free slot does not consume the scraper job's time budget.
+
 The daily and monthly workflows share the `lgd-raw-releases` concurrency group.
 They queue behind one another so archiving/redistribution cannot remove a
 prerequisite asset while a daily DAG is using it. Component upload jobs do not
@@ -89,4 +113,5 @@ update shared metadata concurrently. No workflow performs Git commits.
 
 GitHub references: [job dependencies](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-jobs),
 [queued concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency),
+[check-run metadata](https://docs.github.com/en/rest/checks/runs),
 and [job limits](https://docs.github.com/en/actions/reference/limits).

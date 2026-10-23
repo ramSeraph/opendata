@@ -9,9 +9,9 @@ on:
       collection-date:
         required: true
         type: string
-      slot:
+      capacity-check:
         required: true
-        type: number
+        type: string
       assignment:
         required: true
         type: string
@@ -24,13 +24,40 @@ on:
         value: ${{ jobs.Component.outputs.published }}
 
 jobs:
+  Admit:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+    # Serialize reservation decisions, not the scrapers. This job never
+    # contacts LGD and leaves the component's four-hour budget untouched.
+    concurrency:
+      group: lgd-component-admission
+      queue: max
+    outputs:
+      slot: ${{ steps.reserve.outputs.slot }}
+      attempt: ${{ steps.reserve.outputs.attempt }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Reserve any available component slot
+        id: reserve
+        working-directory: lgd
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CAPACITY_CHECK: ${{ inputs.capacity-check }}
+          LGD_COMPONENT: ${{ inputs.component }}
+        run: python -m utils.component_capacity "$CAPACITY_CHECK" "$LGD_COMPONENT"
+
   Component:
+    needs: Admit
     runs-on: ubuntu-22.04
     timeout-minutes: 240
     permissions:
       contents: write
     concurrency:
-      group: lgd-component-slot-${{ inputs.slot }}
+      group: lgd-component-slot-${{ needs.Admit.outputs.slot }}
       queue: max
     outputs:
       published: ${{ steps.run.outputs.published }}
@@ -41,6 +68,14 @@ jobs:
       LGD_NEEDS: ${{ inputs.prerequisites }}
       LGD_COMPONENT: ${{ inputs.component }}
     steps:
+      - name: Verify reservation belongs to this attempt
+        env:
+          ADMISSION_ATTEMPT: ${{ needs.Admit.outputs.attempt }}
+        run: |
+          if [[ "$ADMISSION_ATTEMPT" != "$GITHUB_RUN_ATTEMPT" ]]; then
+            echo '::error::Capacity must be allocated again for a retry. Use Re-run all jobs; published datasets will be reused.'
+            exit 1
+          fi
       - uses: actions/checkout@v7.0.1
       - name: Setup swap
         uses: pierotofy/set-swap-space@v1.0

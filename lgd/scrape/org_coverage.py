@@ -4,8 +4,12 @@ This is a coverage report, not a complete census of organization units. Missing
 units and blank coverage must not be interpreted as deleted units/relationships.
 """
 
+import logging
+import re
+
+from collections import defaultdict, deque
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 from bs4 import BeautifulSoup
 
@@ -14,33 +18,67 @@ from .base import (BaseDownloader, DownloaderItem, MultiDownloader,
 from .dwr import DwrCaller
 
 
+logger = logging.getLogger(__name__)
+
 HEADERS = ['S.No.', 'Organization Unit Code', 'Organization Unit Name',
            'Entity Code', 'Entity Name', 'Org Specific Code', 'Coverage']
 UNIT_FIELDS = ['Org Unit Code', 'Org Unit Name (In English)', 'Entity Code',
                'Entity Name', 'Org Specific Code']
 LINK_FIELDS = ['Covered Entity Code', 'Covered Entity Name',
                'Covered Entity Type', 'Coverage Type']
+CLAIM = re.compile(r'([0-9]+)%([^%]*)%([^%]*)%([FP])(?=,|$)')
+
+
+def parse_coverage_claims(value, unit_code):
+    """Read complete claims; commas inside entity names are ordinary text."""
+    claims, offset = [], 0
+    while offset < len(value):
+        if value[offset] == ',':
+            offset += 1
+            continue
+        # LGD uses four empty fields for an unmapped unit.
+        if value.startswith('%%%', offset) and (
+                offset + 3 == len(value) or value[offset + 3] == ','):
+            offset += 3
+            continue
+        match = CLAIM.match(value, offset)
+        if match is None:
+            raise ValueError(f'Malformed coverage claim for unit {unit_code}: {value[offset:offset + 200]!r}')
+        claims.append(match.groups())
+        offset = match.end()
+    return claims
 
 
 def parse_coverage_report(content):
     soup = BeautifulSoup(content, 'html.parser')
     table = soup.find('table', id='tableRecords')
     if table is None:
+        form = soup.find('form', id='capchForm')
+        if form is not None and urlsplit(form.get('action', '')).path.rsplit('/', 1)[-1] == 'adminEntityCoverageDetails.do':
+            title = form.select_one('h3.card-title')
+            empty = any(node.get_text(' ', strip=True) == 'Data Not Found'
+                        for node in form.select('div.control-label'))
+            if (title is not None
+                    and title.get_text(' ', strip=True) == 'Organization Unit Coverage Details'
+                    and empty
+                    and not any(node['id'].isdigit() for node in soup.find_all('input', id=True))):
+                return []
         raise ValueError('Organization coverage report has no result table')
     rows = table.find_all('tr')
     if not rows or [c.get_text(' ', strip=True) for c in rows[0].find_all('th')] != HEADERS:
         raise ValueError('Unexpected organization coverage header')
 
     # LGD places hidden inputs between <tr>s, including outside the table.
-    inputs = {}
+    # A unit may appear in several rows, each with its own coverage input.
+    # Pair occurrences in report order instead of overwriting or combining
+    # all of a unit's claims into every occurrence of its row.
+    inputs = defaultdict(deque)
     for item in soup.find_all('input', id=True):
         code = item['id']
         if code.isdigit():
-            if code in inputs:
-                raise ValueError(f'Duplicate coverage input for unit {code}')
-            inputs[code] = item.get('value', '')
+            inputs[code].append(item.get('value', ''))
 
-    records, seen = [], set()
+    records, row_count = [], 0
     for row in rows[1:]:
         cells = row.find_all('td', recursive=False)
         # The only non-data row is the generated-on/URL footer.
@@ -51,29 +89,26 @@ def parse_coverage_report(content):
             raise ValueError('Unexpected organization coverage row layout')
         values = [c.get_text(' ', strip=True) for c in cells]
         serial, code = values[:2]
-        if serial != str(len(seen) + 1) or not code.isdigit() or code in seen:
+        if serial != str(row_count + 1) or not code.isdigit():
             raise ValueError(f'Invalid organization coverage serial/unit: {values[:2]}')
-        seen.add(code)
-        if code not in inputs:
+        row_count += 1
+        if not inputs.get(code):
             raise ValueError(f'Missing coverage input for unit {code}')
         unit = dict(zip(UNIT_FIELDS, values[1:6]))
-        # LGD represents an unmapped unit as ",%%%" (four empty fields).
-        claims = [part for part in inputs[code].split(',') if part not in ('', '%%%')]
+        claims = parse_coverage_claims(inputs[code].popleft(), code)
         if bool(claims) != bool(cells[-1].find('a')):
             raise ValueError(f'Coverage link/input mismatch for unit {code}')
         if not claims:
             records.append({**unit, **dict.fromkeys(LINK_FIELDS, ''),
                             'Coverage Details Reported': 'false'})
-        for claim in claims:
-            parts = claim.split('%')
-            if (len(parts) != 4 or not parts[0].isdigit()
-                    or not parts[2] or parts[3] not in ('F', 'P')):
-                raise ValueError(f'Malformed coverage claim for unit {code}: {claim!r}')
+        for parts in claims:
             # Keep source multiplicity; no event/relationship IDs justify deduplication.
-            # Some supplied codes have no name (e.g. Rubber Board subdistrict 2873).
+            # LGD can omit the name and even the entity type (e.g. org 835,
+            # unit 1346744: 277142%%%F). Preserve blanks, never infer a type
+            # from the numeric code or treat an incomplete link as absent.
             records.append({**unit, **dict(zip(LINK_FIELDS, parts)),
                             'Coverage Details Reported': 'true'})
-    if not seen or set(inputs) != seen:
+    if not row_count or any(inputs.values()):
         raise ValueError('Empty or unmatched organization coverage result')
     return records
 
@@ -83,9 +118,15 @@ def root_levels(levels):
     by_code = {}
     for level in levels:
         code = str(level['orgLocatedLevelCode'])
-        parent = str(level['parentOrgLocatedLevelCode'])
-        if not code.isdigit() or not parent.isdigit() or code in by_code:
-            raise ValueError('Invalid or repeated organization coverage level')
+        parent = level['parentOrgLocatedLevelCode']
+        if not code.isdigit():
+            raise ValueError(f'Invalid organization coverage level code: {code!r}')
+        # Some organizations include their top level even in ExceptTop. LGD
+        # represents that level's absent parent as null (e.g. NCST, code 717).
+        if parent is not None and not str(parent).isdigit():
+            raise ValueError(f'Invalid parent {parent!r} for organization coverage level {code}')
+        if code in by_code:
+            raise ValueError(f'Repeated organization coverage level: {code}')
         by_code[code] = level
     for code in by_code:
         seen = set()
@@ -149,6 +190,10 @@ class OrganizationCoverageDownloader(BaseDownloader):
                 continue
             result = parse_coverage_report(response.content)
             self.captcha_helper.mark_success()
+            if not result:
+                logger.info('No coverage data reported for organization %s, state %s, level %s',
+                            org['Organization Code'], org.get('State Code', '0'),
+                            level['orgLocatedLevelCode'])
             return result
         raise ValueError('Organization coverage captcha retries exhausted')
 

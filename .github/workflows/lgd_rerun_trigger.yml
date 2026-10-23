@@ -13,4 +13,6 @@ jobs:
       alert-title: "LGD Daily Run failed"
       num-attempts: 3
       retry-timeouts: true
-      failed-jobs-only: true
+      # Recreate admissions for the new attempt. Components with a published
+      # dated asset reuse it instead of repeating their scrape.
+      failed-jobs-only: false

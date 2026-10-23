@@ -79,6 +79,8 @@ def get_csrf_token_from_base_page(soup):
 
 def get_reports_csrf_token_from_base_page(soup):
     lgd_reports_div = soup.find('div', { "id" : "reports-model" })
+    if lgd_reports_div is None:
+        raise IntermittentFailureException()
     links = lgd_reports_div.find_all('a')
     link_url = None
     #TODO: individual links to reports can probably be extracted
@@ -99,7 +101,25 @@ class Context:
         self._csrf_token_reports = None
         self.script_session_id = ''
         self.script_batch_id = 0
+        self.dwr_session_id = None
+        self.dwr_page_id = None
+        self.dwr_instance_id = None
         self._session = None
+
+    def reset_session(self):
+        # CSRF and DWR identifiers belong to the discarded HTTP session.
+        # Keeping any of them would combine old credentials with new cookies.
+        if self._session is not None:
+            self._session.close()
+        self._session = None
+        self._csrf_token = None
+        self._csrf_token_reports = None
+        self.script_session_id = ''
+        self.script_batch_id = 0
+        self.dwr_session_id = None
+        self.dwr_page_id = None
+        self.dwr_instance_id = None
+        self.last_captcha = None
 
     def set_csrf_tokens_wrap(self):
         try_count = 0
@@ -117,7 +137,7 @@ class Context:
                 delay = base_sleep + jitter
                 logger.warning(f'got intermittent exception while downloading base page.. attempt {try_count}/3.. retrying in {delay} secs')
                 time.sleep(delay)
-                self._session = None
+                self.reset_session()
 
 
     def set_csrf_tokens(self):
@@ -129,8 +149,11 @@ class Context:
         
         page_html = web_data.text
         soup = BeautifulSoup(page_html, 'html.parser')
-        self._csrf_token = get_csrf_token_from_base_page(soup)
-        self._csrf_token_reports = get_reports_csrf_token_from_base_page(soup)
+        # Publish both tokens together. A partial home page must not leave a
+        # token cached after the rest of initialization failed.
+        download_token = get_csrf_token_from_base_page(soup)
+        reports_token = get_reports_csrf_token_from_base_page(soup)
+        self._csrf_token, self._csrf_token_reports = download_token, reports_token
 
 
     def set_session(self):

@@ -236,9 +236,12 @@ class DwrCaller:
 
 
     def call(self):
+        # Loading CSRF tokens can replace the HTTP session. Do that before
+        # deciding whether its cached DWR identity is still initialized.
+        ref_url = self.get_ref_url()
         self.ensure_session_id()
         js_dict = self.make_request(self.script_name, self.method_name,
-                                    self.get_ref_url(),
+                                    ref_url,
                                     extra_args=self.call_args)
         cb_args = get_fn_call_args('dwr.engine.remote.handleCallback', js_dict)
         if cb_args is None:

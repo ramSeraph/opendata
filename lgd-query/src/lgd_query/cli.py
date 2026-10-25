@@ -16,6 +16,9 @@ from .queries._org_units import NAME_STATUSES
 
 _DATASET_QUERIES = {'states': state_queries, 'districts': district_queries,
                     'subdistricts': subdistrict_queries}
+_EXPERIMENTAL_QUERY_NOTICE = (
+    'Experimental dataset-aware query API. Arguments, result columns and '
+    'interpretations of dataset relationships may change between releases.')
 
 
 def _json_value(value):
@@ -159,7 +162,8 @@ def _dataset_commands(commands, dataset):
         return _report_commands(commands, dataset)
     noun = {'states': 'state', 'districts': 'district', 'subdistricts': 'subdistrict'}[dataset]
     label = 'states and union territories' if dataset == 'states' else dataset
-    group = commands.add_parser(dataset, help=f'List, look up and search {label}')
+    group = commands.add_parser(dataset, help=f'Experimental: list, look up and search {label}',
+                                description=_EXPERIMENTAL_QUERY_NOTICE)
     actions = group.add_subparsers(dest='dataset_query', required=True)
     listing = actions.add_parser('list', help=f'List reported {label}')
     code = actions.add_parser('code', help=f'Look up an LGD {noun} code')
@@ -262,7 +266,8 @@ def _filter_help(dataset, column):
 def _report_commands(commands, dataset):
     module = query_module(dataset)
     spec = module._queries.spec
-    group = commands.add_parser(dataset, help=f'Query {dataset.replace("_", " ")}')
+    group = commands.add_parser(dataset, help=f'Experimental: query {dataset.replace("_", " ")}',
+                                description=_EXPERIMENTAL_QUERY_NOTICE)
     actions = group.add_subparsers(dest='dataset_query', required=True)
     listing = actions.add_parser('list', help='List supplied rows with exact column filters')
     action = 'id' if dataset == 'transactions' else 'code'
@@ -353,6 +358,7 @@ def main(argv=None):
     for command in (resolve, fetching, querying, *dataset_commands):
         command.add_argument('--observed-on', help='Require this exact YYYY-MM-DD report date')
     for command in dataset_commands:
+        command.epilog = _EXPERIMENTAL_QUERY_NOTICE
         _output_options(command, preview=True)
     _output_options(querying, preview=False)
     args = parser.parse_args(argv)

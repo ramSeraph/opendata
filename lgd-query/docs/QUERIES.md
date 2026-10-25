@@ -4,6 +4,17 @@ The [dataset index](datasets/README.md) covers all 39 Parquet reports, with one
 document per dataset. These APIs are unreleased; PyPI 0.1.0 contains the general
 metadata, download and SQL interfaces only.
 
+## Experimental status
+
+The entire dataset-aware `lgd_query.queries` layer is **experimental**, including
+dataset helpers, prepared queries, name/reference resolution and their
+dataset-specific CLI commands. Function arguments, result columns, lookup rules
+and interpretations of dataset relationships may change between releases as our
+understanding of LGD reports develops.
+
+This designation applies to the semantic query layer. Metadata resolution,
+verified downloads, `connect()` and free-form SQL are separate reader interfaces.
+
 The [organization data guide](ORGANIZATION_DATA.md) diagrams the reports,
 their source fields and the name lookups that cross dataset boundaries.
 

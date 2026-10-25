@@ -5,6 +5,10 @@ relationships, designation titles and geographic references. Twelve reports
 cover these concepts. This guide shows which dataset supplies each part and
 which joins the query helpers use.
 
+The dataset-aware query APIs and CLI commands described here are
+[experimental](QUERIES.md#experimental-status); their interfaces and interpretation
+of relationships may change as we learn more about LGD's reports.
+
 The diagrams describe reported references and query dependencies. They do not
 assert that every parent exists, every office appears in every report, or every
 reference is a verified foreign key. Multiple records and source variants remain

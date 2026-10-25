@@ -1,6 +1,9 @@
 # Dataset query APIs
 
-These helpers are unreleased. Install from this checkout to use them.
+These dataset-aware helpers and their CLI commands are **experimental** and
+unreleased. Their API and interpretation of dataset relationships may change;
+see [experimental status](../QUERIES.md#experimental-status). Install from this
+checkout to use them.
 
 Every module returns DuckDB relations over source-report Parquet files. See
 [query conventions](../QUERIES.md) for matching, filters, dependencies and dates.

@@ -2,7 +2,7 @@
 
 A small Python client for the public [LGD Parquet releases](https://github.com/ramSeraph/opendata/releases/tag/lgd-parquet-latest).
 It provides metadata resolution, verified downloading and DuckDB access, with
-dataset-specific query helpers layered on top. The CLI uses those same APIs.
+experimental dataset-specific query helpers layered on top. The CLI uses those same APIs.
 No GitHub account or API server is needed.
 
 This directory is a standalone distribution. Its wheel contains only
@@ -133,7 +133,13 @@ settings can be supplied with `config={"threads": 2, "memory_limit": "512MB"}`.
 `timeout` and `retries` affect cache downloads; remote range-request settings
 are controlled by DuckDB.
 
-## 4. Dataset query helpers (unreleased)
+## 4. Dataset query helpers (experimental, unreleased)
+
+The dataset-aware `lgd_query.queries` layer and its dataset-specific CLI commands
+are **experimental**. Function arguments, result columns, lookup rules and
+interpretations of dataset relationships may change between releases as our
+understanding of LGD reports develops. This includes prepared queries and
+organization reference resolution.
 
 Helpers cover all 39 reports, starting with states, districts and subdistricts.
 They are available from this checkout; they are not included in PyPI version

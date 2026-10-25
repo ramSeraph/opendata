@@ -1,4 +1,8 @@
-"""Dataset-specific SQL helpers over an existing DuckDB connection.
+"""Experimental dataset-aware SQL helpers over an existing DuckDB connection.
+
+Arguments, result columns, lookup rules and interpretations of dataset
+relationships may change between releases. This includes prepared queries
+and reference resolution. See docs/QUERIES.md for the experimental API scope.
 
 Helpers return native DuckDB relations. They never resolve metadata, download
 files, create connections, or import DuckDB until the caller asks for SQL access.

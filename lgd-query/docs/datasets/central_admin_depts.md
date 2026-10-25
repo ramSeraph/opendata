@@ -1,29 +1,17 @@
 # central_admin_depts
 
+[All datasets](README.md) · [Schema and row identity](../../../lgd/parquet/datasets/central_admin_depts.md) · [API/CLI conventions](../QUERIES.md)
+
 Despite its filename, this report defines central administrative-unit
 levels, including named postal levels, rather than listing departments.
 It supplies level codes/names, parent administrative references and
 optional hierarchy/publication/activity metadata. It has no state
 columns.
 
-[central_admin_dept_units](central_admin_dept_units.md) lists named
-units belonging to these levels. The separate
-[central_orgs](central_orgs.md) and [central_org_units](central_org_units.md)
-reports describe organizations and offices; matching names or numbers
-do not establish a shared identifier namespace.
-
 See the [organization data and source diagrams](../ORGANIZATION_DATA.md) for how this report relates to the others.
 
 ## API
 
-```python
-from lgd_query.queries import central_admin_depts
-
-rows = central_admin_depts.list(db).fetchall()
-matches = central_admin_depts.search(db, "name", mode="contains").fetchall()
-```
-
-- `list(db, **filters)` retains every matching source row.
 - `by_code(db, code, **filters)` selects `administrative_unit_level_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `administrative_unit_level_name`.
 
@@ -38,41 +26,16 @@ matches = central_admin_depts.search(db, "name", mode="contains").fetchall()
 
 ## Exact filters
 
-All supplied filters combine with AND and run before search limits. `None` leaves a filter unused. Text filters use exact source spelling; use `search(field=...)` for normalized name matching.
-
-| Filter | Value |
+| Value type | Filters |
 | --- | --- |
-| `administrative_unit_level_code` | Integer or ASCII digit string; zeros preserved |
-| `administrative_unit_level_name` | Exact string |
-| `parent_administrative_code` | Signed integer or exact integer text |
-| `organization_level_code` | Integer or ASCII digit string; zeros preserved |
-| `administrative_unit_level_name_local` | Exact string |
-| `created_by` | Exact string |
-| `created_on` | Exact string |
-| `hierarchy` | Exact string |
-| `is_active` | Exact string |
-| `publication_status` | Exact string |
-| `local_body_level` | Exact string |
-| `organization_located_at_levels` | Exact string |
-| `overlap_unit` | Exact string |
-| `parent_category` | Exact string |
-| `parent_organization_level_code` | Integer or ASCII digit string; zeros preserved |
-| `revenue_entity` | Exact string |
-| `unit_level_type` | Exact string |
+| Code | `administrative_unit_level_code`, `organization_level_code`, `parent_organization_level_code` |
+| Text | `administrative_unit_level_name`, `administrative_unit_level_name_local`, `created_by`, `created_on`, `hierarchy`, `is_active`, `publication_status`, `local_body_level`, `organization_located_at_levels`, `overlap_unit`, `parent_category`, `revenue_entity`, `unit_level_type` |
+| Signed code | `parent_administrative_code` |
+
+[Value rules and missing-value predicates](../QUERIES.md#identifiers-filters-and-matching).
 
 ## CLI
 
 ```sh
-lgd-query central_admin_depts list --format json
-lgd-query central_admin_depts search NAME --mode fuzzy --cache-dir ./data
-lgd-query central_admin_depts code CODE --help
+lgd-query central_admin_depts list --limit 5
 ```
-
-Filters become hyphenated flags (for example `state_code` → `--state-code`).
-Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
-All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
-Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
-control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
-predicates and source provenance.
-
-See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/central_admin_depts.md) and [shared query rules](../QUERIES.md).

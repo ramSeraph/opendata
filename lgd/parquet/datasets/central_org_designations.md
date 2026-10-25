@@ -1,5 +1,7 @@
 # central_org_designations
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/central_org_designations.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This report lists designation titles within central organizations,
 including English/local names and reported levels, such as postal
 roles at different office levels. It describes titles rather than
@@ -32,9 +34,6 @@ three-field key updates its attributes.
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -46,6 +45,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 5 | `organization_level_name` | `VARCHAR` | `Org Level Specific Name` | No |
 | 6 | `organization_code` | `VARCHAR` | `Base Organization Code` | No |
 | 7 | `organization_name` | `VARCHAR` | `Base Organization Name` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

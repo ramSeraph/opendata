@@ -1,16 +1,12 @@
 # constituencies_mapping_urban
 
+[All datasets](README.md) · [Schema and row identity](../../../lgd/parquet/datasets/constituencies_mapping_urban.md) · [API/CLI conventions](../QUERIES.md)
+
 This report connects urban wards and local bodies to assembly and
 parliamentary constituencies, including reported ECI identifiers and
 district/subdistrict paths. A ward lookup can return several rows:
 normalized identity includes ward, assembly, subdistrict and district
 codes. Body, state and parliamentary parent remain attributes.
-
-The geographic paths can reflect the body's coverage repeated across
-its wards, rather than independently established ward locations.
-District-only paths and blank assembly references remain visible.
-ECI values are a separate identifier namespace and retain the
-report's claims; they are not an authoritative correction of LGD codes.
 
 The normalized record key is `(ward_code, assembly_constituency_code,
 subdistrict_code, district_code)`. `by_code` selects all associations for a
@@ -18,14 +14,6 @@ ward without collapsing their constituency or geographic differences.
 
 ## API
 
-```python
-from lgd_query.queries import constituencies_mapping_urban
-
-rows = constituencies_mapping_urban.list(db).fetchall()
-matches = constituencies_mapping_urban.search(db, "name", mode="contains").fetchall()
-```
-
-- `list(db, **filters)` retains every matching source row.
 - `by_code(db, code, **filters)` selects `ward_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `ward_name`.
 
@@ -84,44 +72,17 @@ Lookup keys are explicit and names never serve as join keys:
 
 - `state_name`: `state_code` → `states.state_code`.
 
-Lookup searches add `lookup_names` containing all distinct resolved labels. Multiple labels do not multiply the source row. Missing references do not match. The matching report can have a different date; inspect `queries.sources(...)` before opening it. Supplied columns remain unchanged.
-
 ## Exact filters
 
-All supplied filters combine with AND and run before search limits. `None` leaves a filter unused. Text filters use exact source spelling; use `search(field=...)` for normalized name matching.
-
-| Filter | Value |
+| Value type | Filters |
 | --- | --- |
-| `ward_code` | Integer or ASCII digit string; zeros preserved |
-| `ward_name` | Exact string |
-| `local_body_code` | Integer or ASCII digit string; zeros preserved |
-| `local_body_name` | Exact string |
-| `local_body_type_name` | Exact string |
-| `parliament_constituency_code` | Integer or ASCII digit string; zeros preserved |
-| `parliament_constituency_name` | Exact string |
-| `parliament_constituency_eci_code` | Integer or ASCII digit string; zeros preserved |
-| `assembly_constituency_code` | Integer or ASCII digit string; zeros preserved |
-| `assembly_constituency_name` | Exact string |
-| `assembly_constituency_eci_code` | Integer or ASCII digit string; zeros preserved |
-| `district_code` | Integer or ASCII digit string; zeros preserved |
-| `district_name` | Exact string |
-| `subdistrict_code` | Integer or ASCII digit string; zeros preserved |
-| `subdistrict_name` | Exact string |
-| `state_code` | Integer or ASCII digit string; zeros preserved |
+| Code | `ward_code`, `local_body_code`, `parliament_constituency_code`, `parliament_constituency_eci_code`, `assembly_constituency_code`, `assembly_constituency_eci_code`, `district_code`, `subdistrict_code`, `state_code` |
+| Text | `ward_name`, `local_body_name`, `local_body_type_name`, `parliament_constituency_name`, `assembly_constituency_name`, `district_name`, `subdistrict_name` |
+
+[Value rules and missing-value predicates](../QUERIES.md#identifiers-filters-and-matching).
 
 ## CLI
 
 ```sh
-lgd-query constituencies_mapping_urban list --format json
-lgd-query constituencies_mapping_urban search NAME --mode fuzzy --cache-dir ./data
-lgd-query constituencies_mapping_urban code CODE --help
+lgd-query constituencies_mapping_urban list --limit 5
 ```
-
-Filters become hyphenated flags (for example `state_code` → `--state-code`).
-Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
-All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
-Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
-control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
-predicates and source provenance.
-
-See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/constituencies_mapping_urban.md) and [shared query rules](../QUERIES.md).

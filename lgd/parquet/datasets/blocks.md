@@ -1,5 +1,7 @@
 # blocks
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/blocks.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 LGD's development-block register contains block codes, names,
 versions and reported district/state references. Each row represents
 a block/district association. A block can appear against several
@@ -24,9 +26,6 @@ Identical records collapse. Conflicting attributes for this key are rejected;
 rows differing only in a known version retain the highest version. A mixture
 of known and unknown versions for one key is rejected.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -39,6 +38,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 6 | `district_name` | `VARCHAR` | `District Name (In English)` | No |
 | 7 | `state_code` | `VARCHAR` | `State Code` | No |
 | 8 | `state_name` | `VARCHAR` | `State Name (In English)` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

@@ -1,5 +1,7 @@
 # urban_local_body_wards
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/urban_local_body_wards.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 LGD's urban-ward register identifies each ward by `ward_code` and
 supplies its name, ward number, local-body code/name and state. The
 body reference connects to [urban_local_bodies](urban_local_bodies.md).
@@ -24,9 +26,6 @@ The reported record key is:
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -39,6 +38,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 6 | `state_code` | `VARCHAR` | `State Code` | No |
 | 7 | `state_name` | `VARCHAR` | `State Name` | No |
 | 8 | `local_body_census_2011_code` | `VARCHAR` | `Census 2011 Code` | Yes → NULL |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

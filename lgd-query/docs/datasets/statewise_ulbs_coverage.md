@@ -1,26 +1,15 @@
 # statewise_ulbs_coverage
 
+[All datasets](README.md) · [Schema and row identity](../../../lgd/parquet/datasets/statewise_ulbs_coverage.md) · [API/CLI conventions](../QUERIES.md)
+
 This report links urban local bodies to reported district,
 subdistrict and village coverage. It includes both complete village
 paths and district/subdistrict-only rows. The association key retains
 `(local_body_code, district_code, subdistrict_code, village_code)`;
 body/village alone cannot distinguish paths with missing lower levels.
 
-A body can have several geographic associations. Blank or zero child
-references do not identify a village. The report supplies state names
-without state codes; conversion does not invent those codes or infer
-ward locations from body-level coverage.
-
 ## API
 
-```python
-from lgd_query.queries import statewise_ulbs_coverage
-
-rows = statewise_ulbs_coverage.list(db).fetchall()
-matches = statewise_ulbs_coverage.search(db, "name", mode="contains").fetchall()
-```
-
-- `list(db, **filters)` retains every matching source row.
 - `by_code(db, code, **filters)` selects `local_body_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `local_body_name`.
 - `by_census_code(db, code, year=..., **filters)` supports 2011 for the primary entity only.
@@ -38,34 +27,15 @@ matches = statewise_ulbs_coverage.search(db, "name", mode="contains").fetchall()
 
 ## Exact filters
 
-All supplied filters combine with AND and run before search limits. `None` leaves a filter unused. Text filters use exact source spelling; use `search(field=...)` for normalized name matching.
-
-| Filter | Value |
+| Value type | Filters |
 | --- | --- |
-| `local_body_code` | Integer or ASCII digit string; zeros preserved |
-| `local_body_name` | Exact string |
-| `district_code` | Integer or ASCII digit string; zeros preserved |
-| `district_name` | Exact string |
-| `subdistrict_code` | Integer or ASCII digit string; zeros preserved |
-| `subdistrict_name` | Exact string |
-| `village_code` | Integer or ASCII digit string; zeros preserved |
-| `village_name` | Exact string |
-| `state_name` | Exact string |
-| `local_body_census_2011_code` | Integer or ASCII digit string; zeros preserved |
+| Code | `local_body_code`, `district_code`, `subdistrict_code`, `village_code`, `local_body_census_2011_code` |
+| Text | `local_body_name`, `district_name`, `subdistrict_name`, `village_name`, `state_name` |
+
+[Value rules and missing-value predicates](../QUERIES.md#identifiers-filters-and-matching).
 
 ## CLI
 
 ```sh
-lgd-query statewise_ulbs_coverage list --format json
-lgd-query statewise_ulbs_coverage search NAME --mode fuzzy --cache-dir ./data
-lgd-query statewise_ulbs_coverage code CODE --help
+lgd-query statewise_ulbs_coverage list --local-body-code 248111
 ```
-
-Filters become hyphenated flags (for example `state_code` → `--state-code`).
-Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
-All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
-Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
-control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
-predicates and source provenance.
-
-See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/statewise_ulbs_coverage.md) and [shared query rules](../QUERIES.md).

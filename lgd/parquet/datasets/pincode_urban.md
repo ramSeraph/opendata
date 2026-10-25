@@ -1,5 +1,7 @@
 # pincode_urban
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/pincode_urban.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 LGD's urban-body/pincode report supplies local-body and postal-code
 associations with body and state names/codes. A body may have several
 pincodes. The record key is `(local_body_code, pincode)`; state code/name
@@ -29,9 +31,6 @@ Across 1,415 retained observations from 12 September 2022 through 19 October
 rows under this key. Each of the 5,248 body codes belongs to one reported state.
 State is not needed to distinguish links.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -42,6 +41,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 4 | `pincode` | `VARCHAR` | `Pincode` | No |
 | 5 | `state_code` | `VARCHAR` | `State Code` | No |
 | 6 | `state_name` | `VARCHAR` | `State Name` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

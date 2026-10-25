@@ -1,5 +1,7 @@
 # state_org_designations
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/state_org_designations.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This report lists designation titles within state organizations,
 with English/local names and reported organization-level associations.
 It describes posts or roles, not the people holding them or a staffing
@@ -32,9 +34,6 @@ three-field key updates its attributes.
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -48,6 +47,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 7 | `organization_name` | `VARCHAR` | `Base Organization Name` | No |
 | 8 | `state_code` | `VARCHAR` | `State Code` | No |
 | 9 | `state_name` | `VARCHAR` | `State Name` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

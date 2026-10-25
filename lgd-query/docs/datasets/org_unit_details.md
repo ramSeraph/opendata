@@ -1,30 +1,17 @@
 # org_unit_details
 
+[All datasets](README.md) · [Schema and row identity](../../../lgd/parquet/datasets/org_unit_details.md) · [API/CLI conventions](../QUERIES.md)
+
 This combined report adds office details for state and central
 organization units: parent office, organization-specific identifier,
 email, telephone, address and a typed location code/name. It is keyed
 by `organization_unit_code`; organization and state remain attributes.
 State scope `0` denotes central organizations.
 
-It enriches [state_org_units](state_org_units.md) and
-[central_org_units](central_org_units.md), including the location
-`entity_name` that their directories omit. A location is separate
-from geographic coverage in [org_unit_coverage](org_unit_coverage.md).
-Details can be missing or incomplete; absence from this report does
-not establish that the office no longer exists.
-
 See the [organization data and source diagrams](../ORGANIZATION_DATA.md) for how this report relates to the others.
 
 ## API
 
-```python
-from lgd_query.queries import org_unit_details
-
-rows = org_unit_details.list(db).fetchall()
-matches = org_unit_details.search(db, "name", mode="contains").fetchall()
-```
-
-- `list(db, **filters)` retains every matching source row.
 - `by_code(db, code, **filters)` selects `organization_unit_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `organization_unit_name`.
 
@@ -45,7 +32,7 @@ Pass `state_code` to the dependency helpers as well as the query, or prepare
 once. A custom-level query restricted to state scope `0` loads only central
 administrative units; a nonzero state loads only state units. Unfiltered queries
 load both. Geographic locations are resolved by typed code, independently of organization
-scope. The [shared type mapping and result semantics](../ORGANIZATION_DATA.md#follow-entity-references-to-registers)
+scope. The [shared type mapping and result semantics](../ORGANIZATION_QUERIES.md#follow-entity-references-to-registers)
 cover local-body type disagreements, unknown types and missing references.
 
 ```sh
@@ -54,26 +41,11 @@ lgd-query org_unit_details entities --entity-type=-5 --state-code 32 --format js
 
 ## Reference exploration
 
-- `references(db, resolution_status=None, **source_filters)` retains source
-  offices/claims, unresolved references and matched register variants. Output
-  prefixes distinguish `source_` columns from `target_` columns.
-- `reference_types(db, **source_filters)` reads only this report and returns
-  observed types/labels, row and distinct-office counts, and known namespaces.
-- `reference_type_map()` describes known namespaces without I/O.
-
-Use `queries.prepare("org_unit_details", "references", ...)` or
-`queries.prepare("org_unit_details", "reference_types", ...)` to share options with
-input resolution. Optional reference type and report-state filters narrow target
-inputs. A missing required register fails explicitly. `entities` rejects unknown
-type selections; `references` preserves unknown source references as evidence.
-
-```sh
-lgd-query org_unit_details types --all
-lgd-query org_unit_details references --help
-```
-
-See [reference outcomes and dependencies](../ORGANIZATION_DATA.md#keep-offices-claims-and-unresolved-references)
-and [type discovery](../ORGANIZATION_DATA.md#inspect-types-before-resolving-references).
+`reference_types` (CLI `types`) inspects this report's source types without
+loading target registers. `reference_type_map()` lists known namespaces without I/O.
+`references` retains source rows and unresolved outcomes alongside matched targets.
+See the [organization cookbook](../ORGANIZATION_QUERIES.md) for result columns,
+resolution statuses and scoped dependencies.
 
 ## Search fields and dependencies
 
@@ -89,40 +61,16 @@ and [type discovery](../ORGANIZATION_DATA.md#inspect-types-before-resolving-refe
 
 ## Exact filters
 
-All supplied filters combine with AND and run before search limits. `None` leaves a filter unused. Text filters use exact source spelling; use `search(field=...)` for normalized name matching.
-
-| Filter | Value |
+| Value type | Filters |
 | --- | --- |
-| `organization_unit_code` | Integer or ASCII digit string; zeros preserved |
-| `organization_unit_name` | Exact string |
-| `parent_organization_unit_code` | Integer or ASCII digit string; zeros preserved |
-| `parent_organization_unit_name` | Exact string |
-| `organization_unit_specific_code` | Exact string |
-| `organization_unit_email` | Exact string |
-| `organization_unit_contact_number` | Exact string |
-| `organization_unit_address` | Exact string |
-| `entity_type` | Signed integer or exact integer text |
-| `entity_type_name` | Exact string |
-| `entity_code` | Signed integer or exact integer text |
-| `entity_name` | Exact string |
-| `organization_code` | Integer or ASCII digit string; zeros preserved |
-| `organization_name` | Exact string |
-| `state_code` | Integer or ASCII digit string; zeros preserved |
-| `state_name` | Exact string |
+| Code | `organization_unit_code`, `parent_organization_unit_code`, `organization_code`, `state_code` |
+| Text | `organization_unit_name`, `parent_organization_unit_name`, `organization_unit_specific_code`, `organization_unit_email`, `organization_unit_contact_number`, `organization_unit_address`, `entity_type_name`, `entity_name`, `organization_name`, `state_name` |
+| Signed code | `entity_type`, `entity_code` |
+
+[Value rules and missing-value predicates](../QUERIES.md#identifiers-filters-and-matching).
 
 ## CLI
 
 ```sh
-lgd-query org_unit_details list --format json
-lgd-query org_unit_details search NAME --mode fuzzy --cache-dir ./data
-lgd-query org_unit_details code CODE --help
+lgd-query org_unit_details list --limit 5
 ```
-
-Filters become hyphenated flags (for example `state_code` → `--state-code`).
-Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
-All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
-Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
-control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
-predicates and source provenance.
-
-See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/org_unit_details.md) and [shared query rules](../QUERIES.md).

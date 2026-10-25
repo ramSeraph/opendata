@@ -1,5 +1,7 @@
 # state_org_units
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/state_org_units.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This directory lists offices/units of state organizations, with
 unit names, parent-unit references, organization, state, own level and
 typed location codes. `organization_unit_code` identifies a unit;
@@ -35,9 +37,6 @@ This includes simultaneous disagreement about organization or state. The
 historical key review
 found no such conflicts across all 1,346 accepted observations.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -54,6 +53,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 10 | `organization_name` | `VARCHAR` | `Base Organization Name` | No |
 | 11 | `state_code` | `VARCHAR` | `State Code` | No |
 | 12 | `state_name` | `VARCHAR` | `State Name` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

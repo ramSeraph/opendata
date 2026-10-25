@@ -1,5 +1,7 @@
 # pri_local_body_wards
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/pri_local_body_wards.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 LGD's PRI-ward report supplies ward codes, names and numbers, plus
 the local body, state, body type and higher-parent names. Normalized
 identity is `ward_code`; spelling variants and contradictory parent
@@ -65,6 +67,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 9 | `local_body_type_name` | `VARCHAR` | `Local Body Type` | No |
 | 10 | `district_panchayat_name` | `VARCHAR` | `District Level Parent Name` | No |
 | 11 | `intermediate_panchayat_name` | `VARCHAR` | `Intermediate Level Parent Name` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

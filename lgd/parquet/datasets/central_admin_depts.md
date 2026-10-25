@@ -1,5 +1,7 @@
 # central_admin_depts
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/central_admin_depts.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 Despite its filename, this report defines central administrative-unit
 levels, including named postal levels, rather than listing departments.
 It supplies level codes/names, parent administrative references and
@@ -28,9 +30,6 @@ The reported record key is:
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -52,6 +51,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 15 | `parent_organization_level_code` | `VARCHAR` | `parentOrgLocatedLevelCode` | Yes → NULL |
 | 16 | `revenue_entity` | `VARCHAR` | `revenueEntity` | Yes → NULL |
 | 17 | `unit_level_type` | `VARCHAR` | `unitLevelType` | Yes → NULL |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

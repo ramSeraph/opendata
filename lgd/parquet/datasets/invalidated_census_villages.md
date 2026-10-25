@@ -1,5 +1,7 @@
 # invalidated_census_villages
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/invalidated_census_villages.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This report lists villages that LGD reports as invalidated, with
 village/state codes and names and, where supplied, 2001/2011 census
 references. It is a reported status list rather than a dated
@@ -35,9 +37,6 @@ The one blank-code row on 24 March 2025 is reporting context, not a village
 identity. A report containing distinct blank-code placeholders is rejected
 rather than combining their state claims.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -48,6 +47,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 4 | `state_name` | `VARCHAR` | `State Name (In English)` | No |
 | 5 | `village_census_2001_code` | `VARCHAR` | `Census Code 2001` | Yes → NULL |
 | 6 | `village_census_2011_code` | `VARCHAR` | `Census Code 2011` | Yes → NULL |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

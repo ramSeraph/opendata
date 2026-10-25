@@ -1,5 +1,7 @@
 # state_admin_dept_units
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/state_admin_dept_units.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This report lists named state administrative units and the level
 to which each belongs, with English/local names and state context.
 `administrative_unit_code` identifies the reported unit, while
@@ -28,9 +30,6 @@ retained observations from 30 January 2022 through 24 October 2026, each of the
 108,580 historical unit codes belongs to one reported level and state, with no
 simultaneous conflicting rows. Neither field is needed to distinguish units.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -42,6 +41,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 5 | `administrative_unit_level_name` | `VARCHAR` | `Admin Department Name` | No |
 | 6 | `state_code` | `VARCHAR` | `State Code` | No |
 | 7 | `state_name` | `VARCHAR` | `State Name` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

@@ -1,5 +1,7 @@
 # central_orgs
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/central_orgs.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This directory identifies central departments and organizations by
 `organization_code`, with names, types and reported parent
 organizations. It has no state columns. A parent ministry or
@@ -24,9 +26,6 @@ The reported record key is:
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -37,6 +36,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 4 | `parent_organization_code` | `VARCHAR` | `Parent Organization Code` | No |
 | 5 | `parent_organization_name` | `VARCHAR` | `Parent Organization Name` | No |
 | 6 | `parent_organization_type` | `VARCHAR` | `Parent Organization Type` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

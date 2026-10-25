@@ -1,5 +1,7 @@
 # statewise_ulbs_coverage
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/statewise_ulbs_coverage.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This report links urban local bodies to reported district,
 subdistrict and village coverage. It includes both complete village
 paths and district/subdistrict-only rows. The association key retains
@@ -25,9 +27,6 @@ The reported record key is:
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -42,6 +41,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 8 | `village_name` | `VARCHAR` | `Village Name (In English)` | No |
 | 9 | `state_name` | `VARCHAR` | `State Name (In English)` | No |
 | 10 | `local_body_census_2011_code` | `VARCHAR` | `Census 2011 Code` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

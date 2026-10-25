@@ -1,5 +1,7 @@
 # states
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/states.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 LGD's register of states and union territories, with English and local
 names, the reported state/UT classification, version and 2001/2011 census
 identifiers. Each row identifies one state or union territory by
@@ -21,9 +23,6 @@ Identical records collapse. Conflicting attributes for this key are rejected;
 rows differing only in a known version retain the highest version. A mixture
 of known and unknown versions for one key is rejected.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -35,6 +34,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 5 | `state_census_2001_code` | `VARCHAR` | `Census 2001 Code` | No |
 | 6 | `state_census_2011_code` | `VARCHAR` | `Census 2011 Code` | No |
 | 7 | `state_or_ut` | `VARCHAR` | `State or UT` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

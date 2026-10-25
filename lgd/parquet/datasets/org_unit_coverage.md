@@ -1,5 +1,7 @@
 # org_unit_coverage
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/org_unit_coverage.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This combined state/central report lists places an organization unit is reported
 to cover, or explicitly says that coverage details were not supplied.
 `covered_entity_*` describes the target. `entity_code` and `entity_name` describe
@@ -69,7 +71,6 @@ added by the scraper; the other fields come from LGD's returned rows.
 | 14 | `organization_name` | `VARCHAR` | `Base Organization Name` | No |
 | 15 | `state_code` | `VARCHAR` | `State Code` | No |
 | 16 | `state_name` | `VARCHAR` | `State Name` | No |
-
 
 ## Report selection and organization-specific identifiers
 

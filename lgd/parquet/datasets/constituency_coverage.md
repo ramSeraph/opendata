@@ -1,5 +1,7 @@
 # constituency_coverage
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/constituency_coverage.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This report links typed geographic entities to parliamentary or
 assembly constituencies. `entity_type` is District, SubDistrict,
 Village, Localbody or Ward; it determines which register an
@@ -46,9 +48,6 @@ original rows. `collapsed_rows` includes exact duplicates and the extra
 Full/Partial claim merged into each association. Conflicts in any other
 attribute still stop conversion.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -65,6 +64,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 10 | `state_name` | `VARCHAR` | `State Name` | No |
 | 14 | `constituency_level` | `VARCHAR` | Derived | Always computed |
 | 15 | `constituency_code` | `VARCHAR` | Derived | Always computed |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

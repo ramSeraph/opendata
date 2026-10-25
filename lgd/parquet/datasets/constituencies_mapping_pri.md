@@ -1,5 +1,7 @@
 # constituencies_mapping_pri
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/constituencies_mapping_pri.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This report connects villages, rural local bodies and
 blocks to parliamentary/assembly constituencies, with administrative
 and census context. It also supplies reported LGD-to-ECI constituency
@@ -49,9 +51,6 @@ Reported ECI identifiers also contain collisions and incorrect values; see the
 [ECI lookup notes](../../../lgd-query/docs/datasets/constituencies_mapping_pri.md#eci-code-lookup).
 They remain source attributes, not verified electoral identifiers.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -78,8 +77,5 @@ cover text preservation, blanks, optional columns and strict validation.
 | 20 | `state_code` | `VARCHAR` | `State Code` | No |
 | 24 | `constituency_level` | `VARCHAR` | Derived | Always computed |
 | 25 | `constituency_code` | `VARCHAR` | Derived | Always computed |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.
 
 IDs 21–23 remain reserved for history provenance and interval fields.

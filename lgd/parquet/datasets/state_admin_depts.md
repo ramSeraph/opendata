@@ -1,5 +1,7 @@
 # state_admin_depts
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/state_admin_depts.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 Despite its filename, this report defines administrative-unit
 levels, not a directory of departments. It supplies level codes/names,
 a parent administrative reference, state and optional source metadata
@@ -36,9 +38,6 @@ collisions under the level code alone. A later reported state change creates
 an attribute version of the same level. Simultaneous conflicting state claims
 for one level code fail conversion.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -62,6 +61,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 17 | `unit_level_type` | `VARCHAR` | `unitLevelType` | Yes → NULL |
 | 18 | `state_code` | `VARCHAR` | `State Code` | No |
 | 19 | `state_name` | `VARCHAR` | `State Name` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

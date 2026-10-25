@@ -1,5 +1,7 @@
 # org_unit_details
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/org_unit_details.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This combined report adds office details for state and central
 organization units: parent office, organization-specific identifier,
 email, telephone, address and a typed location code/name. It is keyed
@@ -36,9 +38,6 @@ codes; none spans multiple organizations or states. A later organization or stat
 change updates the same unit record. Conflicting simultaneous values for one
 unit code fail conversion.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -59,9 +58,6 @@ cover text preservation, blanks, optional columns and strict validation.
 | 14 | `organization_name` | `VARCHAR` | `Base Organization Name` | No |
 | 15 | `state_code` | `VARCHAR` | `State Code` | No |
 | 16 | `state_name` | `VARCHAR` | `State Name` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.
 
 ## Entity type reference
 

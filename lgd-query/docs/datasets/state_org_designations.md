@@ -1,19 +1,13 @@
 # state_org_designations
 
+[All datasets](README.md) · [Schema and row identity](../../../lgd/parquet/datasets/state_org_designations.md) · [API/CLI conventions](../QUERIES.md)
+
 This report lists designation titles within state organizations,
 with English/local names and reported organization-level associations.
 It describes posts or roles, not the people holding them or a staffing
 assignment to a particular office.
 
-One designation can be associated with several levels. Level codes
-may be blank, and distinct level names are retained in record
-identity. Organization and state provide context; join
-[state_orgs](state_orgs.md) by organization code to inspect the parent
-organization rather than matching a designation's name to an office.
-
 See the [organization data and source diagrams](../ORGANIZATION_DATA.md) for how this report relates to the others.
-
-## Row identity
 
 The normalized key is `(designation_code, organization_level_code, organization_level_name)`.
 Organization and state remain attributes and optional filters.
@@ -23,14 +17,6 @@ limitation described in the [source schema](https://github.com/ramSeraph/opendat
 
 ## API
 
-```python
-from lgd_query.queries import state_org_designations
-
-rows = state_org_designations.list(db).fetchall()
-matches = state_org_designations.search(db, "name", mode="contains").fetchall()
-```
-
-- `list(db, **filters)` retains every matching source row.
 - `by_code(db, code, **filters)` selects `designation_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `designation_name`.
 
@@ -48,33 +34,15 @@ matches = state_org_designations.search(db, "name", mode="contains").fetchall()
 
 ## Exact filters
 
-All supplied filters combine with AND and run before search limits. `None` leaves a filter unused. Text filters use exact source spelling; use `search(field=...)` for normalized name matching.
-
-| Filter | Value |
+| Value type | Filters |
 | --- | --- |
-| `designation_code` | Integer or ASCII digit string; zeros preserved |
-| `designation_name` | Exact string |
-| `designation_name_local` | Exact string |
-| `organization_level_code` | Integer or ASCII digit string; zeros preserved |
-| `organization_level_name` | Exact string |
-| `organization_code` | Integer or ASCII digit string; zeros preserved |
-| `organization_name` | Exact string |
-| `state_code` | Integer or ASCII digit string; zeros preserved |
-| `state_name` | Exact string |
+| Code | `designation_code`, `organization_level_code`, `organization_code`, `state_code` |
+| Text | `designation_name`, `designation_name_local`, `organization_level_name`, `organization_name`, `state_name` |
+
+[Value rules and missing-value predicates](../QUERIES.md#identifiers-filters-and-matching).
 
 ## CLI
 
 ```sh
-lgd-query state_org_designations list --format json
-lgd-query state_org_designations search NAME --mode fuzzy --cache-dir ./data
-lgd-query state_org_designations code CODE --help
+lgd-query state_org_designations list --limit 5
 ```
-
-Filters become hyphenated flags (for example `state_code` → `--state-code`).
-Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
-All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
-Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
-control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
-predicates and source provenance.
-
-See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/state_org_designations.md) and [shared query rules](../QUERIES.md).

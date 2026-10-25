@@ -1,26 +1,15 @@
 # district_panchayats
 
+[All datasets](README.md) · [Schema and row identity](../../../lgd/parquet/datasets/district_panchayats.md) · [API/CLI conventions](../QUERIES.md)
+
 This report connects district panchayats to administrative districts,
 supplying both codes/names and the state. A panchayat can be linked to
 several districts, and a district can be linked to several panchayats.
 The association is identified by
 `(district_panchayat_code, district_code)`; state is an attribute.
 
-Resolve the panchayat code as a local-body code in
-[pri_local_bodies](pri_local_bodies.md), and the district code in
-[districts](districts.md). The two identifiers describe different
-institutions and need not form a one-to-one hierarchy.
-
 ## API
 
-```python
-from lgd_query.queries import district_panchayats
-
-rows = district_panchayats.list(db).fetchall()
-matches = district_panchayats.search(db, "name", mode="contains").fetchall()
-```
-
-- `list(db, **filters)` retains every matching source row.
 - `by_code(db, code, **filters)` selects `district_panchayat_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `district_panchayat_name`.
 
@@ -35,30 +24,15 @@ matches = district_panchayats.search(db, "name", mode="contains").fetchall()
 
 ## Exact filters
 
-All supplied filters combine with AND and run before search limits. `None` leaves a filter unused. Text filters use exact source spelling; use `search(field=...)` for normalized name matching.
-
-| Filter | Value |
+| Value type | Filters |
 | --- | --- |
-| `district_panchayat_code` | Integer or ASCII digit string; zeros preserved |
-| `district_panchayat_name` | Exact string |
-| `district_code` | Integer or ASCII digit string; zeros preserved |
-| `district_name` | Exact string |
-| `state_code` | Integer or ASCII digit string; zeros preserved |
-| `state_name` | Exact string |
+| Code | `district_panchayat_code`, `district_code`, `state_code` |
+| Text | `district_panchayat_name`, `district_name`, `state_name` |
+
+[Value rules and missing-value predicates](../QUERIES.md#identifiers-filters-and-matching).
 
 ## CLI
 
 ```sh
-lgd-query district_panchayats list --format json
-lgd-query district_panchayats search NAME --mode fuzzy --cache-dir ./data
-lgd-query district_panchayats code CODE --help
+lgd-query district_panchayats list --state-code 32
 ```
-
-Filters become hyphenated flags (for example `state_code` → `--state-code`).
-Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
-All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
-Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
-control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
-predicates and source provenance.
-
-See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/district_panchayats.md) and [shared query rules](../QUERIES.md).

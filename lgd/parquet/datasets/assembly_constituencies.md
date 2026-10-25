@@ -1,5 +1,7 @@
 # assembly_constituencies
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/assembly_constituencies.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 LGD's assembly-constituency register supplies an assembly's code
 and name together with parliamentary-constituency and state references.
 `assembly_constituency_code` identifies the row; the parliamentary
@@ -28,9 +30,6 @@ The reported record key is:
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -41,6 +40,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 4 | `parliament_constituency_name` | `VARCHAR` | `Parliament Constituency Name` | No |
 | 5 | `state_code` | `VARCHAR` | `State Code` | No |
 | 6 | `state_name` | `VARCHAR` | `State Name` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

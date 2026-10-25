@@ -1,25 +1,14 @@
 # blocks
 
+[All datasets](README.md) · [Schema and row identity](../../../lgd/parquet/datasets/blocks.md) · [API/CLI conventions](../QUERIES.md)
+
 LGD's development-block register contains block codes, names,
 versions and reported district/state references. Each row represents
 a block/district association. A block can appear against several
 districts, so row counts and distinct `block_code` counts differ.
 
-Use this report for the block's district associations and
-[villages_by_blocks](villages_by_blocks.md) for its reported village
-links. Block codes, subdistrict codes and panchayat codes identify
-different entities, even where their names or numbers resemble one another.
-
 ## API
 
-```python
-from lgd_query.queries import blocks
-
-rows = blocks.list(db).fetchall()
-matches = blocks.search(db, "name", mode="contains").fetchall()
-```
-
-- `list(db, **filters)` retains every matching source row.
 - `by_code(db, code, **filters)` selects `block_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `block_name`.
 
@@ -36,32 +25,16 @@ matches = blocks.search(db, "name", mode="contains").fetchall()
 
 ## Exact filters
 
-All supplied filters combine with AND and run before search limits. `None` leaves a filter unused. Text filters use exact source spelling; use `search(field=...)` for normalized name matching.
-
-| Filter | Value |
+| Value type | Filters |
 | --- | --- |
-| `block_code` | Integer or ASCII digit string; zeros preserved |
-| `block_version` | Nonnegative integer |
-| `block_name` | Exact string |
-| `block_name_local` | Exact string |
-| `district_code` | Integer or ASCII digit string; zeros preserved |
-| `district_name` | Exact string |
-| `state_code` | Integer or ASCII digit string; zeros preserved |
-| `state_name` | Exact string |
+| Code | `block_code`, `district_code`, `state_code` |
+| Integer | `block_version` |
+| Text | `block_name`, `block_name_local`, `district_name`, `state_name` |
+
+[Value rules and missing-value predicates](../QUERIES.md#identifiers-filters-and-matching).
 
 ## CLI
 
 ```sh
-lgd-query blocks list --format json
-lgd-query blocks search NAME --mode fuzzy --cache-dir ./data
-lgd-query blocks code CODE --help
+lgd-query blocks list --state-code 32
 ```
-
-Filters become hyphenated flags (for example `state_code` → `--state-code`).
-Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
-All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
-Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
-control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
-predicates and source provenance.
-
-See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/blocks.md) and [shared query rules](../QUERIES.md).

@@ -1,5 +1,7 @@
 # central_org_units
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/central_org_units.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This directory lists offices/units of central organizations, with
 unit names, parent-unit references, organization, own level and typed
 location codes. `organization_unit_code` identifies a unit;
@@ -34,9 +36,6 @@ This includes simultaneous disagreement about organization. The
 historical key review
 found no such conflicts across all 1,610 accepted observations.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -51,6 +50,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 8 | `organization_level_code` | `VARCHAR` | `Org Located Level Code` | No |
 | 9 | `organization_code` | `VARCHAR` | `Base Organization Code` | No |
 | 10 | `organization_name` | `VARCHAR` | `Base Organization Name` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

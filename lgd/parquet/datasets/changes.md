@@ -1,5 +1,7 @@
 # changes
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/changes.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 The discontinued LGD change report records entity type/code,
 version, names, census reference, operation and reported date. It
 supplies structured entity references and retains every source row,
@@ -21,9 +23,6 @@ such as the literal string `null`.
 No uniqueness key is imposed and no source rows are deduplicated. This is one
 cumulative event report, with no observation or interval columns.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -37,6 +36,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 7 | `census_code` | `VARCHAR` | `Census Code` | No |
 | 8 | `operation_name` | `VARCHAR` | `Operation` | No |
 | 9 | `report_date` | `DATE` | `date` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

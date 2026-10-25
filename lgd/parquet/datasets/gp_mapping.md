@@ -1,5 +1,7 @@
 # gp_mapping
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/gp_mapping.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This report links villages to gram panchayats/local bodies and
 supplies their administrative and census context. Each association
 is identified by `(village_code, local_body_code)`. A village can have
@@ -28,9 +30,6 @@ The reported record key is:
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -51,6 +50,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 14 | `subdistrict_census_2001_code` | `VARCHAR` | `Subdistrict Census Code 2001` | No |
 | 15 | `district_census_2011_code` | `VARCHAR` | `District Census 2011 Code` | No |
 | 16 | `district_census_2001_code` | `VARCHAR` | `District Census 2001 Code` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

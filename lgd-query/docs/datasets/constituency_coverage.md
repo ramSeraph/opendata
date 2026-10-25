@@ -1,18 +1,12 @@
 # constituency_coverage
 
+[All datasets](README.md) · [Schema and row identity](../../../lgd/parquet/datasets/constituency_coverage.md) · [API/CLI conventions](../QUERIES.md)
+
 This report links typed geographic entities to parliamentary or
 assembly constituencies. `entity_type` is District, SubDistrict,
 Village, Localbody or Ward; it determines which register an
 `entity_code` refers to. A supplied assembly code identifies an
 assembly link; otherwise the row is a parliamentary-only link.
-
-Full/partial coverage is an attribute of the association. When both
-values are reported for the same association, normalized
-`coverage_type` is NULL and the original claims remain recoverable.
-Reports known to omit alternative links are incomplete: standalone
-Parquet contains supplied associations, while history can retain
-older alternatives as not updated. These flags do not quantify
-population or identify individual covered children.
 
 The conversion receipt links the original contradictory claims as discrepancy
 evidence. Older published generations may still contain separate
@@ -20,14 +14,6 @@ Full/Partial rows; the helpers do not silently normalize them on read.
 
 ## API
 
-```python
-from lgd_query.queries import constituency_coverage
-
-rows = constituency_coverage.list(db).fetchall()
-matches = constituency_coverage.search(db, "name", mode="contains").fetchall()
-```
-
-- `list(db, **filters)` retains every matching published row.
 - `by_code(db, code, **filters)` selects `entity_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `entity_name`.
 
@@ -121,38 +107,18 @@ evidence; this API does not infer a correction.
 
 ## Exact filters
 
-All supplied filters combine with AND and run before search limits. `None` leaves a filter unused. Text filters use exact source spelling; use `search(field=...)` for normalized name matching.
-
-| Filter | Value |
+| Value type | Filters |
 | --- | --- |
-| `constituency_level` | Exact `assembly` or `parliament` |
-| `constituency_code` | LGD code in that level; filter level as well |
-| `entity_code` | Integer or ASCII digit string; zeros preserved |
-| `entity_name` | Exact string |
-| `entity_type` | Exact string |
-| `parliament_constituency_code` | Integer or ASCII digit string; zeros preserved |
-| `parliament_constituency_name` | Exact string |
-| `assembly_constituency_code` | Integer or ASCII digit string; zeros preserved |
-| `assembly_constituency_name` | Exact string |
-| `coverage_type` | Exact string |
-| `state_code` | Integer or ASCII digit string; zeros preserved |
-| `state_name` | Exact string |
+| `assembly` or `parliament` | `constituency_level` |
+| Code; scope with `constituency_level` | `constituency_code` |
+| Code | `entity_code`, `parliament_constituency_code`, `assembly_constituency_code`, `state_code` |
+| Text | `entity_name`, `entity_type`, `parliament_constituency_name`, `assembly_constituency_name`, `coverage_type`, `state_name` |
+
+[Value rules and missing-value predicates](../QUERIES.md#identifiers-filters-and-matching).
 
 ## CLI
 
 ```sh
-lgd-query constituency_coverage list --format json
-lgd-query constituency_coverage search NAME --mode fuzzy --cache-dir ./data
-lgd-query constituency_coverage code CODE --help
 lgd-query constituency_coverage entities --entity-type SubDistrict --entity-code 1013 --format json
 lgd-query constituency_coverage entities --entity-type Village --assembly-constituency-code 1349
 ```
-
-Filters become hyphenated flags (for example `state_code` → `--state-code`).
-Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
-All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
-Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
-control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
-predicates and source provenance.
-
-See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/constituency_coverage.md) and [shared query rules](../QUERIES.md).

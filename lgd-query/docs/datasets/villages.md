@@ -1,27 +1,15 @@
 # villages
 
+[All datasets](README.md) · [Schema and row identity](../../../lgd/parquet/datasets/villages.md) · [API/CLI conventions](../QUERIES.md)
+
 LGD's village register includes English/local names, version,
 state/district/subdistrict references, census identifiers and, where
 supplied, status, category and remarks. A row represents a
 `village_code`/`village_category` pair: the same village can have several
 reported categories. Count distinct village codes when counting places.
 
-The parent codes connect to the administrative registers. Block and
-local-body associations are supplied separately by reports such as
-[villages_by_blocks](villages_by_blocks.md) and [gp_mapping](gp_mapping.md).
-Status and category retain the source's claims; they are not inferred
-from membership in a mapping report.
-
 ## API
 
-```python
-from lgd_query.queries import villages
-
-rows = villages.list(db).fetchall()
-matches = villages.search(db, "name", mode="contains").fetchall()
-```
-
-- `list(db, **filters)` retains every matching source row.
 - `by_code(db, code, **filters)` selects `village_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `village_name`.
 - `by_census_code(db, code, year=..., **filters)` supports 2001, 2011 for the primary entity only.
@@ -40,39 +28,16 @@ matches = villages.search(db, "name", mode="contains").fetchall()
 
 ## Exact filters
 
-All supplied filters combine with AND and run before search limits. `None` leaves a filter unused. Text filters use exact source spelling; use `search(field=...)` for normalized name matching.
-
-| Filter | Value |
+| Value type | Filters |
 | --- | --- |
-| `village_code` | Integer or ASCII digit string; zeros preserved |
-| `village_version` | Nonnegative integer |
-| `village_name` | Exact string |
-| `village_name_local` | Exact string |
-| `village_status` | Exact string |
-| `village_category` | Exact string |
-| `remark` | Exact string |
-| `state_code` | Integer or ASCII digit string; zeros preserved |
-| `state_name` | Exact string |
-| `district_code` | Integer or ASCII digit string; zeros preserved |
-| `district_name` | Exact string |
-| `subdistrict_code` | Integer or ASCII digit string; zeros preserved |
-| `subdistrict_name` | Exact string |
-| `village_census_2001_code` | Integer or ASCII digit string; zeros preserved |
-| `village_census_2011_code` | Integer or ASCII digit string; zeros preserved |
+| Code | `village_code`, `state_code`, `district_code`, `subdistrict_code`, `village_census_2001_code`, `village_census_2011_code` |
+| Integer | `village_version` |
+| Text | `village_name`, `village_name_local`, `village_status`, `village_category`, `remark`, `state_name`, `district_name`, `subdistrict_name` |
+
+[Value rules and missing-value predicates](../QUERIES.md#identifiers-filters-and-matching).
 
 ## CLI
 
 ```sh
-lgd-query villages list --format json
-lgd-query villages search NAME --mode fuzzy --cache-dir ./data
-lgd-query villages code CODE --help
+lgd-query villages search Rampur --state-code 9 --provenance
 ```
-
-Filters become hyphenated flags (for example `state_code` → `--state-code`).
-Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
-All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
-Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
-control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
-predicates and source provenance.
-
-See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/villages.md) and [shared query rules](../QUERIES.md).

@@ -1,25 +1,14 @@
 # urban_local_bodies
 
+[All datasets](README.md) · [Schema and row identity](../../../lgd/parquet/datasets/urban_local_bodies.md) · [API/CLI conventions](../QUERIES.md)
+
 LGD's urban local-body register supplies a body's LGD code, names,
 version, type, state and census identifier. Each row identifies one
 body by `local_body_code`. The type code/name classifies the body;
 it does not describe a tier in the PRI hierarchy.
 
-Use [urban_local_body_wards](urban_local_body_wards.md) for its wards
-and [statewise_ulbs_coverage](statewise_ulbs_coverage.md) for reported
-district/subdistrict/village coverage. The body's census identifier
-is separate from its LGD code.
-
 ## API
 
-```python
-from lgd_query.queries import urban_local_bodies
-
-rows = urban_local_bodies.list(db).fetchall()
-matches = urban_local_bodies.search(db, "name", mode="contains").fetchall()
-```
-
-- `list(db, **filters)` retains every matching source row.
 - `by_code(db, code, **filters)` selects `local_body_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `local_body_name`.
 - `by_census_code(db, code, year=..., **filters)` supports 2011 for the primary entity only.
@@ -36,32 +25,16 @@ matches = urban_local_bodies.search(db, "name", mode="contains").fetchall()
 
 ## Exact filters
 
-All supplied filters combine with AND and run before search limits. `None` leaves a filter unused. Text filters use exact source spelling; use `search(field=...)` for normalized name matching.
-
-| Filter | Value |
+| Value type | Filters |
 | --- | --- |
-| `local_body_code` | Integer or ASCII digit string; zeros preserved |
-| `local_body_version` | Nonnegative integer |
-| `local_body_name` | Exact string |
-| `local_body_name_local` | Exact string |
-| `local_body_type_code` | Integer or ASCII digit string; zeros preserved |
-| `local_body_census_2011_code` | Integer or ASCII digit string; zeros preserved |
-| `state_code` | Integer or ASCII digit string; zeros preserved |
-| `state_name` | Exact string |
+| Code | `local_body_code`, `local_body_type_code`, `local_body_census_2011_code`, `state_code` |
+| Integer | `local_body_version` |
+| Text | `local_body_name`, `local_body_name_local`, `state_name` |
+
+[Value rules and missing-value predicates](../QUERIES.md#identifiers-filters-and-matching).
 
 ## CLI
 
 ```sh
-lgd-query urban_local_bodies list --format json
-lgd-query urban_local_bodies search NAME --mode fuzzy --cache-dir ./data
-lgd-query urban_local_bodies code CODE --help
+lgd-query urban_local_bodies list --limit 5
 ```
-
-Filters become hyphenated flags (for example `state_code` → `--state-code`).
-Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
-All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
-Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
-control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
-predicates and source provenance.
-
-See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/urban_local_bodies.md) and [shared query rules](../QUERIES.md).

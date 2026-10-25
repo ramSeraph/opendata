@@ -1,5 +1,7 @@
 # villages_by_blocks
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/villages_by_blocks.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This report associates villages with development blocks and, where
 supplied, local bodies. It includes village administrative paths and
 census references. Distinct block/body associations remain separate:
@@ -34,9 +36,6 @@ Source headers, supplied-field schema IDs and the conversion receipt's
 and must not be reused. Exact repeated split-header rows are counted separately;
 source aliases such as `VillageCunsecCode` remain supported.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -58,6 +57,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 15 | `district_census_2011_code` | `VARCHAR` | `District Census 2011 Code` | No |
 | 16 | `state_census_2011_code` | `VARCHAR` | `State Census 2011 Code` | No |
 | 17 | `local_body_census_2011_code` | `VARCHAR` | `Local Body 2011 Code` | Yes → NULL |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

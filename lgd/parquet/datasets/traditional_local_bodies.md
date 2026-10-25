@@ -1,5 +1,7 @@
 # traditional_local_bodies
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/traditional_local_bodies.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This register describes traditional local bodies, their state and
 reported district/intermediate parent paths. The institutions and
 names vary by state. `local_body_level` gives District, Intermediate
@@ -37,9 +39,6 @@ Identical records collapse. Conflicting attributes for this key are rejected;
 rows differing only in a known version retain the highest version. A mixture
 of known and unknown versions for one key is rejected.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -55,9 +54,6 @@ cover text preservation, blanks, optional columns and strict validation.
 | 9 | `state_code` | `VARCHAR` | `State Code` | No |
 | 10 | `state_name` | `VARCHAR` | `State Name (In English)` | No |
 | 11 | `local_body_level` | `VARCHAR` | `Local Body Level` | Yes → NULL |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.
 
 ## Parent references
 

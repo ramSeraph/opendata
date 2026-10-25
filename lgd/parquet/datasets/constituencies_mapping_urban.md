@@ -1,5 +1,7 @@
 # constituencies_mapping_urban
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/constituencies_mapping_urban.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This report connects urban wards and local bodies to assembly and
 parliamentary constituencies, including reported ECI identifiers and
 district/subdistrict paths. A ward lookup can return several rows:
@@ -36,9 +38,6 @@ historical key review
 found no simultaneous ambiguity for this four-field key across all retained
 observations. Any future conflicting parent or other attribute stops conversion.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -59,6 +58,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 14 | `subdistrict_code` | `VARCHAR` | `Subdistrict Code` | No |
 | 15 | `subdistrict_name` | `VARCHAR` | `Subdistrict Name` | No |
 | 16 | `state_code` | `VARCHAR` | `State Code` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

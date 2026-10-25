@@ -1,29 +1,15 @@
 # constituencies_mapping_pri
 
+[All datasets](README.md) · [Schema and row identity](../../../lgd/parquet/datasets/constituencies_mapping_pri.md) · [API/CLI conventions](../QUERIES.md)
+
 This report connects villages, rural local bodies and
 blocks to parliamentary/assembly constituencies, with administrative
 and census context. It also supplies reported LGD-to-ECI constituency
 identifiers. One village can have several coded associations, and
 reviewed block disagreements require retaining `block_code`.
 
-Assembly-backed and parliamentary-only links remain distinct. Names
-are attributes; conflicting body labels resolve through a dated PRI
-register, with originals preserved as evidence. ECI values contain
-documented errors and reuse, so reverse lookups retain every match.
-The retained historical collection ends in October 2022. The scraper has been
-restored for current reports; inspect each export's source date, and do not
-interpret the collection gap as an unchanged electoral map.
-
 ## API
 
-```python
-from lgd_query.queries import constituencies_mapping_pri
-
-rows = constituencies_mapping_pri.list(db).fetchall()
-matches = constituencies_mapping_pri.search(db, "name", mode="contains").fetchall()
-```
-
-- `list(db, **filters)` retains every matching source row.
 - `by_code(db, code, **filters)` selects `village_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `village_name`.
 - `by_census_code(db, code, year=..., **filters)` supports 2011 for the primary entity only.
@@ -94,50 +80,19 @@ Lookup keys are explicit and names never serve as join keys:
 
 - `state_name`: `state_code` → `states.state_code`.
 
-Lookup searches add `lookup_names` containing all distinct resolved labels. Multiple labels do not multiply the source row. Missing references do not match. The matching report can have a different date; inspect `queries.sources(...)` before opening it. Supplied columns remain unchanged.
-
 ## Exact filters
 
-All supplied filters combine with AND and run before search limits. `None` leaves a filter unused. Text filters use exact source spelling; use `search(field=...)` for normalized name matching.
-
-| Filter | Value |
+| Value type | Filters |
 | --- | --- |
-| `constituency_level` | Exact `assembly` or `parliament` |
-| `constituency_code` | LGD code in that level; filter level as well |
-| `village_code` | Integer or ASCII digit string; zeros preserved |
-| `village_name` | Exact string |
-| `village_census_2011_code` | Integer or ASCII digit string; zeros preserved |
-| `local_body_code` | Integer or ASCII digit string; zeros preserved |
-| `local_body_name` | Exact string |
-| `block_code` | Integer or ASCII digit string; zeros preserved |
-| `block_name` | Exact string |
-| `subdistrict_code` | Integer or ASCII digit string; zeros preserved |
-| `subdistrict_name` | Exact string |
-| `subdistrict_census_2011_code` | Integer or ASCII digit string; zeros preserved |
-| `district_code` | Integer or ASCII digit string; zeros preserved |
-| `district_name` | Exact string |
-| `district_census_2011_code` | Integer or ASCII digit string; zeros preserved |
-| `parliament_constituency_code` | Integer or ASCII digit string; zeros preserved |
-| `parliament_constituency_name` | Exact string |
-| `parliament_constituency_eci_code` | Integer or ASCII digit string; zeros preserved |
-| `assembly_constituency_code` | Integer or ASCII digit string; zeros preserved |
-| `assembly_constituency_name` | Exact string |
-| `assembly_constituency_eci_code` | Integer or ASCII digit string; zeros preserved |
-| `state_code` | Integer or ASCII digit string; zeros preserved |
+| `assembly` or `parliament` | `constituency_level` |
+| Code; scope with `constituency_level` | `constituency_code` |
+| Code | `village_code`, `village_census_2011_code`, `local_body_code`, `block_code`, `subdistrict_code`, `subdistrict_census_2011_code`, `district_code`, `district_census_2011_code`, `parliament_constituency_code`, `parliament_constituency_eci_code`, `assembly_constituency_code`, `assembly_constituency_eci_code`, `state_code` |
+| Text | `village_name`, `local_body_name`, `block_name`, `subdistrict_name`, `district_name`, `parliament_constituency_name`, `assembly_constituency_name` |
+
+[Value rules and missing-value predicates](../QUERIES.md#identifiers-filters-and-matching).
 
 ## CLI
 
 ```sh
-lgd-query constituencies_mapping_pri list --format json
-lgd-query constituencies_mapping_pri search NAME --mode fuzzy --cache-dir ./data
-lgd-query constituencies_mapping_pri code CODE --help
+lgd-query constituencies_mapping_pri list --limit 5
 ```
-
-Filters become hyphenated flags (for example `state_code` → `--state-code`).
-Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
-All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
-Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
-control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
-predicates and source provenance.
-
-See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/constituencies_mapping_pri.md) and [shared query rules](../QUERIES.md).

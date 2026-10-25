@@ -1,5 +1,7 @@
 # tlb_villages
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/tlb_villages.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This is LGD's Gram Panchayat/TLB village-mapping report. It contains
 both PRI gram panchayats and traditional local bodies, with village,
 block, administrative-path and census references. The retained name
@@ -49,9 +51,6 @@ The reported record key is:
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -74,9 +73,6 @@ cover text preservation, blanks, optional columns and strict validation.
 | 16 | `district_census_2011_code` | `VARCHAR` | `District Census 2011 Code` | No |
 | 17 | `subdistrict_census_2011_code` | `VARCHAR` | `Sub-district Census 2011 code` | No |
 | 18 | `village_census_2011_code` | `VARCHAR` | `Village Census 2011 Code` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.
 
 ## Ignored source field
 

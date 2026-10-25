@@ -44,10 +44,10 @@ collapsed rows and output size/hash. Constituency layout diagnostics identify
 known missing prefix rows. The receipt describes the input that was converted;
 successful conversion does not establish that LGD supplied a complete report.
 
-## Dated PRI ward references
+## Dated PRI references
 
-Conflicting PRI ward labels/state assignments require a canonical PRI-body
-Parquet dated at or before the ward report:
+Conflicting PRI ward labels/state assignments and PRI constituency-mapping body
+names require a canonical PRI-body Parquet dated at or before the source report:
 
 ```sh
 python -m parquet pri_local_body_wards wards.csv.7z wards.parquet \
@@ -59,7 +59,9 @@ The conversion receipt records the reference date/hash and links a separate
 `discrepancy_evidence` Parquet containing original variants and resolution results.
 Daily publication pins the reference source alongside the ward source, converts
 it independently, and uploads any evidence with the output. See the
-[PRI ward schema](datasets/pri_local_body_wards.md) for exclusions and unresolved updates.
+[PRI ward schema](datasets/pri_local_body_wards.md) for exclusions and unresolved
+updates, and the [PRI constituency schema](datasets/constituencies_mapping_pri.md)
+for body-name resolution.
 
 ## Schemas and interpretation
 

@@ -1,5 +1,7 @@
 # parliament_constituencies_lb_mapping
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/parliament_constituencies_lb_mapping.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This report links parliamentary constituencies to named
 assembly constituencies and local bodies, with a body-type name,
 state and coverage flag. The parliamentary reference is coded; assembly
@@ -35,9 +37,6 @@ The historical review
 finds that state is redundant throughout the retained history and that all
 simultaneous coverage conflicts are exactly `F`/`P` pairs.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -49,6 +48,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 5 | `local_body_type_name` | `VARCHAR` | `Classification` | No |
 | 6 | `coverage_type` | `VARCHAR` | `Coverage` | No |
 | 7 | `state_code` | `VARCHAR` | `State Code` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

@@ -1,26 +1,15 @@
 # changes
 
+[All datasets](README.md) · [Schema and row identity](../../../lgd/parquet/datasets/changes.md) · [API/CLI conventions](../QUERIES.md)
+
 The discontinued LGD change report records entity type/code,
 version, names, census reference, operation and reported date. It
 supplies structured entity references and retains every source row,
 including duplicate or repeated claims; the report serial is not a
 stable event identifier.
 
-This is one cumulative event table, not a sequence of entity snapshots.
-Its row-date range does not prove complete collection coverage. The
-newer [transactions](transactions.md) report has a different schema
-and cannot be treated as the same event stream under renamed fields.
-
 ## API
 
-```python
-from lgd_query.queries import changes
-
-rows = changes.list(db).fetchall()
-matches = changes.search(db, "name", mode="contains").fetchall()
-```
-
-- `list(db, **filters)` retains every matching source row.
 - `by_code(db, code, **filters)` selects `entity_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `entity_name`.
 
@@ -40,35 +29,18 @@ matches = changes.search(db, "name", mode="contains").fetchall()
 
 ## Exact filters
 
-All supplied filters combine with AND and run before search limits. `None` leaves a filter unused. Text filters use exact source spelling; use `search(field=...)` for normalized name matching.
-
-| Filter | Value |
+| Value type | Filters |
 | --- | --- |
-| `report_serial` | Exact string |
-| `entity_type` | Exact string |
-| `entity_code` | Integer or ASCII digit string; zeros preserved |
-| `entity_version` | Nonnegative integer |
-| `entity_name` | Exact string |
-| `entity_name_local` | Exact string |
-| `census_code` | Exact source text, including sentinels such as `null` |
-| `operation_name` | Exact string |
-| `report_date` | ISO date string or `datetime.date` |
-| `since` | ISO date string or `datetime.date` |
-| `until` | ISO date string or `datetime.date` |
+| Text | `report_serial`, `entity_type`, `entity_name`, `entity_name_local`, `operation_name` |
+| Code | `entity_code` |
+| Integer | `entity_version` |
+| Text, including source sentinels such as `null` | `census_code` |
+| Date | `report_date`, `since`, `until` |
+
+[Value rules and missing-value predicates](../QUERIES.md#identifiers-filters-and-matching).
 
 ## CLI
 
 ```sh
-lgd-query changes list --format json
-lgd-query changes search NAME --mode fuzzy --cache-dir ./data
-lgd-query changes code CODE --help
+lgd-query changes code 123 --entity-type Village --since 2024-01-01
 ```
-
-Filters become hyphenated flags (for example `state_code` → `--state-code`).
-Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
-All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
-Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
-control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
-predicates and source provenance.
-
-See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/changes.md) and [shared query rules](../QUERIES.md).

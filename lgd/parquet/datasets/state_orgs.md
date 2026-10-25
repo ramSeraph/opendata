@@ -1,5 +1,7 @@
 # state_orgs
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/state_orgs.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 This directory identifies state departments and organizations by
 `organization_code`, with names, organization type, state and reported
 parent organization. State is an attribute. The parent may appear
@@ -27,9 +29,6 @@ Simultaneous disagreement about state is also a conflict. The
 historical review
 found no code shared across states in the accepted history.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -42,6 +41,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 6 | `parent_organization_type` | `VARCHAR` | `Parent Organization Type` | No |
 | 7 | `state_code` | `VARCHAR` | `State Code` | No |
 | 8 | `state_name` | `VARCHAR` | `State Name` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

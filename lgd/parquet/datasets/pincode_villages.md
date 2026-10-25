@@ -1,5 +1,7 @@
 # pincode_villages
 
+[All schemas](README.md) · [Query API](../../../lgd-query/docs/datasets/pincode_villages.md) · [Common conversion rules](../README.md#schemas-and-interpretation)
+
 LGD's village/pincode report supplies village and postal-code
 associations with state, district and subdistrict codes/names. The
 normalized key is `(village_code, pincode)`; administrative parents
@@ -24,9 +26,6 @@ This includes simultaneous disagreement about state, district or subdistrict.
 The historical key review
 found no such collisions across all 1,412 retained observations.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
-cover text preservation, blanks, optional columns and strict validation.
-
 ## Fields
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
@@ -40,6 +39,3 @@ cover text preservation, blanks, optional columns and strict validation.
 | 7 | `district_name` | `VARCHAR` | `District Name` | No |
 | 8 | `state_code` | `VARCHAR` | `State Code` | No |
 | 9 | `state_name` | `VARCHAR` | `State Name` | No |
-
-“Column may be absent” refers to the header, not whether a supplied value may
-be blank. Code validation and placeholder rules still apply to supplied values.

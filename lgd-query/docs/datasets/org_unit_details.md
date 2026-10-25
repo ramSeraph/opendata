@@ -25,7 +25,7 @@ matches = org_unit_details.search(db, "name", mode="contains").fetchall()
 ```
 
 - `list(db, **filters)` retains every matching source row.
-- `by_code(db, value, **filters)` selects `organization_unit_code` exactly and retains all matches.
+- `by_code(db, code, **filters)` selects `organization_unit_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `organization_unit_name`.
 
 `organization_code` and `state_code` remain optional filters. Name enrichment
@@ -41,13 +41,39 @@ metadata using `required_entity_datasets(type_value)`.
 
 This combined report routes custom administrative-unit locations to central
 units for state scope `0`, and to state units with the same state scope otherwise.
-Geographic locations are resolved by typed code, independently of organization
+Pass `state_code` to the dependency helpers as well as the query, or prepare
+once. A custom-level query restricted to state scope `0` loads only central
+administrative units; a nonzero state loads only state units. Unfiltered queries
+load both. Geographic locations are resolved by typed code, independently of organization
 scope. The [shared type mapping and result semantics](../ORGANIZATION_DATA.md#follow-entity-references-to-registers)
 cover local-body type disagreements, unknown types and missing references.
 
 ```sh
 lgd-query org_unit_details entities --entity-type=-5 --state-code 32 --format json
 ```
+
+## Reference exploration
+
+- `references(db, resolution_status=None, **source_filters)` retains source
+  offices/claims, unresolved references and matched register variants. Output
+  prefixes distinguish `source_` columns from `target_` columns.
+- `reference_types(db, **source_filters)` reads only this report and returns
+  observed types/labels, row and distinct-office counts, and known namespaces.
+- `reference_type_map()` describes known namespaces without I/O.
+
+Use `queries.prepare("org_unit_details", "references", ...)` or
+`queries.prepare("org_unit_details", "reference_types", ...)` to share options with
+input resolution. Optional reference type and report-state filters narrow target
+inputs. A missing required register fails explicitly. `entities` rejects unknown
+type selections; `references` preserves unknown source references as evidence.
+
+```sh
+lgd-query org_unit_details types --all
+lgd-query org_unit_details references --help
+```
+
+See [reference outcomes and dependencies](../ORGANIZATION_DATA.md#keep-offices-claims-and-unresolved-references)
+and [type discovery](../ORGANIZATION_DATA.md#inspect-types-before-resolving-references).
 
 ## Search fields and dependencies
 
@@ -95,5 +121,8 @@ lgd-query org_unit_details code CODE --help
 Filters become hyphenated flags (for example `state_code` → `--state-code`).
 Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
 All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
+Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
+control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
+predicates and source provenance.
 
 See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/org_unit_details.md) and [shared query rules](../QUERIES.md).

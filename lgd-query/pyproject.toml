@@ -34,3 +34,4 @@ include = ["lgd_query", "lgd_query.*"]
 
 [tool.setuptools.package-data]
 lgd_query = ["py.typed"]
+"lgd_query.queries" = ["*.pyi"]

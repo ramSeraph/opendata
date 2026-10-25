@@ -35,6 +35,11 @@ def check(directory, tag=''):
             raise ValueError('Wheel contains code outside lgd_query')
         if 'lgd_query/__init__.py' not in names or 'lgd_query/cli.py' not in names:
             raise ValueError('Reader API/CLI is missing from wheel')
+        for name in names:
+            if (name.startswith('lgd_query/queries/') and name.endswith('.py')
+                    and not PurePosixPath(name).name.startswith('_')):
+                if name[:-3] + '.pyi' not in names:
+                    raise ValueError(f'Query type stub is missing from wheel: {name}')
         entry_points = wheel.read(prefix+'entry_points.txt').decode()
         if 'lgd-query = lgd_query.cli:main' not in entry_points:
             raise ValueError('CLI entry point is missing')
@@ -50,7 +55,7 @@ def check(directory, tag=''):
                 continue
             relative = str(path.relative_to(root))
             if relative not in ('README.md', 'pyproject.toml', 'PKG-INFO', 'setup.cfg',
-                                'MANIFEST.in', 'tools/check_dist.py') and not relative.startswith(
+                                'MANIFEST.in', 'tools/check_dist.py', 'tools/generate_query_stubs.py') and not relative.startswith(
                     ('src/lgd_query/', 'src/lgd_query.egg-info/', 'tests/')):
                 raise ValueError(f'Source distribution includes unrelated files: {relative}')
     print(f'lgd-query {version}: standalone wheel and source archive verified')

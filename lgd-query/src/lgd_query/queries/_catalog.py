@@ -52,21 +52,24 @@ def get(dataset):
     return import_module(f'{__package__}.{dataset}')
 
 
-def required_datasets(dataset, *, field=None, include_entity_name=False):
+def required_datasets(dataset, *, field=None, include_entity_name=False, entity_name=None,
+                      entity_name_status=None, is_null=None, is_blank=None):
     """Return all view names required for the selected query/search field."""
     module = get(dataset)
     if type(include_entity_name) is not bool:
         raise ValueError('include_entity_name must be a boolean')
-    if include_entity_name:
-        if dataset not in ('state_org_units', 'central_org_units'):
-            raise ValueError('include_entity_name is supported for state_org_units and central_org_units')
-        return module.required_datasets(field=field, include_entity_name=True)
+    if dataset in ('state_org_units', 'central_org_units'):
+        return module.required_datasets(field=field, include_entity_name=include_entity_name,
+            entity_name=entity_name, entity_name_status=entity_name_status, is_null=is_null, is_blank=is_blank)
+    if include_entity_name or entity_name_status is not None:
+        raise ValueError('Name enrichment is supported for state_org_units and central_org_units')
     if hasattr(module, 'required_datasets'):
         return module.required_datasets(field=field)
     return (dataset,)
 
 
-def sources(release, dataset, *, field=None, observed_on=None, include_entity_name=False):
+def sources(release, dataset, *, field=None, observed_on=None, include_entity_name=False,
+            entity_name=None, entity_name_status=None, is_null=None, is_blank=None):
     """Resolve every query dependency from one already-pinned release.
 
     Returns Dataset objects so callers can inspect dates/status before opening
@@ -76,4 +79,5 @@ def sources(release, dataset, *, field=None, observed_on=None, include_entity_na
     """
     return tuple(release.dataset(name, observed_on=observed_on)
                  for name in required_datasets(dataset, field=field,
-                                               include_entity_name=include_entity_name))
+                     include_entity_name=include_entity_name, entity_name=entity_name,
+                     entity_name_status=entity_name_status, is_null=is_null, is_blank=is_blank))

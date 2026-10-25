@@ -21,7 +21,7 @@ matches = transactions.search(db, "name", mode="contains").fetchall()
 ```
 
 - `list(db, **filters)` retains every matching source row.
-- `by_id(db, value, **filters)` selects `transaction_id` exactly and retains all matches.
+- `by_id(db, transaction_id, **filters)` selects `transaction_id` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `description`.
 
 `since` and `until` are inclusive `transaction_date` bounds (ISO date strings or `datetime.date`). Duplicate rows/IDs remain separate events.
@@ -62,6 +62,9 @@ lgd-query transactions id CODE --help
 Filters become hyphenated flags (for example `state_code` → `--state-code`).
 Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
 All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
+Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
+control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
+predicates and source provenance.
 
 `search` matches free-text descriptions by default. It does not extract a structured entity list or infer entity codes. IDs must be strings.
 

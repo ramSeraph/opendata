@@ -264,8 +264,9 @@ with connect(inputs, cache_dir="./data") as db:
 exact text supplied in the claims. It resolves `covered_entity_code`, never
 the office-location `entity_code` in that same report. Supported labels are
 `State`, `District`, `Subdistrict`, `Village`, `Block` and the eight local-body
-labels in the table above. Blank and unrecognized labels remain unresolved;
-the helper does not guess a custom administrative level from a label alone.
+labels in the table above. Blank and unrecognized selections raise a validation error in `entities`;
+use `references` to retain those source claims with an explicit outcome.
+Neither API guesses a custom administrative level from a coverage label alone.
 Only rows with `coverage_details_reported='true'` select target records.
 
 ```python
@@ -310,8 +311,12 @@ are matched exactly, preserving leading zeroes. No join uses a place name.
 metadata. `entity_sources(release, type_value, observed_on=None)` resolves those
 inputs from one pinned generation; inspect their individual report dates.
 An explicit date guard applies to every input, and an unavailable required
-register fails before downloading. Unknown/sentinel types need only the source
-report and return an empty result; these APIs do not reconstruct history.
+register fails before downloading. `entities` rejects unknown/sentinel type selections before I/O. `references`
+retains them with an explicit outcome; these APIs do not reconstruct history.
+For custom levels in `org_unit_details`, `state_code="0"` needs only the central
+administrative-unit register; a supplied nonzero state needs only the state
+register. Unfiltered combined queries require both. Pass the same `state_code`
+to `entity_sources`/`required_entity_datasets`, or use `queries.prepare` once.
 
 ```sh
 lgd-query state_org_units entities --entity-type 2 --organization-unit-code 1237173 --format json
@@ -362,8 +367,8 @@ For state units, both state codes must match.
 To return location names without searching by them, pass
 `include_entity_name=True` to a unit query and its `queries.sources` call, or use
 the CLI's `--include-entity-name`. Listing, code lookup and search then add the
-unambiguous `entity_name` and all distinct `entity_names` alternatives from
-`org_unit_details`. Missing matches retain the unit row with NULL and `[]`.
+unambiguous `entity_name`, all distinct `entity_names` alternatives, and
+`entity_name_status` (`matched`, `missing`, or `ambiguous`) from `org_unit_details`. Missing matches retain the unit row with NULL and `[]`.
 See the [state](datasets/state_org_units.md#include-the-location-name) and
 [central](datasets/central_org_units.md#include-the-location-name) examples.
 
@@ -404,3 +409,146 @@ Every input comes from the selected metadata generation, but report dates can
 differ within that generation. Inspect those dates or require an exact
 `observed_on` value. A missing reference does not match a name search; ambiguous
 names are retained in `lookup_names`, and names never become join keys.
+
+
+## Inspect types before resolving references
+
+The four location/coverage modules expose `reference_type_map()` without I/O.
+It describes known namespaces, not every observed source value. Location values
+are signed numeric codes; coverage types are exact source text. `>5` in the
+location map denotes custom administrative levels. Unlabelled source values
+`0` and `-100` have no invented official name.
+
+`reference_types(db, **source_filters)` summarizes the selected source report:
+
+| Column | Meaning |
+| --- | --- |
+| `reference_type` | Raw location code or coverage-type label, including blanks/NULL |
+| `reported_type_name` | Label from details or the coverage type itself; NULL for directories lacking labels |
+| `known_type_name` | Known geographic/local-body label; NULL for custom/unrecognized types |
+| `target_datasets` | Registers the resolver would need for this type and selected scope |
+| `resolvable` | A target namespace is known; does not assert a matching record exists |
+| `source_rows`, `organization_units` | Row count and distinct office count in this group |
+
+Different reported labels stay separate. Counts do not count unique covered
+places, and duplicates in a caller-provided source remain in row counts.
+This query loads only the selected source report, so unavailable target registers
+do not prevent type inspection. Use the details report to see custom-level labels
+that the office directories do not supply.
+
+```sh
+lgd-query org_unit_details types --state-code 32 --all
+lgd-query org_unit_coverage types --coverage-details-reported true --all
+```
+
+`entities` validates its requested type before metadata/downloads. For example,
+`SubDistrict` is rejected with valid choices; the coverage spelling is
+`Subdistrict`. Unknown raw values remain available through ordinary filters
+and the reference-resolution API below.
+
+## Keep offices, claims and unresolved references
+
+`references(db, **source_filters)` is available on `state_org_units`,
+`central_org_units`, `org_unit_details` and `org_unit_coverage`. Each result keeps
+all source columns under `source_` names and all matched register columns under
+`target_` names. Source filters still use their original unprefixed names.
+`source_state_code` is organization report scope; `target_state_code` is the
+matched record's state. Coverage uses `source_covered_entity_*` as the target
+reference while preserving the office-location `source_entity_*` separately.
+
+One source row produces one row per distinct matched register variant, or one
+row with NULL target fields when unresolved. Exact target duplicates collapse;
+source duplicates remain. `entities` continues to provide just matched register
+records when source links are unnecessary.
+
+| `resolution_status` | Meaning |
+| --- | --- |
+| `matched` | One distinct matching register record |
+| `ambiguous` | Several matching register records; all remain visible |
+| `missing_type` | Reference type is NULL, empty or whitespace-only |
+| `missing_code` | Reference code is NULL, empty or whitespace-only |
+| `invalid_code` | Non-digit, zero or negative reference; no accidental namespace match |
+| `unsupported_type` | No verified target namespace for the supplied type |
+| `unmatched` | Known type and usable code, but no matching record in the loaded registers |
+| `not_reported` | Coverage details were explicitly not supplied; this is not zero coverage |
+
+When several problems apply, the table's precedence is: `not_reported`, missing
+type, missing code, invalid code, unsupported type, then matching outcomes.
+`target_match_count` counts distinct register records; `target_name_count` counts
+distinct nonblank names. Two village-category variants can have two records but
+one name. Ambiguity does not, by itself, establish that either record is wrong.
+`target_dataset`, `target_code` and `target_name` identify each match;
+`reference_type_matches` retains local-body subtype disagreements, as in `entities`.
+Columns absent from one register in a combined result are NULL.
+
+```python
+from lgd_query import load_release, connect, queries
+
+query = queries.prepare(
+    "org_unit_coverage", "references", covered_entity_type="Village",
+    organization_code="1149", resolution_status="unmatched",
+)
+inputs = query.sources(load_release())
+print([(d.name, d.observed_on, d.status) for d in inputs])
+with connect(inputs, cache_dir="./data") as db:
+    rows = query.execute(db).fetchall()
+```
+
+`resolution_status` selects outcomes after matching. All ordinary filters and
+missing-value predicates select source rows. A type filter narrows required
+registers; without one, `references` needs every supported target register for
+that report. Unknown selected coverage types and numeric location sentinels need
+only the source report. Required-but-unavailable registers fail explicitly and
+never masquerade as unmatched references. Date guards apply to every input.
+
+The lower-level helpers are `required_reference_datasets(reference_type=None,
+state_code=None)` and `reference_sources(release, reference_type=None,
+state_code=None, observed_on=None)`. Scope arguments are keyword-only; central
+unit directories have no state-code filter. `queries.prepare` keeps dependencies
+and execution options together.
+
+```sh
+lgd-query org_unit_coverage references --covered-entity-type Village --resolution-status unmatched --columns source_organization_unit_code source_covered_entity_code resolution_status
+lgd-query org_unit_coverage references --covered-entity-type '' --resolution-status not_reported
+lgd-query org_unit_details references --entity-type=-100 --provenance --format json
+```
+
+An unmatched target is not evidence of an office's deletion. Report dates and
+cross-report inconsistencies still matter. Supplied labels remain source claims;
+reference resolution does not silently replace them with register labels.
+
+## Filter reported location-name outcomes
+
+State/central office `list`, `by_code` and `search` accept
+`entity_name_status="matched"|"missing"|"ambiguous"` and exact `entity_name=...`.
+These filters automatically enable enrichment and add `org_unit_details` to the
+required inputs. `is_null="entity_name"` selects missing **or** ambiguous labels;
+use the status filter to separate them. `is_blank="entity_name"` matches nothing
+because blank details labels are excluded from name resolution. Status describes
+reported details labels, not whether a geographic register confirms them.
+
+Name filters apply before search limits and ranking. Exact `entity_name` matches
+the unambiguous scalar only; `search(field="entity_name")` can match any reported
+alternative. Scalar/array columns and source-row multiplicity remain intact.
+Pass the same name options to dependency helpers, or use `queries.prepare`.
+
+```sh
+lgd-query state_org_units search Collectorate --state-code 32 --entity-name-status missing
+lgd-query central_org_units list --entity-name-status ambiguous --columns organization_unit_code entity_names entity_name_status
+```
+
+## An exploration sequence
+
+1. Find an organization: `lgd-query state_orgs search Revenue --state-code 32`.
+2. List its offices: `lgd-query state_org_units list --organization-code 889`.
+3. Inspect a specific office: `lgd-query org_unit_details code 1237173`.
+4. Discover location types: `lgd-query org_unit_details types --organization-code 889`.
+5. Follow locations while retaining offices: `lgd-query state_org_units references --organization-code 889 --entity-type 2`.
+6. Inspect coverage independently: `lgd-query org_unit_coverage code 1237173`.
+
+For custom administration, start with `state_admin_depts` (level definitions),
+then query `state_admin_dept_units` with `--administrative-unit-level-code CODE`.
+For central administration use the corresponding central datasets. Designation
+reports describe titles and reported level associations, not named people or
+appointments to offices. Parent-office filters support direct-child exploration;
+these APIs do not infer a complete hierarchy from missing parents.

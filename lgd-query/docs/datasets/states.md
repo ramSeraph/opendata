@@ -32,5 +32,8 @@ States search also accepts `field="english"|"local"`. Missing local names do not
 
 CLI: `lgd-query states list`, `code CODE`, `census-code CODE --year YEAR`,
 and `search NAME`. Use `--help` on a command for its options.
+Dataset commands preview 20 rows; use `--limit N`, `--all` and `--columns`
+to control output. See [shared CLI options](../QUERIES.md#cli) for missing-value
+filters and source provenance.
 
 See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/states.md) and [shared query rules](../QUERIES.md).

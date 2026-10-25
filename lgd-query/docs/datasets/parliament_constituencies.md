@@ -24,7 +24,7 @@ matches = parliament_constituencies.search(db, "name", mode="contains").fetchall
 ```
 
 - `list(db, **filters)` retains every matching source row.
-- `by_code(db, value, **filters)` selects `parliament_constituency_code` exactly and retains all matches.
+- `by_code(db, code, **filters)` selects `parliament_constituency_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `parliament_constituency_name`.
 
 ## Search fields and dependencies
@@ -57,5 +57,8 @@ lgd-query parliament_constituencies code CODE --help
 Filters become hyphenated flags (for example `state_code` → `--state-code`).
 Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
 All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
+Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
+control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
+predicates and source provenance.
 
 See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/parliament_constituencies.md) and [shared query rules](../QUERIES.md).

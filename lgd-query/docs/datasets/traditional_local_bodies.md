@@ -30,7 +30,7 @@ matches = traditional_local_bodies.search(db, "name", mode="contains").fetchall(
 ```
 
 - `list(db, **filters)` retains every matching source row.
-- `by_code(db, value, **filters)` selects `local_body_code` exactly and retains all matches.
+- `by_code(db, code, **filters)` selects `local_body_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `local_body_name`.
 
 ## Search fields and dependencies
@@ -104,6 +104,9 @@ lgd-query traditional_local_bodies search Ambassa --field intermediate_panchayat
 Filters become hyphenated flags (for example `state_code` → `--state-code`).
 Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
 All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
+Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
+control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
+predicates and source provenance.
 Parent-name searches automatically load both body registers. Listing and
 body-code lookups need only `traditional_local_bodies`.
 

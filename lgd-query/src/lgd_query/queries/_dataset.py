@@ -8,7 +8,8 @@ or multiplying relationship/event records.
 from dataclasses import dataclass
 from datetime import date
 
-from ._common import code, search as search_text
+from ._common import code as validate_code, search as search_text
+from ._missing import missing_conditions
 
 
 @dataclass(frozen=True)
@@ -50,8 +51,9 @@ def _date(value):
 class DatasetQueries:
     """Implementation shared by modules with separately reviewed report schemas."""
 
-    def __init__(self, spec):
+    def __init__(self, spec, *, table=None):
         self.spec = spec
+        self._table = table or spec.dataset
         self._lookups = {field: (lookup,) if isinstance(lookup, NameLookup) else lookup
                          for field, lookup in spec.lookups}
         self._names = {c: c for c in spec.columns
@@ -91,21 +93,25 @@ class DatasetQueries:
             text = str(value) if type(value) is int else value
             if not isinstance(text, str) or not text:
                 raise ValueError(f'{column} must be signed integer text')
-            code(text.removeprefix('-'))
+            validate_code(text.removeprefix('-'))
             return text
         # Specific codes, report serials, ward numbers, flags and transaction
         # identifiers are source text. Census/LGD/ECI codes retain their zeros.
         if column.endswith('_code') and column not in ('organization_unit_specific_code', 'census_code'):
-            return code(value)
+            return validate_code(value)
         if not isinstance(value, str):
             raise ValueError(f'{column} must be a string')
         return value
 
     def _conditions(self, filters):
+        filters = dict(filters)
+        conditions = missing_conditions(self.spec.columns, alias='t',
+            nontext=(*self.spec.integers, self.spec.event_date),
+            is_null=filters.pop('is_null', None), is_blank=filters.pop('is_blank', None))
         unknown = set(filters) - set(self.filters)
         if unknown:
             raise ValueError(f'Unsupported {self.spec.dataset} filter(s): {", ".join(sorted(unknown))}')
-        conditions, params = [], []
+        params = []
         if (self.spec.typed_code and filters.get('entity_code') is not None
                 and not filters.get('entity_type')):
             raise ValueError('entity_type is required with entity_code')
@@ -138,10 +144,10 @@ class DatasetQueries:
         deduplicated. None means the corresponding filter is not applied.
         """
         condition, params = self._conditions(filters)
-        return connection.sql(f'SELECT t.* FROM {self.spec.dataset} t '
+        return connection.sql(f'SELECT t.* FROM {self._table} t '
                               f'WHERE {condition} ORDER BY {self._order}', params=params)
 
-    def by_code(self, connection, value, **filters):
+    def by_code(self, connection, code, **filters):
         """Find all rows for the documented primary code, with optional scope.
 
         This is not a uniqueness assertion. Census codes use by_census_code;
@@ -149,17 +155,17 @@ class DatasetQueries:
         """
         if self.spec.primary_code in filters:
             raise ValueError(f'{self.spec.primary_code} was already supplied positionally')
-        value = self._value(self.spec.primary_code, value)
+        value = self._value(self.spec.primary_code, code)
         return self.list(connection, **{self.spec.primary_code: value}, **filters)
 
-    def by_census_code(self, connection, value, *, year, **filters):
+    def by_census_code(self, connection, code, *, year, **filters):
         """Look up the primary entity's code in an explicit census year."""
         if type(year) is not int or year not in self.census_years:
             raise ValueError(f'year must be one of: {self.census_years}')
         column = f'{self.spec.primary_code.removesuffix("_code")}_census_{year}_code'
         if column in filters:
             raise ValueError(f'{column} was already supplied positionally')
-        return self.list(connection, **{column: self._value(column, value)}, **filters)
+        return self.list(connection, **{column: self._value(column, code)}, **filters)
 
     def search(self, connection, name, *, field='english', mode='contains',
                max_distance=2, metric='levenshtein', limit=20, **filters):
@@ -173,11 +179,11 @@ class DatasetQueries:
         column = self._field(field)
         condition, params = self._conditions(filters)
         if column not in self._lookups:
-            return search_text(connection, name, table=self.spec.dataset, alias='t',
+            return search_text(connection, name, table=self._table, alias='t',
                                column=column, order=self._order, condition=condition,
                                filter_params=params, mode=mode, max_distance=max_distance,
                                metric=metric, limit=limit)
-        table = f'(SELECT s.*, {self._lookup_names(column)} AS lookup_names FROM {self.spec.dataset} s)'
+        table = f'(SELECT s.*, {self._lookup_names(column)} AS lookup_names FROM {self._table} s)'
         return search_text(connection, name, table=table, alias='t', column='lookup_names',
                            order=self._order, condition=condition, filter_params=params,
                            mode=mode, max_distance=max_distance, metric=metric, limit=limit,

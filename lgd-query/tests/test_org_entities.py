@@ -106,12 +106,18 @@ class OrganizationEntityTests(unittest.TestCase):
         create(self.db, 'central_org_units', [dict(organization_unit_code=str(i), entity_type=kind,
             entity_code='1') for i, kind in enumerate(['0', '-100', '-99'])])
         for kind in ['0', '-100', '-99']:
-            self.assertEqual(central_org_units.required_entity_datasets(kind), ('central_org_units',))
-            self.assertEqual(central_org_units.entities(self.db, entity_type=kind).fetchall(), [])
+            self.assertEqual(central_org_units.required_reference_datasets(kind), ('central_org_units',))
+            with self.assertRaisesRegex(ValueError, 'Unsupported'):
+                central_org_units.entities(self.db, entity_type=kind)
+            self.assertEqual(records(central_org_units.references(self.db, entity_type=kind))[0]['resolution_status'],
+                             'unsupported_type')
         create(self.db, 'org_unit_coverage', [dict(covered_entity_type=kind, covered_entity_code='1',
             coverage_details_reported='true') for kind in ['', 'Unrecognized', "Village'; DROP TABLE states;--"]])
         for kind in ['', 'Unrecognized', "Village'; DROP TABLE states;--"]:
-            self.assertEqual(org_unit_coverage.entities(self.db, covered_entity_type=kind).fetchall(), [])
+            with self.assertRaisesRegex(ValueError, 'Unsupported'):
+                org_unit_coverage.entities(self.db, covered_entity_type=kind)
+            result = records(org_unit_coverage.references(self.db, covered_entity_type=kind))
+            self.assertEqual(result[0]['resolution_status'], 'missing_type' if kind == '' else 'unsupported_type')
         self.db.sql('CREATE TABLE states(state_code VARCHAR,state_name VARCHAR)')
         self.db.executemany('INSERT INTO states VALUES (?, ?)', [('0', 'zero'), ('00', 'zeros'), ('-1', 'negative')])
         self.db.fetchall()

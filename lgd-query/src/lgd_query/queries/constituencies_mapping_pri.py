@@ -3,6 +3,7 @@
 See docs/datasets/constituencies_mapping_pri.md for identifiers, filters and dependencies.
 """
 
+from ._signatures import bind
 from ._dataset import DatasetQueries, NameLookup, Spec
 from . import _eci
 
@@ -42,10 +43,10 @@ _queries = DatasetQueries(Spec(
     ),
 ))
 
-list = _queries.list
-search = _queries.search
-by_code = _queries.by_code
-by_census_code = _queries.by_census_code
+list = bind(_queries, 'list')
+search = bind(_queries, 'search')
+by_code = bind(_queries, 'by_code')
+by_census_code = bind(_queries, 'by_census_code')
 required_datasets = _queries.required_datasets
 name_fields = _queries.name_fields
 filters = _queries.filters

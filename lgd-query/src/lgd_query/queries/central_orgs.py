@@ -3,6 +3,7 @@
 See docs/datasets/central_orgs.md for identifiers, filters and dependencies.
 """
 
+from ._signatures import bind
 from ._dataset import DatasetQueries, Spec
 
 
@@ -22,9 +23,9 @@ _queries = DatasetQueries(Spec(
     signed=(), integers=(),
 ))
 
-list = _queries.list
-search = _queries.search
-by_code = _queries.by_code
+list = bind(_queries, 'list')
+search = bind(_queries, 'search')
+by_code = bind(_queries, 'by_code')
 required_datasets = _queries.required_datasets
 name_fields = _queries.name_fields
 filters = _queries.filters

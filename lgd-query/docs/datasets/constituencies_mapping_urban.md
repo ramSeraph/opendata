@@ -26,7 +26,7 @@ matches = constituencies_mapping_urban.search(db, "name", mode="contains").fetch
 ```
 
 - `list(db, **filters)` retains every matching source row.
-- `by_code(db, value, **filters)` selects `ward_code` exactly and retains all matches.
+- `by_code(db, code, **filters)` selects `ward_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `ward_name`.
 
 ## ECI code lookup
@@ -120,5 +120,8 @@ lgd-query constituencies_mapping_urban code CODE --help
 Filters become hyphenated flags (for example `state_code` → `--state-code`).
 Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
 All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
+Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
+control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
+predicates and source provenance.
 
 See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/constituencies_mapping_urban.md) and [shared query rules](../QUERIES.md).

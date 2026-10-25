@@ -12,6 +12,11 @@ in December 2024. Resolve bodies against the PRI and traditional
 registers where possible, and retain unmatched parent names without
 inventing codes.
 
+Collection of this report will not resume in this project. The query helpers
+remain available for retained historical Parquet files; a new daily report is
+not expected. The CLI requires a release index that actually publishes such a
+file, so these commands are not available through the current daily release.
+
 ## API
 
 ```python
@@ -22,7 +27,7 @@ matches = nofn_panchayats.search(db, "name", mode="contains").fetchall()
 ```
 
 - `list(db, **filters)` retains every matching source row.
-- `by_code(db, value, **filters)` selects `local_body_code` exactly and retains all matches.
+- `by_code(db, code, **filters)` selects `local_body_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `local_body_name`.
 
 ## Search fields and dependencies
@@ -59,5 +64,8 @@ lgd-query nofn_panchayats code CODE --help
 Filters become hyphenated flags (for example `state_code` → `--state-code`).
 Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
 All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
+Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
+control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
+predicates and source provenance.
 
 See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/nofn_panchayats.md) and [shared query rules](../QUERIES.md).

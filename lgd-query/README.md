@@ -141,6 +141,24 @@ They are available from this checkout; they are not included in PyPI version
 DuckDB relations. Helpers do not fetch metadata, download files or open
 connections. Name searches with extra dependencies use documented code joins.
 
+To declare a query and its dependencies together, use `queries.prepare`:
+
+```python
+from lgd_query import load_release, connect, queries
+
+query = queries.prepare("state_org_units", "search", "Post",
+                        state_code="32", include_entity_name=True)
+release = load_release()
+inputs = query.sources(release)
+with connect(inputs, cache_dir="./data") as db:
+    rows = query.execute(db).fetchall()
+```
+
+Preparation validates arguments and identifies required views without network
+access or a DuckDB connection. The resulting query exposes `required_datasets`
+and expected `columns`. Input resolution, downloads and connection ownership
+remain explicit. You can also call the dataset helpers directly as below.
+
 ```python
 from lgd_query import load_release, connect
 from lgd_query.queries import states
@@ -275,6 +293,13 @@ These helpers preserve associations, category/name variants and duplicate event
 rows. They do not infer deletions, choose a unique entity from an ambiguous name,
 or reconstruct historical snapshots from a current report.
 
+Code lookups accept the same `code=` keyword across datasets; transactions use
+`by_id(db, transaction_id=...)`. Runtime signatures and packaged type stubs
+expose each report's accepted filters for help and editor completion. Use
+`is_null="coverage_type"` or `is_blank="village_code"` to select missing values;
+both also accept a sequence of column names. NULL, empty strings and whitespace
+remain distinct, while an ordinary filter set to `None` remains unused.
+
 ## CLI
 
 ```sh
@@ -287,6 +312,9 @@ lgd-query download states districts --directory ./data
 lgd-query query 'SELECT state_code, count(*) FROM districts GROUP BY state_code' --datasets districts
 lgd-query query 'SELECT * FROM districts WHERE state_code = ?' --datasets districts --params '["33"]' --cache-dir ./data
 lgd-query query 'SELECT count(*) FROM districts' --datasets districts --format json
+lgd-query villages list --state-code 9 --limit 10 --columns village_code village_name
+lgd-query constituency_coverage list --is-null coverage_type --all --format json
+lgd-query state_org_units search Post --include-entity-name --provenance --format json
 ```
 
 The unreleased states helpers also have CLI commands:
@@ -322,8 +350,20 @@ and opened, even when filtering by state.
 All commands default to Rich tables. Use `--format json` for scriptable output;
 JSON mode does not require Rich. Resolved metadata tables summarize the dataset
 and optional schema; JSON retains all manifest/source details. SQL JSON results
-have `columns` and `rows` arrays, preserving duplicate column names. Both formats
-use batches of at most 1,000 query rows; tables repeat their headers per batch.
+have `columns` and `rows` arrays, preserving duplicate column names. Dataset
+commands preview 20 rows by default; use `--limit N` or `--all`. Preview JSON
+also has `limit` and `truncated`, and tables indicate when more matches exist.
+`--columns` selects result fields. Free-form SQL retains its unbounded default,
+with optional output controls; its SQL statement is executed as supplied.
+
+Query tables show source dates and update status for all participating datasets.
+`--provenance` adds the generation and per-input metadata to JSON. This exposes
+retained older files and differing input dates. Missing-value CLI predicates
+are `--is-null COLUMN` and `--is-blank COLUMN`, repeatable for several columns.
+Invalid dataset query arguments, date guards and parameter JSON fail before
+metadata requests or downloads.
+
+Both formats use batches of at most 1,000 query rows; tables repeat their headers per batch.
 Dates and other non-JSON scalar types are represented as strings. Non-finite
 SQL floats use the JSON strings `"NaN"`, `"Infinity"` and `"-Infinity"`, including
 inside lists and structs; SQL NULL remains JSON null. Errors exit
@@ -337,11 +377,17 @@ Pass `--metadata-url URL` before the command to select an immutable generation
 or mirror. `resolve`, `download` and `query` accept `--observed-on YYYY-MM-DD` to
 require the exact report date. Every command fetches discovery metadata only once.
 
+Organization exploration supports `types` to inspect observed reference types,
+`references` to retain office/claim links and unresolved outcomes, and
+`--entity-name-status` for missing or ambiguous office-location labels. See the
+[organization guide](docs/ORGANIZATION_DATA.md#inspect-types-before-resolving-references).
+
 ## Development and packaging
 
 ```sh
 pip install -e '.[cli,duckdb]'
 python -m unittest discover -s tests -v
+PYTHONPATH=src python tools/generate_query_stubs.py --check
 uv build --out-dir dist
 ```
 

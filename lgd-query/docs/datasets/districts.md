@@ -32,5 +32,8 @@ This report has no local-name column. Both supplied parent filters, where availa
 
 CLI: `lgd-query districts list`, `code CODE`, `census-code CODE --year YEAR`,
 and `search NAME`. Use `--help` on a command for its options.
+Dataset commands preview 20 rows; use `--limit N`, `--all` and `--columns`
+to control output. See [shared CLI options](../QUERIES.md#cli) for missing-value
+filters and source provenance.
 
 See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/districts.md) and [shared query rules](../QUERIES.md).

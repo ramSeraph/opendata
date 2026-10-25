@@ -3,6 +3,7 @@
 See docs/datasets/transactions.md for identifiers, filters and dependencies.
 """
 
+from ._signatures import bind
 from ._dataset import DatasetQueries, Spec
 
 
@@ -24,9 +25,9 @@ _queries = DatasetQueries(Spec(
     event_date='transaction_date',
 ))
 
-list = _queries.list
-search = _queries.search
-by_id = _queries.by_code
+list = bind(_queries, 'list')
+search = bind(_queries, 'search')
+by_id = bind(_queries, 'by_code', transaction=True)
 required_datasets = _queries.required_datasets
 name_fields = _queries.name_fields
 filters = _queries.filters

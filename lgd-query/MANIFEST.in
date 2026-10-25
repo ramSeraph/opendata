@@ -1,2 +1,3 @@
 include tools/check_dist.py
+include tools/generate_query_stubs.py
 recursive-include tests/fixtures *.json

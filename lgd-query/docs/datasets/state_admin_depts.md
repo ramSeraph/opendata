@@ -24,7 +24,7 @@ matches = state_admin_depts.search(db, "name", mode="contains").fetchall()
 ```
 
 - `list(db, **filters)` retains every matching source row.
-- `by_code(db, value, **filters)` selects `administrative_unit_level_code` exactly and retains all matches.
+- `by_code(db, code, **filters)` selects `administrative_unit_level_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `administrative_unit_level_name`.
 
 The normalized key is `administrative_unit_level_code`. `state_code` remains an
@@ -78,5 +78,8 @@ lgd-query state_admin_depts code CODE --help
 Filters become hyphenated flags (for example `state_code` → `--state-code`).
 Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
 All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
+Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
+control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
+predicates and source provenance.
 
 See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/state_admin_depts.md) and [shared query rules](../QUERIES.md).

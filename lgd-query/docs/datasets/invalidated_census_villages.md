@@ -23,9 +23,9 @@ matches = invalidated_census_villages.search(db, "name", mode="contains").fetcha
 ```
 
 - `list(db, **filters)` retains every matching source row.
-- `by_code(db, value, **filters)` selects `village_code` exactly and retains all matches.
+- `by_code(db, code, **filters)` selects `village_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `village_name`.
-- `by_census_code(db, value, year=..., **filters)` supports 2001, 2011 for the primary entity only.
+- `by_census_code(db, code, year=..., **filters)` supports 2001, 2011 for the primary entity only.
 
 ## Search fields and dependencies
 
@@ -59,5 +59,8 @@ lgd-query invalidated_census_villages code CODE --help
 Filters become hyphenated flags (for example `state_code` → `--state-code`).
 Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
 All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
+Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
+control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
+predicates and source provenance.
 
 See the [source schema](https://github.com/ramSeraph/opendata/blob/master/lgd/parquet/datasets/invalidated_census_villages.md) and [shared query rules](../QUERIES.md).

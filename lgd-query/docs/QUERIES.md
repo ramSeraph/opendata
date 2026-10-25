@@ -13,6 +13,38 @@ Each dataset has a module under `lgd_query.queries`. Helpers return native
 DuckDB relations and accept an existing connection. No scraper, converter,
 history package, Pandas or Arrow is needed.
 
+For a query involving lookups, prepare it once so its execution and input
+dependencies use exactly the same options:
+
+```python
+from lgd_query import load_release, connect, queries
+
+query = queries.prepare(
+    "state_org_units", "search", "Post", field="organization_unit_name",
+    include_entity_name=True, state_code="32",
+)
+print(query.required_datasets)  # ('state_org_units', 'org_unit_details')
+
+release = load_release()
+inputs = query.sources(release)
+print([(source.name, source.observed_on, source.status) for source in inputs])
+with connect(inputs, cache_dir="./data") as db:
+    rows = query.execute(db).fetchall()
+```
+
+`prepare(dataset, operation, *args, **options)` accepts the corresponding
+helper's arguments without its connection. Operations are `list`, `by_code`,
+`by_id`, `by_census_code`, `search`, `entities`, `references`, `reference_types`
+and `eci_codes`, where supported.
+It validates arguments and captures bound SQL without importing DuckDB, opening
+connections or making requests. The immutable `PreparedQuery` exposes its
+`dataset`, `operation`, `required_datasets` and expected `columns`.
+`sources(release, observed_on=...)` checks every input's date; `execute(db)`
+returns a native relation and leaves the connection under your control.
+DuckDB checks actual input schemas and SQL binding at execution time.
+
+Direct helper calls remain available when you manage the views yourself:
+
 ```python
 from lgd_query import load_release, connect, queries
 from lgd_query.queries import villages, constituencies_mapping_urban
@@ -63,7 +95,9 @@ Organization-unit `list`, `by_code` and `search` support optional location-name
 output, independently of which field is searched. With `include_entity_name=True`,
 `entity_names` contains all distinct matching details labels; `entity_name` is
 the sole label if unambiguous, otherwise NULL. Missing references have an empty
-array and NULL. Units and their source columns remain intact. The CLI's
+array and NULL. Enrichment also adds `entity_name_status` (`matched`, `missing`,
+or `ambiguous`). Exact `entity_name`, status and derived-name missing-value
+filters imply enrichment and run before search limits. Units and their source columns remain intact. The CLI's
 `--include-entity-name` flag loads the dependency automatically; explicit date
 guards apply to every input. See the [state](datasets/state_org_units.md#include-the-location-name)
 and [central](datasets/central_org_units.md#include-the-location-name) examples.
@@ -90,6 +124,12 @@ lgd-query state_org_units entities --entity-type 2 --organization-unit-code 1237
 lgd-query org_unit_coverage entities --covered-entity-type Village --coverage-type F
 ```
 
+Organization reports also provide `references` to retain office/claim links and
+unresolved outcomes, and `reference_types` (CLI `types`) to inspect observed types
+without loading target registers. `entities` rejects unsupported organization type
+selections before I/O. See the [organization exploration guide](ORGANIZATION_DATA.md#inspect-types-before-resolving-references)
+for result schemas, source/target prefixes, statuses and practical examples.
+
 ## Reported LGD-to-ECI constituency codes
 
 Both [`constituencies_mapping_pri`](datasets/constituencies_mapping_pri.md#eci-code-lookup)
@@ -112,14 +152,33 @@ Transactions use `by_id`. Census lookup is offered only for a documented census
 year of the primary entity. Other identifiers, such as ECI codes, have their own
 named filters and are never interpreted as LGD codes.
 
-States, districts and subdistricts have explicit function signatures. The other
-modules accept validated `**filters` named after their report columns. Their
-documents enumerate accepted filters and types. Supplied filters combine with
+Code lookups consistently accept `code=`, including census lookups. Transactions
+use `by_id(db, transaction_id=...)`. Runtime help and `inspect.signature()` expose
+accepted keyword arguments; shipped type stubs provide editor completion and
+static type checking for report filters. Their documents also enumerate accepted
+filters and types. Supplied filters combine with
 AND; `None` leaves one unused. Exact text filters preserve source spelling and
 case. Use `search(field=...)` for normalized name matching. String identifiers
 retain leading zeros; numeric input does not infer padding. Organization-specific
 codes, transaction IDs, ward numbers and pincodes remain text. Signed source
 sentinels are accepted only for documented signed fields.
+
+To query missing values, use `is_null` or `is_blank`, each accepting a column
+name or a sequence of names. `is_blank` matches the exact empty string `''`,
+separately from NULL and whitespace-only text. These predicates combine with
+ordinary filters using AND; column names are validated and blank predicates
+require text fields.
+
+```python
+from lgd_query.queries import constituency_coverage, invalidated_census_villages
+
+conflicts = constituency_coverage.list(db, is_null="coverage_type")
+placeholders = invalidated_census_villages.list(db, is_blank="village_code")
+```
+
+`coverage_type=None` continues to mean that the ordinary filter is unused.
+Python list/code helpers retain their unbounded result behavior; callers can
+compose `.limit(...)` and `.project(...)` on the returned DuckDB relation.
 
 Search modes are `exact`, `prefix`, `contains` (default), and `fuzzy`. Comparison
 trims outer whitespace, normalizes Unicode to NFC and lowercases. It does not
@@ -149,14 +208,40 @@ lgd-query constituencies_mapping_urban search Kerala --field state_name --mode e
 lgd-query pincode_villages list --pincode 691001
 lgd-query changes code 123 --entity-type Village --since 2024-01-01
 lgd-query transactions search renamed --since 2024-01-01 --until 2024-12-31
+lgd-query villages list --state-code 9 --limit 10 --columns village_code village_name
+lgd-query constituency_coverage list --is-null coverage_type --all --format json
+lgd-query invalidated_census_villages list --is-blank village_code
+lgd-query state_org_units search Post --include-entity-name --provenance --format json
 ```
 
 Each dataset has `list`, `code` (transactions: `id`), `search`, and census commands
 where applicable. Column filters become flags with hyphens. Search supports the
 same fields/modes as Python. Every command accepts `--cache-dir`, `--observed-on`,
 and `--format json|table`. Use command-specific `--help` for supported filters.
-JSON contains `columns` and `rows`. Wide reports use field/value tables so names
-remain visible at ordinary terminal widths.
+Dataset commands preview at most **20 rows** by default. `--limit N` changes
+that bound; `--all` streams all matches. A preview reads one extra match to
+determine whether more exist, without running a full count. JSON previews add
+`limit` and `truncated`; tables state when results were truncated. `--columns`
+selects result columns in the requested order. `--is-null COLUMN` and
+`--is-blank COLUMN` can be repeated for multiple columns; ECI lookups instead
+exclude missing identifiers, so use the report's `list` for those predicates.
+
+Table queries show the source date, update status and reason for every input.
+JSON contains `columns` and `rows`; `--provenance` also includes the pinned
+generation, immutable index URL and each input's date, status, reason, file URL,
+checksum, upload timestamp and event coverage. A failed update can retain a
+usable older file; joining reports does not make their observation dates equal.
+Wide reports use field/value tables so names remain visible.
+
+Free-form `lgd-query query` retains its unbounded default, respects the supplied
+SQL and accepts `--limit`, `--all`, `--columns` and `--provenance`. An output limit
+on raw SQL bounds displayed rows; it does not change or optimize the SQL itself.
+Duplicate result names survive when no column selection is requested. Selecting
+an ambiguous name requires giving it a distinct alias in the SQL.
+
+Dates, codes, search options, dataset projections and SQL parameter JSON are
+validated before metadata requests or downloads. Raw-SQL result column names
+and SQL-dependent errors can only be checked after execution.
 
 Use `queries.DATASETS` to enumerate modules, or `queries.get(name)` to select one
 programmatically. New dataset definitions do not claim that a retired or

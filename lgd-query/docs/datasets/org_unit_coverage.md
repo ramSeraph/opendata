@@ -28,7 +28,7 @@ matches = org_unit_coverage.search(db, "name", mode="contains").fetchall()
 ```
 
 - `list(db, **filters)` returns matching normalized associations and no-details rows.
-- `by_code(db, value, **filters)` selects `organization_unit_code` exactly and retains all matches.
+- `by_code(db, code, **filters)` selects `organization_unit_code` exactly and retains all matches.
 - `search(db, name, field="english", **options)` defaults to `organization_unit_name`.
 
 ## Follow covered-entity codes
@@ -42,7 +42,8 @@ office-location `entity_code`. Only claims with
 Load inputs with `entity_sources(release, type_label, observed_on=None)`; inspect
 them using `required_entity_datasets(type_label)`. Type labels use exact source
 spelling, such as `Subdistrict`, `Village` or `Village Panchayat`. Blank and
-unrecognized types produce no inferred matches. See the
+unrecognized type selections fail validation in `entities`; use `references`
+to retain the source claims and their unresolved outcomes. See the
 [shared type mapping and result semantics](../ORGANIZATION_DATA.md#follow-entity-references-to-registers).
 
 ```sh
@@ -53,6 +54,29 @@ Repeated claims do not multiply returned entity records. Register variants
 remain separate; local-body subtype disagreements are exposed through
 `reference_type_matches`. Ordinary `list`/`by_code` include normalized claims that cannot be resolved,
 including missing target types.
+
+## Reference exploration
+
+- `references(db, resolution_status=None, **source_filters)` retains source
+  offices/claims, unresolved references and matched register variants. Output
+  prefixes distinguish `source_` columns from `target_` columns.
+- `reference_types(db, **source_filters)` reads only this report and returns
+  observed types/labels, row and distinct-office counts, and known namespaces.
+- `reference_type_map()` describes known namespaces without I/O.
+
+Use `queries.prepare("org_unit_coverage", "references", ...)` or
+`queries.prepare("org_unit_coverage", "reference_types", ...)` to share options with
+input resolution. Optional reference type and report-state filters narrow target
+inputs. A missing required register fails explicitly. `entities` rejects unknown
+type selections; `references` preserves unknown source references as evidence.
+
+```sh
+lgd-query org_unit_coverage types --all
+lgd-query org_unit_coverage references --help
+```
+
+See [reference outcomes and dependencies](../ORGANIZATION_DATA.md#keep-offices-claims-and-unresolved-references)
+and [type discovery](../ORGANIZATION_DATA.md#inspect-types-before-resolving-references).
 
 ## Search fields and dependencies
 
@@ -100,6 +124,9 @@ lgd-query org_unit_coverage code CODE --help
 Filters become hyphenated flags (for example `state_code` → `--state-code`).
 Use `--field`, `--mode`, `--max-distance`, `--metric`, and `--limit` for search.
 All commands support `--cache-dir`, `--observed-on`, and `--format json|table`.
+Dataset commands preview 20 rows; use `--limit`, `--all` and `--columns` to
+control output. See [CLI conventions](../QUERIES.md#cli) for missing-value
+predicates and source provenance.
 
 A blank covered-entity type is unresolved. Search never guesses its namespace or reconstructs an absent coverage claim. The unit location and coverage targets remain distinct.
 

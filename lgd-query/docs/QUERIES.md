@@ -1,8 +1,9 @@
 # Dataset queries
 
 The [dataset index](datasets/README.md) covers all 39 Parquet reports, with one
-document per dataset. These APIs are unreleased; PyPI 0.1.0 contains the general
-metadata, download and SQL interfaces only.
+document per dataset. These experimental APIs are included starting with
+version 0.2.0; version 0.1.0 contains the general metadata, download and SQL
+interfaces only.
 
 ## Experimental status
 

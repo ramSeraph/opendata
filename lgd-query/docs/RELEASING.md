@@ -10,11 +10,11 @@ and tests the built wheel on Python 3.11 and 3.14. Only after these checks pass
 does it upload the same wheel/source archive to PyPI and create a corresponding
 GitHub release with those files attached. No scraper or history files are bundled.
 
-For example, after committing version `0.1.0`:
+For example, after committing version `0.2.0`:
 
 ```sh
-git tag lgd-query-v0.1.0
-git push origin lgd-query-v0.1.0
+git tag lgd-query-v0.2.0
+git push origin lgd-query-v0.2.0
 ```
 
 Manual workflow runs on a branch only build/test. A manual run on a matching

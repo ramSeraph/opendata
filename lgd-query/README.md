@@ -22,8 +22,8 @@ pip install 'lgd-query[cli,duckdb]'      # All APIs and Rich table output
 ```
 
 The distribution name is `lgd-query`; the Python import is `lgd_query`.
-For unreleased features, install from this directory with
-`pip install '.[cli,duckdb]'`.
+For a development checkout, install from this directory with
+`pip install '.[cli,duckdb]'`. See the [changelog](docs/CHANGELOG.md) for releases.
 
 ## 1. Metadata API
 
@@ -133,7 +133,7 @@ settings can be supplied with `config={"threads": 2, "memory_limit": "512MB"}`.
 `timeout` and `retries` affect cache downloads; remote range-request settings
 are controlled by DuckDB.
 
-## 4. Dataset query helpers (experimental, unreleased)
+## 4. Dataset query helpers (experimental)
 
 The dataset-aware `lgd_query.queries` layer and its dataset-specific CLI commands
 are **experimental**. Function arguments, result columns, lookup rules and
@@ -142,8 +142,8 @@ understanding of LGD reports develops. This includes prepared queries and
 organization reference resolution.
 
 Helpers cover all 39 reports, starting with states, districts and subdistricts.
-They are available from this checkout; they are not included in PyPI version
-0.1.0. They run parameterized SQL on an existing connection and return native
+They are included starting with version 0.2.0. They run parameterized SQL on
+an existing connection and return native
 DuckDB relations. Helpers do not fetch metadata, download files or open
 connections. Name searches with extra dependencies use documented code joins.
 
@@ -259,7 +259,7 @@ Results preserve all six report columns: `district_code`, `district_name`,
 
 ### Subdistricts and the other datasets
 
-All 39 reports now have query helpers and CLI commands in this checkout. See
+All 39 reports have query helpers and CLI commands starting with version 0.2.0. See
 the [dataset API index](https://github.com/ramSeraph/opendata/blob/master/lgd-query/docs/datasets/README.md)
 and [shared query rules](https://github.com/ramSeraph/opendata/blob/master/lgd-query/docs/QUERIES.md)
 for each report's identifiers, filters, search fields and name dependencies.
@@ -323,7 +323,7 @@ lgd-query constituency_coverage list --is-null coverage_type --all --format json
 lgd-query state_org_units search Post --include-entity-name --provenance --format json
 ```
 
-The unreleased states helpers also have CLI commands:
+The experimental states helpers also have CLI commands:
 
 ```sh
 lgd-query states list --kind ut

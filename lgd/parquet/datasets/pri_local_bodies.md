@@ -1,6 +1,16 @@
 # pri_local_bodies
 
-One reported Panchayati Raj local body. A top-level body can legitimately have a blank `parent_local_body_code`. Parent references and names are supplied values, not independently resolved foreign keys.
+The Panchayati Raj Institutions (PRI) register identifies local
+bodies by `local_body_code` and supplies their names, version, type,
+state and immediate parent code. In this report, type codes `1`, `2`
+and `3` denote district, intermediate/block and village panchayats.
+
+The reported name of each type varies by state and remains as supplied.
+A top-level body can have a blank parent.
+Parent codes support hierarchy lookups within the register, while
+[district_panchayats](district_panchayats.md) supplies links to
+administrative districts. A block panchayat's local-body code is
+distinct from a development-block code.
 
 ## Row identity and conversion
 
@@ -16,6 +26,73 @@ of known and unknown versions for one key is rejected.
 
 All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
 cover text preservation, blanks, optional columns and strict validation.
+
+## Local body types and state names
+
+For this PRI report, the codes describe these levels:
+
+| `local_body_type_code` | Level |
+| --- | --- |
+| `1` | District panchayat |
+| `2` | Intermediate / block panchayat |
+| `3` | Village panchayat |
+
+`local_body_type_name` contains the name reported for that type in the state.
+Keep that label as supplied: one code can have several names nationally,
+including capitalization and spelling differences. The code alone does not
+determine the reported name.
+
+The table below comes from the [released PRI snapshot](https://github.com/ramSeraph/opendata/releases/download/lgd-parquet-latest/pri_local_bodies.2026-10-23.d55b3f55f3413115.parquet)
+for **2026-10-23**. All 86 reported state/type combinations
+have exactly one nonblank name in that snapshot. These are source labels,
+not corrected or independently verified legal designations, and may change
+between observations.
+
+Only states/UTs represented in this report are listed. **—** means the
+snapshot has no rows for that state and level; it does not assert that no
+such body exists or substitute a name from another dataset.
+
+| State code | State / UT | District (`1`) | Intermediate (`2`) | Village (`3`) |
+| --- | --- | --- | --- | --- |
+| `1` | Jammu And Kashmir | District Planning & Development Board | Block Development Council | Halqa Panchayat |
+| `2` | Himachal Pradesh | Zila Parishad | Panchayat Samiti | Gram Panchayat |
+| `3` | Punjab | Zilla Parishad | Panchayat Samiti | Gram Panchayat |
+| `5` | Uttarakhand | Zila Panchayat | Kshetra Panchayat | Gram Panchayat |
+| `6` | Haryana | Zilla Parishad | Panchayat Samiti | Gram Panchayat |
+| `8` | Rajasthan | Zila Panchayat | Block Panchayat | Gram Panchayat |
+| `9` | Uttar Pradesh | Zilla Panchayat | Kshetra Panchayat | Gram Panchayat |
+| `10` | Bihar | Zilla Parishad | Panchayat Samiti | Gram Panchayat |
+| `11` | Sikkim | Zila Panchayat | — | Gram Panchayat |
+| `12` | Arunachal Pradesh | Zilla Parishad | — | Gram Panchayat |
+| `14` | Manipur | Zilla Parishad | — | Gram Panchayat |
+| `16` | Tripura | Zila Panchayat | Block Panchayat | Gram Panchayat |
+| `18` | Assam | Zilla Parishad | Anchalik Panchayat | Gaon Panchayat |
+| `19` | West Bengal | Zilla Panchayat | Panchayat Samiti | Gram Panchayat |
+| `20` | Jharkhand | Zila Panchayat | Panchayat Samiti | Gram Panchayat |
+| `21` | Odisha | Zilla Parishad | Panchayat Samiti | Gram Panchayat |
+| `22` | Chhattisgarh | Zila Panchayat | Janpad Panchayat | Gram Panchayat |
+| `23` | Madhya Pradesh | Zila Panchayat | Janpad Panchayat | Gram Panchayat |
+| `24` | Gujarat | District Panchayat | Taluka Panchayat | Gram Panchayat |
+| `27` | Maharashtra | Zilla Parishad | Block Panchayat | Village Panchayat |
+| `28` | Andhra Pradesh | Zilla Parishad | Mandal Panchayat | Grama Panchayat |
+| `29` | Karnataka | Zila Panchayat | Taluka Panchayat | Gram Panchayat |
+| `30` | Goa | Zila Panchayat | — | Village Panchayat |
+| `31` | Lakshadweep | Zila Panchayat | — | Gram Panchayat |
+| `32` | Kerala | DISTRICT PANCHAYAT | BLOCK PANCHAYAT | GRAMA PANCHAYAT |
+| `33` | Tamil Nadu | Zila Panchayat | Panchayat Samiti | Gram Panchayat |
+| `34` | Puducherry | — | Commune Panchayat | Village Panchayat |
+| `35` | Andaman And Nicobar Islands | Zilla Parishad | Panchayat Samiti | Gram Panchayat |
+| `36` | Telangana | Zilla Parishad | Mandal Panchayat | Grama Panchayat |
+| `37` | Ladakh | District Planning & Development Board | Block Development Council | Halqa Panchayat |
+| `38` | The Dadra And Nagar Haveli And Daman And Diu | Zilla Parishad | — | Gram Panchayat |
+
+To inspect labels in a different loaded snapshot:
+
+```sql
+SELECT DISTINCT state_code, state_name, local_body_type_code, local_body_type_name
+FROM pri_local_bodies
+ORDER BY state_name, local_body_type_code, local_body_type_name;
+```
 
 ## Fields
 

@@ -1,8 +1,18 @@
 # blocks
 
-One reported block/district association. A block may be reported against more than one district, so count distinct `block_code` for entity counts. Both Block and Development Block header spellings are accepted.
+LGD's development-block register contains block codes, names,
+versions and reported district/state references. Each row represents
+a block/district association. A block can appear against several
+districts, so row counts and distinct `block_code` counts differ.
+
+Use this report for the block's district associations and
+[villages_by_blocks](villages_by_blocks.md) for its reported village
+links. Block codes, subdistrict codes and panchayat codes identify
+different entities, even where their names or numbers resemble one another.
 
 ## Row identity and conversion
+
+Both Block and Development Block header spellings are accepted.
 
 The reported record key is:
 

@@ -1,17 +1,40 @@
 # state_admin_depts
 
-One reported administrative-unit level. The source calls this a department report, but the levels include Branch, Division and Post Office. Only the first three source fields are required; optional DWR metadata retains strings, including flags, timestamps and hierarchy descriptions. Parent administrative codes can be signed. No boolean or timestamp interpretation is imposed. State codes are part of the identity.
+Despite its filename, this report defines administrative-unit
+levels, not a directory of departments. It supplies level codes/names,
+a parent administrative reference, state and optional source metadata
+about hierarchy, publication and activity. The level code identifies
+the record; state remains an attribute.
+
+[state_admin_dept_units](state_admin_dept_units.md) lists the named
+administrative units at those levels. Organizations themselves are
+in [state_orgs](state_orgs.md). Administrative levels, administrative
+units and organization offices use different identifiers and must
+not be equated because their names or numbers match.
 
 ## Row identity and conversion
 
-The reported record key is:
+Only the first three source fields are required in addition to state
+context. Optional DWR metadata, including flags, timestamps and hierarchy
+descriptions, remains text. Parent administrative codes can be signed;
+no boolean or timestamp interpretation is imposed.
+
+The normalized record key is:
 
 ```text
-(administrative_unit_level_code, state_code)
+administrative_unit_level_code
 ```
 
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
+
+`state_code` and `state_name` remain attributes. The
+identity review
+checks all 1,619 retained observations (30 January 2022–19 October 2026):
+1,290 historical level codes, each associated with one state, and no simultaneous
+collisions under the level code alone. A later reported state change creates
+an attribute version of the same level. Simultaneous conflicting state claims
+for one level code fail conversion.
 
 All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
 cover text preservation, blanks, optional columns and strict validation.

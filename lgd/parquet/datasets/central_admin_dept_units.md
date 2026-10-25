@@ -1,17 +1,31 @@
 # central_admin_dept_units
 
-One reported administrative unit/administrative-level association. Admin Department Code is mapped to administrative_unit_level_code, distinguishing levels from units and organizations. Local-language names are retained. Collection gaps cannot be inferred from a single converted report. This central report has no state columns.
+This report lists named central administrative units and their
+administrative levels, including individual postal units, with
+English/local names. The source's “Admin Department Code” becomes
+`administrative_unit_level_code`, referencing
+[central_admin_depts](central_admin_depts.md). There are no state columns.
+
+`administrative_unit_code` is distinct from an
+`organization_unit_code` in [central_org_units](central_org_units.md).
+Similar names do not establish a code-level crosswalk. Historical
+collection gaps are preserved separately from the observed unit list.
 
 ## Row identity and conversion
 
 The reported record key is:
 
 ```text
-(administrative_unit_code, administrative_unit_level_code)
+(administrative_unit_code)
 ```
 
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
+
+The level code remains an attribute and a join/filter field. Across 1,184
+retained observations from 30 January 2022 through 24 October 2026, all 67,036
+unit codes have one reported level each and no simultaneous conflicting rows.
+It is not needed to distinguish records.
 
 All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
 cover text preservation, blanks, optional columns and strict validation.

@@ -1,6 +1,14 @@
 # subdistricts
 
-One reported subdistrict with supplied district and state references. The version is an attribute, not part of its identity. Census identifiers are distinct from the LGD subdistrict code.
+LGD's subdistrict register, with English names, versions, district and
+state references, and 2001/2011 census identifiers. Each row identifies
+one subdistrict by `subdistrict_code`; its version and administrative
+parents are attributes.
+
+Parent codes connect to [districts](districts.md) and [states](states.md),
+while their supplied names support lookups without those joins. A
+subdistrict and a development block have separate LGD identifiers;
+[blocks](blocks.md) describes the latter.
 
 ## Row identity and conversion
 

@@ -1,17 +1,37 @@
 # parliament_constituencies_lb_mapping
 
-One reported parliamentary-constituency/state/named-local-body coverage claim. Assembly and local-body references in this report are names, not structured codes. The source body type and coverage description remain strings. Do not infer a unique local-body code from a name alone.
+This legacy report links parliamentary constituencies to named
+assembly constituencies and local bodies, with a body-type name,
+state and coverage flag. The parliamentary reference is coded; assembly
+and local-body references are names. Those names identify reported
+associations here and cannot safely be converted to unique LGD codes
+from spelling alone.
+
+State and full/partial coverage are attributes. Simultaneous `F`/`P`
+claims become one association with NULL coverage, with both originals
+recoverable; literal blank coverage remains blank. The retained
+source ends in December 2022, so its links describe a historical report.
 
 ## Row identity and conversion
 
 The reported record key is:
 
 ```text
-(parliament_constituency_code, state_code, assembly_constituency_name, local_body_name, local_body_type_name, coverage_type)
+(parliament_constituency_code, assembly_constituency_name, local_body_name, local_body_type_name)
 ```
 
-Identical records collapse. Conflicting attributes for this key are rejected;
-the converter does not choose one conflicting row as authoritative.
+Identical records collapse. When the source supplies both `F` and `P` for this
+association, one row has `coverage_type=NULL`: unresolved conflicting claims.
+The converter's checksum-pinned discrepancy Parquet retains both original rows,
+and `conflicting_coverage_rows` counts normalized associations with conflicts.
+Literal blank coverage remains `''`, distinct from NULL. Unknown flags or a
+blank co-reported with a supplied flag stop conversion for review. Other
+attribute conflicts, including state or parliamentary-name disagreement, also
+stop conversion; no name/code lookup or coverage adjudication is performed.
+
+The historical review
+finds that state is redundant throughout the retained history and that all
+simultaneous coverage conflicts are exactly `F`/`P` pairs.
 
 All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
 cover text preservation, blanks, optional columns and strict validation.

@@ -1,17 +1,33 @@
 # pincode_urban
 
-One reported urban-local-body/state/pincode association. A body may have multiple pincodes. Pincodes remain strings, and names remain the labels supplied by this report.
+LGD's urban-body/pincode report supplies local-body and postal-code
+associations with body and state names/codes. A body may have several
+pincodes. The record key is `(local_body_code, pincode)`; state code/name
+remain attributes and filters.
+
+Body codes usually connect to [urban_local_bodies](urban_local_bodies.md).
+Historical reports also contain rural/traditional bodies, which can require
+the [PRI](pri_local_bodies.md) or [traditional-body](traditional_local_bodies.md)
+registers; the dataset name does not restrict its contents to urban bodies.
+Pincodes remain text and identify postal references rather than LGD
+entities. These links do not supply ward-level addresses or postal
+delivery boundaries.
 
 ## Row identity and conversion
 
 The reported record key is:
 
 ```text
-(local_body_code, state_code, pincode)
+(local_body_code, pincode)
 ```
 
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
+
+Across 1,415 retained observations from 12 September 2022 through 19 October
+2026, all 7,895 historical body/pincode pairs have no simultaneous conflicting
+rows under this key. Each of the 5,248 body codes belongs to one reported state.
+State is not needed to distinguish links.
 
 All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
 cover text preservation, blanks, optional columns and strict validation.

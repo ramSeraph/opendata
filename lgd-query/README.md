@@ -1,8 +1,9 @@
 # lgd-query
 
 A small Python client for the public [LGD Parquet releases](https://github.com/ramSeraph/opendata/releases/tag/lgd-parquet-latest).
-It has three public APIs: metadata resolution, verified downloading and DuckDB
-access. The CLI uses those same APIs. No GitHub account or API server is needed.
+It provides metadata resolution, verified downloading and DuckDB access, with
+dataset-specific query helpers layered on top. The CLI uses those same APIs.
+No GitHub account or API server is needed.
 
 This directory is a standalone distribution. Its wheel contains only
 `lgd_query`; it has no dependency on the repository's scrapers, converters or
@@ -12,17 +13,17 @@ Rich is an optional dependency for CLI tables.
 
 ## Installation
 
-Until the first PyPI release, install from this directory:
+Install the published reader from PyPI:
 
 ```sh
-pip install .                 # Metadata API, download API and their CLI commands
-pip install '.[duckdb]'       # Also include DuckDB querying
-pip install '.[cli,duckdb]'    # All APIs and Rich table output
+pip install lgd-query                  # Metadata, downloads and their JSON CLI
+pip install 'lgd-query[duckdb]'         # Also include DuckDB querying
+pip install 'lgd-query[cli,duckdb]'      # All APIs and Rich table output
 ```
 
 The distribution name is `lgd-query`; the Python import is `lgd_query`.
-After publication, the corresponding installs are `pip install lgd-query` and
-`pip install 'lgd-query[duckdb]'`.
+For unreleased features, install from this directory with
+`pip install '.[cli,duckdb]'`.
 
 ## 1. Metadata API
 
@@ -130,7 +131,149 @@ with connect([states, districts], cache_dir="./data") as db:
 With valid cached files and a saved index, this path works offline. DuckDB
 settings can be supplied with `config={"threads": 2, "memory_limit": "512MB"}`.
 `timeout` and `retries` affect cache downloads; remote range-request settings
-are controlled by DuckDB. No domain-specific query helpers are included yet.
+are controlled by DuckDB.
+
+## 4. Dataset query helpers (unreleased)
+
+Helpers cover all 39 reports, starting with states, districts and subdistricts.
+They are available from this checkout; they are not included in PyPI version
+0.1.0. They run parameterized SQL on an existing connection and return native
+DuckDB relations. Helpers do not fetch metadata, download files or open
+connections. Name searches with extra dependencies use documented code joins.
+
+```python
+from lgd_query import load_release, connect
+from lgd_query.queries import states
+
+release = load_release()
+source = release.dataset("states")
+print(source.observed_on, source.status)
+
+with connect([source], cache_dir="./data") as db:
+    rows = states.list(db).fetchall()
+    territories = states.list(db, kind="ut").fetchall()
+    kerala = states.by_code(db, "32").fetchall()
+    census_matches = states.by_census_code(db, "32", year=2011).fetchall()
+    matches = states.search(db, "kerla", mode="fuzzy", max_distance=2).fetchall()
+```
+
+| Helper | Behavior |
+| --- | --- |
+| `states.list(db, kind=None)` | All supplied rows; `"state"` selects `S`, `"ut"` selects `U`. |
+| `states.by_code(db, code)` | Exact LGD code lookup; no census-code inference. |
+| `states.by_census_code(db, code, year=...)` | All matches in the explicitly selected 2001 or 2011 census namespace. |
+| `states.search(db, name, ...)` | Exact, literal prefix/substring, or fuzzy name search. |
+
+Every result retains the report's seven columns: `state_code`, `state_version`,
+`state_name`, `state_name_local`, `state_census_2001_code`,
+`state_census_2011_code`, and `state_or_ut`. Codes remain strings; use string
+arguments to retain any leading zeros. Missing matches give an empty relation.
+Unfiltered lists retain unknown or missing classifications. Lists and lookups
+are sorted by English name, then LGD code. Census codes are not assumed unique.
+
+Search options are `mode="exact"|"prefix"|"contains"|"fuzzy"` (default
+`"contains"`), `field="english"|"local"` (default `"english"`), `kind`, and
+`limit` (default 20; `None` returns all matches). Comparisons trim surrounding
+spaces, normalize Unicode to NFC and lowercase both inputs. Returned source text
+is unchanged. `%` and `_` are literal characters. Missing or blank local names
+do not match and do not fall back to English names.
+
+Fuzzy search accepts `max_distance=2` and `metric="levenshtein"` or
+`"damerau_levenshtein"`. It adds a `distance` column, applies the threshold, and
+ranks by distance before name/code. These two options affect only fuzzy mode.
+DuckDB's edit-distance functions count **UTF-8 bytes for non-ASCII text**:
+their scores are not Unicode character/grapheme distances. For example, an
+added Tamil character may count as three edits. Name normalization does not
+remove accents or transliterate between scripts.
+
+Consume results while the connection is open, using `.fetchall()` or other
+DuckDB result methods; fully consume active results before reusing the same
+connection. Relations also support further projection/filtering. The caller
+retains the resolved `Dataset`, including its actual date and update status;
+the helpers never silently refresh it. An exact freshness requirement can be
+applied with `release.dataset("states", observed_on="YYYY-MM-DD")`.
+
+### Districts
+
+Districts already contain `state_code` and `state_name`. All four district
+helpers need only the `districts` view, and preserve those supplied names even
+when a separately loaded states report spells them differently. They do not
+discard rows whose parent is absent from a states report.
+
+```python
+from lgd_query.queries import districts
+
+source = release.dataset("districts")
+with connect([source], cache_dir="./data") as db:
+    kerala_districts = districts.list(db, state_code="32").fetchall()
+    kollam = districts.by_code(db, "559").fetchall()
+    census_matches = districts.by_census_code(
+        db, "600", year=2011, state_code="32"
+    ).fetchall()
+    matches = districts.search(
+        db, "kolam", state_code="32", mode="fuzzy", max_distance=2
+    ).fetchall()
+```
+
+`districts.list(db, state_code=None)` returns all districts unless narrowed by
+the supplied **LGD state code**. `districts.by_code(db, code)` looks up an LGD
+district code. `districts.by_census_code(db, code, year=..., state_code=None)`
+looks up all matching census codes for 2001 or 2011, optionally within one LGD
+state. Census identifiers and names are not assumed unique across states;
+helpers do not automatically choose one match or infer a state from its name.
+
+`districts.search(db, name, state_code=None, ...)` has the same `mode`,
+`max_distance`, `metric`, and `limit` options as states search. There is no
+local-name field or state/UT classification in the district report, so district
+helpers do not expose `field` or `kind`. State filtering and fuzzy thresholds
+apply **before** the result limit. Ordering is by district name, state code and
+district code, with fuzzy distance first in fuzzy mode.
+
+Results preserve all six report columns: `district_code`, `district_name`,
+`state_code`, `state_name`, `district_census_2001_code`, and
+`district_census_2011_code`. Fuzzy results add `distance`.
+
+### Subdistricts and the other datasets
+
+All 39 reports now have query helpers and CLI commands in this checkout. See
+the [dataset API index](https://github.com/ramSeraph/opendata/blob/master/lgd-query/docs/datasets/README.md)
+and [shared query rules](https://github.com/ramSeraph/opendata/blob/master/lgd-query/docs/QUERIES.md)
+for each report's identifiers, filters, search fields and name dependencies.
+
+The [organization data diagrams](https://github.com/ramSeraph/opendata/blob/master/lgd-query/docs/ORGANIZATION_DATA.md)
+show which datasets supply departments, offices, parent relationships, location,
+coverage and designation titles, with examples from the released reports.
+
+```python
+from lgd_query.queries import subdistricts, villages
+
+with connect([release.dataset("subdistricts")], cache_dir="./data") as db:
+    rows = subdistricts.list(db, state_code="32", district_code="559").fetchall()
+    rows = subdistricts.by_code(db, "5688").fetchall()
+
+with connect([release.dataset("villages")], cache_dir="./data") as db:
+    rows = villages.search(db, "Rampur", state_code="9").fetchall()
+```
+
+When names require another dataset, use `queries.sources` to resolve every
+input from the same pinned release. The CLI loads these dependencies automatically.
+Participating reports may have different dates; supplied names remain unchanged.
+
+```python
+from lgd_query import queries
+from lgd_query.queries import constituencies_mapping_urban
+
+inputs = queries.sources(release, "constituencies_mapping_urban", field="state_name")
+print([(d.name, d.observed_on) for d in inputs])
+with connect(inputs, cache_dir="./data") as db:
+    rows = constituencies_mapping_urban.search(
+        db, "Kerala", field="state_name", mode="exact"
+    ).fetchall()
+```
+
+These helpers preserve associations, category/name variants and duplicate event
+rows. They do not infer deletions, choose a unique entity from an ambiguous name,
+or reconstruct historical snapshots from a current report.
 
 ## CLI
 
@@ -145,6 +288,36 @@ lgd-query query 'SELECT state_code, count(*) FROM districts GROUP BY state_code'
 lgd-query query 'SELECT * FROM districts WHERE state_code = ?' --datasets districts --params '["33"]' --cache-dir ./data
 lgd-query query 'SELECT count(*) FROM districts' --datasets districts --format json
 ```
+
+The unreleased states helpers also have CLI commands:
+
+```sh
+lgd-query states list --kind ut
+lgd-query states code 32 --format json
+lgd-query states census-code 32 --year 2011
+lgd-query states search kerla --mode fuzzy --max-distance 2 --cache-dir ./data
+lgd-query states search delih --mode fuzzy --metric damerau_levenshtein
+lgd-query states search தமிழ் --field local
+```
+
+Each states command accepts `--cache-dir`, `--observed-on`, and `--format`.
+Search also accepts `--kind`, `--field`, `--limit`, `--mode`, `--max-distance`
+and `--metric`. JSON uses the same `columns`/`rows` representation as raw SQL.
+Only the states dataset is resolved and opened.
+
+The district commands use the same structure:
+
+```sh
+lgd-query districts list --state-code 32
+lgd-query districts code 559 --format json
+lgd-query districts census-code 600 --year 2011 --state-code 32
+lgd-query districts search kolam --state-code 32 --mode fuzzy --cache-dir ./data
+```
+
+They also accept `--cache-dir`, `--observed-on`, and `--format`. District `list`,
+`census-code` and `search` accept `--state-code`; `search` accepts `--mode`,
+`--max-distance`, `--metric` and `--limit`. Only the districts dataset is resolved
+and opened, even when filtering by state.
 
 All commands default to Rich tables. Use `--format json` for scriptable output;
 JSON mode does not require Rich. Resolved metadata tables summarize the dataset
@@ -177,33 +350,5 @@ the rest of the repository is outside the distribution. Tests use synthetic
 release metadata and small generated Parquet files. Tests that require DuckDB
 are skipped when the optional dependency is absent.
 
-## Version releases
-
-The repository workflow is `.github/workflows/lgd-query-publish.yml`, matching
-the PyPI trusted-publisher configuration. It uses the `pypi` GitHub environment
-and [OIDC trusted publishing](https://docs.pypi.org/trusted-publishers/using-a-publisher/).
-
-A pushed `lgd-query-v<version>` tag builds this directory, checks that the tag
-matches `pyproject.toml`, validates the distribution contents and PyPI metadata,
-and tests the built wheel on Python 3.11 and 3.14. Only after these checks pass
-does it upload the same wheel/source archive to PyPI and create a corresponding
-GitHub release with those files attached. No scraper or history files are bundled.
-
-For example, after committing version `0.1.0`:
-
-```sh
-git tag lgd-query-v0.1.0
-git push origin lgd-query-v0.1.0
-```
-
-Manual workflow runs on a branch only build/test. A manual run on a matching
-version tag also publishes. Failed publication jobs can be retried using the
-same built artifacts. GitHub release titles and tags use the library prefix to
-keep package versions separate from the data releases.
-
-Before a retry uploads files, the workflow compares any existing PyPI files with
-the checked local sizes and SHA-256 hashes. Different bytes under the same version
-stop publication. Before creating/updating the GitHub release, it verifies that
-both files match PyPI. If PyPI's metadata has not caught up yet, retry that job;
-it will not attach unconfirmed files. For a partial upload, rerun failed jobs
-with the original build artifacts instead of rebuilding the same version.
+Maintainers: see the [release guide](https://github.com/ramSeraph/opendata/blob/master/lgd-query/docs/RELEASING.md)
+for version tags, trusted publishing and publication retries.

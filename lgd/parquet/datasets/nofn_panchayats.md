@@ -1,8 +1,20 @@
 # nofn_panchayats
 
-One reported panchayat/state/named-district/named-subdistrict association. The report supplies parent names without district or subdistrict codes. Preserve each named association; do not manufacture codes or presume that the retired source describes current network availability. SR.NO is accepted as the discarded row serial.
+This retired report lists panchayats/local bodies in the National
+Optical Fibre Network (NOFN) project, with body codes/names, state and
+named district/subdistrict paths. It includes reported PRI and
+traditional bodies. One body can have several named paths; district
+and subdistrict codes are not supplied.
+
+Membership does not establish operational fibre, service availability
+or completeness of the local-body register. The retained source ends
+in December 2024. Resolve bodies against the PRI and traditional
+registers where possible, and retain unmatched parent names without
+inventing codes.
 
 ## Row identity and conversion
+
+`SR.NO` is accepted as the discarded row serial.
 
 The reported record key is:
 

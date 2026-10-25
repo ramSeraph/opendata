@@ -1,8 +1,18 @@
 # urban_local_bodies
 
-One reported urban local body. LGD and census local-body codes remain distinct. `local_body_type_code` and its name describe the reported body type, not a hierarchy level. Both State Name header spellings are accepted.
+LGD's urban local-body register supplies a body's LGD code, names,
+version, type, state and census identifier. Each row identifies one
+body by `local_body_code`. The type code/name classifies the body;
+it does not describe a tier in the PRI hierarchy.
+
+Use [urban_local_body_wards](urban_local_body_wards.md) for its wards
+and [statewise_ulbs_coverage](statewise_ulbs_coverage.md) for reported
+district/subdistrict/village coverage. The body's census identifier
+is separate from its LGD code.
 
 ## Row identity and conversion
+
+Both State Name header spellings are accepted.
 
 The reported record key is:
 

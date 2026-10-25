@@ -1,8 +1,19 @@
 # transactions
 
-Every reported transaction row is retained, including repeated state/transaction IDs or differing descriptions. transaction_date is parsed losslessly from DD-Mon-YYYY. State code 0 can describe Center. description is free text that may mention several entities; it is not a structured relationship list. Row dates do not establish complete collection coverage, which is recorded separately by the source collector.
+LGD's newer cumulative event report supplies transaction ID,
+operation code/name, date, state scope and a description. Descriptions
+are free text that can mention several entities; the report does not
+provide those mentions as structured entity relationships. State
+scope `0` can describe the Centre.
+
+Every reported row is retained, including repeated IDs and differing
+descriptions. This is one event table without snapshot validity
+intervals. Collection coverage is tracked separately from event dates,
+and the earlier [changes](changes.md) report remains a separate dataset.
 
 ## Row identity and conversion
+
+`transaction_date` is parsed losslessly from `DD-Mon-YYYY`.
 
 No uniqueness key is imposed and no source rows are deduplicated. This is one
 cumulative event report, with no observation or interval columns.

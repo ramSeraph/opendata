@@ -1,13 +1,28 @@
 # gp_mapping
 
-One reported village/local-body/administrative-path association. A village may map to multiple local bodies. Blank village/subdistrict codes are accepted only with consistent empty dependent fields. A whitespace-only local-body code is retained only when its corresponding name is empty. Census-header word-order variants are accepted.
+This report links villages to gram panchayats/local bodies and
+supplies their administrative and census context. Each association
+is identified by `(village_code, local_body_code)`. A village can have
+more than one local-body link; state, district and subdistrict are
+attributes of the reported association.
+
+Resolve village and body references through [villages](villages.md)
+and [pri_local_bodies](pri_local_bodies.md). Rows that identify a
+village but supply no body remain as incomplete evidence. Rows with
+no village and only hierarchy context are omitted after validation,
+so they do not appear as fictitious village/body associations.
 
 ## Row identity and conversion
+
+Hierarchy-only rows with blank village codes are omitted after validating
+their empty dependent fields; the receipt counts `ignored_source_rows`.
+A whitespace-only body code is retained only with an empty body name.
+Census-header word-order variants are accepted.
 
 The reported record key is:
 
 ```text
-(village_code, local_body_code, state_code, district_code, subdistrict_code)
+(village_code, local_body_code)
 ```
 
 Identical records collapse. Conflicting attributes for this key are rejected;

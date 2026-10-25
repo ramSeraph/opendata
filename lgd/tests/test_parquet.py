@@ -31,7 +31,7 @@ class SchemaDocumentationTests(unittest.TestCase):
                 document = (directory/f'{dataset}.md').read_text()
                 rows = [line.split('|')[1:5] for line in document.splitlines()
                         if line.startswith('| ') and line.split('|')[1].strip().isdigit()]
-                actual = [(int(i.strip()), n.strip().strip('`'), t.strip().strip('`'), h.strip().strip('`'))
+                actual = [(int(i.strip()), n.strip().strip('`'), t.strip().strip('`'), None if h.strip() == 'Derived' else h.strip().strip('`'))
                           for i, n, t, h in rows]
                 self.assertEqual(actual, list(fields))
 
@@ -52,6 +52,10 @@ class ParquetTests(unittest.TestCase):
                for _, name, kind, _ in SCHEMAS[dataset]}
         if dataset == 'constituency_coverage':
             row.update(entity_type='Village', coverage_type='Fully Covered')
+        if dataset == 'parliament_constituencies_lb_mapping':
+            row.update(coverage_type='F')
+        if dataset in ('constituency_coverage', 'constituencies_mapping_pri'):
+            row.update(constituency_level='assembly',constituency_code='001')
         if dataset == 'org_unit_details':
             row.update(entity_type='-1', organization_unit_specific_code='OMP BO')
         if dataset == 'org_unit_coverage':
@@ -64,7 +68,7 @@ class ParquetTests(unittest.TestCase):
         return row | overrides
 
     def source(self, dataset, rows, *, omitted=(), name=None, headers=None):
-        fields = [field for field in SCHEMAS[dataset] if field[1] not in omitted]
+        fields = [field for field in SCHEMAS[dataset] if field[1] not in omitted and field[3] is not None]
         path = self.root / (name or f'{dataset}.csv')
         no_serial = dataset in ('changes', 'transactions', 'org_unit_coverage')
         with path.open('w', newline='') as output:
@@ -118,12 +122,44 @@ class ParquetTests(unittest.TestCase):
             convert('villages', self.source('villages', [row, row | {'village_name': 'Different'}]), output)
         self.assertEqual(output.read_bytes(), before)
 
-    def test_pri_wards_keep_different_reported_parent_and_name_variants(self):
+    def test_pri_wards_resolve_with_dated_reference_and_retain_variants_in_evidence(self):
         row = self.record('pri_local_body_wards')
         rows = [row, row | {'local_body_name': 'Alternative body'}, row]
         output = self.root / 'wards.parquet'
-        result = convert('pri_local_body_wards', self.source('pri_local_body_wards', rows), output)
-        self.assertEqual((result['rows'], result['collapsed_rows']), (2, 1))
+        source=self.source('pri_local_body_wards',rows)
+        reference=self.root/'bodies.parquet'
+        convert('pri_local_bodies',self.source('pri_local_bodies',[self.record('pri_local_bodies')],name='bodies.csv'),reference)
+        result = convert('pri_local_body_wards',source,output,observed_on='2024-01-01',
+                         pri_reference=reference,reference_observed_on='2024-01-01')
+        self.assertEqual((result['rows'],result['collapsed_rows']),(1,2))
+        self.assertEqual(result['discrepancy_evidence']['rows'],2)
+        with self.assertRaisesRegex(ValueError,'future PRI register'):
+            convert('pri_local_body_wards',source,output,observed_on='2024-01-01',
+                    pri_reference=reference,reference_observed_on='2024-01-02')
+
+    def test_district_panchayat_pairs_preserve_links_but_reject_conflicting_states(self):
+        row = self.record('district_panchayats', district_panchayat_code='1', district_code='100', state_code='1')
+        rows = [row, row | {'district_code': '200'}, row | {'district_panchayat_code': '2'}, row]
+        output = self.root / 'district_panchayats.parquet'
+        result = convert('district_panchayats', self.source('district_panchayats', rows), output)
+        self.assertEqual((result['rows'], result['collapsed_rows']), (3, 1))
+        before = output.read_bytes()
+        with self.assertRaisesRegex(ValueError, 'conflicting attributes'):
+            convert('district_panchayats', self.source('district_panchayats', [row, row | {'state_code': '2'}]), output)
+        self.assertEqual(output.read_bytes(), before)
+
+    def test_reviewed_pri_ward_exclusion_has_original_value_evidence(self):
+        dataset='pri_local_body_wards'
+        a=self.record(dataset,ward_code='624571',local_body_code='6004',local_body_name='Hanamkonda',state_code='28')
+        b=dict(a,state_code='36')
+        kept=self.record(dataset,ward_code='99')
+        source=self.source(dataset,[a,b,a,kept])
+        result=convert(dataset,source,self.root/'wards.parquet',observed_on='2022-01-30')
+        self.assertEqual((result['source_rows'],result['rows'],result['ignored_source_rows'],result['collapsed_rows']),(4,1,2,1))
+        evidence=result['discrepancy_evidence']
+        self.assertEqual(evidence['rows'],2)
+        self.assertEqual(self.connection.execute('SELECT ward_code,state_code,local_body_name FROM read_parquet(?) ORDER BY state_code',
+            [evidence['path']]).fetchall(),[('624571','28','Hanamkonda'),('624571','36','Hanamkonda')])
 
     def test_events_preserve_duplicates_and_conflicting_claims(self):
         for dataset in ('changes', 'transactions'):
@@ -133,21 +169,27 @@ class ParquetTests(unittest.TestCase):
             self.assertEqual((result['rows'], result['collapsed_rows']), (2, 0))
             self.assertEqual(self.read(output)[0], self.read(output)[1])
 
-    def test_organization_coverage_preserves_claims_placeholders_variants_and_duplicates(self):
+    def test_organization_coverage_keeps_distinct_targets_and_collapses_exact_copies(self):
         row = self.record('org_unit_coverage', covered_entity_name='Kathaghar "A", Colony\nతెలుగు',
                           entity_code='0', state_code='0', state_name='India')
         placeholder = row | dict(covered_entity_code='', covered_entity_name='', covered_entity_type='',
                                  coverage_type='', coverage_details_reported='false')
         incomplete = row | dict(covered_entity_name='', covered_entity_type='')
-        alternative = row | dict(coverage_type='P', organization_unit_name='Alternative source label')
-        another_selection = row | dict(report_organization_level_code='002')
+        alternative = row | dict(covered_entity_code='222', coverage_type='P')
+        another_selection = row | dict(covered_entity_code='333', report_organization_level_code='002')
         rows = [row, row, placeholder, incomplete, alternative, another_selection]
         output = self.root/'coverage.parquet'
         result = convert('org_unit_coverage', self.source('org_unit_coverage', rows), output)
-        self.assertEqual((result['rows'], result['source_rows'], result['collapsed_rows']), (6, 6, 0))
+        self.assertEqual((result['rows'], result['source_rows'], result['collapsed_rows']), (5, 6, 1))
         from collections import Counter
-        expected = [tuple(row[n] for _, n, _, _ in SCHEMAS['org_unit_coverage']) for row in rows]
+        expected = {tuple(row[n] for _, n, _, _ in SCHEMAS['org_unit_coverage']) for row in rows}
         self.assertEqual(Counter(self.read(output)), Counter(expected))
+        before = output.read_bytes()
+        for change in (dict(coverage_type='P'),dict(organization_unit_name='Different'),
+                       dict(report_organization_level_code='002'),dict(state_code='1')):
+            with self.subTest(change=change), self.assertRaisesRegex(ValueError,'conflicting attributes'):
+                convert('org_unit_coverage',self.source('org_unit_coverage',[row,row | change]),output)
+            self.assertEqual(output.read_bytes(),before)
 
     def test_organization_coverage_rejects_inconsistent_claims_and_incomplete_schemas(self):
         row = self.record('org_unit_coverage')
@@ -180,13 +222,13 @@ class ParquetTests(unittest.TestCase):
         row.update(coverage_type='', coverage_details_reported='false', covered_entity_code='',
                    covered_entity_name='', covered_entity_type='')
         # The real report first needs CSV quoting after DuckDB's sniffing sample.
-        # Repeated rows also exercise intentional preservation of multiplicity.
+        # Repeated rows exercise deduplication and raw-source accounting.
         claim = row | dict(coverage_details_reported='true', coverage_type='F', covered_entity_code='002',
                            covered_entity_type='Village', covered_entity_name='Joshi Colony, "A"\nతెలుగు')
         source = self.source('org_unit_coverage', [row]*25000 + [claim])
         output = self.root/'coverage.parquet'
         result = convert('org_unit_coverage', source, output)
-        self.assertEqual(result['rows'], 25001)
+        self.assertEqual((result['rows'],result['source_rows'],result['collapsed_rows']), (2,25001,24999))
         self.assertEqual(self.connection.execute('SELECT covered_entity_name FROM read_parquet(?) '
                          "WHERE coverage_details_reported='true'", [str(output)]).fetchall(),
                          [('Joshi Colony, "A"\nతెలుగు',)])

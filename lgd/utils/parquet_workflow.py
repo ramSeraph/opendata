@@ -23,6 +23,10 @@ RAW_RELEASE = re.compile(r'lgd-latest(?:-.*)?')
 DAILY_NAME = re.compile(r'([a-z_]+)\.([0-9]{2})([A-Z][a-z]{2})([0-9]{4})\.csv\.7z')
 MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split()
 EVENTS = {'changes', 'transactions'}
+DISCREPANCY_DATASETS = {
+    'pri_local_body_wards', 'constituency_coverage',
+    'constituencies_mapping_pri', 'parliament_constituencies_lb_mapping',
+}
 
 
 def fingerprint(value):
@@ -49,12 +53,14 @@ def inventory(client):
             if a['state'] == 'uploaded' and a['size'] > 0]
 
 
-def newest_source(dataset, assets):
+def newest_source(dataset, assets, *, through=None):
     candidates = []
     for asset in assets:
         match = DAILY_NAME.fullmatch(asset['name'])
         if match and match[1] == dataset:
             day = date(int(match[4]), MONTHS.index(match[3]) + 1, int(match[2])).isoformat()
+            if through is not None and day > through:
+                continue
             candidates.append((day, asset))
         elif dataset in EVENTS and asset['name'] == f'{dataset}.csv.7z':
             candidates.append((asset['updated_at'], asset))
@@ -97,7 +103,7 @@ def allocate(client, datasets):
               if RELEASE_PATTERN.fullmatch(tag) and not release.get('draft') and not release.get('immutable')}
     result = {}
     for name in [*sorted(datasets), '_index']:
-        slots = 1 if name == '_index' else 2
+        slots = 1 if name == '_index' else 3 if name in DISCREPANCY_DATASETS else 2
         tag = next((tag for tag in sorted(counts, key=lambda t: (t != RELEASE, t))
                     if counts[tag] + slots <= 980), None)
         if tag is None:
@@ -133,10 +139,16 @@ def prepare(client, datasets, commit):
                     source['observed_on'] < previous['daily']['observed_on']):
                 outcomes[name] = dict(status='unavailable', reason='Available source predates published data')
                 continue
+            if name == 'pri_local_body_wards':
+                source['name_reference'] = newest_source('pri_local_bodies', assets,
+                                                          through=source['observed_on'])
             identity = fingerprint(dict(dataset=name, source=source, converter=version))
             if previous.get('identity') == identity:
-                client.verify_ref(previous['manifest'])
+                saved = client.read_json(client.verify_ref(previous['manifest']))
                 client.verify_ref(previous['daily']['file'])
+                evidence = saved.get('conversion', {}).get('discrepancy_evidence')
+                if evidence:
+                    client.verify_ref(evidence['file'])
                 outcomes[name] = dict(status='unchanged')
                 continue
             stamp = source['observed_on'] or source['uploaded_at'][:10]
@@ -180,10 +192,15 @@ def candidate(client, plan, dataset):
     ref = dict(url=asset['browser_download_url'], size=asset['size'], sha256=fingerprint(manifest))
     client.verify_ref(ref)
     client.verify_ref(manifest['daily']['file'])
+    evidence = manifest.get('conversion', {}).get('discrepancy_evidence')
+    if evidence:
+        client.verify_ref(evidence['file'])
     return manifest, ref
 
 
 def check_sources(client, source):
+    if source.get('name_reference'):
+        check_sources(client, source['name_reference'])
     for expected in (source['asset'], source['coverage']):
         if expected is None:
             continue
@@ -220,14 +237,31 @@ def worker(client, plan, dataset, work):
     work = Path(work)
     work.mkdir(parents=True, exist_ok=True)
     required = source['asset']['size'] + 2 * 1024**3
+    if source.get('name_reference'):
+        required += source['name_reference']['asset']['size']
     if shutil.disk_usage(work).free < required:
         raise ValueError('Insufficient disk for source download and 2 GiB reserve')
     with tempfile.TemporaryDirectory(prefix=dataset+'-', dir=work) as folder:
         folder = Path(folder)
         raw, parquet = folder/source['asset']['name'], folder/task['parquet_name']
         client.download(source['asset'], raw)
+        kwargs = {}
+        reference = source.get('name_reference')
+        if reference:
+            reference_raw = folder/reference['asset']['name']
+            reference_parquet = folder/'pri-reference.parquet'
+            client.download(reference['asset'], reference_raw)
+            reference_receipt = convert('pri_local_bodies', reference_raw, reference_parquet,
+                member=reference['member'], observed_on=reference['observed_on'])
+            kwargs = dict(pri_reference=reference_parquet,
+                          reference_observed_on=reference['observed_on'])
         receipt = convert(dataset, raw, parquet, member=source['member'],
-                          memory_limit='1GB', max_temp_size='2GB', threads=2)
+                          memory_limit='1GB', max_temp_size='2GB', threads=2,
+                          observed_on=source['observed_on'], **kwargs)
+        if reference:
+            receipt['name_reference'].pop('path')
+            receipt['name_reference']['csv_sha256'] = reference_receipt['source']['csv_sha256']
+            receipt['name_reference']['container_sha256'] = reference_receipt['source']['sha256']
         coverage = None
         if source['coverage']:
             ledger = folder/source['coverage']['name']
@@ -237,6 +271,10 @@ def worker(client, plan, dataset, work):
             coverage['source_sha256'] = digest(ledger)
         check_sources(client, source)
         ref = client.put(task['release'], parquet)
+        if receipt.get('discrepancy_evidence'):
+            evidence = receipt['discrepancy_evidence']
+            receipt['discrepancy_evidence'] = dict(rows=evidence['rows'],
+                file=client.put(task['release'], Path(evidence['path'])))
         manifest = dict(format_version=1, kind=KIND, dataset=dataset, identity=task['identity'],
                         source=source, converter=plan['converter'], converter_commit=plan['commit'],
                         representation='events' if dataset in EVENTS else 'snapshot',
@@ -260,6 +298,9 @@ def verify_index(client, index):
                     manifest['identity'] != entry['identity']):
                 raise ValueError('Index differs from its dataset manifest')
             client.verify_ref(entry['daily']['file'])
+            evidence = manifest.get('conversion', {}).get('discrepancy_evidence')
+            if evidence:
+                client.verify_ref(evidence['file'])
 
 
 def publish(client, plan, work):

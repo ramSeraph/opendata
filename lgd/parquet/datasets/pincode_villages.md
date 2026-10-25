@@ -1,17 +1,28 @@
 # pincode_villages
 
-One reported village/pincode/administrative-path association. A village may have several pincodes. Pincodes and census codes remain strings; the converter does not enforce a fabricated one-to-one postal relationship.
+LGD's village/pincode report supplies village and postal-code
+associations with state, district and subdistrict codes/names. The
+normalized key is `(village_code, pincode)`; administrative parents
+are attributes. Several pincodes can be associated with one village.
+
+Use `village_code` to connect to [villages](villages.md). A pincode is
+a postal identifier stored as text, not an LGD entity code. The report
+records LGD's postal links; it does not establish delivery boundaries
+or a one-to-one village/postal-area relationship.
 
 ## Row identity and conversion
 
 The reported record key is:
 
 ```text
-(village_code, pincode, state_code, district_code, subdistrict_code)
+(village_code, pincode)
 ```
 
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
+This includes simultaneous disagreement about state, district or subdistrict.
+The historical key review
+found no such collisions across all 1,412 retained observations.
 
 All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
 cover text preservation, blanks, optional columns and strict validation.

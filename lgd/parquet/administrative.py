@@ -157,7 +157,7 @@ SCHEMAS = {
         (16, 'district_census_2011_code', 'VARCHAR', 'District Census 2011 Code'),
         (17, 'subdistrict_census_2011_code', 'VARCHAR', 'Sub-district Census 2011 code'),
         (18, 'village_census_2011_code', 'VARCHAR', 'Village Census 2011 Code'),
-        (19, 'local_body_census_2011_code', 'VARCHAR', 'Gram Panchayat/ TLB Census 2011 Code'),
+        # Retired field ID 19: the source body-census column is ignored.
     ),
     'statewise_ulbs_coverage': (
         (1, 'local_body_code', 'VARCHAR', 'Local Body Code'),
@@ -220,8 +220,8 @@ SCHEMAS = {
         (15, 'district_census_2011_code', 'VARCHAR', 'District Census 2011 Code'),
         (16, 'state_census_2011_code', 'VARCHAR', 'State Census 2011 Code'),
         (17, 'local_body_census_2011_code', 'VARCHAR', 'Local Body 2011 Code'),
-        (18, 'block_district_code', 'VARCHAR', 'District Code of Development Block'),
-        (19, 'block_district_name', 'VARCHAR', 'District Name of Development Block (In English)'),
+        # Retired field IDs 18/19: block districts belong in the blocks dataset.
+        # Their source headers are still recognized and recorded as provenance.
     ),
     'gp_mapping': (
         (1, 'village_code', 'VARCHAR', 'Village Code'),
@@ -315,6 +315,13 @@ SCHEMAS = {
     ),
 }
 
+# Additive IDs avoid the already published history metadata IDs (11–13 and
+# 21–23 respectively). None marks a derived field, never a source header.
+for _dataset, _first_id in (('constituency_coverage', 14), ('constituencies_mapping_pri', 24)):
+    SCHEMAS[_dataset] += ((_first_id, 'constituency_level', 'VARCHAR', None),
+                         (_first_id+1, 'constituency_code', 'VARCHAR', None))
+
+
 class AdministrativeReport:
     def __init__(self, dataset):
         self.dataset = dataset
@@ -323,7 +330,8 @@ class AdministrativeReport:
         self.identity = self.columns[0]
         self.key_columns = ROW_KEYS[dataset].copy()
         self.version = next((name for _, name, kind, _ in self.fields if kind == 'INTEGER'), None)
-        self.aliases = {header_key(header): name for _, name, _, header in self.fields}
+        self.derived = {name for _, name, _, header in self.fields if header is None}
+        self.aliases = {header_key(header): name for _, name, _, header in self.fields if header is not None}
         if dataset == 'invalidated_census_villages':
             self.aliases.update({header_key(header): name for header, name in (
                 ('State LGD Code', 'state_code'), ('Village LGD Code', 'village_code'),
@@ -334,6 +342,8 @@ class AdministrativeReport:
                 ('State Name (In English)', 'state_name'),
                 ('Local Body Code', 'local_body_code'),
                 ('Local Body Name (In English)', 'local_body_name'),
+                # Recognize the retired field for raw-header provenance only.
+                ('Gram Panchayat/ TLB Census 2011 Code', 'local_body_census_2011_code'),
                 ('Local Body 2011 Code', 'local_body_census_2011_code'),
                 ('Development Block Code', 'block_code'),
                 ('Development Block Name (In English)', 'block_name'),
@@ -416,10 +426,9 @@ class AdministrativeReport:
         if dataset == 'gp_mapping':
             self.blank_codes = {'local_body_code', 'village_code', 'subdistrict_code'}
         if dataset == 'villages_by_blocks':
-            self.optional = {'block_district_code', 'block_district_name',
-                             'local_body_code', 'local_body_name', 'local_body_census_2011_code'}
+            self.optional = {'local_body_code', 'local_body_name', 'local_body_census_2011_code'}
             self.blank_codes = {'local_body_code', 'village_code', 'subdistrict_code',
-                                'block_code', 'block_district_code'}
+                                'block_code'}
         self.embedded_header_rows = 0
         if dataset == 'traditional_local_bodies':
             self.optional = {'local_body_version', 'local_body_name_local',
@@ -462,7 +471,7 @@ class AdministrativeReport:
                     continue
                 raise ValueError(f'Multiple source columns map to {name}')
             mapping[name] = header
-        missing = set(self.columns) - self.optional - mapping.keys()
+        missing = set(self.columns) - self.optional - self.derived - mapping.keys()
         if missing:
             raise ValueError(f'Missing required {self.dataset} columns: {sorted(missing)}')
         if self.dataset == 'tlb_villages' and 0 < len(self.optional & mapping.keys()) < len(self.optional):
@@ -477,7 +486,7 @@ class AdministrativeReport:
             raise ValueError('Traditional local bodies must supply a type code or level column')
         return mapping, schema_id(mapping)
 
-    def load_source(self, connection, path):
+    def load_source(self, connection, path, *, observed_on=None):
         with report(path) as source:
             headers = source.headers
             mapping, schema_id = self.map_headers(headers)
@@ -536,6 +545,9 @@ class AdministrativeReport:
             expressions.append(f'{expression} AS {name}')
         connection.execute(f'''CREATE OR REPLACE TEMP TABLE entity_incoming AS
             SELECT {', '.join(expressions)}, ?::VARCHAR AS source_schema_id FROM entity_source''', [schema_id])
+        if self.derived:
+            from .constituency_identity import add_identity
+            add_identity(connection)
         count = connection.execute('SELECT count(*) FROM entity_incoming').fetchone()[0]
         self.source_row_count = count
         # Only the count is needed after canonicalization. Releasing the raw
@@ -614,6 +626,53 @@ class AdministrativeReport:
                 OR (local_body_code='' AND local_body_name!='') LIMIT 1''').fetchone()
             if invalid:
                 raise ValueError(f'Invalid {self.dataset} placeholder: {invalid}')
+        self.ignored_source_rows = 0
+        if self.dataset == 'assembly_constituencies':
+            # The report also lists parliamentary seats with no assembly entry.
+            # Keep their state coverage signal, but not blank assembly entities.
+            connection.execute("""CREATE OR REPLACE TEMP TABLE entity_placeholders AS
+                SELECT * FROM entity_incoming WHERE assembly_constituency_code=''""")
+            self.ignored_source_rows = connection.execute('SELECT count(*) FROM entity_placeholders').fetchone()[0]
+            connection.execute("DELETE FROM entity_incoming WHERE assembly_constituency_code=''")
+            count -= self.ignored_source_rows
+            if not count:
+                raise ValueError('An assembly report with no assembly rows cannot establish completeness')
+        if self.dataset == 'gp_mapping':
+            # Retain the source's empty-section signal for history coverage,
+            # but do not publish hierarchy headings as village/body records.
+            invalid = connection.execute("""SELECT state_code, district_code FROM entity_incoming
+                WHERE village_code='' AND (local_body_name!='' OR
+                    NOT (local_body_code='0' OR regexp_full_match(local_body_code, '[[:space:]]*')))
+                LIMIT 1""").fetchone()
+            if invalid:
+                raise ValueError(f'Invalid gp_mapping placeholder with a populated local body: {invalid}')
+            connection.execute("""CREATE OR REPLACE TEMP TABLE entity_placeholders AS
+                SELECT * FROM entity_incoming WHERE village_code=''""")
+            self.ignored_source_rows = connection.execute('SELECT count(*) FROM entity_placeholders').fetchone()[0]
+            connection.execute("DELETE FROM entity_incoming WHERE village_code=''")
+            count -= self.ignored_source_rows
+            if not count:
+                raise ValueError('A gp_mapping report with no village rows cannot establish completeness')
+        if self.dataset == 'pri_local_body_wards':
+            from .pri_wards import resolve
+            reference_available = bool(connection.execute("SELECT count(*) FROM duckdb_tables() WHERE table_name='pri_ward_reference'").fetchone()[0]
+                or connection.execute("SELECT count(*) FROM duckdb_views() WHERE view_name='pri_ward_reference'").fetchone()[0])
+            self.ward_resolution = resolve(connection, self.columns, observed_on=observed_on,
+                                           reference_available=reference_available)
+            self.ignored_source_rows = self.ward_resolution['ignored_source_rows']
+            self.unresolved_source_rows = self.ward_resolution['unresolved_source_rows']
+            count = connection.execute('SELECT count(*) FROM entity_incoming').fetchone()[0]
+        if self.dataset == 'constituency_coverage':
+            from .constituency_coverage import normalize
+            self.conflicting_coverage_rows = normalize(connection, self.key_columns)
+            count = connection.execute('SELECT count(*) FROM entity_incoming').fetchone()[0]
+        if self.dataset == 'constituencies_mapping_pri':
+            from .constituency_identity import normalize_pri_names
+            self.conflicting_name_rows = normalize_pri_names(connection, self.key_columns)
+        if self.dataset == 'parliament_constituencies_lb_mapping':
+            from .parliament_body_coverage import normalize
+            self.conflicting_coverage_rows = normalize(connection, self.key_columns)
+            count = connection.execute('SELECT count(*) FROM entity_incoming').fetchone()[0]
         keys = ', '.join(self.key_columns)
         # Distinct hashes prove distinct keys (collisions only make this fast
         # path decline). Most large ward reports have no redundant path rows;

@@ -1,8 +1,20 @@
 # villages
 
-One reported village/category pair. Several categories for the same village code remain separate records. Within a category, choose the highest version only if all other attributes agree; conflicting attributes or a mixture of known and unknown versions are rejected. The known header typo `Village Name (In Englsih)` is accepted.
+LGD's village register includes English/local names, version,
+state/district/subdistrict references, census identifiers and, where
+supplied, status, category and remarks. A row represents a
+`village_code`/`village_category` pair: the same village can have several
+reported categories. Count distinct village codes when counting places.
+
+The parent codes connect to the administrative registers. Block and
+local-body associations are supplied separately by reports such as
+[villages_by_blocks](villages_by_blocks.md) and [gp_mapping](gp_mapping.md).
+Status and category retain the source's claims; they are not inferred
+from membership in a mapping report.
 
 ## Row identity and conversion
+
+The known header typo `Village Name (In Englsih)` is accepted.
 
 The reported record key is:
 

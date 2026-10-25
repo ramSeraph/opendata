@@ -1,14 +1,33 @@
 # central_org_designations
 
-One reported designation/organization/location-level association. Level names are part of the identity because a level code can have several reported names. A designation can belong to several levels. Local-language names remain text. This central report has no state columns.
+This report lists designation titles within central organizations,
+including English/local names and reported levels, such as postal
+roles at different office levels. It describes titles rather than
+named office-holders or individual office staffing.
+
+A designation can occur at several levels; level names remain part
+of the association's identity, including when level codes are blank.
+There are no state columns. Organization references connect to
+[central_orgs](central_orgs.md), while office membership is reported
+separately in [central_org_units](central_org_units.md).
 
 ## Row identity and conversion
 
-The reported record key is:
+Distinct reported level names remain separate even for the same level
+code. Local-language names remain text.
+
+The normalized record key is:
 
 ```text
-(designation_code, organization_code, organization_level_code, organization_level_name)
+(designation_code, organization_level_code, organization_level_name)
 ```
+
+Organization code/name remain attributes.
+The retained-history review
+finds no simultaneous collisions under this key. Using only designation and
+level codes would collide for 63 designation codes in the retained history.
+Distinct names for the same level code remain separate associations; a scope change for the same
+three-field key updates its attributes.
 
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.

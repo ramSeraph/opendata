@@ -1,19 +1,53 @@
 # pri_local_body_wards
 
-One reported ward/body/state/name-path variant. Repeated ward codes with differing reported body or parent names remain separate rows. Use COUNT(DISTINCT ward_code) to count ward codes. This preservation decision may be revisited; no variant is currently selected as authoritative. Known Word Code, Word Number and Disrtict Level Parent Name header typos are accepted.
+LGD's PRI-ward report supplies ward codes, names and numbers, plus
+the local body, state, body type and higher-parent names. Normalized
+identity is `ward_code`; spelling variants and contradictory parent
+labels do not create additional wards.
+
+When source labels or state attributes conflict, conversion resolves
+them by body code using a PRI register dated at or before the report.
+Original variants remain in discrepancy evidence. Unresolved records
+are omitted from the normalized daily report, with history able to
+retain the previous reliable value as not updated. Reviewed stale
+ward/body exclusions apply only within their documented date limits.
 
 ## Row identity and conversion
 
-The reported record key is:
+Every ward in the retained 2022–2026 source history has exactly one body
+code. Conflicting simultaneous body codes or ward attributes stop
+conversion for review; name/state resolution does not choose between
+conflicting ward-to-body assignments.
 
 ```text
-(ward_code, local_body_code, state_code, local_body_name, district_panchayat_name, intermediate_panchayat_name)
+(ward_code)
 ```
 
-Identical records collapse. Conflicting attributes for this key are rejected;
-the converter does not choose one conflicting row as authoritative.
+Exact copies collapse. When source rows disagree on a body name, type, state or
+higher-parent name, the converter looks up the body **by code** in a supplied
+[PRI body register](pri_local_bodies.md) dated at or before the ward report.
+Higher-parent names follow parent codes in that register. State code and name
+are resolved together; other agreed values remain as reported. Current names
+are never used to rewrite older reports.
 
-All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
+The original distinct conflicting rows and selected values remain in a separate
+Parquet file linked by the conversion receipt's `discrepancy_evidence`. The
+receipt pins the reference date and checksum. When a reference is supplied but
+cannot resolve a conflict, the affected ward is omitted from this daily snapshot
+and counted in `unresolved_source_rows`; it is not asserted to be deleted.
+History can retain its previous reliable value and actual source date.
+A missing reference input when conflicts need resolution is an error.
+
+**Reviewed exclusion:** 704 stale ward/body pairs are ignored only from
+30 January 2022 through 22 November 2023. Their codes have no body-register
+match anywhere in the retained history and their contradictory records
+subsequently disappear. Original rows remain in discrepancy evidence with
+`resolution='ignored'`; the receipt counts `ignored_source_rows`. This rule does
+not suppress a corrected record on a later date. The explicit pairs and date
+bounds are in [the exclusion rule](../pri_ward_exclusions.py).
+
+Known `Word Code`, `Word Number` and `Disrtict Level Parent Name` header typos
+are accepted. Common [conversion rules](../README.md#schemas-and-interpretation)
 cover text preservation, blanks, optional columns and strict validation.
 
 ## Fields

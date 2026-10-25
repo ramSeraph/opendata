@@ -1,17 +1,38 @@
 # villages_by_blocks
 
-One reported village/block/local-body/administrative-path association. Block district fields are separate from the village district fields. Optional field groups must appear together: block district code/name; local-body code/name/census code. Only the exact repeated split-header signature is removed, with a count in the conversion receipt. Source typos such as `VillageCunsecCode` have explicit aliases.
+This report associates villages with development blocks and, where
+supplied, local bodies. It includes village administrative paths and
+census references. Distinct block/body associations remain separate:
+even the same village and local body can be reported under several
+blocks. Row counts therefore need not count distinct villages.
+
+`district_code` and `district_name` describe the village. The source's conflicting
+block-district columns are omitted from normalized output; consult
+[blocks](blocks.md) for reported block/district associations. Removing
+those columns collapses duplicate assertions without discarding a
+distinct village/block/local-body link.
 
 ## Row identity and conversion
 
 The reported record key is:
 
 ```text
-(village_code, block_code, local_body_code, state_code, district_code, subdistrict_code, block_district_code)
+(village_code, block_code, local_body_code, state_code, district_code, subdistrict_code)
 ```
 
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
+
+State and village-district codes remain part of the historical path key: older
+reports contain simultaneous administrative paths and blank-village placeholders.
+Removing block-district fields does not resolve those separate source issues.
+
+The local-body code/name/census columns are optional but must appear together.
+The retired block-district headers must also appear as a pair when supplied.
+Source headers, supplied-field schema IDs and the conversion receipt's
+`omitted_source_fields` preserve the layout evidence. IDs **18 and 19 are retired**
+and must not be reused. Exact repeated split-header rows are counted separately;
+source aliases such as `VillageCunsecCode` remain supported.
 
 All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
 cover text preservation, blanks, optional columns and strict validation.
@@ -37,8 +58,6 @@ cover text preservation, blanks, optional columns and strict validation.
 | 15 | `district_census_2011_code` | `VARCHAR` | `District Census 2011 Code` | No |
 | 16 | `state_census_2011_code` | `VARCHAR` | `State Census 2011 Code` | No |
 | 17 | `local_body_census_2011_code` | `VARCHAR` | `Local Body 2011 Code` | Yes → NULL |
-| 18 | `block_district_code` | `VARCHAR` | `District Code of Development Block` | Yes → NULL |
-| 19 | `block_district_name` | `VARCHAR` | `District Name of Development Block (In English)` | Yes → NULL |
 
 “Column may be absent” refers to the header, not whether a supplied value may
 be blank. Code validation and placeholder rules still apply to supplied values.

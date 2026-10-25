@@ -1,8 +1,22 @@
 # changes
 
-Every reported change row is retained, including exact duplicates and repeated claims. report_serial is source text and may contain thousands separators; it is not a stable event identifier. report_date is parsed losslessly from DD-MM-YYYY. entity_version must be a nonnegative integer; census_code preserves source sentinels such as null. This discontinued report is distinct from transactions.
+The discontinued LGD change report records entity type/code,
+version, names, census reference, operation and reported date. It
+supplies structured entity references and retains every source row,
+including duplicate or repeated claims; the report serial is not a
+stable event identifier.
+
+This is one cumulative event table, not a sequence of entity snapshots.
+Its row-date range does not prove complete collection coverage. The
+newer [transactions](transactions.md) report has a different schema
+and cannot be treated as the same event stream under renamed fields.
 
 ## Row identity and conversion
+
+`report_serial` remains text and may contain thousands separators.
+`report_date` is parsed losslessly from `DD-MM-YYYY`; `entity_version`
+must be a nonnegative integer. `census_code` preserves source sentinels
+such as the literal string `null`.
 
 No uniqueness key is imposed and no source rows are deduplicated. This is one
 cumulative event report, with no observation or interval columns.

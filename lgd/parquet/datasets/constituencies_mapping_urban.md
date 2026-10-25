@@ -1,17 +1,40 @@
 # constituencies_mapping_urban
 
-One reported ward/body/administrative-path/parliamentary-and-assembly association. ECI constituency codes are a separate namespace from LGD constituency codes. Blank assembly and ECI codes, and blank district/subdistrict references, are retained as reported. This report is not proof of complete constituency coverage.
+This report connects urban wards and local bodies to assembly and
+parliamentary constituencies, including reported ECI identifiers and
+district/subdistrict paths. A ward lookup can return several rows:
+normalized identity includes ward, assembly, subdistrict and district
+codes. Body, state and parliamentary parent remain attributes.
+
+The geographic paths can reflect the body's coverage repeated across
+its wards, rather than independently established ward locations.
+District-only paths and blank assembly references remain visible.
+ECI values are a separate identifier namespace and retain the
+report's claims; they are not an authoritative correction of LGD codes.
 
 ## Row identity and conversion
+
+Blank assembly and ECI codes, and blank district/subdistrict references,
+are retained as reported. This report does not establish complete
+constituency coverage.
 
 The reported record key is:
 
 ```text
-(ward_code, local_body_code, state_code, district_code, subdistrict_code, parliament_constituency_code, assembly_constituency_code)
+(ward_code, assembly_constituency_code, subdistrict_code, district_code)
 ```
 
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.
+
+Body, state and parliamentary parent are attributes. District/subdistrict
+references describe reported geographic coverage; they do not independently
+establish each ward's geography. District is necessary when subdistrict is
+blank or zero: Kolkata and Siliguri each supply multiple district paths in
+that form. Blank/zero assembly references remain as reported. The
+historical key review
+found no simultaneous ambiguity for this four-field key across all retained
+observations. Any future conflicting parent or other attribute stops conversion.
 
 All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
 cover text preservation, blanks, optional columns and strict validation.

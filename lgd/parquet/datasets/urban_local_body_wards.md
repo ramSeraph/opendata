@@ -1,8 +1,19 @@
 # urban_local_body_wards
 
-One reported urban ward. Ward numbers are text, not counts or identifiers interchangeable with ward_code. The body census code is optional; both Census Code 2011 and the canonical source header are accepted.
+LGD's urban-ward register identifies each ward by `ward_code` and
+supplies its name, ward number, local-body code/name and state. The
+body reference connects to [urban_local_bodies](urban_local_bodies.md).
+
+Ward numbers are source labels and are not interchangeable with ward
+codes. This report does not supply district or subdistrict assignments.
+Geographic paths in [constituencies_mapping_urban](constituencies_mapping_urban.md)
+come from a separate report and cannot be verified against this register
+alone. Any census code here belongs to the body.
 
 ## Row identity and conversion
+
+The body census code is optional; both Census Code 2011 and the canonical
+source header are accepted. Ward numbers remain text.
 
 The reported record key is:
 

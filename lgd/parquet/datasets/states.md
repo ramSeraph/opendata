@@ -1,6 +1,13 @@
 # states
 
-One reported state or union territory. `state_or_ut` is the supplied classification. Census identifiers and the LGD state code are separate namespaces; local names are optional.
+LGD's register of states and union territories, with English and local
+names, the reported state/UT classification, version and 2001/2011 census
+identifiers. Each row identifies one state or union territory by
+`state_code`.
+
+Use this register to resolve state references in other datasets.
+`state_or_ut` retains LGD's classification, and census identifiers remain
+separate from LGD codes. Optional local names may be absent.
 
 ## Row identity and conversion
 

@@ -1,49 +1,55 @@
 # org_unit_coverage
 
-Reported geographic coverage of organization units. Each row is either a supplied
-coverage claim or a unit for which no coverage details were supplied. A unit can
-cover multiple geographic entities, types and hierarchy levels. These claims do
-not describe the location of the unit itself.
+This combined state/central report lists places an organization unit is reported
+to cover, or explicitly says that coverage details were not supplied.
+`covered_entity_*` describes the target. `entity_code` and `entity_name` describe
+the office's location reference, whose type is not supplied here. State scope
+`0` denotes central organizations.
 
-## Row identity and conversion
+One unit can cover several targets and entity types. No-details rows do not mean
+zero coverage, and absence from this report does not establish deletion.
 
-There is no stable claim identifier or enforced unique key. Every source row is
-retained, including exact duplicates, alternative labels, full/partial claims
-and overlapping report selections. No rows are collapsed or selected as
-authoritative. To count units, count distinct
-`(organization_unit_code, organization_code, state_code)` rather than rows.
+## Row identity
 
-`entity_code` and `entity_name` describe the unit's reported location reference;
-this report does not supply its entity type. `covered_entity_*` identifies the
-target of a coverage claim. A numeric code is not sufficient to distinguish
-entities from different types. Do not infer a type for a missing label.
+```text
+(organization_unit_code, covered_entity_type, covered_entity_code)
+```
 
-`report_organization_level_code` and `report_organization_level_name` describe
-the report selection. It can return descendant levels, so these fields must not
-be treated as each returned unit's own `organization_level_code/name`.
-Other shared attributes use the same canonical names and types as the unit
-directory and unit-details datasets.
+The other fields are attributes, including names, full/partial coverage,
+organization/state context and the selected report level. Exact duplicate rows
+collapse; conversion records the raw and collapsed counts. Conflicting attributes
+for one key reject the report rather than choosing a claim or adding names and
+flags to its identity. The raw CSV remains the original source evidence.
 
-`coverage_details_reported` retains the strings `true` and `false`:
+Both retained reports, **23–24 October 2026**, contain **1,977,782 unique keys**
+and **585,710 distinct units**, with no conflicting keys or exact duplicates.
+This supports the chosen identity; it does not prove that LGD's claims are correct.
 
-- `true`: a claim was supplied. `covered_entity_code` must be numeric text and
-  `coverage_type` must be `F` (full) or `P` (partial). The entity name and type may
-  be blank and remain blank.
-- `false`: no coverage details were supplied. All four claim fields must be
-  empty strings. This does not establish that the unit has no coverage.
+Count units with `COUNT(DISTINCT organization_unit_code)`. Row counts count
+associations or no-details rows, not distinct places.
 
-The report is not a complete census of organization units. An omitted unit,
-organization or claim does not establish deletion. State code `0` and name
-`India` identify the Centre's report scope. They do not mean that every covered
-entity is in a separate geographic state numbered zero.
+## Missing details and target types
 
-All fields remain strings, including organization-specific identifiers, flags,
-leading zeroes, quoted names and source blanks. The CSV dialect is explicit,
-because quotes and embedded commas can first appear far into a report. Invalid
-identifiers, inconsistent flags/claim fields, incomplete rows, and unknown,
-duplicate or missing headers fail conversion. Empty exports require review.
+| Source value | Meaning and handling |
+| --- | --- |
+| `coverage_details_reported='true'` | A claim exists. Target code must be numeric text; `coverage_type` is `F` (full) or `P` (partial). |
+| A claim has a blank target type or name | Preserve the blank. A missing type leaves the target's namespace unresolved; do not infer an entity-table join from its numeric code. |
+| `coverage_details_reported='false'` | No details were supplied. All four claim fields are empty; the key is `(unit_code, '', '')`. This does not establish zero coverage. |
+
+There are **51,007 claims with blank target types**, **58,463 with blank target
+names**, and **538,639 no-details rows** in each retained report. These remain
+in the normalized data. A code appearing under different target types identifies
+distinct associations.
 
 ## Fields
+
+All fields remain strings, preserving leading zeros, signed location sentinels,
+source blanks, quoted names and organization-specific identifiers. Required
+columns, flags and claim consistency are validated. Empty or malformed reports
+fail conversion without replacing an earlier output.
+
+The headers are those of our scraped CSV. Fields 11–12 are request metadata
+added by the scraper; the other fields come from LGD's returned rows.
 
 | ID | Field | SQL type | Primary source header | Column may be absent |
 | ---: | --- | --- | --- | --- |
@@ -64,37 +70,22 @@ duplicate or missing headers fail conversion. Empty exports require review.
 | 15 | `state_code` | `VARCHAR` | `State Code` | No |
 | 16 | `state_name` | `VARCHAR` | `State Name` | No |
 
-## Released-source review
 
-The [23 October 2026 report](https://github.com/ramSeraph/opendata/releases/download/lgd-latest/org_unit_coverage.23Oct2026.csv.7z)
-contains 1,977,782 rows and 585,710 distinct unit/organization/state tuples.
-There are 1,759 organization/state scopes and 2,057 report selections, spanning
-the Centre and all 36 states/UTs. These counts describe rows actually supplied;
-selections returning no rows are not represented by placeholder organizations.
+## Report selection and organization-specific identifiers
 
-| Finding | Handling |
-| --- | --- |
-| 538,639 rows have no coverage details. | Retain the unit and scope with blank claim fields and `coverage_details_reported='false'`. |
-| 1,439,143 rows contain coverage claims. | Preserve every full/partial claim; counts across hierarchy levels are not counts of distinct places. |
-| 51,007 supplied claims have a blank entity type; 58,463 have a blank entity name. | Preserve the incomplete claims. Do not fabricate names or infer target types. |
-| Organization-specific identifiers are often blank and can contain letters or leading zeroes. | Retain text verbatim; do not treat these as numeric LGD identifiers. |
-| No exact duplicate rows occur in this release. | The converter nevertheless preserves source multiplicity if future reports repeat claims. |
+`report_organization_level_code/name` identifies the level selected when requesting
+the report. A selection can return descendant units; it is not each office's own
+organizational level. For example, Vijayawada postal division (`1991926`) has
+own level `5385` in `central_org_units`, but is returned under the Postal Circles
+selection `5383`. Keep selection fields as collection provenance; use the unit
+directory for the office's own level.
 
-The archive is 16,738,471 bytes; its CSV member is 393,474,324 bytes.
-The standalone Parquet file is **15,846,526 bytes (15.1 MiB)**. An independent
-CSV reader checked every record's column count. A separate source-to-Parquet
-comparison verified all 16 field values, row multiplicity and field IDs for
-all 1,977,782 rows; no rows were collapsed.
-Pinned SHA-256 hashes:
+`organization_unit_specific_code` is an organization-defined identifier, not an
+LGD unit code or a universal PIN-code field. Vijayawada postal division reports
+`520001`; other units can supply blanks, letters or leading zeros. Its meaning
+and uniqueness require organization-specific evidence.
 
-```text
-archive: dc78b8c18dd90f8247fe97fd54b70536c0d893967cdba0d74d6ee21a9d664dbf
-CSV:     0d5197faa36f27d102271e420746541835d901156b9fb38c4a580bae9cded401
-Parquet: 76c82136807cafa568649bada7692c5bed1eb2743b30f542735eb80d2d14c011
-```
-
-The standalone output contains no inferred deletions, carried rows, observation
-ledger or validity intervals. See the [common conversion rules](../README.md#schemas-and-interpretation).
+## Querying
 
 ```sql
 SELECT covered_entity_type, coverage_type, count(*) AS reported_claims
@@ -102,3 +93,8 @@ FROM read_parquet('org_unit_coverage.parquet')
 WHERE coverage_details_reported = 'true'
 GROUP BY ALL;
 ```
+
+The [query API](../../../lgd-query/docs/datasets/org_unit_coverage.md) can resolve
+recognized target types against their entity registers. Standalone conversion
+uses only the selected report; see the
+[common conversion rules](../README.md#schemas-and-interpretation).

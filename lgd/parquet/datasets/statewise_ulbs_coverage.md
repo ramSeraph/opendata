@@ -1,8 +1,20 @@
 # statewise_ulbs_coverage
 
-One reported urban-body/district/subdistrict/village association. This report supplies state names rather than state codes; the converter does not invent a state code. Blank or zero lower-level codes are retained only when dependent names and children are consistently empty.
+This report links urban local bodies to reported district,
+subdistrict and village coverage. It includes both complete village
+paths and district/subdistrict-only rows. The association key retains
+`(local_body_code, district_code, subdistrict_code, village_code)`;
+body/village alone cannot distinguish paths with missing lower levels.
+
+A body can have several geographic associations. Blank or zero child
+references do not identify a village. The report supplies state names
+without state codes; conversion does not invent those codes or infer
+ward locations from body-level coverage.
 
 ## Row identity and conversion
+
+Blank or zero lower-level codes are retained only when dependent names
+and children are consistently empty.
 
 The reported record key is:
 

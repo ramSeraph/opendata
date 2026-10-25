@@ -1,13 +1,26 @@
 # parliament_constituencies
 
-One reported parliamentary constituency/state pair. Some source layouts include empty assembly columns; these are dropped only after verifying that all values are blank. Serial numbers must be contiguous and begin at 1 or the recognized defective prefix 81. A precise timestamp-only footer may be ignored. Missing prefix rows are reported in the receipt and are not fabricated.
+LGD's parliamentary-constituency register supplies each
+`parliament_constituency_code`, its name and state code/name. The LGD
+constituency code identifies the row; state is an attribute.
+
+This register does not supply ECI constituency numbers. The PRI and
+urban constituency-mapping reports supply reported LGD-to-ECI links,
+with separate source dates and ambiguity concerns. Geographic
+associations are available in [constituency_coverage](constituency_coverage.md).
 
 ## Row identity and conversion
+
+Empty assembly columns in some layouts are dropped only after validating
+that all their values are blank. Serials must be contiguous and start
+at 1 or the recognized defective prefix 81. A precise timestamp-only
+footer may be ignored. Missing prefix rows are reported in the receipt
+and are not fabricated.
 
 The reported record key is:
 
 ```text
-(parliament_constituency_code, state_code)
+(parliament_constituency_code)
 ```
 
 Identical records collapse. Conflicting attributes for this key are rejected;

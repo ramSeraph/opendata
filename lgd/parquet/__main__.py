@@ -14,13 +14,17 @@ def main():
     parser.add_argument('source', type=Path)
     parser.add_argument('output', type=Path)
     parser.add_argument('--member', help='Exact CSV member name for an archive with several reports')
+    parser.add_argument('--observed-on', help='Source observation date (YYYY-MM-DD); otherwise inferred from a dated source/member name')
+    parser.add_argument('--pri-reference', type=Path, help='Canonical PRI-body Parquet used for conflicting ward or constituency-mapping names')
+    parser.add_argument('--reference-observed-on', help='Actual PRI-reference date (YYYY-MM-DD), no later than the ward report')
     parser.add_argument('--memory-limit', default='512MB')
     parser.add_argument('--max-temp-size', default='2GB', help='Maximum DuckDB spill size')
     parser.add_argument('--threads', type=int, default=2)
     args = parser.parse_args()
     result = convert(args.dataset, args.source, args.output, member=args.member,
                      memory_limit=args.memory_limit, max_temp_size=args.max_temp_size,
-                     threads=args.threads)
+                     threads=args.threads, observed_on=args.observed_on,
+                     pri_reference=args.pri_reference, reference_observed_on=args.reference_observed_on)
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
 

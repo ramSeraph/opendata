@@ -1,16 +1,30 @@
 # district_panchayats
 
-One reported district-panchayat/district/state association. A panchayat code can occur against several districts. The source typo `Disrict Code` is accepted as district_code.
+This report connects district panchayats to administrative districts,
+supplying both codes/names and the state. A panchayat can be linked to
+several districts, and a district can be linked to several panchayats.
+The association is identified by
+`(district_panchayat_code, district_code)`; state is an attribute.
+
+Resolve the panchayat code as a local-body code in
+[pri_local_bodies](pri_local_bodies.md), and the district code in
+[districts](districts.md). The two identifiers describe different
+institutions and need not form a one-to-one hierarchy.
 
 ## Row identity and conversion
+
+The source typo `Disrict Code` is accepted as `district_code`.
 
 The reported record key is:
 
 ```text
-(district_panchayat_code, district_code, state_code)
+(district_panchayat_code, district_code)
 ```
 
-Identical records collapse. Conflicting attributes for this key are rejected;
+`state_code` is a reported attribute used for filtering and coverage checks;
+it is not part of the association's identity. Identical records collapse.
+Conflicting attributes for this key, including different state codes within
+the same report, are rejected;
 the converter does not choose one conflicting row as authoritative.
 
 All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)

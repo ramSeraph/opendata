@@ -1,1 +1,2 @@
 include tools/check_dist.py
+recursive-include tests/fixtures *.json

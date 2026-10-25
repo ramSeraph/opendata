@@ -1,6 +1,13 @@
 # districts
 
-One reported district with its supplied state reference. Parent names remain verbatim even when another report spells the same parent differently. Census identifiers are distinct from the LGD district code.
+LGD's district register: one district per `district_code`, with its
+English name, state code/name and 2001/2011 census identifiers. State is
+a reported parent attribute, so a changed state reference updates the
+district rather than creating a different district identity.
+
+State names are already supplied for ordinary lookups. Use `state_code`
+to connect to [states](states.md); labels may differ between reports.
+District census codes belong to a different namespace from LGD codes.
 
 ## Row identity and conversion
 

@@ -1,17 +1,52 @@
 # constituencies_mapping_pri
 
-One reported village/body/block/administrative-path/constituency association. The local-body name is part of the record identity because the source reports alternative named associations. ECI codes remain separate from LGD codes. Blank body, block, assembly and ECI references are retained as reported.
+This historical report connects villages, rural local bodies and
+blocks to parliamentary/assembly constituencies, with administrative
+and census context. It also supplies reported LGD-to-ECI constituency
+identifiers. One village can have several coded associations, and
+reviewed block disagreements require retaining `block_code`.
+
+Assembly-backed and parliamentary-only links remain distinct. Names
+are attributes; conflicting body labels resolve through a dated PRI
+register, with originals preserved as evidence. ECI values contain
+documented errors and reuse, so reverse lookups retain every match.
+The retained source ends in October 2022 and must not be read as a
+current electoral map.
 
 ## Row identity and conversion
+
+Blank source references remain as reported.
 
 The reported record key is:
 
 ```text
-(village_code, local_body_code, local_body_name, block_code, state_code, district_code, subdistrict_code, parliament_constituency_code, assembly_constituency_code)
+(village_code, local_body_code, block_code, constituency_level, constituency_code)
 ```
 
-Identical records collapse. Conflicting attributes for this key are rejected;
-the converter does not choose one conflicting row as authoritative.
+An assembly code other than blank/zero sets the derived fields to `assembly`
+and that LGD code. Otherwise they are `parliament` and the parliamentary code.
+The reported assembly and parliamentary columns are preserved. Block remains
+in the key because some villages are reported under different blocks for the
+same body and assembly link; neither assertion is silently discarded.
+The dated block-mapping cross-check leaves 25 Tripura villages unresolved,
+supporting retention of `block_code` in identity. This preserves reported
+associations without treating every block assignment as verified.
+
+Identical records collapse. Conflicting `local_body_name` values require
+`--pri-reference` and `--reference-observed-on`, selecting a canonical PRI-body
+Parquet dated at or before the report. Resolution joins by body code and state.
+A missing or ambiguous reference stops conversion; no arbitrary label is chosen.
+The receipt pins the reference and a `discrepancy_evidence` Parquet containing
+the original rows. `conflicting_name_rows` counts distinct source variants.
+Other attribute conflicts still stop conversion.
+
+The dated key review
+confirms that village alone and village/body both collide on distinct coded
+associations. The key above preserves distinct blocks and both assembly-backed and PC-only
+links, while removing name and administrative-path variants from identity.
+Reported ECI identifiers also contain collisions and incorrect values; see the
+[ECI lookup notes](../../../lgd-query/docs/datasets/constituencies_mapping_pri.md#eci-code-lookup).
+They remain source attributes, not verified electoral identifiers.
 
 All rows come from the selected report. Common [conversion rules](../README.md#schemas-and-interpretation)
 cover text preservation, blanks, optional columns and strict validation.
@@ -40,6 +75,10 @@ cover text preservation, blanks, optional columns and strict validation.
 | 18 | `assembly_constituency_name` | `VARCHAR` | `Assembly Constituency Name` | No |
 | 19 | `assembly_constituency_eci_code` | `VARCHAR` | `Assembly Constituency ECI Code` | No |
 | 20 | `state_code` | `VARCHAR` | `State Code` | No |
+| 24 | `constituency_level` | `VARCHAR` | Derived | Always computed |
+| 25 | `constituency_code` | `VARCHAR` | Derived | Always computed |
 
 “Column may be absent” refers to the header, not whether a supplied value may
 be blank. Code validation and placeholder rules still apply to supplied values.
+
+IDs 21–23 remain reserved for history provenance and interval fields.

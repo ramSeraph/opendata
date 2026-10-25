@@ -1,7 +1,8 @@
-"""Read reported organization coverage claims without deduplicating evidence."""
+"""Read organization coverage by unit, target type and target code."""
 
 from .common import header_key, sql_identifier
 from .csv_input import report
+from .keys import ROW_KEYS
 from .schema import schema_id, validate_fields
 
 
@@ -24,6 +25,7 @@ FIELDS = (
     (16, 'state_name', 'VARCHAR', 'State Name'),
 )
 validate_fields('org_unit_coverage', FIELDS)
+KEY_COLUMNS = ROW_KEYS['org_unit_coverage']
 
 
 def load_source(connection, path):
@@ -69,7 +71,19 @@ def load_source(connection, path):
         LIMIT 5''').fetchall()
     if invalid:
         raise ValueError(f'Invalid organization coverage claim/placeholder: {invalid}')
-    # The report supplies neither a stable claim ID nor a promise that repeated
-    # unit rows, alternative attributes or overlapping selections are redundant.
-    # Preserve every row, including exact duplicates and missing type/name text.
-    return headers, mapping, schema_id(mapping), count
+    source_count = count
+    keys = ', '.join(KEY_COLUMNS)
+    repeated = connection.execute(f'''SELECT EXISTS (
+        SELECT {keys} FROM organization_coverage_incoming GROUP BY {keys}
+        HAVING count(*)>1)''').fetchone()[0]
+    if repeated:
+        # Exact copies are redundant. Different labels, flags or request context
+        # for one association require review instead of an arbitrary winner.
+        connection.execute('''CREATE OR REPLACE TEMP TABLE organization_coverage_incoming AS
+            SELECT DISTINCT * FROM organization_coverage_incoming''')
+        conflicts = connection.execute(f'''SELECT {keys} FROM organization_coverage_incoming
+            GROUP BY {keys} HAVING count(*)>1 LIMIT 5''').fetchall()
+        if conflicts:
+            raise ValueError(f'Organization coverage has conflicting attributes for unit/type/target key: {conflicts}')
+        count = connection.execute('SELECT count(*) FROM organization_coverage_incoming').fetchone()[0]
+    return headers, mapping, schema_id(mapping), count, source_count

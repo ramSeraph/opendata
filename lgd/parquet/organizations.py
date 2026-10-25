@@ -79,18 +79,8 @@ for kind, fields in (('org_units', UNIT_FIELDS), ('org_designations', DESIGNATIO
 SCHEMAS['org_unit_details'] = DETAIL_FIELDS
 DESIGNATIONS = ('state_org_designations', 'central_org_designations')
 STATE_DATASETS = tuple(d for d in SCHEMAS if d.startswith('state_'))
-KEYS = {}
-for dataset, fields in SCHEMAS.items():
-    key = [fields[0][1]]
-    if dataset.endswith('org_units'):
-        key += ['organization_code']
-    if dataset.endswith('admin_dept_units'):
-        key += ['administrative_unit_level_code']
-    if dataset.endswith('org_designations'):
-        # A designation can belong to several levels. Historical reports even
-        # reuse a level code for several names; retain the actual associations.
-        key += ['organization_code', 'organization_level_code', 'organization_level_name']
-    if dataset in STATE_DATASETS:
-        key += ['state_code']
-    KEYS[dataset] = key
-KEYS['org_unit_details'] = ['organization_unit_code', 'organization_code', 'state_code']
+# All entity registers use their own LGD identifier. Designations retain
+# distinct organization-level assignments, including differing level names.
+KEYS = {dataset: [fields[0][1]] for dataset, fields in SCHEMAS.items()}
+for dataset in DESIGNATIONS:
+    KEYS[dataset] = ['designation_code', 'organization_level_code', 'organization_level_name']

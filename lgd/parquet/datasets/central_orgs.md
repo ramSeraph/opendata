@@ -1,8 +1,19 @@
 # central_orgs
 
-One reported central organization. This report has no state columns. Parent ministries may appear only as references; no additional rows or state identifiers are synthesized. Type labels and blank parent codes remain source values.
+This directory identifies central departments and organizations by
+`organization_code`, with names, types and reported parent
+organizations. It has no state columns. A parent ministry or
+organization can appear only as a reference; conversion does not
+synthesize a missing parent row.
+
+[central_org_units](central_org_units.md) supplies their offices/units,
+while [central_org_designations](central_org_designations.md) supplies
+titles and levels. Parent references describe the hierarchy asserted
+in the report and are not guaranteed to resolve within the directory.
 
 ## Row identity and conversion
+
+Type labels and blank parent codes remain as supplied; no state identifiers are synthesized.
 
 The reported record key is:
 

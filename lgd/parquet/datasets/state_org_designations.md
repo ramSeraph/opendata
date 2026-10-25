@@ -1,14 +1,33 @@
 # state_org_designations
 
-One reported designation/organization/location-level association. Level names are part of the identity because a level code can have several reported names. A designation can belong to several levels. Local-language names remain text. State codes are part of the identity.
+This report lists designation titles within state organizations,
+with English/local names and reported organization-level associations.
+It describes posts or roles, not the people holding them or a staffing
+assignment to a particular office.
+
+One designation can be associated with several levels. Level codes
+may be blank, and distinct level names are retained in record
+identity. Organization and state provide context; join
+[state_orgs](state_orgs.md) by organization code to inspect the parent
+organization rather than matching a designation's name to an office.
 
 ## Row identity and conversion
 
-The reported record key is:
+Distinct reported level names remain separate even for the same level
+code. Local-language names remain text.
+
+The normalized record key is:
 
 ```text
-(designation_code, organization_code, organization_level_code, organization_level_name, state_code)
+(designation_code, organization_level_code, organization_level_name)
 ```
+
+Organization code/name and state code/name remain attributes.
+The retained-history review
+finds no simultaneous collisions under this key. Using only designation and
+level codes would collide for 235 designation codes in the retained history.
+Distinct names for the same level code remain separate associations; a scope change for the same
+three-field key updates its attributes.
 
 Identical records collapse. Conflicting attributes for this key are rejected;
 the converter does not choose one conflicting row as authoritative.

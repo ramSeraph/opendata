@@ -44,6 +44,23 @@ collapsed rows and output size/hash. Constituency layout diagnostics identify
 known missing prefix rows. The receipt describes the input that was converted;
 successful conversion does not establish that LGD supplied a complete report.
 
+## Dated PRI ward references
+
+Conflicting PRI ward labels/state assignments require a canonical PRI-body
+Parquet dated at or before the ward report:
+
+```sh
+python -m parquet pri_local_body_wards wards.csv.7z wards.parquet \
+  --observed-on 2022-01-30 --pri-reference bodies.parquet \
+  --reference-observed-on 2022-01-30
+```
+
+The conversion receipt records the reference date/hash and links a separate
+`discrepancy_evidence` Parquet containing original variants and resolution results.
+Daily publication pins the reference source alongside the ward source, converts
+it independently, and uploads any evidence with the output. See the
+[PRI ward schema](datasets/pri_local_body_wards.md) for exclusions and unresolved updates.
+
 ## Schemas and interpretation
 
 [One schema document per dataset](datasets/README.md) describes row identity,
@@ -64,12 +81,17 @@ Common rules:
 - Snapshot readers other than organization-unit coverage discard serial numbers.
   Identical reported records collapse;
   versions differing only in a known integer version use the highest version.
-  Conflicting attributes for the same record key fail conversion. Village
-  categories and the documented association/ward variants remain separate rows.
+  Conflicting attributes for the same record key fail conversion unless the
+  dataset documents a resolution rule. In [constituency coverage](datasets/constituency_coverage.md),
+  Full/Partial claims become one association with NULL coverage and separate
+  evidence preserving both flags. Village categories and distinct coded
+  associations remain separate rows. PRI wards use their documented name and
+  state resolution rules to produce one row per ward code.
 - Event reports retain every row, including repeated or conflicting event claims.
   The legacy changes report keeps its source serial as `report_serial`.
-- Organization-unit coverage also retains every source row, including repeated
-  claims and units with no supplied coverage details; it has no stable claim ID.
+- Organization-unit coverage uses `(organization_unit_code, covered_entity_type,
+  covered_entity_code)`. Exact copies collapse; conflicting attributes fail.
+  No-details rows and claims with missing target types remain in the data.
 - Parquet uses Zstandard compression and stable field IDs. IDs belong to a
   dataset and are independent of source column order. Shared concepts use the
   same field name and type across datasets.
@@ -89,7 +111,7 @@ FROM read_parquet('data/states.parquet');
 ## Validation
 
 ```sh
-uv run --extra parquet python -m unittest tests.test_parquet
+uv run --extra parquet python -m unittest tests.test_parquet tests.test_parquet_normalization tests.test_parquet_workflow
 ```
 
 Tests cover all 39 schemas, value/type/field-ID preservation, duplicate policies,

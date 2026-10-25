@@ -1,8 +1,23 @@
 # central_admin_depts
 
-One reported administrative-unit level. The source calls this a department report, but the levels include Branch, Division and Post Office. Only the first three source fields are required; optional DWR metadata retains strings, including flags, timestamps and hierarchy descriptions. Parent administrative codes can be signed. No boolean or timestamp interpretation is imposed. This central report has no state columns.
+Despite its filename, this report defines central administrative-unit
+levels, including named postal levels, rather than listing departments.
+It supplies level codes/names, parent administrative references and
+optional hierarchy/publication/activity metadata. It has no state
+columns.
+
+[central_admin_dept_units](central_admin_dept_units.md) lists named
+units belonging to these levels. The separate
+[central_orgs](central_orgs.md) and [central_org_units](central_org_units.md)
+reports describe organizations and offices; matching names or numbers
+do not establish a shared identifier namespace.
 
 ## Row identity and conversion
+
+Only the first three source fields are required. Optional DWR metadata,
+including flags, timestamps and hierarchy descriptions, remains text.
+Parent administrative codes can be signed; no boolean or timestamp
+interpretation is imposed.
 
 The reported record key is:
 

@@ -107,6 +107,30 @@ class ParquetWorkflowTests(unittest.TestCase):
         self.complete(plan)
         return flow.publish(self.client, plan, self.root)
 
+    def test_ward_reference_is_dated_pinned_and_part_of_conversion_identity(self):
+        self.source(dataset='pri_local_body_wards')
+        old=self.source(day='22Oct2026',dataset='pri_local_bodies',payload=b'old')
+        self.source(day='24Oct2026',dataset='pri_local_bodies',payload=b'future')
+        plan=flow.prepare(self.client,['pri_local_body_wards'],COMMIT)
+        task=plan['tasks']['pri_local_body_wards']
+        self.assertEqual(task['source']['name_reference']['asset']['id'],old['id'])
+        self.source(day='23Oct2026',dataset='pri_local_bodies',payload=b'current')
+        later=flow.prepare(self.client,['pri_local_body_wards'],COMMIT)
+        self.assertNotEqual(task['identity'],later['tasks']['pri_local_body_wards']['identity'])
+        self.source(day='22Oct2026',dataset='pri_local_bodies',payload=b'replacement')
+        with self.assertRaisesRegex(ValueError,'Source changed'):
+            flow.check_sources(self.client,task['source'])
+
+    def test_discrepancy_outputs_reserve_a_third_release_asset(self):
+        for dataset in flow.DISCREPANCY_DATASETS:
+            with self.subTest(dataset=dataset):
+                self.client.data[RELEASE] = {str(i): {} for i in range(977)}
+                with self.assertRaisesRegex(ValueError, 'Insufficient release capacity'):
+                    flow.allocate(self.client, [dataset])  # Three files plus the index.
+                self.client.data[RELEASE].pop('976')
+                self.assertEqual(flow.allocate(self.client, [dataset]),
+                                 {dataset: RELEASE, '_index': RELEASE})
+
     def test_publish_then_noop_before_conversion_and_keep_old_assets(self):
         first = self.publish_first()
         plan = flow.prepare(self.client, ['states'], COMMIT)
@@ -313,6 +337,43 @@ assert len(SCHEMAS) == 39
 assert converter_version()['dependency'] == 'duckdb==2.0.0'
 '''
         subprocess.run([sys.executable, '-I', '-c', script, str(package)], check=True)
+
+    @unittest.skipUnless(shutil.which('7z'), '7z required')
+    def test_real_ward_worker_publishes_reference_and_original_discrepancy_rows(self):
+        import csv
+        def row(dataset,**kwargs):
+            return {name: ('1' if kind=='INTEGER' or name.endswith('_code') else 'Label')
+                    for _,name,kind,_ in flow.SCHEMAS[dataset]} | kwargs
+        a=row('pri_local_body_wards',ward_code='100',local_body_code='10',local_body_name='First')
+        ignored=dict(a,ward_code='624571',local_body_code='6004',state_code='28')
+        reports={
+            'pri_local_bodies':[row('pri_local_bodies',local_body_code='10',parent_local_body_code='',
+                                   local_body_name='Preferred',local_body_type_code='1')],
+            'pri_local_body_wards':[a,dict(a,local_body_name='Second'),a,ignored,dict(ignored,state_code='36')]}
+        for dataset,rows in reports.items():
+            path=self.root/f'{dataset}.30Jan2022.csv'
+            fields=flow.SCHEMAS[dataset]
+            with path.open('w',newline='') as f:
+                writer=csv.writer(f);writer.writerow(['S.No.']+[field[3] for field in fields])
+                writer.writerows([[i]+[r[field[1]] for field in fields] for i,r in enumerate(rows,1)])
+            archive=path.with_suffix('.csv.7z')
+            subprocess.run(['7z','a',str(archive),path.name],cwd=self.root,check=True,capture_output=True)
+            self.source(day='30Jan2022',dataset=dataset,payload=archive.read_bytes())
+        plan=flow.prepare(self.client,['pri_local_body_wards'],COMMIT)
+        flow.worker(self.client,plan,'pri_local_body_wards',self.root/'work')
+        manifest,_=flow.candidate(self.client,plan,'pri_local_body_wards')
+        self.assertEqual(manifest['daily']['rows'],1)
+        receipt=manifest['conversion']
+        self.assertEqual((receipt['ignored_source_rows'],receipt['collapsed_rows']),(2,2))
+        self.assertEqual(receipt['discrepancy_evidence']['rows'],4)
+        self.assertNotIn('path',receipt['name_reference'])
+        self.assertEqual(receipt['name_reference']['observed_on'],'2022-01-30')
+        flow.publish(self.client,plan,self.root)
+        tag,name=location(self.client.repo,receipt['discrepancy_evidence']['file'])
+        self.client.data[tag].pop(name)
+        retry=flow.prepare(self.client,['pri_local_body_wards'],COMMIT)
+        self.assertEqual(retry['outcomes']['pri_local_body_wards']['status'],'blocked')
+        self.assertEqual(list((self.root/'work').iterdir()),[])
 
     @unittest.skipUnless(shutil.which('7z'), '7z required')
     def test_real_converter_worker_uploads_valid_manifest_and_cleans_scratch(self):

@@ -13,7 +13,7 @@ FIELD_TYPES = {
         administrative_unit_level_name_local administrative_unit_name administrative_unit_name_local
         assembly_constituency_code assembly_constituency_eci_code assembly_constituency_name
         block_code block_district_code block_district_name block_name block_name_local
-        census_code coverage_type coverage_details_reported covered_entity_code covered_entity_name
+        census_code constituency_level constituency_code coverage_type coverage_details_reported covered_entity_code covered_entity_name
         covered_entity_type created_by created_on description designation_code designation_name
         designation_name_local district_census_2001_code district_census_2011_code district_code
         district_name district_panchayat_code district_panchayat_name entity_code entity_name

@@ -1,13 +1,28 @@
 # assembly_constituencies
 
-One reported assembly/parliamentary-constituency/state association. A blank assembly code is a retained placeholder only if its assembly name is also blank. Serial numbers must be contiguous and begin at 1 or the recognized defective prefix 81. A precise timestamp-only footer may be ignored. Missing prefix rows are reported in the receipt and are not fabricated.
+LGD's assembly-constituency register supplies an assembly's code
+and name together with parliamentary-constituency and state references.
+`assembly_constituency_code` identifies the row; the parliamentary
+parent and state are attributes. Parliamentary-only placeholders
+with no assembly code or name are omitted.
+
+These are LGD identifiers. ECI numbers are supplied separately in the
+PRI and urban constituency-mapping reports, where some reported
+mappings are ambiguous. Use [constituency_coverage](constituency_coverage.md)
+for links from geographic entities to constituencies.
 
 ## Row identity and conversion
+
+Rows with both assembly code and name blank are omitted and counted in
+`ignored_source_rows`; a blank code with a populated name is rejected.
+Serials must be contiguous and start at 1 or the recognized defective
+prefix 81. A precise timestamp-only footer may be ignored. Missing
+prefix rows are reported in the receipt and are not fabricated.
 
 The reported record key is:
 
 ```text
-(assembly_constituency_code, parliament_constituency_code, state_code)
+(assembly_constituency_code)
 ```
 
 Identical records collapse. Conflicting attributes for this key are rejected;

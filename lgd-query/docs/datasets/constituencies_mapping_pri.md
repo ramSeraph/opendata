@@ -1,6 +1,6 @@
 # constituencies_mapping_pri
 
-This historical report connects villages, rural local bodies and
+This report connects villages, rural local bodies and
 blocks to parliamentary/assembly constituencies, with administrative
 and census context. It also supplies reported LGD-to-ECI constituency
 identifiers. One village can have several coded associations, and
@@ -10,8 +10,9 @@ Assembly-backed and parliamentary-only links remain distinct. Names
 are attributes; conflicting body labels resolve through a dated PRI
 register, with originals preserved as evidence. ECI values contain
 documented errors and reuse, so reverse lookups retain every match.
-The retained source ends in October 2022 and must not be read as a
-current electoral map.
+The retained historical collection ends in October 2022. The scraper has been
+restored for current reports; inspect each export's source date, and do not
+interpret the collection gap as an unchanged electoral map.
 
 ## API
 
@@ -53,7 +54,7 @@ lookup only; the source report is unchanged. Blank/zero state, LGD or ECI codes
 do not produce lookup rows. An empty result means no supplied mapping, not
 that the constituency does not exist.
 
-The retained report covers **30 January–12 October 2022**. Its last observation
+The reviewed historical collection covers **30 January–12 October 2022**. Its last observation
 has 388 parliamentary and 3,015 assembly mappings, including four reused ECI
 values involving eight constituencies. These are source claims, not a verified
 electoral crosswalk; absence of a collision is not proof of accuracy. For
@@ -65,7 +66,7 @@ For a local file, register one dated snapshot under this dataset's view name
 before calling the helper; do not combine observations from different dates.
 For release data, `queries.sources(release, "constituencies_mapping_pri")`
 exposes the actual source date. The CLI requires an index containing this
-retired report and fails explicitly if it is absent:
+report and fails explicitly if it is absent:
 
 ```sh
 lgd-query constituencies_mapping_pri eci-codes --level assembly --constituency-code 2034 --format json

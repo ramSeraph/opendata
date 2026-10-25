@@ -58,8 +58,8 @@ eci_levels = _eci.LEVELS
 def eci_codes(connection, *, level, constituency_code=None, state_code=None, eci_code=None):
     """Look up reported ECI codes; inspect the source date and ambiguity flags.
 
-    This historical report ends in October 2022. The helper does not establish
-    present-day electoral identifiers. See the dataset guide for dated-view usage.
+    Values are source claims for the selected observation, not independently
+    verified electoral identifiers. See the dataset guide for dated-view usage.
     """
     return _eci.lookup(connection, 'constituencies_mapping_pri', level=level,
         constituency_code=constituency_code, state_code=state_code, eci_code=eci_code)

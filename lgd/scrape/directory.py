@@ -432,6 +432,11 @@ class ConstituencyWiseDirectoryDownloader(MultiDownloader, DirectoryDownloader):
                                              desc='{} for constituency {}({}) of state {}({})'.format(self.desc, const_name, const_code, state_name, state_code),
                                              csv_filename=csv_filename_s,
                                              ctx=self.ctx,
+                                             transform=self.transform,
+                                             download_types=self.download_types,
+                                             xlsx_conv_args=self.xlsx_conv_args,
+                                             odt_conv_args=self.odt_conv_args,
+                                             excel_conv_args=self.excel_conv_args,
                                              post_data_extra=post_data_extra)
             downloader_items.append(DownloaderItem(downloader=downloader, record=r))
         self.downloader_items = downloader_items
@@ -646,17 +651,19 @@ def get_all_directory_downloaders(ctx):
     #                                                enrichers={
     #                                                    'State Code': 'State Code'
     #                                                }))
-    # broken.. 
-    #downloaders.append(StateWiseDirectoryDownloader(name='CONSTITUENCIES_MAPPINGS_PRI',
-    #                                                desc='list of all constituencies with PRI local body coverage',
-    #                                                csv_filename='constituencies_mapping_pri.csv',
-    #                                                ctx=ctx,
-    #                                                post_data_extra={
-    #                                                    'rptFileName': 'parlimentConstituencyAndAssemblyConstituencyPRI@state'
-    #                                                },
-    #                                                enrichers={
-    #                                                    'State Code': 'State Code'
-    #                                                }))
+    downloaders.append(StateWiseDirectoryDownloader(name='CONSTITUENCIES_MAPPINGS_PRI',
+                                                    ctx=ctx,
+                                                    xlsx_conv_args={
+                                                        'header_row_span': 1,
+                                                    },
+                                                    post_data_extra={
+                                                        # The current report still takes a state,
+                                                        # but its identifier has no @state suffix.
+                                                        'rptFileName': 'parlimentConstituencyAndAssemblyConstituencyPRI'
+                                                    },
+                                                    enrichers={
+                                                        'State Code': 'State Code'
+                                                    }))
     downloaders.append(StateWiseDirectoryDownloader(name='CONSTITUENCIES_MAPPINGS_URBAN',
                                                     ctx=ctx,
                                                     xlsx_conv_args={
@@ -719,13 +726,14 @@ def get_all_directory_downloaders(ctx):
 
 
 
-    #downloaders.append(ConstituencyWiseDirectoryDownloader(name='PARLIAMENT_CONSTITUENCIES_LOCAL_BODY_MAPPINGS',
-    #                                                       desc='list of all parliament constituencies with local body coverage',
-    #                                                       csv_filename='parliament_constituencies_lb_mapping.csv',
-    #                                                       ctx=ctx,
-    #                                                       post_data_extra={
-    #                                                           'rptFileName': 'parliamentConstituency@state#parliament'
-    #                                                       }))
+    downloaders.append(ConstituencyWiseDirectoryDownloader(name='PARLIAMENT_CONSTITUENCIES_LOCAL_BODY_MAPPINGS',
+                                                          ctx=ctx,
+                                                          xlsx_conv_args={
+                                                              'header_row_span': 1,
+                                                          },
+                                                          post_data_extra={
+                                                              'rptFileName': 'parliamentConstituency@state#parliament'
+                                                          }))
 
 
 

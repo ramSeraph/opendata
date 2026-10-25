@@ -286,8 +286,19 @@
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Parliament Wise Local Body Mapping" ],
-    "comp": "IGNORE",
-    "ignore_reason": "Needs Review, Confusing"
+    "comp": "PARLIAMENT_CONSTITUENCIES_LOCAL_BODY_MAPPINGS",
+    "desc": "parliament constituencies with named assembly and local body mappings and reported coverage",
+    "file": "parliament_constituencies_lb_mapping.csv",
+    "fields": {
+      "S.No.": { "action": "IGNORE", "description": "Serial number" },
+      "Parliament": { "action": "KEEP", "description": "Parliament Constituency Name" },
+      "Assembly": { "action": "KEEP", "description": "Assembly Constituency Name; no assembly code is supplied" },
+      "Classification": { "action": "KEEP", "description": "Classification of the local body ex: Village Panchayat or District Panchayat" },
+      "Local Gov. Name": { "action": "KEEP", "description": "Name of the local body; no body code is supplied" },
+      "Coverage": { "action": "KEEP", "description": "Reported coverage: partial(P), full(F), or blank; conflicting claims are retained" },
+      "State Code": { "action": "KEEP", "description": "State LGD Code from the report selection" },
+      "Parliament Constituency Code": { "action": "KEEP", "description": "Parliament Constituency LGD Code from the report selection" }
+    }
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "Assembly Wise Local Body Mapping" ],
@@ -296,10 +307,9 @@
   },
   {
     "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "State Wise Parliament Constituency and Assembly Constituency along with coverage details PRI" ],
-    "comp": "IGNORE",
-    "desc": "list of all constituencies with PRI local body coverage",
+    "comp": "CONSTITUENCIES_MAPPINGS_PRI",
+    "desc": "village, rural local body and block associations with parliamentary/assembly constituencies and reported ECI codes",
     "file": "constituencies_mapping_pri.csv",
-    "ignore_reason": "CONSTITUENCIES_MAPPINGS_PRI Needs Review, Confusing",
     "fields": {
       "S.No.": { "action": "IGNORE", "description": "Serial number" },
       "Parliament Constituency code": { "action": "KEEP", "description": "LGD Code for the parliament constituency" },
@@ -346,24 +356,6 @@
       "Urban Localbody Code": { "action": "KEEP", "description": "LGD Code of the Urban Local Body Code" },
       "Urban Localbody Name": { "action": "KEEP", "description": "Name of the Urban Local Body" },
       "State Code": { "action": "KEEP", "description": "State LGD Code" }
-    }
-  },
-  {
-    "dropdown": [ "Download Directory", "Parliament/Assembly Constituency", "<NO LONGER ACCESSIBLE>" ],
-    "listed": false,
-    "comp": "IGNORE",
-    "desc": "parliament constituencies with local body mappings",
-    "file": "parliament_constituencies_lb_mapping.csv",
-    "ignore_reason": "PARLIAMENT_CONSTITUENCIES_LOCAL_BODY_MAPPINGS Not accessible anymore",
-    "fields": {
-      "S.no.": { "action": "IGNORE", "description": "Serial number" },
-      "Parliament": { "action": "IGNORE", "description": "Parliament Constituency Name" },
-      "Assembly": { "action": "IGNORE", "description": "Assembly Constituency Name" },
-      "Classification": { "action": "IGNORE", "description": "Classification of the local body ex: Village Panchayat or District Panchayat" },
-      "Local Gov. Name": { "action": "IGNORE", "description": "Name of the local body" },
-      "Coverage": { "action": "IGNORE", "description": "Coverage details partial(P) or full(F)" },
-      "State Code": { "action": "KEEP", "description": "State LGD Code" },
-      "Parliament Constituency Code": { "action": "KEEP", "description": "LGD Code for the parliament constituency" }
     }
   },
   {

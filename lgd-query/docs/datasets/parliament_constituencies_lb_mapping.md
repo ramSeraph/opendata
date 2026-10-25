@@ -1,6 +1,6 @@
 # parliament_constituencies_lb_mapping
 
-This legacy report links parliamentary constituencies to named
+This report links parliamentary constituencies to named
 assembly constituencies and local bodies, with a body-type name,
 state and coverage flag. The parliamentary reference is coded; assembly
 and local-body references are names. Those names identify reported
@@ -9,8 +9,10 @@ from spelling alone.
 
 State and full/partial coverage are attributes. Simultaneous `F`/`P`
 claims become one association with NULL coverage, with both originals
-recoverable; literal blank coverage remains blank. The retained
-source ends in December 2022, so its links describe a historical report.
+recoverable; literal blank coverage remains blank. The retained historical
+collection ends in December 2022. The scraper has been restored for current
+reports; inspect each export's source date. The collection gap does not
+establish that the links stayed unchanged.
 
 The normalized key is `(parliament_constituency_code, assembly_constituency_name,
 local_body_name, local_body_type_name)`. Exact `coverage_type='F'` or `'P'`

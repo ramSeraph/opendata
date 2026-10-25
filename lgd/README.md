@@ -35,6 +35,7 @@ for their descriptions and fields.
 | `CENTRAL_ORG_DETAILS` | `central_orgs.csv` |
 | `CENTRAL_ORG_UNITS` | `central_org_units.csv` |
 | `CONSTITUENCIES_ASSEMBLY` | `assembly_constituencies.csv` |
+| `CONSTITUENCIES_MAPPINGS_PRI` | `constituencies_mapping_pri.csv` |
 | `CONSTITUENCIES_MAPPINGS_URBAN` | `constituencies_mapping_urban.csv` |
 | `CONSTITUENCIES_PARLIAMENT` | `parliament_constituencies.csv` |
 | `CONSTITUENCY_COVERAGE` | `constituency_coverage.csv` |
@@ -44,6 +45,7 @@ for their descriptions and fields.
 | `ORG_UNIT_COVERAGE` | `org_unit_coverage.csv` |
 | `ORG_UNIT_DETAILS` | `org_unit_details.csv` |
 | `PANCHAYAT_MAPPINGS` | `gp_mapping.csv` |
+| `PARLIAMENT_CONSTITUENCIES_LOCAL_BODY_MAPPINGS` | `parliament_constituencies_lb_mapping.csv` |
 | `PINCODE_URBAN` | `pincode_urban.csv` |
 | `PINCODE_VILLAGES` | `pincode_villages.csv` |
 | `PRI_LOCAL_BODIES` | `pri_local_bodies.csv` |

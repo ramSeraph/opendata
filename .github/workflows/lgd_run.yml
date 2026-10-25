@@ -311,6 +311,20 @@ jobs:
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).PRI_LOCAL_BODIES) }}
       prerequisites: ${{ toJSON(needs) }}
 
+  CONSTITUENCIES_MAPPINGS_PRI:
+    needs: [Prepare, STATES]
+    permissions:
+      contents: write
+      actions: read
+      checks: write
+    uses: ./.github/workflows/lgd_component.yml
+    with:
+      component: CONSTITUENCIES_MAPPINGS_PRI
+      collection-date: ${{ needs.Prepare.outputs.date }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
+      assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).CONSTITUENCIES_MAPPINGS_PRI) }}
+      prerequisites: ${{ toJSON(needs) }}
+
   CONSTITUENCIES_MAPPINGS_URBAN:
     needs: [Prepare, STATES]
     permissions:
@@ -421,6 +435,20 @@ jobs:
       collection-date: ${{ needs.Prepare.outputs.date }}
       capacity-check: ${{ needs.Prepare.outputs.capacity }}
       assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).TRANSACTIONS) }}
+      prerequisites: ${{ toJSON(needs) }}
+
+  PARLIAMENT_CONSTITUENCIES_LOCAL_BODY_MAPPINGS:
+    needs: [Prepare, CONSTITUENCIES_PARLIAMENT]
+    permissions:
+      contents: write
+      actions: read
+      checks: write
+    uses: ./.github/workflows/lgd_component.yml
+    with:
+      component: PARLIAMENT_CONSTITUENCIES_LOCAL_BODY_MAPPINGS
+      collection-date: ${{ needs.Prepare.outputs.date }}
+      capacity-check: ${{ needs.Prepare.outputs.capacity }}
+      assignment: ${{ toJSON(fromJSON(needs.Prepare.outputs.plan).PARLIAMENT_CONSTITUENCIES_LOCAL_BODY_MAPPINGS) }}
       prerequisites: ${{ toJSON(needs) }}
 
   CENTRAL_ORG_UNITS:
@@ -536,7 +564,7 @@ jobs:
       prerequisites: ${{ toJSON(needs) }}
 
   Update-Listing:
-    needs: [Prepare, STATES, DISTRICTS, SUB_DISTRICTS, BLOCKS, TRADITIONAL_LOCAL_BODIES, URBAN_LOCAL_BODIES, URBAN_LOCAL_BODIES_COVERAGE, DISTRICT_PANCHAYATS, CONSTITUENCIES_PARLIAMENT, CONSTITUENCIES_ASSEMBLY, PINCODE_VILLAGES, PINCODE_URBAN, CENTRAL_ORG_DETAILS, CENTRAL_ADMIN_DEPTS, INVALIDATED_VILLAGES, PANCHAYAT_MAPPINGS, VILLAGES, BLOCK_VILLAGES, PRI_LOCAL_BODIES, CONSTITUENCIES_MAPPINGS_URBAN, PRI_LOCAL_BODY_WARDS, URBAN_LOCAL_BODY_WARDS, CONSTITUENCY_COVERAGE, TLB_VILLAGES, STATE_ORG_DETAILS, STATE_ADMIN_DEPTS, TRANSACTIONS, CENTRAL_ORG_UNITS, CENTRAL_ORG_DESIGNATIONS, CENTRAL_ADMIN_DEPT_UNITS, STATE_ORG_UNITS, STATE_ORG_DESIGNATIONS, ORG_UNIT_COVERAGE, ORG_UNIT_DETAILS, STATE_ADMIN_DEPT_UNITS]
+    needs: [Prepare, STATES, DISTRICTS, SUB_DISTRICTS, BLOCKS, TRADITIONAL_LOCAL_BODIES, URBAN_LOCAL_BODIES, URBAN_LOCAL_BODIES_COVERAGE, DISTRICT_PANCHAYATS, CONSTITUENCIES_PARLIAMENT, CONSTITUENCIES_ASSEMBLY, PINCODE_VILLAGES, PINCODE_URBAN, CENTRAL_ORG_DETAILS, CENTRAL_ADMIN_DEPTS, INVALIDATED_VILLAGES, PANCHAYAT_MAPPINGS, VILLAGES, BLOCK_VILLAGES, PRI_LOCAL_BODIES, CONSTITUENCIES_MAPPINGS_PRI, CONSTITUENCIES_MAPPINGS_URBAN, PRI_LOCAL_BODY_WARDS, URBAN_LOCAL_BODY_WARDS, CONSTITUENCY_COVERAGE, TLB_VILLAGES, STATE_ORG_DETAILS, STATE_ADMIN_DEPTS, TRANSACTIONS, PARLIAMENT_CONSTITUENCIES_LOCAL_BODY_MAPPINGS, CENTRAL_ORG_UNITS, CENTRAL_ORG_DESIGNATIONS, CENTRAL_ADMIN_DEPT_UNITS, STATE_ORG_UNITS, STATE_ORG_DESIGNATIONS, ORG_UNIT_COVERAGE, ORG_UNIT_DETAILS, STATE_ADMIN_DEPT_UNITS]
     if: ${{ always() && needs.Prepare.result == 'success' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 20

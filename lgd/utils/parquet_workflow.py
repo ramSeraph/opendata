@@ -139,7 +139,7 @@ def prepare(client, datasets, commit):
                     source['observed_on'] < previous['daily']['observed_on']):
                 outcomes[name] = dict(status='unavailable', reason='Available source predates published data')
                 continue
-            if name == 'pri_local_body_wards':
+            if name in ('pri_local_body_wards', 'constituencies_mapping_pri'):
                 source['name_reference'] = newest_source('pri_local_bodies', assets,
                                                           through=source['observed_on'])
             identity = fingerprint(dict(dataset=name, source=source, converter=version))

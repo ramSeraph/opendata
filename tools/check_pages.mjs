@@ -216,6 +216,8 @@ try {
   assert(await evaluate(`lgdExplorer.view.edges.every(e=>e.label===(lgdExplorer.model.node(e.target).kind==='unit'?'organization membership':'parent organization'))`));
   await wait(150);
   assert((await evaluate('lgdExplorer.view.drawnNodes')) < 60, "Only paint units in the viewport");
+  assert((await evaluate('lgdExplorer.view.drawnSegments')) < 60, "Offscreen units must not add thousands of connecting lines");
+  assert((await evaluate('lgdExplorer.view.connectionTargetsVisited')) < 60, "Only visit connection targets in the viewport");
   assert((await evaluate('document.querySelectorAll("#child-list [data-jump]").length')) < 30);
   await screenshot("organization-direct-units");
   await evaluate(

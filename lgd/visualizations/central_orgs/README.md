@@ -110,10 +110,14 @@ expanded or revealed by selecting a title association from search or a saved URL
 Expanding a node shows **every immediate child**, without “Next 8” pages, a node
 limit, or a depth cutoff. Deeper branches retain their own controls. The toolbar's
 **Expand a level** opens ordinary children of all expanded cards; it does not open
-unit title associations. The layout retains all expanded records, while drawing
-only cards in the viewport and connections whose curves cross it. A connection
-remains visible even when its child card is off-screen; strokes are batched to
-keep large expanded branches responsive. At overview scales, cards become
+unit title associations. The layout retains all expanded records. Connections
+from the same parent and of the same relationship type share a vertical trunk;
+the renderer uses spatial indexes to draw only visible cards, trunks, and child
+branches. Line segments are clipped before drawing, so long dashed connections
+do not rasterize their offscreen portions. A connection remains visible when its
+child card is offscreen. Exported graph edges still contain every individual
+relationship. Selecting a visible card reuses the existing layout.
+At overview scales, cards become
 compact marks. **Fit** can fit the entire expanded branch.
 
 The inspector's child and designation lists scroll continuously through all
@@ -183,7 +187,7 @@ reporting for every record. The graph does not infer legal status or deletion.
 ## Checks
 
 ```sh
-node --test lgd/visualizations/central_orgs/model.test.cjs
+node --test lgd/visualizations/central_orgs/model.test.cjs lgd/visualizations/central_orgs/connections.test.cjs
 ```
 
 The model tests cover distinct identity namespaces, direct organization membership
@@ -192,6 +196,8 @@ designation association identity, exact unit-level joins, repeated display occur
 duplicating source rows, depth ordering and cycle handling.
 They also test Centre/state isolation with overlapping codes, scoped location
 and designation joins, coverage ownership, and empty state datasets.
+Connection tests cover large branches, viewport clipping, offscreen endpoints,
+indexed lookup, and preservation of the different relationship types.
 The build checks unique organization/unit/level IDs within each selection and
 audits details and coverage references against its unit register.
 

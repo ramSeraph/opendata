@@ -110,6 +110,8 @@ try {
   assert.equal(await evaluate('lgdExplorer.view.nodes.some(n=>n.kind==="page")'),false);
   await wait(100);
   assert((await evaluate('lgdExplorer.view.drawnNodes'))<60,'Off-screen children must not all be painted');
+  assert((await evaluate('lgdExplorer.view.drawnSegments'))<60,'Large branches must use a shared trunk and visible child connections');
+  assert((await evaluate('lgdExplorer.view.connectionTargetsVisited'))<60,'Drawing must not scan all offscreen connection targets');
   assert((await evaluate('document.querySelectorAll("#child-list [data-jump]").length'))<30,'Full child list must use a bounded number of DOM rows');
   const fullBefore=await evaluate(`({camera:lgdExplorer.camera,point:lgdExplorer.screenPoint(${JSON.stringify(largeOrg.id)})})`);
   await click('[data-toggle]');assert.equal(await evaluate('lgdExplorer.view.nodes.length'),1);

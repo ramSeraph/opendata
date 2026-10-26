@@ -103,7 +103,7 @@ The workflow template and generated daily workflow must remain in sync.
 Checks:
 
 ```sh
-node --test lgd/visualizations/central_orgs/model.test.cjs
+node --test lgd/visualizations/central_orgs/model.test.cjs lgd/visualizations/central_orgs/connections.test.cjs
 uv run --no-project --with duckdb==2.0.0 python -m unittest discover -s tools -p 'test_pages_build.py'
 ```
 

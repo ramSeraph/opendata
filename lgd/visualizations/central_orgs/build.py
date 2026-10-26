@@ -131,7 +131,8 @@ def scope_payload(connection, scope, sources, ledgers, fields, built_at):
 def write_shell(output, manifest, centre=None, *, web=False):
     """Refresh UI assets without rebuilding already verified scope bundles."""
     html = (HERE / 'index.html').read_text()
-    for token, filename in (('/*__STYLE__*/', 'style.css'), ('/*__MODEL__*/', 'model.js'), ('/*__APP__*/', 'app.js')):
+    for token, filename in (('/*__STYLE__*/', 'style.css'), ('/*__MODEL__*/', 'model.js'),
+                            ('/*__CONNECTIONS__*/', 'connections.js'), ('/*__APP__*/', 'app.js')):
         if web:
             shutil.copyfile(HERE / filename, output / filename)
             asset = f'{filename}?v={digest(HERE / filename)[:12]}'

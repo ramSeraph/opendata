@@ -131,7 +131,7 @@
     }
     const byY=nodes.slice().sort((a,b)=>a.y-b.y);
     const bounds=nodes.reduce((b,n)=>({xmax:Math.max(b.xmax,n.x+W),ymin:Math.min(b.ymin,n.y),ymax:Math.max(b.ymax,n.y+H)}),{xmax:0,ymin:Infinity,ymax:-Infinity});
-    view={nodes,edges,byId,byY,incoming,bounds,drawnNodes:0,drawnEdges:0};
+    view={nodes,edges,byId,byY,incoming,bounds,connections:new LGDConnections.ConnectionIndex(edges,byId,W,H),drawnNodes:0,drawnEdges:0};
     const real=nodes.filter(n=>['org','unit','designation'].includes(n.kind));
     $('visible-count').textContent=fmt(real.length)+' records expanded';
     $('focus-title').textContent=state.focus?model.node(state.focus)?.name||model.scope.name+' organizations':model.scope.name+' organizations';
@@ -178,26 +178,21 @@
     raf=0;const ratio=window.devicePixelRatio||1;ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,width,height);ctx.translate(tx,ty);ctx.scale(zoom,zoom);
     const visible=nodesBetween(-ty/zoom,(height-ty)/zoom).filter(n=>n.x*zoom+tx+W*zoom>=0&&n.x*zoom+tx<=width);
     view.drawnNodes=0;view.drawnEdges=0;
-    // A connection can cross the viewport even when neither endpoint card is
-    // visible. Cull the curve's bounds independently, and batch strokes by style.
+    // Query shared trunks and visible branches instead of drawing thousands of
+    // overlapping curves to offscreen children. Trunks survive offscreen endpoints.
     const xmin=-tx/zoom,xmax=(width-tx)/zoom,ymin=-ty/zoom,ymax=(height-ty)/zoom;
-    const edgeGroups=new Map();
-    if(zoom>.18)for(const edge of view.edges){
-      const a=view.byId.get(edge.source),b=view.byId.get(edge.target),ax=a.x+W,ay=a.y+H/2,bx=b.x,by=b.y+H/2;
-      if(bx<xmin||ax>xmax||Math.max(ay,by)<ymin||Math.min(ay,by)>ymax)continue;
-      const dashed=/membership|title|designation/.test(edge.label),style=edge.association_id?'title':dashed?'association':'parent';
-      if(!edgeGroups.has(style))edgeGroups.set(style,[]);
-      edgeGroups.get(style).push({edge,ax,ay,bx,by,dashed});
-    }
-    for(const [style,connections] of edgeGroups){
-      ctx.strokeStyle=style==='title'?'#bc9bc2':style==='association'?'#b7c5d2':'#9cabbc';ctx.lineWidth=1.3;ctx.setLineDash(connections[0].dashed?[4,4]:[]);ctx.beginPath();
-      for(const {ax,ay,bx,by} of connections){ctx.moveTo(ax,ay);ctx.bezierCurveTo(ax+42,ay,bx-42,by,bx,by);}
+    const connections=zoom>.18&&view.connections?view.connections.query({xmin,xmax,ymin,ymax}):{segments:[],branches:[],groupsVisited:0,targetsVisited:0};
+    view.drawnEdges=connections.branches.length;view.drawnSegments=connections.segments.length;
+    view.connectionGroupsVisited=connections.groupsVisited;view.connectionTargetsVisited=connections.targetsVisited;
+    for(const style of ['parent','association','title']){
+      ctx.strokeStyle=style==='title'?'#bc9bc2':style==='association'?'#b7c5d2':'#9cabbc';ctx.lineWidth=1.3;ctx.setLineDash(style==='parent'?[]:[4,4]);ctx.beginPath();
+      for(const s of connections.segments)if(s.style===style){ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);}
       ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();
-      for(const {bx,by} of connections)if(bx>=xmin&&bx<=xmax&&by>=ymin&&by<=ymax){ctx.moveTo(bx,by);ctx.lineTo(bx-5,by-3);ctx.lineTo(bx-5,by+3);ctx.closePath();}
-      ctx.fill();view.drawnEdges+=connections.length;
-      if(state.labels&&zoom>.32)for(const {edge,ax,ay,bx,by} of connections){
-        const lx=(ax+bx)/2,midY=(ay+by)/2;if(!edge.label||lx<xmin||lx>xmax||midY<ymin-30||midY>ymax+30)continue;
-        ctx.font='10px -apple-system, sans-serif';const lines=wrap(edge.label,DX-W-12,3),ly=midY-(lines.length-1)*6;ctx.textAlign='center';
+      for(const b of connections.branches)if(b.style===style&&b.x>=xmin&&b.x<=xmax){ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-5,b.y-3);ctx.lineTo(b.x-5,b.y+3);ctx.closePath();}
+      ctx.fill();
+      if(state.labels&&zoom>.32)for(const {edge,labelX:lx,y,style:branchStyle} of connections.branches){
+        if(branchStyle!==style||!edge.label||lx<xmin||lx>xmax)continue;
+        ctx.font='10px -apple-system, sans-serif';const lines=wrap(edge.label,DX-W-12,3),ly=y-(lines.length-1)*6;ctx.textAlign='center';
         lines.forEach((line,i)=>{const tw=ctx.measureText(line).width,y=ly+i*12;ctx.fillStyle='#f8fafc';ctx.fillRect(lx-tw/2-3,y-14,tw+6,13);ctx.fillStyle='#657789';ctx.fillText(line,lx,y-5);});ctx.textAlign='left';
       }
     }
@@ -226,7 +221,7 @@
     state.selected=id;resetInspect();enableKind(n);
     if(reveal&&['designation-group','designation-level'].includes(n.kind))state.open.add(id);
     if(reveal){const path=model.ancestors(id);if(isTitle(n)&&!n.unitId&&(!model.node(state.focus)||!isTitle(model.node(state.focus))))state.focus='designations:'+n.org;else if(!state.focus||!path.includes(state.focus))state.focus=path.find(p=>model.node(p).kind==='org')||id;openPath(id);}
-    refresh(reveal,id);inspect();saveHash();
+    if(reveal)refresh(true,id);else requestDraw();inspect();saveHash();
   }
   function toggleTitles(id){const n=model.node(id);if(n?.kind!=='unit'||!titleCount(n))return;if(state.titlesOpen.has(id)&&state.includeDesignations)state.titlesOpen.delete(id);else{state.titlesOpen.add(id);state.includeDesignations=true;$('show-designations').checked=true;}refresh(false,id);inspect();}
   function showLocation(id){toggleReference(id,'location');}

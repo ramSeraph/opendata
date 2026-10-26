@@ -122,20 +122,12 @@
         if (cycle || this.parent.has(e.target)) { this.issues.push({kind: 'non-tree relationship', ...e}); continue; }
         this.parent.set(e.target, e.source); this.append(this.children, e.source, e.target);
       }
-      // Large sets without reported unit parents are visual groups, not LGD nodes.
-      const roots = new Map();
-      for (const n of this.nodes.values()) if (n.kind === 'unit' && !this.parent.has(n.id)) this.append(roots, key(n.org, n.raw.organization_level_code || ''), n.id);
-      for (const [groupKey, ids] of roots) {
-        const [org, level] = JSON.parse(groupKey), owner = 'org:' + org;
-        if (!this.nodes.has(owner)) continue;
-        if (ids.length <= 3) for (const id of ids) {this.parent.set(id, owner); this.append(this.children, owner, id);}
-        else {
-          const names = [...new Set(this.levelNames.get(key(org, level)) || [])].filter(Boolean);
-          const name = names.join(' / ') || (level ? 'Unit level ' + level : 'Units without a level');
-          const group = {id: 'group:' + groupKey, code: level, kind: 'group', name, type: 'No parent unit reported', count: ids.length, org, raw: {organization_level_code: level}};
-          this.add(group); this.parent.set(group.id, owner); this.append(this.children, owner, group.id);
-          for (const id of ids) {this.parent.set(id, group.id); this.append(this.children, group.id, id);}
-        }
+      // Place remaining unit roots directly under their organization by membership.
+      // This display attachment does not create a reported parent-unit edge.
+      for (const n of this.nodes.values()) {
+        if (n.kind !== 'unit' || this.parent.has(n.id)) continue;
+        const owner = 'org:' + n.org;
+        if (this.nodes.has(owner)) this.attach(owner, n.id);
       }
       // A designation row associates a title with an organization and a level.
       // Display folders keep that association separate from organization/unit parents.
@@ -191,7 +183,7 @@
       } catch {return;}
     }
     parentId(id) {return this.node(id)?.unitId || this.parent.get(id);}
-    childIds(id, includeUnits = true, includeDesignations = true) {return (this.children.get(id) || []).filter(k => {const kind=this.node(k).kind;return (includeUnits || !['unit','group'].includes(kind)) && (includeDesignations || !['designation','designation-group','designation-level'].includes(kind));});}
+    childIds(id, includeUnits = true, includeDesignations = true) {return (this.children.get(id) || []).filter(k => {const kind=this.node(k).kind;return (includeUnits || kind !== 'unit') && (includeDesignations || !['designation','designation-group','designation-level'].includes(kind));});}
     designationLevelIds(n) {return n.kind === 'unit' && valid(n.raw.organization_level_code) ? this.designationLevels.get(key(n.org, n.raw.organization_level_code)) || [] : [];}
     unitDesignationIds(n) {
       return this.designationLevelIds(n).flatMap(id=>this.children.get(id)||[]).sort((a,b)=>compare(this.node(a),this.node(b))).map(id=>unitDesignationId(n.id,id));

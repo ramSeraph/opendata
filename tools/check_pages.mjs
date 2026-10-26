@@ -208,6 +208,16 @@ try {
     ),
     "../",
   );
+  assert.equal(await evaluate(`[...lgdExplorer.model.nodes.values()].some(n=>n.kind==='group')`), false);
+  const largeOrg = await evaluate(`lgdExplorer.model.organizations.map(n=>({id:n.id,count:lgdExplorer.model.displayChildIds(n.id).length})).sort((a,b)=>b.count-a.count)[0]`);
+  assert(largeOrg.count > 10000, "Exercise a large organization without grouping nodes");
+  await evaluate(`lgdExplorer.focus(${JSON.stringify(largeOrg.id)})`);
+  assert.equal(await evaluate('lgdExplorer.view.nodes.length'), largeOrg.count + 1);
+  assert(await evaluate(`lgdExplorer.view.edges.every(e=>e.label===(lgdExplorer.model.node(e.target).kind==='unit'?'organization membership':'parent organization'))`));
+  await wait(150);
+  assert((await evaluate('lgdExplorer.view.drawnNodes')) < 60, "Only paint units in the viewport");
+  assert((await evaluate('document.querySelectorAll("#child-list [data-jump]").length')) < 30);
+  await screenshot("organization-direct-units");
   await evaluate(
     `document.getElementById('search').value='depatment telecomunication';document.getElementById('search').dispatchEvent(new Event('input'))`,
   );

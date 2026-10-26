@@ -86,15 +86,25 @@ test('organization membership and unit parent are distinct, with separate ID nam
   assert.equal(m.edges.find(e=>e.target==='unit:2').relation,'parent unit');
   assert.notEqual(m.node('org:1'),m.node('unit:1'));
 });
-test('grouping root units never fabricates source parent-unit edges',()=>{
-  const units=[unit('1'),unit('2'),unit('3'),unit('4')];
-  const m=new Model(payload({central_orgs:[org('1')],central_org_units:units}));
-  const groups=[...m.nodes.values()].filter(n=>n.kind==='group');
-  assert.equal(groups.length,1);assert.equal(groups[0].count,4);
-  assert.equal(m.edges.filter(e=>e.relation==='parent unit').length,0);
-  assert.equal(m.ownership.length,4);
-  assert.equal(m.childIds(groups[0].id).length,4);
-  assert.equal(m.childIds('org:1',false).length,0);
+test('root units attach directly to their organization while reported parent units stay intact',()=>{
+  const units=[unit('1'),unit('2'),unit('3'),unit('4'),unit('5','','20'),unit('6','1'),unit('7','999'),{...unit('8'),organization_code:'2'}];
+  for (const prefix of ['central','state']) {
+    const p=payload({[prefix+'_orgs']:[org('1'),org('2')],[prefix+'_org_units']:units});
+    p.scope={code:prefix==='central'?'0':'28',name:prefix};
+    const m=new Model(p);
+    assert.equal([...m.nodes.values()].some(n=>n.kind==='group'),false);
+    assert.deepEqual(m.displayChildIds('org:1'),['unit:1','unit:2','unit:3','unit:4','unit:5','unit:999']);
+    assert.deepEqual(m.displayChildIds('org:2'),['unit:8']);
+    assert.equal(m.parentId('unit:6'),'unit:1');
+    assert.equal(m.parentId('unit:7'),'unit:999');
+    assert.equal(m.node('unit:999').reference,true);
+    assert.deepEqual(m.edges.map(e=>[e.source,e.target,e.relation]),[
+      ['unit:1','unit:6','parent unit'],['unit:999','unit:7','parent unit']
+    ]);
+    assert.equal(m.ownership.length,units.length);
+    assert.deepEqual(m.rows(prefix+'_org_units'),units,'Source rows must stay unchanged');
+    assert.deepEqual(m.childIds('org:1',false),[]);
+  }
 });
 test('location lookup uses both entity type and code; mismatched details remain raw',()=>{
   const details=[{...unit('1'),state_code:'0',entity_type:'2',entity_code:'51466',entity_type_name:'District',entity_name:'Wrong entity'}];

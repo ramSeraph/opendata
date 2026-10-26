@@ -96,8 +96,6 @@
     if (child.kind==='designation-group') return 'designation associations';
     if (child.kind==='designation-level') return 'reported title level';
     if (child.kind==='designation') return 'title at this level';
-    if (parent.kind==='group') return 'no parent unit reported';
-    if (child.kind==='group') return 'members, grouped by level';
     if (parent.kind==='org' && child.kind==='unit') return 'organization membership';
     return child.kind==='org' ? 'parent organization' : 'parent unit';
   }
@@ -187,7 +185,7 @@
     if(zoom>.18)for(const edge of view.edges){
       const a=view.byId.get(edge.source),b=view.byId.get(edge.target),ax=a.x+W,ay=a.y+H/2,bx=b.x,by=b.y+H/2;
       if(bx<xmin||ax>xmax||Math.max(ay,by)<ymin||Math.min(ay,by)>ymax)continue;
-      const dashed=/membership|grouped|no parent|title|designation/.test(edge.label),style=edge.association_id?'title':dashed?'association':'parent';
+      const dashed=/membership|title|designation/.test(edge.label),style=edge.association_id?'title':dashed?'association':'parent';
       if(!edgeGroups.has(style))edgeGroups.set(style,[]);
       edgeGroups.get(style).push({edge,ax,ay,bx,by,dashed});
     }
@@ -207,12 +205,12 @@
     for(const n of visible){
       if(zoom<.25){const pixel=Math.round(n.x*zoom+tx)+':'+Math.round(n.y*zoom+ty)+':'+n.kind;if(pixels.has(pixel))continue;pixels.add(pixel);ctx.fillStyle=color(n);ctx.fillRect(n.x,n.y,W,Math.max(H,1/zoom));view.drawnNodes++;continue;}
       view.drawnNodes++;
-      const selected=n.id===state.selected,displayGroup=['group','designation-group','designation-level'].includes(n.kind);
-      ctx.fillStyle=displayGroup?(isTitle(n)?'#f7f2f8':'#f2f5f8'):'#ffffff';ctx.strokeStyle=selected?color(n):'#d3dde6';ctx.lineWidth=selected?2.3:1;ctx.setLineDash(n.reference||displayGroup?[5,4]:[]);ctx.beginPath();ctx.roundRect(n.x,n.y,W,H,9);ctx.fill();ctx.stroke();ctx.setLineDash([]);
+      const selected=n.id===state.selected,displayGroup=['designation-group','designation-level'].includes(n.kind);
+      ctx.fillStyle=displayGroup?'#f7f2f8':'#ffffff';ctx.strokeStyle=selected?color(n):'#d3dde6';ctx.lineWidth=selected?2.3:1;ctx.setLineDash(n.reference||displayGroup?[5,4]:[]);ctx.beginPath();ctx.roundRect(n.x,n.y,W,H,9);ctx.fill();ctx.stroke();ctx.setLineDash([]);
       ctx.fillStyle=color(n);ctx.beginPath();ctx.roundRect(n.x,n.y,4,H,[9,0,0,9]);ctx.fill();
-      ctx.fillStyle=color(n);ctx.font='600 9px -apple-system, sans-serif';const tag=n.kind==='group'?'DISPLAY GROUP · NO PARENT UNIT':(n.type||n.kind).toUpperCase()+(n.reference?' · REFERENCE':'');ctx.fillText(tag.slice(0,43),n.x+14,n.y+17);
+      ctx.fillStyle=color(n);ctx.font='600 9px -apple-system, sans-serif';const tag=(n.type||n.kind).toUpperCase()+(n.reference?' · REFERENCE':'');ctx.fillText(tag.slice(0,43),n.x+14,n.y+17);
       ctx.font='500 12px -apple-system, sans-serif';ctx.fillStyle='#253749';wrap(n.name,W-32,2).forEach((line,i)=>ctx.fillText(line,n.x+14,n.y+35+i*16));
-      ctx.font='10px ui-monospace, monospace';ctx.fillStyle='#81909e';let foot=n.kind==='group'?fmt(n.count)+' members · level '+(n.code||'blank'):n.kind==='designation-group'?fmt(n.count)+' associations':n.kind==='designation-level'?fmt(n.count)+' titles'+(LGDGraph.valid(n.code)?' · level '+n.code:''):n.kind==='designation'?[n.code,titleLevelLabel(n)].filter(Boolean).join(' · '):n.kind==='org'?n.code+' · depth '+n.organizationDepth:n.code;
+      ctx.font='10px ui-monospace, monospace';ctx.fillStyle='#81909e';let foot=n.kind==='designation-group'?fmt(n.count)+' associations':n.kind==='designation-level'?fmt(n.count)+' titles'+(LGDGraph.valid(n.code)?' · level '+n.code:''):n.kind==='designation'?[n.code,titleLevelLabel(n)].filter(Boolean).join(' · '):n.kind==='org'?n.code+' · depth '+n.organizationDepth:n.code;
       if(n.kind==='unit'&&model.carriedUnits.has(n.code))foot+=' · retained';ctx.fillText(foot.slice(0,43),n.x+14,n.y+70);
       for(const control of cardControls(n))cardButton(n,control);
     }
@@ -222,7 +220,7 @@
   function requestDraw(){if(!raf)raf=requestAnimationFrame(draw);}
   function refresh(shouldFit=true,anchorId=null){const before=view.byId?.get(anchorId);buildView();if(shouldFit)fit(true);else{const after=view.byId.get(anchorId);if(before&&after){tx+=(before.x-after.x)*zoom;ty+=(before.y-after.y)*zoom;}requestDraw();}}
   function resetInspect(){state.tab='meaning';state.coveragePage=0;state.coverageQuery='';state.rolesPage=0;state.childrenScroll=0;}
-  function enableKind(n){if(n?.kind==='unit'||n?.kind==='group'||n?.unitId)state.includeUnits=true;if(n&&isTitle(n))state.includeDesignations=true;$('show-units').checked=state.includeUnits;$('show-designations').checked=state.includeDesignations;}
+  function enableKind(n){if(n?.kind==='unit'||n?.unitId)state.includeUnits=true;if(n&&isTitle(n))state.includeDesignations=true;$('show-units').checked=state.includeUnits;$('show-designations').checked=state.includeDesignations;}
   function focus(id){if(id&&!model.node(id))return;enableKind(model.node(id));state.focus=id||null;state.open.clear();state.titlesOpen.clear();state.reference=null;referenceContext=null;if(id)state.open.add(id);state.selected=id||model.roots[0];resetInspect();refresh();inspect();saveHash();}
   function select(id,reveal=false){const n=node(id);if(!n)return;
     state.selected=id;resetInspect();enableKind(n);
@@ -326,7 +324,7 @@
     const start=Math.max(0,Math.floor(list.scrollTop/56)-4),end=Math.min(inspectorListIds.length,start+Math.ceil(list.clientHeight/56)+9);
     $('child-items').innerHTML=inspectorListIds.slice(start,end).map((id,i)=>{const n=model.node(id),count=childIds(id).length;return '<div role="listitem" aria-posinset="'+(start+i+1)+'" aria-setsize="'+inspectorListIds.length+'" class="virtual-child" style="top:'+((start+i)*56)+'px"><button class="child-link" data-jump="'+esc(id)+'"><i class="dot '+(isTitle(n)?'designation':n.kind==='unit'?'unit':'')+'"></i><span class="child-text"><span>'+esc(n.name)+'</span><small>'+esc([n.code||'Display group',n.kind==='designation'?titleLevelLabel(n):''].filter(Boolean).join(' · '))+'</small></span>'+(count?'<span class="count">'+fmt(count)+' ›</span>':'')+'</button></div>';}).join('');
   }
-  function childrenSection(n){const ids=childIds(n.id),label=isTitle(n)?'Reported levels / titles':n.kind==='unit'?'Child units':n.kind==='group'?'Member units':'Child organizations / member units';return '<div class="section"><h3>'+label+' · '+fmt(ids.length)+'</h3>'+(ids.length?recordList(ids,'All '+ids.length+' '+label.toLowerCase()):'<p class="muted">No children with the current filters.</p>')+'</div>';}
+  function childrenSection(n){const ids=childIds(n.id),label=isTitle(n)?'Reported levels / titles':n.kind==='unit'?'Child units':'Child organizations / member units';return '<div class="section"><h3>'+label+' · '+fmt(ids.length)+'</h3>'+(ids.length?recordList(ids,'All '+ids.length+' '+label.toLowerCase()):'<p class="muted">No children with the current filters.</p>')+'</div>';}
   function locationSection(n){
     const l=model.location(n);let html='<div id="location-section" class="section"><h3>Location reference</h3><p class="source-date">The unit supplies one entity type/code pair. Coverage is a separate list of places under Coverage.</p>'+relationship(l.typeName||'Unlabelled entity type '+(l.type||'(blank)'),'<p><strong>'+esc(l.resolved||(!l.unlabelled?l.reportedNames.join(' / '):'')||'No verified entity name available')+'</strong></p>','entity_type = '+JSON.stringify(l.type)+'; entity_code = '+JSON.stringify(l.code));
     if(l.admin)html+='<p class="source-date">Name lookup: '+esc(model.datasets.adminEntities)+', matched on both administrative_unit_level_code and administrative_unit_code. Type name: '+esc(model.datasets.adminLevels)+' or the matching details row.</p>';
@@ -346,11 +344,11 @@
     return focusButton+cardControls({...n,childCount:childIds(n.id).length,titleCount:titleCount(n)}).map(control=>'<button '+attributes[control.kind]+'="'+esc(n.id)+'"'+(control.enabled?'':' disabled')+'>'+esc(['location','coverage'].includes(control.kind)?control.label.replace(/^[+−] /,''):control.label)+'</button>').join('');
   }
   function inspect(scrollId){inspectorListIds=[];const n=model.node(state.selected);if(!n){$('inspector').innerHTML='<div class="empty-inspector">No organization records are available for '+esc(model.scope.name)+'.</div>';return;}
-    const subtitle=n.kind==='org'?'An organization. Its child organizations and member offices are separate kinds of relationship.':n.kind==='unit'?'An office or unit. Its organization, parent office, own level and location reference are separate fields.':n.kind==='designation'?'A designation title associated with this organization and reported level. It does not identify a person or confirm staffing at an office.':isTitle(n)?'A display group of designation records, organized by the level supplied in the designation report.':'A display group of member units with no reported parent unit. This is not an LGD entity or an inferred parent.';
+    const subtitle=n.kind==='org'?'An organization. Its child organizations and member offices are separate kinds of relationship.':n.kind==='unit'?'An office or unit. Its organization, parent office, own level and location reference are separate fields.':n.kind==='designation'?'A designation title associated with this organization and reported level. It does not identify a person or confirm staffing at an office.':'A display group of designation records, organized by the level supplied in the designation report.';
     const tabs=isTitle(n)?[['meaning','Relationships'],['raw','Source rows']]:[['meaning','Relationships'],...(n.kind==='unit'?[['location','Location']]:[]),['raw','Source rows'],['coverage','Coverage'],['roles','Titles']];
     if(!tabs.some(([id])=>state.tab===id))state.tab='meaning';
     const idLabel=n.kind==='org'?'Organization code':n.kind==='unit'?'Unit code':n.kind==='designation'?'Designation code':n.kind==='designation-level'&&LGDGraph.valid(n.code)?'Reported level code':null;
-    let html='<div class="inspector-header"><span class="badge '+(isTitle(n)?'designation':n.kind==='unit'?'unit':n.kind==='group'?'group':'')+'">'+esc(n.type||n.kind)+'</span>'+(n.reference?'<span class="badge warn">Reference only</span>':'')+'<h2>'+esc(n.name)+'</h2><div class="id-line">'+(idLabel?esc(idLabel)+' <code>'+esc(n.code||'(blank)')+'</code>':'Display group')+'</div><p>'+subtitle+'</p><div class="inspector-actions '+(n.kind==='unit'?'unit-actions':'')+'">'+inspectorActions(n)+'</div></div><div class="tabs">'+tabs.map(([id,label])=>'<button data-tab="'+id+'" class="'+(state.tab===id?'active':'')+'">'+label+'</button>').join('')+'</div><div class="inspector-body">';
+    let html='<div class="inspector-header"><span class="badge '+(isTitle(n)?'designation':n.kind==='unit'?'unit':'')+'">'+esc(n.type||n.kind)+'</span>'+(n.reference?'<span class="badge warn">Reference only</span>':'')+'<h2>'+esc(n.name)+'</h2><div class="id-line">'+(idLabel?esc(idLabel)+' <code>'+esc(n.code||'(blank)')+'</code>':'Display group')+'</div><p>'+subtitle+'</p><div class="inspector-actions '+(n.kind==='unit'?'unit-actions':'')+'">'+inspectorActions(n)+'</div></div><div class="tabs">'+tabs.map(([id,label])=>'<button data-tab="'+id+'" class="'+(state.tab===id?'active':'')+'">'+label+'</button>').join('')+'</div><div class="inspector-body">';
     if(state.tab==='meaning'){
       if(n.reference)html+='<div class="notice">This identifier is referenced by another report, but has no independent row in the main organization or unit directory. The graph preserves the reference.</div>';
       if(n.kind==='org'){
@@ -380,7 +378,7 @@
         if(n.kind!=='designation')html+='<p>'+fmt(n.count)+' designation association'+(n.count===1?'':'s')+'. These display groups are not offices or additional organization records.</p>';
         else if(!n.unitId){const matches=model.unitsForDesignation(n);if(matches.length)html+=relationship('Units with this organization and level',matches.slice(0,8).map(id=>jump(LGDGraph.unitDesignationId(id,n.id),model.node(id).name)).join('')+(matches.length>8?'<p>'+fmt(matches.length)+' matching units; first 8 shown.</p>':''),'organization_code + organization_level_code');}
         html+=sourceDate(model.datasets.designations);
-      } else html+='<div class="notice">'+fmt(n.count)+' units share an organizational level and lack a reported parent unit. This grouping adds no source relationship.</div>';
+      }
       if(n.kind!=='designation')html+=childrenSection(n);
     } else if(state.tab==='location'){html+=locationSection(n);
     } else if(state.tab==='raw'){
@@ -394,7 +392,6 @@
         const l=model.location(n);if(l.level)html+=rawSection(model.datasets.adminLevels,[l.level]);if(l.admin)html+=rawSection(model.datasets.adminEntities,[l.admin]);
         if(!all.length)html+='<p class="muted">No corresponding unit-details row was supplied.</p>';
       }else if(isTitle(n)){html+=rawSection(model.datasets.designations,roles(n),n.kind==='designation'?'One reported title–organization–level association. The same designation code can occur in other associations.':'Source rows behind this display group; every supplied level code and name is preserved.');if(n.unitId)html+=rawSection(model.datasets.units,[model.node(n.unitId).raw],'The unit row matches this designation on organization_code and its own organization_level_code.');}
-      else html+=fieldRows(n.raw)+'<p class="source-date">This is a display group, not a source row.</p>';
     } else if(state.tab==='coverage'){
       const all=claims(n),supplied=all.filter(r=>r.coverage_details_reported==='true'),missing=all.length-supplied.length;
       const matcher=LGDGraph.createSearchMatcher(state.coverageQuery),filtered=state.coverageQuery.trim()?all.filter(r=>matcher.test([r.covered_entity_name,r.covered_entity_code,r.covered_entity_type,r.organization_unit_name].join(' '))):all;
@@ -417,7 +414,7 @@
   function search(){const query=$('search').value.trim();$('search-results').hidden=!query;$('browse-panel').hidden=Boolean(query);if(!query)return;const matches=model.search(query,state.searchKind);$('search-results').innerHTML='<p class="result-count">'+fmt(matches.length)+' matches'+(matches.length>60?' · first 60 shown':'')+'</p>'+matches.slice(0,60).map(n=>'<button class="result-item" data-jump="'+esc(n.id)+'"><i class="dot '+(isTitle(n)?'designation':n.kind==='unit'?'unit':'')+'"></i><span><span class="name">'+esc(n.name)+'</span><small>'+esc(n.kind==='unit'?'Unit':n.type)+' · '+esc(n.code)+(n.org?' · organization '+esc(n.org):' · depth '+n.organizationDepth)+(n.kind==='designation'&&titleLevelLabel(n)?' · '+esc(titleLevelLabel(n)):'')+'</small></span></button>').join('');}
   function download(content,name,type='application/json'){const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
   function csv(dataset){const t=payload.tables[dataset],quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';download([t.fields,...t.rows].map(row=>row.map(quote).join(',')).join('\r\n'),dataset+'.csv','text/csv;charset=utf-8');}
-  function sources(){const rows=Object.entries(payload.sources).map(([d,s])=>'<tr><td><code>'+esc(d)+'</code><br><small>'+esc(sourceUse[d])+'</small></td><td>'+nice(s.date)+'</td><td>'+fmt(s.rows)+'</td><td><button data-csv="'+d+'">CSV</button></td></tr>').join('');$('sources-content').innerHTML='<table class="source-table"><thead><tr><th>Dataset and use</th><th>Collected</th><th>Included rows</th><th>Export</th></tr></thead><tbody>'+rows+'</tbody></table><div class="notice">Dashed organization cards are referenced identifiers without a standalone organization row. Grey unit groups are display aids for units with no reported parent. Neither is presented as an invented directory record.</div><p class="muted">Only latest current tables are included. The latest observation metadata identifies retained units that were not freshly supplied. No historical version series is included.</p>';$('sources-dialog').showModal();}
+  function sources(){const rows=Object.entries(payload.sources).map(([d,s])=>'<tr><td><code>'+esc(d)+'</code><br><small>'+esc(sourceUse[d])+'</small></td><td>'+nice(s.date)+'</td><td>'+fmt(s.rows)+'</td><td><button data-csv="'+d+'">CSV</button></td></tr>').join('');$('sources-content').innerHTML='<table class="source-table"><thead><tr><th>Dataset and use</th><th>Collected</th><th>Included rows</th><th>Export</th></tr></thead><tbody>'+rows+'</tbody></table><div class="notice">Reference cards preserve identifiers without a standalone directory row. Dashed organization membership connections show which organization a unit belongs to; they do not identify a parent office.</div><p class="muted">Only latest current tables are included. The latest observation metadata identifies retained units that were not freshly supplied. No historical version series is included.</p>';$('sources-dialog').showModal();}
   function zoomAt(factor,x=width/2,y=height/2){const z=Math.min(2.5,Math.max(.000005,zoom*factor));tx=x-(x-tx)*z/zoom;ty=y-(y-ty)*z/zoom;zoom=z;requestDraw();}
   function hit(x,y){const wx=(x-tx)/zoom,wy=(y-ty)/zoom;return nodesBetween(wy,wy).find(n=>wx>=n.x&&wx<=n.x+W&&wy>=n.y&&wy<=n.y+H);}
   let drag=null;
@@ -447,7 +444,7 @@
   $('overview-button').onclick=()=>focus(null);$('up-button').onclick=()=>focus(model.parentId(state.focus)||null);
   $('sources-button').onclick=sources;$('close-sources').onclick=()=>$('sources-dialog').close();
   $('download-data').onclick=()=>download(bytes,'lgd-scope-'+state.scope+'-current-data.json.gz','application/gzip');
-  $('download-view').onclick=()=>download(JSON.stringify({scope:model.scope,sources:payload.sources,openReference:state.reference,nodes:view.nodes.map(({x,y,depth,...n})=>n),edges:view.edges,notes:'Display groups are not LGD entities. Location and coverage are separate unit reference boxes, not hierarchy nodes; source details are available in the inspector. Title edges are independently expanded associations, not child offices. Designations associate titles with an organization and reported level, not people or office staffing.'},null,2),'lgd-scope-'+state.scope+'-visible-graph.json');
+  $('download-view').onclick=()=>download(JSON.stringify({scope:model.scope,sources:payload.sources,openReference:state.reference,nodes:view.nodes.map(({x,y,depth,...n})=>n),edges:view.edges,notes:'Organization membership connections do not identify parent offices. Designation groups organize source records. Location and coverage are separate unit reference boxes, not hierarchy nodes; source details are available in the inspector. Title edges are independently expanded associations, not child offices. Designations associate titles with an organization and reported level, not people or office staffing.'},null,2),'lgd-scope-'+state.scope+'-visible-graph.json');
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.reference&&!$('sources-dialog').open){closeReference();e.preventDefault();return;}if(loadingScope||!model||e.target.closest('#child-list, #reference-panel')||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;if(e.key==='/'){e.preventDefault();$('search').focus();}else if(e.key==='ArrowRight'){e.preventDefault();state.open.add(state.selected);refresh(false,state.selected);inspect();}else if(e.key==='ArrowLeft'){e.preventDefault();if(state.open.has(state.selected)){state.open.delete(state.selected);refresh(false,state.selected);inspect();}else{const p=model.parentId(state.selected);if(p)select(p,true);}}else if(e.key==='Enter'&&e.target===canvas)focus(state.selected);});
   new ResizeObserver(()=>{const box=$('canvas-wrap').getBoundingClientRect();width=box.width;height=box.height;const ratio=window.devicePixelRatio||1;canvas.width=Math.round(width*ratio);canvas.height=Math.round(height*ratio);requestDraw();}).observe($('canvas-wrap'));
   $('scope-select').addEventListener('change',e=>changeScope(e.target.value));

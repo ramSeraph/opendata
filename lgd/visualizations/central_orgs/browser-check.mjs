@@ -101,19 +101,22 @@ try {
   const cameraExpanded=await evaluate('({camera:lgdExplorer.camera,point:lgdExplorer.screenPoint("org:2143")})');
   assert.equal(cameraExpanded.camera.zoom,cameraBefore.camera.zoom,'Expand must preserve user zoom');
   assert(Math.abs(cameraExpanded.point.x-cameraBefore.point.x)<.01&&Math.abs(cameraExpanded.point.y-cameraBefore.point.y)<.01,'Expand must keep the clicked node in place');
-  const group=await evaluate(`([...lgdExplorer.model.nodes.values()].find(n=>n.kind==='group'&&n.count===18005)).id`);
-  const largeExpansionMs=await evaluate(`(async()=>{const started=performance.now();lgdExplorer.focus(${JSON.stringify(group)});await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return performance.now()-started;})()`);
-  assert.equal(await evaluate('lgdExplorer.view.nodes.filter(n=>n.kind==="unit").length'),18005,'All children must expand together');
+  assert.equal(await evaluate(`[...lgdExplorer.model.nodes.values()].some(n=>n.kind==='group')`),false);
+  const largeOrg=await evaluate(`lgdExplorer.model.organizations.map(n=>({id:n.id,count:lgdExplorer.model.displayChildIds(n.id).length})).sort((a,b)=>b.count-a.count)[0]`);
+  assert(largeOrg.count>=18005,'Exercise an organization with many direct children');
+  const largeExpansionMs=await evaluate(`(async()=>{const started=performance.now();lgdExplorer.focus(${JSON.stringify(largeOrg.id)});await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return performance.now()-started;})()`);
+  assert.equal(await evaluate('lgdExplorer.view.nodes.length'),largeOrg.count+1,'All direct children must expand together');
+  assert(await evaluate(`lgdExplorer.view.edges.every(e=>e.label===(lgdExplorer.model.node(e.target).kind==='unit'?'organization membership':'parent organization'))`),'Organization membership must remain distinct from reported parent edges');
   assert.equal(await evaluate('lgdExplorer.view.nodes.some(n=>n.kind==="page")'),false);
   await wait(100);
   assert((await evaluate('lgdExplorer.view.drawnNodes'))<60,'Off-screen children must not all be painted');
   assert((await evaluate('document.querySelectorAll("#child-list [data-jump]").length'))<30,'Full child list must use a bounded number of DOM rows');
-  const fullBefore=await evaluate(`({camera:lgdExplorer.camera,point:lgdExplorer.screenPoint(${JSON.stringify(group)})})`);
+  const fullBefore=await evaluate(`({camera:lgdExplorer.camera,point:lgdExplorer.screenPoint(${JSON.stringify(largeOrg.id)})})`);
   await click('[data-toggle]');assert.equal(await evaluate('lgdExplorer.view.nodes.length'),1);
-  await click('[data-toggle]');assert.equal(await evaluate('lgdExplorer.view.nodes.length'),18006);
-  const fullAfter=await evaluate(`({camera:lgdExplorer.camera,point:lgdExplorer.screenPoint(${JSON.stringify(group)})})`);
+  await click('[data-toggle]');assert.equal(await evaluate('lgdExplorer.view.nodes.length'),largeOrg.count+1);
+  const fullAfter=await evaluate(`({camera:lgdExplorer.camera,point:lgdExplorer.screenPoint(${JSON.stringify(largeOrg.id)})})`);
   assert.equal(fullAfter.camera.zoom,fullBefore.camera.zoom);assert(Math.abs(fullAfter.point.x-fullBefore.point.x)<.01&&Math.abs(fullAfter.point.y-fullBefore.point.y)<.01,'Full expansion must preserve the clicked node position');
-  const lastChild=await evaluate(`lgdExplorer.model.displayChildIds(${JSON.stringify(group)}).at(-1)`);
+  const lastChild=await evaluate(`lgdExplorer.model.displayChildIds(${JSON.stringify(largeOrg.id)}).at(-1)`);
   await evaluate(`document.getElementById('child-list').scrollTop=document.getElementById('child-list').scrollHeight`);await wait(100);
   assert.equal(await evaluate(`document.querySelector('#child-items .virtual-child:last-child button').dataset.jump`),lastChild);
   await click('#child-items .virtual-child:last-child button');assert.equal(await evaluate('lgdExplorer.state.selected'),lastChild,'Last child must be reachable without paging');
@@ -223,7 +226,8 @@ try {
   assert.equal(titles.length,2,'Coded and blank-level associations must both be searchable');
   const blank=titles.find(n=>!n.level),coded=titles.find(n=>n.level==='5386');assert(blank&&coded);
   await evaluate(`document.querySelectorAll('#search-results [data-jump]')[${titles.indexOf(blank)}].click()`);
-  assert((await evaluate('document.getElementById("inspector").textContent')).includes('not matched to units by its level name'));
+  assert.deepEqual(await evaluate('lgdExplorer.model.unitsForDesignation(lgdExplorer.model.node(lgdExplorer.state.selected))'),[],'A blank-code title must not be matched to units by its level name');
+  assert((await evaluate('document.getElementById("inspector").textContent')).includes('Postal Head Office'),'Keep the supplied level name visible');
   await evaluate(`lgdExplorer.focus(lgdExplorer.model.parent.get(${JSON.stringify(coded.id)}))`);
   assert.equal(await evaluate(`lgdExplorer.view.nodes.filter(n=>n.kind==='designation').length`),2);
   const designationPoint=await evaluate(`lgdExplorer.screenPoint(${JSON.stringify(coded.id)})`);
@@ -351,7 +355,7 @@ try {
   assert(selectBox.left>=0&&selectBox.right<=560&&selectBox.top>=0&&selectBox.bottom<900,'Mobile selector must be visible');
   assert.equal(errors.length,0,JSON.stringify(errors));
   console.log(JSON.stringify({stateChecks:'passed',scopes:scopes.length,andhraPradesh:ap,loadTimesMs:loadTimes,checks:['Centre plus 36 states/UTs','scope-specific joins and sources','depth ordering','unit designation parent edges','per-scope view restoration','state URL reload','missing bundle recovery','rapid selection changes','180091-unit state','1121880-coverage-row state','mobile selector'],screenshot:'/private/tmp/lgd-state-graph-desktop.png'},null,2));
-  console.log(JSON.stringify({passed:true,summary,largeExpansionMs,organizationDepths:[...new Set(depths)],checks:['Kurnool connections remain visible with off-screen children','coverage placeholders omitted from count and list','canvas expand/collapse','zoom and clicked-node position preserved after pan/expand/collapse','18005 children expand without pages and preserve position','virtual child list reaches the last child','viewport rendering','location box beside the unit','coverage list toggle and filtering','last coverage row reachable','empty coverage state','reference boxes preserve the graph','independent title controls','exact-code search','source rows','coverage and titles','organization depth ordering','designation catalogue and filters','direct unit-to-designation edges','blank and coded title associations','designation selection preserves unit context','Telecommunication organization → unit → two designations','both sources for derived unit-title links','designation context survives reload','missing parent reference','unlabelled location','source downloads','responsive layout'],screenshots:['/private/tmp/lgd-central-graph-desktop.png','/private/tmp/lgd-central-graph-designations.png','/private/tmp/lgd-central-graph-mobile.png']},null,2));
+  console.log(JSON.stringify({passed:true,summary,largeOrg,largeExpansionMs,organizationDepths:[...new Set(depths)],checks:['Kurnool connections remain visible with off-screen children','coverage placeholders omitted from count and list','canvas expand/collapse','zoom and clicked-node position preserved after pan/expand/collapse','all direct organization children expand without groups or pages and preserve position','virtual child list reaches the last child','viewport rendering','location box beside the unit','coverage list toggle and filtering','last coverage row reachable','empty coverage state','reference boxes preserve the graph','independent title controls','exact-code search','source rows','coverage and titles','organization depth ordering','designation catalogue and filters','direct unit-to-designation edges','blank and coded title associations','designation selection preserves unit context','Telecommunication organization → unit → two designations','both sources for derived unit-title links','designation context survives reload','missing parent reference','unlabelled location','source downloads','responsive layout'],screenshots:['/private/tmp/lgd-central-graph-desktop.png','/private/tmp/lgd-central-graph-designations.png','/private/tmp/lgd-central-graph-mobile.png']},null,2));
 } catch(error) {
   const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
   await fs.writeFile('/private/tmp/lgd-central-graph-failure.png',Buffer.from(shot.data,'base64'));

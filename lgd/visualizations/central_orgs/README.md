@@ -37,12 +37,12 @@ current records; no observation series is included.
 
 - Organization-to-organization edges come from `parent_organization_code`.
 - Office-to-office edges come from `parent_organization_unit_code`.
-- Organization membership comes from each unit's `organization_code`. A root
-  unit without a parent office stays an organization member; it is not attached
-  to a guessed head office.
-- Large sets of units without parent offices are grey display groups, grouped
-  by their own `organization_level_code`. These are not LGD entities or new
-  source edges. Expanding a group shows all its members.
+- Organization membership comes from each unit's `organization_code`. Units
+  without a parent office appear directly under their organization, with a
+  dashed **organization membership** connection. Expanding the organization
+  shows all these units, without intermediate grouping nodes. Reported
+  parent-unit relationships remain intact, and missing parent information
+  remains visible in each unit's details.
 - Dashed reference cards preserve parents or organizations absent from their
   independent registers. They are not presented as supplied directory rows.
 - Each unit's **Location** control toggles a single box beside its card, showing
@@ -186,9 +186,9 @@ reporting for every record. The graph does not infer legal status or deletion.
 node --test lgd/visualizations/central_orgs/model.test.cjs
 ```
 
-The model tests cover distinct identity namespaces, source parent edges versus
-membership/grouping, typed location lookups, coverage multiplicity, designation
-association identity, exact unit-level joins, repeated display occurrences without
+The model tests cover distinct identity namespaces, direct organization membership
+without altering source parent edges, typed location lookups, coverage multiplicity,
+designation association identity, exact unit-level joins, repeated display occurrences without
 duplicating source rows, depth ordering and cycle handling.
 They also test Centre/state isolation with overlapping codes, scoped location
 and designation joins, coverage ownership, and empty state datasets.

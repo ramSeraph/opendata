@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LGD — Organizations, units & designations</title>
+  <style>/*__STYLE__*/</style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="brand"><span class="brand-mark">LGD</span><div><h1>Organizations & units</h1><p id="dateline">Reading the latest available reports…</p></div></div>
+    <div class="header-actions"><span id="totals"></span><button id="sources-button">Data sources</button></div>
+  </header>
+  <main class="workspace">
+    <aside class="navigator">
+      <div class="scope-picker"><label for="scope-select">Centre / State / Union Territory</label><select id="scope-select" aria-describedby="scope-status"><option value="0">Centre</option></select><p id="scope-status" role="status" aria-live="polite"></p></div>
+      <div class="nav-top"><h2>Find a record</h2><label class="search-box"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Name or LGD code" autocomplete="off" aria-label="Search organizations, units and designations" aria-describedby="search-help"><kbd>/</kbd></label><p id="search-help" class="search-help">Names allow small typos · codes stay exact</p>
+        <div class="segmented" id="search-kinds"><button data-kind="all" class="active">All</button><button data-kind="org">Organizations</button><button data-kind="unit">Units</button><button data-kind="designation">Titles</button></div>
+      </div>
+      <div id="search-results" class="search-results" hidden></div>
+      <div id="browse-panel">
+        <div id="examples" class="examples"></div>
+        <div class="browse-heading"><h2>Organizations</h2><button id="overview-button" class="text-button">View all</button></div>
+        <p class="browse-order">Top levels first · alphabetical within each depth</p>
+        <div id="organizations" class="organization-list"></div>
+      </div>
+      <div class="nav-note"><strong>Which government?</strong><p>The selection follows the organization’s government. Central offices remain under Centre, wherever they are located.</p><p>An organization, an office, and its referenced entity have separate identifiers. Choose a card to inspect their relationships.</p></div>
+    </aside>
+    <section class="graph-pane" aria-label="Interactive hierarchy">
+      <div class="graph-heading"><div><span class="eyebrow">Parent–child explorer</span><h2 id="focus-title">Loading…</h2></div><button id="up-button" title="Focus on the parent">↑ Parent</button></div>
+      <nav id="breadcrumbs" class="breadcrumbs" aria-label="Hierarchy path"></nav>
+      <div class="toolbar"><div class="toggles"><label><input id="show-units" type="checkbox" checked> Units</label><label><input id="show-designations" type="checkbox" checked> Title branches</label><label><input id="show-labels" type="checkbox" checked> Edge labels</label></div><div class="tools"><button id="collapse-button">Collapse</button><button id="expand-button" title="Open all immediate children of each visible node. Title branches have their own controls.">Expand a level</button><button id="fit-button">Fit</button></div></div>
+      <div id="canvas-wrap" class="canvas-wrap"><canvas id="graph" tabindex="0" aria-label="Organization and unit hierarchy. Select a node or use the search and child links to navigate."></canvas><div id="reference-panel" class="reference-panel" role="region" aria-label="Unit reference" hidden></div><div id="loading" class="loading"><div class="spinner"></div><strong>Opening the directory</strong><span>Loading the selected Centre or state.</span></div><div id="hover-tip" hidden></div><div class="zoom-buttons"><button id="zoom-out" aria-label="Zoom out">−</button><span id="zoom-label">100%</span><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
+      <div class="graph-footer"><div class="legend"><span><i class="org-dot"></i>Organization</span><span><i class="unit-dot"></i>Office / unit</span><span><i class="designation-dot"></i>Designation association</span><span><i class="group-dot"></i>Display group</span></div><span id="visible-count"></span></div>
+      <div class="graph-help"><b>+ count</b> opens all children · <b>Titles</b> opens designations · <b>Location / Coverage</b> toggles a box beside the unit · Drag to pan · Scroll to zoom</div>
+    </section>
+    <aside id="inspector" class="inspector" aria-label="Selected record"><div class="empty-inspector">Select an organization or unit to inspect its relationships.</div></aside>
+  </main>
+  <dialog id="sources-dialog"><div class="dialog-heading"><div><span class="eyebrow">Latest snapshots only</span><h2>Data behind the selected scope</h2></div><button id="close-sources" aria-label="Close data sources">×</button></div><p>The organization and unit registers define the hierarchy. Other reports supply details, administrative entities, titles and coverage claims. Each report retains its own collection date.</p><div id="sources-content"></div><div class="dialog-actions"><button id="download-data">Download selected scope’s data</button><button id="download-view">Download visible graph</button></div><p class="muted">The folder works offline. Nothing is uploaded. Source rows preserve names, blanks, disagreements and coverage multiplicity.</p></dialog>
+  <script id="scope-index" type="application/json">__SCOPES__</script>
+  <script id="packed-data" type="application/octet-stream">__PAYLOAD__</script>
+  <script>/*__MODEL__*/</script>
+  <script>/*__APP__*/</script>
+</body>
+</html>

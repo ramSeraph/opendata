@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>LGD datasets · Open data</title>
+    <meta
+      name="description"
+      content="Download current LGD Parquet files and schemas directly from this site, with CORS access for other webpages."
+    />
+    <link
+      rel="canonical"
+      href="https://ramseraph.github.io/opendata/lgd/datasets/"
+    />
+    <link rel="icon" href="/opendata/assets/images/favicon.png" />
+    <link rel="stylesheet" href="/opendata/assets/css/site.css" />
+    <script defer src="/opendata/assets/js/catalogue.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="wordmark" href="/opendata/" aria-label="Open data home"
+          ><svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true">
+            <path
+              d="M8 7v18h17M8 7h17v18"
+              fill="none"
+              stroke="#82a28c"
+              stroke-width="1.4"
+            />
+            <circle cx="8" cy="7" r="4" fill="#166c55" />
+            <circle cx="25" cy="7" r="4" fill="#a8bfa0" />
+            <circle cx="8" cy="25" r="4" fill="#a8bfa0" />
+            <circle cx="25" cy="25" r="4" fill="#166c55" /></svg
+          >open<span>data</span></a
+        >
+        <nav class="primary-nav" aria-label="Main navigation">
+          <a href="/opendata/lgd/" aria-current="page">LGD</a
+          ><a href="/opendata/bbnl/">BBNL</a
+          ><a href="/opendata/maps/SOI/">SOI</a>
+        </nav>
+        <a class="header-link" href="https://github.com/ramSeraph/opendata"
+          >GitHub ↗</a
+        >
+      </div>
+    </header>
+    <main class="site-main" id="main-content">
+      <div class="page-heading">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="/opendata/">Open data</a><span>/</span
+          ><span>LGD / Datasets</span>
+        </nav>
+        <h1>LGD datasets</h1>
+        <p class="lead">
+          Download a report or use its URL in your own project. Parquets and
+          metadata are hosted on this site and can be fetched from other
+          webpages.
+        </p>
+      </div>
+      <nav class="subnav" aria-label="LGD sections">
+        <a href="/opendata/lgd/">Overview</a
+        ><a href="/opendata/lgd/organizations/">Organizations</a
+        ><a href="/opendata/lgd/datasets/" aria-current="page">Datasets</a
+        ><a href="/opendata/lgd/archives/">Archives</a
+        ><a href="/opendata/lgd/anatomy/">Field guide</a
+        ><a href="/opendata/lgd/wikidata/">Wikidata</a>
+      </nav>
+      <dl class="data-summary" aria-label="Available downloads">
+        <div><dt>Available datasets</dt><dd id="dataset-total">—</dd></div>
+        <div><dt>Total Parquet size</dt><dd id="parquet-total">—</dd></div>
+      </dl>
+      <section aria-label="Dataset catalogue">
+        <div class="section-heading">
+          <h2>Find a dataset</h2>
+          <a class="text-link" href="#access">Use from code ↓</a>
+        </div>
+        <div class="catalogue-tools">
+          <label class="search-field"
+            ><input
+              id="dataset-search"
+              type="search"
+              placeholder="Search by name, subject or code…"
+              aria-label="Search datasets" /></label
+          ><select
+            id="dataset-category"
+            aria-label="Filter datasets by category"
+          >
+            <option value="">All categories</option>
+          </select>
+        </div>
+        <p
+          class="result-count"
+          id="dataset-count"
+          role="status"
+          aria-live="polite"
+        >
+          Loading the catalogue…
+        </p>
+        <div class="data-error" id="catalogue-error" hidden>
+          The catalogue could not be loaded. Reload this page to try again.
+        </div>
+        <div class="table-wrap" id="dataset-table">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Dataset</th>
+                <th scope="col">Source date</th>
+                <th scope="col">Rows</th>
+                <th scope="col">Download / access</th>
+              </tr>
+            </thead>
+            <tbody id="dataset-rows"></tbody>
+          </table>
+        </div>
+        <p class="empty-results" id="dataset-empty" hidden>
+          No datasets match. Try a different search or category.
+        </p>
+        <p class="source-note" id="catalogue-date">Loading source dates…</p>
+        <p class="source-note">
+          Snapshot reports describe the supplied records for their source date.
+          Changes and transactions are cumulative event reports. An older usable
+          file may remain available if a later update fails.
+        </p>
+      </section>
+      <section class="access-section" id="access">
+        <div>
+          <h2>Programmatic access</h2>
+          <p>
+            The JSON index lists each dataset’s Parquet URL, row count, source
+            date, byte size and SHA-256 checksum. Follow those URLs to fetch
+            files directly from GitHub Pages.
+          </p>
+          <p>
+            Read the index when you need current data. File names include a
+            content hash; this site retains the files in the current build.
+          </p>
+          <div class="actions">
+            <a class="button" id="metadata-link" href="../data/metadata.json"
+              >Open metadata.json ↗</a
+            ><a
+              class="text-link"
+              href="https://github.com/ramSeraph/opendata/tree/master/lgd-query"
+              >Python reader ↗</a
+            >
+          </div>
+        </div>
+        <pre><code id="access-code">Loading the access example…</code></pre>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <p>
+        Public data collected from Indian government sources.
+      </p>
+      <nav aria-label="Footer">
+        <a href="https://github.com/ramSeraph/opendata">Source code ↗</a>
+      </nav>
+    </footer>
+  </body>
+</html>

@@ -1,66 +1,119 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<meta http-equiv="Content-Security-Policy" content="
-default-src 'none';
-script-src 'self' https://unpkg.com https://cdn.jsdelivr.net;
-style-src 'self' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net https://viglino.github.io;
-img-src 'self' https://tile.openstreetmap.org https://indianopenmaps.fly.dev https://*.tile.opentopomap.org https://server.arcgisonline.com https://*.google.com data:;
-font-src 'self' https://fonts.gstatic.com https://viglino.github.io;
-connect-src 'self' https://tile.openstreetmap.org https://storage.googleapis.com https://raw.githubusercontent.com https://indianopenmaps.fly.dev;
-media-src 'self';
-object-src 'self';
-child-src 'self';
-form-action 'self' 'unsafe-inline';
-base-uri 'self';
-worker-src 'self' blob:
-" />
-<meta http-equiv="X-XSS-Protection"  content="1;mode=block" always>
-<meta http-equiv="Referrer-Policy" content="no-referrer, strict-origin-when-cross-origin"><head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>LGD Archive Listing</title><!-- Begin Jekyll SEO tag v2.8.0 -->
-<meta name="generator" content="Jekyll v3.10.0" />
-<meta property="og:title" content="LGD Archive Listing" />
-<meta property="og:locale" content="en_US" />
-<meta name="description" content="collection of Indian open government data related scripts." />
-<meta property="og:description" content="collection of Indian open government data related scripts." />
-<link rel="canonical" href="https://ramseraph.github.io/opendata/lgd/archives" />
-<meta property="og:url" content="https://ramseraph.github.io/opendata/lgd/archives" />
-<meta property="og:site_name" content="opendata" />
-<meta property="og:type" content="website" />
-<meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="LGD Archive Listing" />
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","description":"collection of Indian open government data related scripts.","headline":"LGD Archive Listing","url":"https://ramseraph.github.io/opendata/lgd/archives"}</script>
-<!-- End Jekyll SEO tag -->
-<link rel="shortcut icon" type="image/png" href="/opendata/assets/images/favicon.png"/><link rel="stylesheet" type="text/css" href="/opendata/assets/css/main-dark.css"><link href="/opendata/assets/css/lgd/status.css" rel="stylesheet" property="stylesheet" type="text/css">
-    
-      <script src="/opendata/assets/js/lgd/archive_common.js" ></script>
-    
-      <script src="/opendata/assets/js/lgd/archive_listing.js" ></script>
-    
-  
-</head>
-<body>
-    <div class="container"><header>
-  <div class="menu">
-    <ul><li><a href="/opendata/">Home</a></li><li><a href="/opendata/lgd/">LGD</a></li><li><a href="/opendata/bbnl/">BBNL</a></li><li><a href="/opendata/maps/SOI/">SOI</a></li><li><a href="/opendata/about/">About</a></li></ul>
-  </div>
-</header>
-<main>
-
-<p><span id="call_status"></span></p>
-<h2 id="current-archives">Current Archives</h2>
-<div id="current_archives"></div>
-<h2 id="monthly-archives">Monthly Archives</h2>
-<div id="monthly_archives"></div>
-
-
-    </main><footer>
-  Source Code at: <a href="https://github.com/ramSeraph/opendata">Github</a>
-</footer>
-</div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>LGD source archives · Open data</title>
+    <meta
+      name="description"
+      content="Find original LGD report archives by component and collection date."
+    />
+    <link
+      rel="canonical"
+      href="https://ramseraph.github.io/opendata/lgd/archives/"
+    />
+    <link rel="icon" href="/opendata/assets/images/favicon.png" />
+    <link
+      rel="stylesheet"
+      href="/opendata/assets/css/lgd/flatpickr_dark_custom.min.css"
+    />
+    <link rel="stylesheet" href="/opendata/assets/css/site.css" />
+    <script defer src="/opendata/assets/js/lgd/flatpickr.min.js"></script>
+    <script defer src="/opendata/assets/js/lgd/archive_common.js"></script>
+    <script defer src="/opendata/assets/js/lgd/archive_picker.js"></script>
+    <script defer src="/opendata/assets/js/lgd/archive_listing.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="wordmark" href="/opendata/" aria-label="Open data home"
+          ><svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true">
+            <path
+              d="M8 7v18h17M8 7h17v18"
+              fill="none"
+              stroke="#82a28c"
+              stroke-width="1.4"
+            />
+            <circle cx="8" cy="7" r="4" fill="#166c55" />
+            <circle cx="25" cy="7" r="4" fill="#a8bfa0" />
+            <circle cx="8" cy="25" r="4" fill="#a8bfa0" />
+            <circle cx="25" cy="25" r="4" fill="#166c55" /></svg
+          >open<span>data</span></a
+        >
+        <nav class="primary-nav" aria-label="Main navigation">
+          <a href="/opendata/lgd/" aria-current="page">LGD</a
+          ><a href="/opendata/bbnl/">BBNL</a
+          ><a href="/opendata/maps/SOI/">SOI</a>
+        </nav>
+        <a class="header-link" href="https://github.com/ramSeraph/opendata"
+          >GitHub ↗</a
+        >
+      </div>
+    </header>
+    <main class="site-main" id="main-content">
+      <div class="page-heading">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="/opendata/">Open data</a><span>/</span
+          ><span>LGD / Archives</span>
+        </nav>
+        <h1>LGD source archives</h1>
+        <p class="lead">
+          Choose a report and collection date, or browse the available daily and
+          monthly archives.
+        </p>
+      </div>
+      <nav class="subnav" aria-label="LGD sections">
+        <a href="/opendata/lgd/">Overview</a
+        ><a href="/opendata/lgd/organizations/">Organizations</a
+        ><a href="/opendata/lgd/datasets/">Datasets</a
+        ><a href="/opendata/lgd/archives/" aria-current="page">Archives</a
+        ><a href="/opendata/lgd/anatomy/">Field guide</a
+        ><a href="/opendata/lgd/wikidata/">Wikidata</a>
+      </nav>
+      <div class="notice">
+        Use <a href="https://www.7-zip.org/">7-Zip</a> to extract these
+        archives. Earlier collection dates may be bundled in a monthly archive.
+      </div>
+      <section class="archive-picker" aria-label="Find an archive">
+        <h2>Find an archive</h2>
+        <div id="component_selector_div">
+          <label for="component_selector">Report</label
+          ><select name="component" id="component_selector"></select>
+          <div id="component_info"></div>
+        </div>
+        <div id="date_picker_container" hidden></div>
+        <div id="file_info"></div>
+        <p id="form_status" role="status"></p>
+      </section>
+      <p id="call_status" role="status"></p>
+      <details class="archive-list">
+        <summary>Browse daily archives</summary>
+        <div id="current_archives"></div>
+      </details>
+      <hr />
+      <details class="archive-list">
+        <summary>Browse monthly archives</summary>
+        <div id="monthly_archives"></div>
+      </details>
+      <div class="data-section">
+        <a class="text-link" href="../anatomy/"
+          >Read the report field guide →</a
+        >
+      </div>
+    </main>
+    <footer class="site-footer">
+      <p>
+        Public data collected from Indian government sources.
+      </p>
+      <nav aria-label="Footer">
+        <a href="https://github.com/ramSeraph/opendata">Source code ↗</a>
+      </nav>
+    </footer>
   </body>
 </html>
-

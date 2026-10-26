@@ -1,42 +1,91 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<meta http-equiv="Content-Security-Policy" content="
-default-src 'none';
-script-src 'self' https://unpkg.com https://cdn.jsdelivr.net;
-style-src 'self' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net https://viglino.github.io;
-img-src 'self' https://tile.openstreetmap.org https://indianopenmaps.fly.dev https://*.tile.opentopomap.org https://server.arcgisonline.com https://*.google.com data:;
-font-src 'self' https://fonts.gstatic.com https://viglino.github.io;
-connect-src 'self' https://tile.openstreetmap.org https://storage.googleapis.com https://raw.githubusercontent.com https://indianopenmaps.fly.dev;
-media-src 'self';
-object-src 'self';
-child-src 'self';
-form-action 'self' 'unsafe-inline';
-base-uri 'self';
-worker-src 'self' blob:
-" />
-<meta http-equiv="X-XSS-Protection"  content="1;mode=block" always>
-<meta http-equiv="Referrer-Policy" content="no-referrer, strict-origin-when-cross-origin"><head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta http-equiv="refresh" content="0; url=https://ramseraph.github.io/india_topo_maps/">
-  <title>SOI - Moved</title>
-  <link rel="shortcut icon" type="image/png" href="/opendata/assets/images/favicon.png"/><link rel="stylesheet" type="text/css" href="/opendata/assets/css/main-dark.css">
-</head>
-<body>
-    <div class="container"><header>
-  <div class="menu">
-    <ul><li><a href="/opendata/">Home</a></li><li><a href="/opendata/lgd/">LGD</a></li><li><a href="/opendata/bbnl/">BBNL</a></li><li><a href="/opendata/maps/SOI/">SOI</a></li><li><a href="/opendata/about/">About</a></li></ul>
-  </div>
-</header>
-<main>
-  <h1>This content has moved</h1>
-  <p>The SOI topographic maps content has been moved to:</p>
-  <p><a href="https://ramseraph.github.io/india_topo_maps/">https://ramseraph.github.io/india_topo_maps/</a></p>
-  <p><small>You will be redirected automatically in a moment...</small></p>
-    </main><footer>
-  Source Code at: <a href="https://github.com/ramSeraph/opendata">Github</a>
-</footer>
-</div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta
+      http-equiv="refresh"
+      content="0; url=https://ramseraph.github.io/india_topo_maps/"
+    />
+    <title>Survey of India maps · Open data</title>
+    <meta
+      name="description"
+      content="Find Survey of India topographic maps in the dedicated India Topo Maps project."
+    />
+    <link
+      rel="canonical"
+      href="https://ramseraph.github.io/india_topo_maps/"
+    />
+    <link rel="icon" href="/opendata/assets/images/favicon.png" />
+    <link rel="stylesheet" href="/opendata/assets/css/site.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="wordmark" href="/opendata/" aria-label="Open data home"
+          ><svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true">
+            <path
+              d="M8 7v18h17M8 7h17v18"
+              fill="none"
+              stroke="#82a28c"
+              stroke-width="1.4"
+            />
+            <circle cx="8" cy="7" r="4" fill="#166c55" />
+            <circle cx="25" cy="7" r="4" fill="#a8bfa0" />
+            <circle cx="8" cy="25" r="4" fill="#a8bfa0" />
+            <circle cx="25" cy="25" r="4" fill="#166c55" /></svg
+          >open<span>data</span></a
+        >
+        <nav class="primary-nav" aria-label="Main navigation">
+          <a href="/opendata/lgd/">LGD</a
+          ><a href="/opendata/bbnl/">BBNL</a
+          ><a href="/opendata/maps/SOI/" aria-current="page">SOI</a>
+        </nav>
+        <a class="header-link" href="https://github.com/ramSeraph/opendata"
+          >GitHub ↗</a
+        >
+      </div>
+    </header>
+    <main class="site-main" id="main-content">
+      <div class="page-heading">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="/opendata/">Open data</a><span>/</span
+          ><span>Survey of India</span>
+        </nav>
+        <h1>Survey of India maps</h1>
+        <p class="lead">
+          The Survey of India topographic collection now lives in its own
+          dedicated project.
+        </p>
+      </div>
+      <div class="prose">
+        <div class="actions">
+          <a
+            class="button primary"
+            href="https://ramseraph.github.io/india_topo_maps/"
+            >Open India Topo Maps ↗</a
+          ><a class="button" href="/opendata/">All collections →</a>
+        </div>
+        <h2>Survey of India</h2>
+        <p>
+          Visit the companion project to browse the topographic maps and find
+          information about their sources and processing.
+        </p>
+      </div>
+    </main>
+    <footer class="site-footer">
+      <p>
+        Public data collected from Indian government sources.
+      </p>
+      <nav aria-label="Footer">
+        <a href="https://github.com/ramSeraph/opendata">Source code ↗</a>
+      </nav>
+    </footer>
   </body>
 </html>

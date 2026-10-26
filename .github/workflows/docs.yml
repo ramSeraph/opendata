@@ -14,6 +14,7 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -33,11 +34,18 @@ jobs:
           reports_dir='docs/lgd/wikidata/reports/'
           mkdir -p $reports_dir
           gh release download lgd-wikidata-sync -p '*.json' -D $reports_dir
-          
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          enable-cache: true
+          cache-dependency-glob: tools/build_pages.py
+      - name: Build data catalogue and organization explorer
+        run: >-
+          uv run --no-project --python 3.12 --with duckdb==2.0.0
+          python tools/build_pages.py --output .pages-build
       - name: Upload-Artifact
         uses: actions/upload-pages-artifact@v5.0.0
         with:
-          path: 'docs/'
+          path: '.pages-build/'
 
   # Deploy job
   deploy:

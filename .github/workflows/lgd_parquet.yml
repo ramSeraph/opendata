@@ -1,10 +1,7 @@
 name: LGD Daily Parquet
 
 on:
-  workflow_run:
-    workflows: [LGD Daily Run]
-    types: [completed]
-    branches: [master]
+  workflow_call:
   schedule:
     - cron: '45 1 * * *'
   workflow_dispatch:
@@ -38,10 +35,7 @@ jobs:
   prepare:
     if: >-
       github.repository == 'ramSeraph/opendata' &&
-      (github.event_name != 'workflow_run' ||
-       (github.event.workflow_run.head_repository.full_name == github.repository &&
-        github.event.workflow_run.head_branch == github.event.repository.default_branch)) &&
-      (github.event_name != 'workflow_dispatch' || github.ref_name == github.event.repository.default_branch)
+      github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     outputs:

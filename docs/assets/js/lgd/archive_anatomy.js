@@ -2,28 +2,40 @@ document.addEventListener('DOMContentLoaded', function() {
     fetch('/opendata/lgd/site_map.json')
         .then(response => response.json())
         .then(data => {
-            compMap = parseSiteMap(data);
+            const compMap = parseSiteMap(data);
             const anatomyContent = document.getElementById('anatomy-content');
+            anatomyContent.innerHTML = '';
             Object.keys(compMap).forEach(key => {
                 const item = compMap[key];
                 if (item.comp && item.fields) {
+                    const section = document.createElement('section');
+                    section.className = 'report-section';
+                    section.setAttribute('aria-labelledby', key);
+                    const header = document.createElement('header');
+                    header.className = 'report-heading';
                     const h2 = document.createElement('h2');
                     h2.id = key;
-                    var heading = key + '.csv';
+                    const link = document.createElement('a');
+                    link.href = '#' + key;
+                    const filename = document.createElement('code');
+                    filename.textContent = key + '.csv';
+                    link.appendChild(filename);
+                    h2.appendChild(link);
+                    header.appendChild(h2);
                     if (item.comp === "IGNORE") {
-                        heading += ' (No longer active)';
+                        const status = document.createElement('span');
+                        status.className = 'report-status';
+                        status.textContent = 'No longer active';
+                        header.appendChild(status);
                     }
-                    h2.textContent = heading;
-                    anatomyContent.appendChild(h2);
+                    section.appendChild(header);
+
+                    const description = document.createElement('p');
+                    description.className = 'report-description';
+                    description.textContent = item.desc;
+                    section.appendChild(description);
 
                     const dl = document.createElement('dl');
-                    
-                    const dtDesc = document.createElement('dt');
-                    dtDesc.textContent = 'description:';
-                    dl.appendChild(dtDesc);
-                    const ddDesc = document.createElement('dd');
-                    ddDesc.textContent = item.desc;
-                    dl.appendChild(ddDesc);
 
                     if (item.dropdown && item.dropdown.length > 0) {
                         const dtLocation = document.createElement('dt');
@@ -47,17 +59,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     const dtFields = document.createElement('dt');
-                    dtFields.textContent = 'Expected fields:';
+                    dtFields.textContent = 'Fields';
                     dl.appendChild(dtFields);
                     const ddFields = document.createElement('dd');
-                    ddFields.appendChild(createFieldsTable(item.fields));
+                    const table = createFieldsTable(item.fields);
+                    table.setAttribute('aria-label', key + '.csv fields');
+                    table.querySelectorAll('th').forEach(th => th.scope = 'col');
+                    ddFields.appendChild(table);
                     dl.appendChild(ddFields);
 
-                    anatomyContent.appendChild(dl);
-                    anatomyContent.appendChild(document.createElement('hr'));
+                    section.appendChild(dl);
+                    anatomyContent.appendChild(section);
                 }
             });
+            const anchor = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+            if (anchor) anchor.scrollIntoView();
         })
-        .catch(error => console.error('Error loading site_map.json:', error));
+        .catch(error => {
+            document.getElementById('anatomy-content').textContent = 'The report descriptions could not be loaded. Reload this page to try again.';
+            console.error('Error loading site_map.json:', error);
+        });
 });
 

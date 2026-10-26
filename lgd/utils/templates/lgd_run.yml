@@ -77,8 +77,16 @@ jobs:
                       output.write(f'| {name} | {job["result"]} |\n')
           PY
 
-  BuildDocs:
+  Publish-Parquet:
     needs: Update-Listing
+    if: ${{ always() && needs.Update-Listing.result == 'success' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/lgd_parquet.yml
+    secrets: inherit
+
+  BuildDocs:
+    needs: [Update-Listing, Publish-Parquet]
     if: ${{ always() && needs.Update-Listing.result == 'success' }}
     permissions:
       contents: read

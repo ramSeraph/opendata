@@ -12,6 +12,69 @@ function getFileInfoDiv() {
 }
 
 
+function showArchiveFile(fileData, label, member, dateStr) {
+    var fileInfoDiv = getFileInfoDiv();
+    var card = document.createElement('div');
+    card.className = 'archive-download';
+    var header = document.createElement('div');
+    header.className = 'archive-download-header';
+    var details = document.createElement('div');
+    var meta = document.createElement('div');
+    meta.className = 'archive-download-meta';
+    meta.textContent = label + ' · ' + formatFileSize(fileData.size);
+    var filename = document.createElement('strong');
+    filename.className = 'archive-download-name';
+    filename.textContent = fileData.filename;
+    details.append(meta, filename);
+    var link = document.createElement('a');
+    link.className = 'button primary';
+    link.href = fileData.url;
+    link.textContent = 'Download archive ↓';
+    header.append(details, link);
+    card.appendChild(header);
+
+    if (member) {
+        var extract = document.createElement('div');
+        extract.className = 'archive-extract';
+        var heading = document.createElement('p');
+        var date = new Date(dateStr + 'T00:00:00Z').toLocaleDateString('en-GB', {
+            day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'
+        });
+        heading.textContent = 'Extract the report for ' + date;
+        var commandRow = document.createElement('div');
+        commandRow.className = 'archive-command';
+        var pre = document.createElement('pre');
+        var code = document.createElement('code');
+        code.textContent = '7z e ' + fileData.filename + ' ' + member;
+        pre.appendChild(code);
+        var copy = document.createElement('button');
+        copy.type = 'button';
+        copy.className = 'button';
+        copy.textContent = 'Copy';
+        copy.setAttribute('aria-label', 'Copy extraction command');
+        var status = document.createElement('span');
+        status.className = 'archive-copy-status';
+        status.setAttribute('role', 'status');
+        copy.addEventListener('click', async function () {
+            try {
+                await navigator.clipboard.writeText(code.textContent);
+                status.textContent = 'Command copied.';
+            } catch {
+                var range = document.createRange();
+                range.selectNodeContents(code);
+                var selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                status.textContent = 'Command selected. Press Ctrl+C or ⌘C to copy.';
+            }
+        });
+        commandRow.append(pre, copy);
+        extract.append(heading, commandRow, status);
+        card.appendChild(extract);
+    }
+    fileInfoDiv.appendChild(card);
+}
+
 function showLinksforDate(selectedComponent, dateStr, currentMonthInfos, previousMonthsInfos) {
     // Display URL and size
     var fileInfoDiv = getFileInfoDiv();
@@ -26,7 +89,6 @@ function showLinksforDate(selectedComponent, dateStr, currentMonthInfos, previou
     } else {
         // Check previous months files (month/year match)
         var monthYear = dateStr.substring(0, 7); // YYYY-MM
-        console.log("monthYear: " + monthYear);
         if (previousMonthsInfos[selectedComponent] && previousMonthsInfos[selectedComponent][monthYear]) {
             fileData = previousMonthsInfos[selectedComponent][monthYear];
             isMonthFile = true;
@@ -34,29 +96,11 @@ function showLinksforDate(selectedComponent, dateStr, currentMonthInfos, previou
     }
 
     if (fileData) {
-        var span = document.createElement('span');
-        span.textContent = 'Download ';
-        fileInfoDiv.appendChild(span);
-
-        var link = document.createElement('a');
-        link.href = fileData.url;
-        var fileSize = formatFileSize(fileData.size);
-        link.textContent = fileData.filename;
-        fileInfoDiv.appendChild(link);
-        var sizeSpan = document.createElement('span');
-        sizeSpan.textContent = ' (' + fileSize + ')';
-        fileInfoDiv.appendChild(sizeSpan);
-        if (isMonthFile) {
-            var infoSpan = document.createElement('span');
-            var dateStrConv = convertDateToDDBBBYYYY(dateStr);
-            var filename = `${selectedComponent}.${dateStrConv}.csv`
-            infoSpan.textContent = `[ Command to extract from archive: 7z e ${fileData.filename} ${filename} ]`;
-            fileInfoDiv.appendChild(infoSpan);
-        }
+        var member = isMonthFile ? `${selectedComponent}.${convertDateToDDBBBYYYY(dateStr)}.csv` : null;
+        showArchiveFile(fileData, isMonthFile ? 'Monthly archive' : 'Daily archive', member, dateStr);
     } else {
         fileInfoDiv.textContent = 'File not found for this date.';
     }
-    console.log("Selected date: " + dateStr);
 
 }
 
@@ -65,6 +109,7 @@ function populateComponentInfo(selectedComponent, componentInfo, currentMonthInf
 
     // Clear previous info
     componentInfoDiv.innerHTML = '';
+    document.getElementById('date_picker_container').hidden = true;
 
     let componentData = componentInfo[selectedComponent];
 
@@ -82,18 +127,7 @@ function populateComponentInfo(selectedComponent, componentInfo, currentMonthInf
         var fileInfoDiv = getFileInfoDiv();
 
         if (fileData) {
-            var span = document.createElement('span');
-            span.textContent = 'Download ';
-            fileInfoDiv.appendChild(span);
-
-            var link = document.createElement('a');
-            link.href = fileData.url;
-            var fileSize = formatFileSize(fileData.size);
-            link.textContent = fileData.filename;
-            fileInfoDiv.appendChild(link);
-            var sizeSpan = document.createElement('span');
-            sizeSpan.textContent = ' (' + fileSize + ')';
-            fileInfoDiv.appendChild(sizeSpan);
+            showArchiveFile(fileData, 'Cumulative archive');
         } else {
             fileInfoDiv.textContent = 'File not found for ' + selectedComponent + ' component.';
         }
@@ -112,6 +146,7 @@ function populateComponentInfo(selectedComponent, componentInfo, currentMonthInf
         var datePickerContainer = document.getElementById('date_picker_container');
         datePickerContainer.innerHTML = '<h3>Pick a Date</h3><div id="archive_date" class="flatpickr"></div>';
         datePickerContainer.style.display = 'block';
+        datePickerContainer.hidden = false;
 
         flatpickr("#archive_date", {
             enable: availableDates,

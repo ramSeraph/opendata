@@ -769,6 +769,74 @@ td .download-links a {
   font-size: 11px;
   text-decoration: none;
 }
+.schema-preview {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: min(480px, calc(100vw - 24px));
+  max-height: min(520px, calc(100vh - 24px));
+  border: 1px solid #cbd7cd;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 28px #203b3626;
+  overflow: hidden;
+}
+.schema-preview-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.schema-preview-heading strong {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.schema-preview-heading span {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.schema-preview-fields {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.schema-preview table {
+  width: 100%;
+  margin: 0;
+}
+.schema-preview th,
+.schema-preview td {
+  padding: 9px 16px;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.schema-preview th {
+  position: sticky;
+  top: 0;
+  background: var(--wash);
+}
+.schema-preview td:first-child {
+  overflow-wrap: anywhere;
+}
+.schema-preview td:last-child {
+  white-space: nowrap;
+  color: var(--muted);
+}
+.schema-preview code {
+  font-size: 11px;
+}
+.schema-preview p {
+  padding: 16px;
+  margin: 0;
+  font-size: 13px;
+}
 td .size {
   display: block;
   font: 10px var(--mono);

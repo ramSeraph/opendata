@@ -33,6 +33,93 @@
   function set(id, value) {
     if ($(id)) $(id).textContent = value;
   }
+  function schemaPreviews(datasets) {
+    const byName = new Map(datasets.map((d) => [d.name, d]));
+    const preview = document.createElement("div");
+    preview.id = "schema-preview";
+    preview.className = "schema-preview";
+    preview.setAttribute("role", "tooltip");
+    preview.hidden = true;
+    document.body.append(preview);
+    let active, timer;
+    function hide() {
+      clearTimeout(timer);
+      active?.removeAttribute("aria-describedby");
+      active = null;
+      preview.hidden = true;
+    }
+    function position() {
+      if (!active || preview.hidden) return;
+      const rect = active.getBoundingClientRect(), gap = 8, margin = 12;
+      if (rect.bottom < 0 || rect.top > innerHeight || rect.right < 0 || rect.left > innerWidth) {
+        hide();
+        return;
+      }
+      const below = innerHeight - rect.bottom - gap - margin;
+      const above = rect.top - gap - margin;
+      const openBelow = below >= 360 || below >= above;
+      preview.style.maxHeight = Math.max(100, Math.min(520, openBelow ? below : above)) + "px";
+      const box = preview.getBoundingClientRect();
+      preview.style.left = Math.max(margin, Math.min(innerWidth - box.width - margin, rect.right - box.width)) + "px";
+      preview.style.top = Math.max(margin, Math.min(innerHeight - box.height - margin,
+        openBelow ? rect.bottom + gap : rect.top - gap - box.height)) + "px";
+    }
+    function show(link) {
+      clearTimeout(timer);
+      if (active === link && !preview.hidden) return;
+      const dataset = byName.get(link.dataset.dataset);
+      if (!dataset) return;
+      hide();
+      active = link;
+      const fields = dataset.fields || [];
+      preview.innerHTML =
+        '<div class="schema-preview-heading"><strong>' +
+        esc(dataset.name) +
+        '</strong><span>' + fields.length + (fields.length === 1 ? ' field' : ' fields') + '</span></div>' +
+        '<div class="schema-preview-fields">' +
+        (fields.length
+          ? '<table><thead><tr><th scope="col">Field</th><th scope="col">Type</th></tr></thead><tbody>' +
+            fields.map((field) => '<tr><td><code>' + esc(field.name) +
+              '</code></td><td><code>' + esc(field.type) + '</code></td></tr>').join("") +
+            '</tbody></table>'
+          : '<p>No fields are listed in this schema.</p>') + '</div>';
+      link.setAttribute("aria-describedby", preview.id);
+      preview.hidden = false;
+      position();
+    }
+    function leave() {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (active?.matches(":hover") || preview.matches(":hover") || document.activeElement === active) return;
+        hide();
+      }, 160);
+    }
+    const rows = $("dataset-rows");
+    rows.addEventListener("pointerover", (event) => {
+      const link = event.target.closest(".schema-link");
+      if (link && event.pointerType !== "touch") show(link);
+    });
+    rows.addEventListener("pointerout", (event) => {
+      if (event.target.closest(".schema-link")) leave();
+    });
+    rows.addEventListener("focusin", (event) => {
+      if (event.target.matches(".schema-link")) show(event.target);
+    });
+    rows.addEventListener("focusout", leave);
+    preview.addEventListener("pointerenter", () => clearTimeout(timer));
+    preview.addEventListener("pointerleave", leave);
+    document.addEventListener("keydown", (event) => {
+      if (!preview.hidden && event.key === "Escape") hide();
+    });
+    window.addEventListener("resize", hide);
+    window.addEventListener("scroll", (event) => {
+      if (!preview.contains(event.target)) {
+        if (document.activeElement === active) position();
+        else hide();
+      }
+    }, {capture: true, passive: true});
+    return hide;
+  }
   function render(data) {
     const available = data.datasets.filter((d) => d.file);
     set("dataset-total", fmt(available.length));
@@ -59,6 +146,7 @@
         ". Each report keeps its own date.",
     );
     if (!$("dataset-rows")) return;
+    const closeSchemaPreview = schemaPreviews(data.datasets);
     const category = $("dataset-category"),
       query = $("dataset-search");
     for (const name of [
@@ -74,6 +162,7 @@
     if ([...category.options].some((o) => o.value === params.get("category")))
       category.value = params.get("category");
     function filter() {
+      closeSchemaPreview();
       const term = query.value.trim().toLowerCase();
       const matches = data.datasets.filter(
         (d) =>
@@ -104,7 +193,8 @@
             (d.file
               ? '<div class="download-links"><a href="' +
                 esc(new URL(d.file, lgd).href) +
-                '" download>Parquet ↓</a><a href="' +
+                '" download>Parquet ↓</a><a class="schema-link" data-dataset="' +
+                esc(d.name) + '" href="' +
                 esc(new URL(d.manifest, lgd).href) +
                 '">Schema ↗</a></div><span class="size">' +
                 size(d.bytes) +

@@ -23,8 +23,10 @@ print(manifest["schema"])
 ```
 
 `load_release()` fetches `metadata.json` once. Its `Release` object retains that
-generation, and datasets refer directly to immutable files even if the latest
-index changes. Accessing `release.datasets` or `release.dataset()` makes no
+generation, and datasets refer directly to files with fixed contents. The server
+keeps only current exports: superseded files and indexes are removed after a
+successful update. Reload `metadata.json` if an older URL is no longer available.
+Accessing `release.datasets` or `release.dataset()` makes no
 requests. New datasets can be discovered without updating a hardcoded registry.
 `load_manifest()` verifies the manifest's size/hash and agreement with the index.
 
@@ -50,13 +52,14 @@ historical lookup. Cumulative `changes` and `transactions` reports have
 Publication/upload timestamps do not establish an observation date. These files
 contain supplied report rows; omissions do not prove deletions.
 
-To reopen a generation, pass its immutable URL to `load_release(url)`. For an
-offline metadata lookup, save `release.metadata` as JSON and reopen it with
+To reopen a generation while it is retained, pass its immutable URL to
+`load_release(url)`. For an offline metadata lookup, save `release.metadata` as JSON and reopen it with
 `Release.from_dict(document)`. `metadata` and `coverage` return detached copies.
 Metadata requests accept `timeout=30` and `retries=2`. Transient HTTP responses,
 including a brief 404 during index replacement, get bounded retries. The reader
-does not silently fall back to `metadata.previous.json`; that URL can be supplied
-explicitly if the preceding generation is wanted.
+does not silently fall back to `metadata.previous.json`; that copy is temporary
+and is removed after successful publication. Retain downloaded files locally
+if you need to reopen an older export.
 
 ## Download API
 

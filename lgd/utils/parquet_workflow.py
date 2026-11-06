@@ -27,6 +27,10 @@ DISCREPANCY_DATASETS = {
     'pri_local_body_wards', 'constituency_coverage',
     'constituencies_mapping_pri', 'parliament_constituencies_lb_mapping',
 }
+PUBLISHED_FILE = re.compile(
+    r'([a-z_]+)\.[0-9]{4}-[0-9]{2}-[0-9]{2}\.[a-f0-9]{16}'
+    r'(?:\.(?:parquet|json)|\.discrepancies\.[a-f0-9]{16}\.parquet)')
+PUBLISHED_INDEX = re.compile(r'metadata\.[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}Z\.[a-f0-9]{12}\.json')
 
 
 def fingerprint(value):
@@ -290,17 +294,77 @@ def worker(client, plan, dataset, work):
 
 def verify_index(client, index):
     validate_index(index, client.repo)
+    references = set()
+
+    def verify(ref):
+        asset = client.verify_ref(ref)
+        references.add(tuple(location(client.repo, ref)))
+        return asset
+
     for dataset, entry in index['datasets'].items():
         if entry.get('manifest'):
-            asset = client.verify_ref(entry['manifest'])
+            asset = verify(entry['manifest'])
             manifest = client.read_json(asset)
             if (manifest['dataset'] != dataset or manifest['daily'] != entry['daily'] or
                     manifest['identity'] != entry['identity']):
                 raise ValueError('Index differs from its dataset manifest')
-            client.verify_ref(entry['daily']['file'])
+            verify(entry['daily']['file'])
             evidence = manifest.get('conversion', {}).get('discrepancy_evidence')
             if evidence:
-                client.verify_ref(evidence['file'])
+                verify(evidence['file'])
+    return references
+
+
+def prune(client, index, *, apply=False):
+    """Keep only files referenced by the verified current publication.
+
+    Called under the publication workflow's concurrency lock, after all workers.
+    A manual caller must likewise wait for publication jobs to finish.
+    """
+    if not index or fingerprint(client.read_index()) != fingerprint(index):
+        raise ValueError('Current publication changed or is missing; refusing cleanup')
+    keep = verify_index(client, index)
+    prefix = f'https://github.com/{client.repo}/releases/download/'
+    url = index.get('immutable_url', '')
+    parts = url[len(prefix):].split('/') if url.startswith(prefix) else []
+    if (len(parts) != 2 or not RELEASE_PATTERN.fullmatch(parts[0]) or
+            not PUBLISHED_INDEX.fullmatch(parts[1])):
+        raise ValueError('Invalid current index URL; refusing cleanup')
+    asset = client.release_assets(parts[0]).get(parts[1])
+    if not asset or fingerprint(client.read_json(asset)) != fingerprint(index):
+        raise ValueError('Current index differs from its versioned copy; refusing cleanup')
+    keep.update({(RELEASE, 'metadata.json'), tuple(parts)})
+    obsolete = []
+    for tag, release in client.listed.items():
+        if not RELEASE_PATTERN.fullmatch(tag) or release.get('draft') or release.get('immutable'):
+            continue
+        for name, asset in client.release_assets(tag, refresh=True).items():
+            report = PUBLISHED_FILE.fullmatch(name)
+            managed = (report and report[1] in SCHEMAS) or PUBLISHED_INDEX.fullmatch(name)
+            managed = managed or (tag == RELEASE and name == 'metadata.previous.json')
+            if managed and (tag, name) not in keep:
+                obsolete.append(dict(asset, release=tag))
+    # Remove obsolete indexes first so interrupted cleanup cannot recover an
+    # index whose data has already been removed.
+    obsolete.sort(key=lambda a: (not a['name'].startswith('metadata.'), a['release'], a['name']))
+    if apply:
+        for number, asset in enumerate(obsolete):
+            if number % 25 == 0:
+                if fingerprint(client.read_index()) != fingerprint(index):
+                    raise ValueError('Current publication changed; stopping cleanup')
+                print(f'Cleanup: {number}/{len(obsolete)} obsolete assets removed', flush=True)
+            client.delete_asset(asset['release'], asset)
+        # Verify readers can still resolve every file after deletion.
+        verify_index(client, index)
+    return dict(kept=len(keep), obsolete=len(obsolete),
+                bytes=sum(a['size'] for a in obsolete), applied=apply,
+                assets=[{k: a[k] for k in ('release', 'id', 'name', 'size')} for a in obsolete])
+
+
+def cleanup(client, index):
+    result = prune(client, index, apply=True)
+    print(json.dumps({k: v for k, v in result.items() if k != 'assets'}), flush=True)
+    return index
 
 
 def publish(client, plan, work):
@@ -327,10 +391,11 @@ def publish(client, plan, work):
             entries[dataset].update(manifest=ref, outcome=dict(status='updated'))
         except (ValueError, subprocess.CalledProcessError) as error:
             entries[dataset] = dict(entries.get(dataset, {}), outcome=dict(status='failed', reason=str(error)))
-    if current and entries == current['datasets']:
-        return current
+    if (current and entries == current['datasets'] and current.get('automatic_deletion') is True
+            and current.get('previous_index_url') is None):
+        return cleanup(client, current)
     now = datetime.now(timezone.utc)
-    # Never overwrite the immutable index advertised by the preceding attempt.
+    # Versioned names avoid exposing mixed files while publishing replacements.
     generation = (now.strftime('%Y-%m-%dT%H%M%SZ')+'.'+uuid.uuid4().hex[:12]
                   if same_plan else plan['generation'])
     filename = f'metadata.{generation}.json'
@@ -338,8 +403,8 @@ def publish(client, plan, work):
                  plan_sha256=fingerprint(plan),
                  published_at=now.isoformat(), converter_commit=plan['commit'],
                  immutable_url=f'https://github.com/{client.repo}/releases/download/{plan["index_release"]}/{filename}',
-                 previous_index_url=current['immutable_url'] if current else None,
-                 datasets=entries, automatic_deletion=False)
+                 previous_index_url=None,
+                 datasets=entries, automatic_deletion=True)
     verify_index(client, index)
     work = Path(work)
     write_json(work/filename, index)
@@ -355,7 +420,7 @@ def publish(client, plan, work):
         raise ValueError('Publication parent changed before index replacement')
     write_json(work/'metadata.json', index)
     client.put(RELEASE, work/'metadata.json', mutable=True)
-    return index
+    return cleanup(client, index)
 
 
 def recover(client, work):
@@ -373,18 +438,21 @@ def recover(client, work):
         path = Path(work)/'metadata.json'
         write_json(path, index)
         client.put(RELEASE, path, mutable=True)
-        return index
+        return cleanup(client, index) if index.get('automatic_deletion') else index
     raise ValueError('No verified complete metadata generation is available to recover')
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('prepare', 'check', 'worker', 'publish', 'recover'))
+    parser.add_argument('command', choices=('prepare', 'check', 'worker', 'publish', 'recover', 'prune'))
     parser.add_argument('--work', type=Path, default=Path('data/parquet-publication'))
     parser.add_argument('--dataset')
     parser.add_argument('--datasets', nargs='+', default=sorted(SCHEMAS))
     parser.add_argument('--repository', default=os.environ.get('GITHUB_REPOSITORY', 'ramSeraph/opendata'))
+    parser.add_argument('--apply', action='store_true', help='Apply the prune command; otherwise only list obsolete assets')
     args = parser.parse_args()
+    if args.apply and args.command != 'prune':
+        parser.error('--apply is only valid for prune')
     client = GitHub(args.repository)
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
     path = args.work/'plan.json'
@@ -396,6 +464,17 @@ def main():
             output('has_work', 'true' if plan['tasks'] else 'false')
             output('commit', commit)
         print(json.dumps(dict(convert=sorted(plan['tasks']), outcomes=plan['outcomes']), indent=2))
+    elif args.command == 'prune':
+        index = client.read_index()
+        result = prune(client, index)
+        write_json(args.work/'cleanup.json', result)
+        print(json.dumps({k: v for k, v in result.items() if k != 'assets'}), flush=True)
+        if args.apply:
+            # Upgrade legacy retention metadata without reconverting any data.
+            plan = dict(kind=KIND, repository=client.repo, converter=converter_version(),
+                        parent=index, tasks={}, outcomes={}, commit=commit, index_release=RELEASE,
+                        generation=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H%M%SZ')+'.'+uuid.uuid4().hex[:12])
+            publish(client, plan, args.work)
     elif args.command == 'recover':
         recover(client, args.work)
     else:

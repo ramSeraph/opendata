@@ -141,3 +141,8 @@ class GitHub(BaseGitHub):
         self.inventory.pop(tag, None)
         self.verify_ref(ref)
         return ref
+
+    def delete_asset(self, tag, asset):
+        self.require_release(tag)
+        self.api(f'releases/assets/{int(asset["id"])}', '--method', 'DELETE')
+        self.inventory.pop(tag, None)

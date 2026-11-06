@@ -7,16 +7,16 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Publish available reports or recover discovery metadata
+        description: Publish reports, recover metadata, or remove superseded exports
         type: choice
-        options: [update, recover]
+        options: [update, recover, prune]
         default: update
       datasets:
         description: Space-separated dataset names (blank selects all supported reports)
         type: string
 
 # Workers publish distinct assets; only the final job changes discovery metadata.
-# Recovery uses the same lock. Workflows never create Git commits.
+# Recovery and cleanup use the same lock. Workflows never create Git commits.
 concurrency:
   group: lgd-parquet-publication
   cancel-in-progress: false
@@ -150,3 +150,6 @@ jobs:
       - name: Recover discovery metadata from verified release files
         if: needs.prepare.outputs.mode == 'recover'
         run: python -m utils.parquet_workflow recover
+      - name: Keep only the currently published Parquet files and metadata
+        if: needs.prepare.outputs.mode == 'prune'
+        run: python -m utils.parquet_workflow prune --apply

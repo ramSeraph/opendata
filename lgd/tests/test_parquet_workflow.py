@@ -20,6 +20,7 @@ class FakeGitHub:
     def __init__(self):
         self.repo = 'test/repo'
         self.listed, self.data, self.payloads, self.uploads = {}, {}, {}, []
+        self.deleted = []
         self.fail_pointer = False
 
     def add(self, tag, name, payload, updated='2026-10-23T10:00:00Z'):
@@ -76,6 +77,10 @@ class FakeGitHub:
         self.add(tag, path.name, path.read_bytes())
         self.uploads.append((tag, path.name, mutable))
         return ref
+
+    def delete_asset(self, tag, asset):
+        del self.data[tag][asset['name']]
+        self.deleted.append((tag, asset['name']))
 
 
 class ParquetWorkflowTests(unittest.TestCase):
@@ -135,7 +140,7 @@ class ParquetWorkflowTests(unittest.TestCase):
                 self.assertEqual(flow.allocate(self.client, [dataset]),
                                  {dataset: RELEASE, '_index': RELEASE})
 
-    def test_publish_then_noop_before_conversion_and_keep_old_assets(self):
+    def test_publish_then_noop_before_conversion_keeps_current_assets(self):
         first = self.publish_first()
         plan = flow.prepare(self.client, ['states'], COMMIT)
         self.assertFalse(plan['tasks'])
@@ -158,7 +163,7 @@ class ParquetWorkflowTests(unittest.TestCase):
         self.assertEqual(result['datasets']['states']['outcome']['status'], 'failed')
         self.assertEqual(result['datasets']['districts']['daily']['observed_on'], '2026-10-24')
 
-    def test_retry_can_finish_a_partially_published_plan_without_overwriting_its_index(self):
+    def test_retry_can_finish_a_partially_published_plan_and_prune_its_old_index(self):
         self.source()
         self.source(dataset='districts')
         plan = flow.prepare(self.client, ['states', 'districts'], COMMIT)
@@ -169,10 +174,120 @@ class ParquetWorkflowTests(unittest.TestCase):
         second = flow.publish(self.client, plan, self.root)
         self.assertEqual(second['datasets']['districts']['outcome']['status'], 'updated')
         self.assertNotEqual(first['immutable_url'], second['immutable_url'])
-        self.assertEqual(second['previous_index_url'], first['immutable_url'])
+        self.assertIsNone(second['previous_index_url'])
+        self.assertNotIn(first['immutable_url'].rsplit('/', 1)[1], self.client.data[RELEASE])
         before = len(self.client.uploads)
         self.assertEqual(flow.publish(self.client, plan, self.root), second)
         self.assertEqual(len(self.client.uploads), before)
+
+    def test_new_publication_removes_superseded_files_but_keeps_raw_archives(self):
+        first = self.publish_first()
+        self.source('24Oct2026')
+        self.client.add('lgd-archive', 'states.Oct2026.7z', b'raw history')
+        self.client.add(RELEASE, 'notes.txt', b'unrelated')
+        plan = flow.prepare(self.client, ['states'], COMMIT)
+        self.complete(plan)
+        latest = flow.publish(self.client, plan, self.root)
+        with self.assertRaisesRegex(ValueError, 'missing'):
+            self.client.verify_ref(first['datasets']['states']['daily']['file'])
+        self.client.verify_ref(latest['datasets']['states']['daily']['file'])
+        self.assertTrue(latest['automatic_deletion'])
+        self.assertEqual(len(self.client.data[RELEASE]), 5)  # Parquet, manifest, two indexes, notes.
+        self.assertEqual(len(self.client.data['lgd-latest']), 2)
+        self.assertIn('states.Oct2026.7z', self.client.data['lgd-archive'])
+        self.assertNotIn('metadata.previous.json', self.client.data[RELEASE])
+
+    def test_cleanup_dry_run_and_legacy_retention_upgrade(self):
+        first = self.publish_first()
+        legacy = dict(first, automatic_deletion=False,
+                      previous_index_url=first['immutable_url'])
+        self.client.add(RELEASE, legacy['immutable_url'].rsplit('/', 1)[1], encoded(legacy))
+        self.client.add(RELEASE, 'metadata.json', encoded(legacy))
+        obsolete = 'states.2026-10-22.'+'b'*16+'.parquet'
+        self.client.add(RELEASE, obsolete, b'old export')
+        overflow = 'lgd-parquet-extra-0001'
+        self.client.add(overflow, obsolete, b'old overflow export')
+        self.client.add(RELEASE, 'unrelated.2026-10-22.'+'c'*16+'.parquet', b'unknown dataset')
+        preview = flow.prune(self.client, legacy)
+        self.assertEqual(preview['obsolete'], 2)
+        self.assertFalse(preview['applied'])
+        self.assertEqual(self.client.deleted, [])
+        self.assertIn(obsolete, self.client.data[RELEASE])
+        plan = flow.prepare(self.client, ['states'], COMMIT)
+        # Keep the advertised dataset unchanged while migrating retention.
+        plan['tasks'], plan['outcomes'] = {}, {}
+        latest = flow.publish(self.client, plan, self.root)
+        self.assertEqual(latest['datasets'], legacy['datasets'])
+        self.assertTrue(latest['automatic_deletion'])
+        self.assertIsNone(latest['previous_index_url'])
+        self.assertNotIn(obsolete, self.client.data[RELEASE])
+        self.assertNotIn(obsolete, self.client.data[overflow])
+        self.assertEqual(flow.prune(self.client, latest)['obsolete'], 0)
+
+    def test_cleanup_keeps_referenced_discrepancy_evidence(self):
+        self.source(dataset='parliament_constituencies_lb_mapping')
+        dataset = 'parliament_constituencies_lb_mapping'
+        plan = flow.prepare(self.client, [dataset], COMMIT)
+        self.complete(plan, dataset)
+        task = plan['tasks'][dataset]
+        path = self.root/(task['parquet_name'][:-8]+'.discrepancies.'+'a'*16+'.parquet')
+        path.write_bytes(b'original source variants')
+        evidence = self.client.put(RELEASE, path)
+        manifest = self.client.read_json(self.client.data[RELEASE][task['manifest_name']])
+        manifest['conversion'] = dict(discrepancy_evidence=dict(file=evidence, rows=2))
+        self.client.add(RELEASE, task['manifest_name'], encoded(manifest))
+        old = dataset+'.2026-10-22.'+'b'*16+'.discrepancies.'+'c'*16+'.parquet'
+        self.client.add(RELEASE, old, b'old variants')
+        latest = flow.publish(self.client, plan, self.root)
+        self.client.verify_ref(evidence)
+        self.assertNotIn(old, self.client.data[RELEASE])
+        self.assertEqual(flow.prune(self.client, latest)['kept'], 5)
+
+    def test_cleanup_refuses_missing_current_data_or_changed_pointer(self):
+        current = self.publish_first()
+        old = 'states.2026-10-22.'+'b'*16+'.parquet'
+        self.client.add(RELEASE, old, b'old export')
+        with patch.object(self.client, 'read_index', side_effect=[current, dict(current, generation='changed')]):
+            with self.assertRaisesRegex(ValueError, 'publication changed'):
+                flow.prune(self.client, current, apply=True)
+        self.assertEqual(self.client.deleted, [])
+        tag, name = location(self.client.repo, current['datasets']['states']['daily']['file'])
+        del self.client.data[tag][name]
+        with self.assertRaisesRegex(ValueError, 'missing'):
+            flow.prune(self.client, current, apply=True)
+        self.assertEqual(self.client.deleted, [])
+
+    def test_cleanup_refuses_missing_or_mismatched_current_index(self):
+        current = self.publish_first()
+        name = current['immutable_url'].rsplit('/', 1)[1]
+        self.client.add(RELEASE, name, encoded(dict(current, generation='different')))
+        with self.assertRaisesRegex(ValueError, 'versioned copy'):
+            flow.prune(self.client, current, apply=True)
+        self.client.data[RELEASE].pop('metadata.json')
+        with self.assertRaisesRegex(ValueError, 'metadata is missing'):
+            flow.prune(self.client, current, apply=True)
+        self.assertEqual(self.client.deleted, [])
+
+    def test_cleanup_failure_retries_without_republishing_or_losing_current_files(self):
+        first = self.publish_first()
+        self.source('24Oct2026')
+        plan = flow.prepare(self.client, ['states'], COMMIT)
+        self.complete(plan)
+        remove = self.client.delete_asset
+        def interrupted(tag, asset):
+            if asset['name'].endswith('.parquet'):
+                raise OSError('Cleanup interrupted')
+            remove(tag, asset)
+        with patch.object(self.client, 'delete_asset', side_effect=interrupted):
+            with self.assertRaisesRegex(OSError, 'interrupted'):
+                flow.publish(self.client, plan, self.root)
+        current = self.client.read_index()
+        flow.verify_index(self.client, current)
+        self.assertNotIn(first['immutable_url'].rsplit('/', 1)[1], self.client.data[RELEASE])
+        uploads = len(self.client.uploads)
+        self.assertEqual(flow.publish(self.client, plan, self.root), current)
+        self.assertEqual(len(self.client.uploads), uploads)
+        self.assertEqual(flow.prune(self.client, current)['obsolete'], 0)
 
     def test_absent_and_older_sources_do_not_advance_or_delete(self):
         old = self.publish_first()
@@ -236,6 +351,8 @@ class ParquetWorkflowTests(unittest.TestCase):
         # Both indexes can have the same upload timestamp; asset IDs break ties.
         result = flow.recover(self.client, self.root)
         self.assertEqual(result['datasets']['states']['daily']['observed_on'], '2026-10-24')
+        self.assertNotIn('metadata.previous.json', self.client.data[RELEASE])
+        self.assertEqual(flow.prune(self.client, result)['obsolete'], 0)
 
     def test_capacity_rollover_preserves_latest_pointer_release(self):
         self.client.listed[RELEASE] = dict(draft=False)
@@ -263,6 +380,13 @@ class ParquetWorkflowTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'create it manually'):
                 client.require_release(RELEASE)
         api.assert_called_once_with(f'releases/tags/{RELEASE}')
+
+    def test_transport_refuses_deletion_from_raw_releases(self):
+        client = object.__new__(GitHub)
+        with patch.object(client, 'api') as api:
+            with self.assertRaisesRegex(ValueError, 'Unexpected publication release'):
+                client.delete_asset('lgd-latest', dict(id=123))
+        api.assert_not_called()
 
     def test_transport_reads_manual_release_directly_when_listing_lags(self):
         client = object.__new__(GitHub)

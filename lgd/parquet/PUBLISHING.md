@@ -28,18 +28,24 @@ identifies the pinned source assets and converter/publisher versions. Each file
 has a companion JSON manifest with the source URLs and checksums, canonical
 schema, row counts, converter commit, and conversion diagnostics.
 
-There is one long-lived latest release, with supplementary
-`lgd-parquet-extra-0001` releases when capacity requires them. Create these
-manually too: if existing destinations are full, preparation stops with the
-next release name to create, before conversion starts. Existing published
-files retain their URLs. No automatic deletion is performed. Capacity planning
-reserves room under GitHub's [1,000 assets per release and 2 GiB per asset
-limits](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases#storage-and-bandwidth-quotas).
+The long-lived `lgd-parquet-latest` release keeps only the latest successfully
+published export for each dataset, its manifest, any referenced discrepancy
+evidence, and the current discovery metadata. After publishing and verifying
+the new index, the workflow removes superseded exports and old indexes.
+A failed dataset keeps its last successful export. Existing supplementary
+`lgd-parquet-extra-0001` releases are included in cleanup if present.
+
+Versioned URLs identify fixed contents while those files are current; old URLs
+expire after replacement. Read `metadata.json` again to discover the current
+files. Raw CSV archives in `lgd-latest*` and `lgd-archive*` are never removed by
+this publisher. Those archives remain the source for rebuilding history.
+Capacity planning reserves room under GitHub's [1,000 assets per release and
+2 GiB per asset limits](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases#storage-and-bandwidth-quotas).
 
 `metadata.json` lists each dataset's `daily.file` URL, size and SHA-256,
 `daily.rows`, actual `daily.observed_on` date, manifest, and update outcome.
 Dates can differ between datasets; the publication timestamp is separate.
-A later report with identical values is still a separate dated observation.
+A later report with identical values still advances the observation date.
 Retries of the same input and converter reuse already uploaded files.
 
 `changes` and `transactions` remain cumulative event files. Their undated input
@@ -55,8 +61,9 @@ does not establish a deletion; historical carry-forward is separate work.
 
 ## Reading with DuckDB
 
-Fetch the metadata once and retain that response while querying its immutable
-file URLs. Public readers need no GitHub token or catalog server:
+Fetch the metadata once and query its versioned file URLs. If an update replaces
+those files before the query finishes, fetch metadata again. Public readers need
+no GitHub token or catalog server:
 
 ```python
 import json
@@ -99,21 +106,34 @@ been published. An absent daily source is an `unavailable` outcome, not an empty
 replacement or inferred deletion.
 
 One final job updates metadata under the publication concurrency lock. It checks
-the manifests and their files, uploads an immutable dated index, saves the
+the manifests and their files, uploads a versioned index, temporarily saves the
 previous index as `metadata.previous.json`, and replaces `metadata.json` last.
 GitHub replacement is delete/upload, so a short discovery gap is possible;
-readers can retry or use the previous copy. Immutable data remains readable.
+readers can retry or use the temporary previous copy. Only after verifying the
+new publication does cleanup remove superseded files and that previous copy.
+The current versioned index remains available for recovery. Cleanup checks every
+current manifest, data file and evidence file before deleting anything; a cleanup
+failure leaves the current publication readable and can be retried.
 
 Use **Re-run failed jobs** to reuse the pinned plan; workers check for completed
 uploads before installing dependencies. If an earlier attempt already published
-partial results, newly completed datasets are added through a new immutable
-index, preserving the earlier index. A new dispatch rediscovers sources.
+partial results, newly completed datasets are added through a new versioned
+index, then superseded files are removed. A new dispatch rediscovers sources.
 If a pinned raw asset was replaced or moved by archiving, use a new dispatch.
 
 Manual dispatch defaults to `mode=update` with all 39 supported datasets. An
 optional space-separated `datasets` input limits conversion. Use `mode=recover`
 to restore `metadata.json` from the newest verified complete dated index without
 reconverting reports. Recovery shares the same lock and checks referenced files.
+
+Use `mode=prune` to clean up accumulated exports without converting or changing
+the advertised dataset contents. It shares the publication lock and upgrades
+older metadata to latest-only retention. To preview the exact asset names and
+IDs locally, run `python -m utils.parquet_workflow prune`; the command writes
+`data/parquet-publication/cleanup.json` and deletes nothing. Prefer the workflow
+for applying cleanup. A local `prune --apply` must run only when no publisher is
+active. Unknown filenames and releases outside the Parquet namespace are left
+alone.
 
 ## Local verification
 
